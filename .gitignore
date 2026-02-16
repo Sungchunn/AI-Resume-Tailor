@@ -1,0 +1,110 @@
+# Environment files (NEVER commit real credentials)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+!.env.example
+!.env.*.example
+
+# Credentials and secrets
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.yaml
+secrets.json
+service-account.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Node/Bun
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+.bun/
+
+# IDE/Editor
+.idea/
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.example.json
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+.docker/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Build outputs
+*.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+
+# Database files (local dev)
+*.sqlite
+*.sqlite3
+*.db
