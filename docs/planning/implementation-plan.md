@@ -39,20 +39,20 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 
 ### Tasks
 
-- [ ] Set up database models with SQLAlchemy/SQLModel
+- [x] Set up database models with SQLAlchemy/SQLModel
   - User model
   - Resume model
   - JobDescription model
   - TailoredResume model
-- [ ] Implement Alembic migrations
-- [ ] Create CRUD endpoints:
+- [x] Implement Alembic migrations
+- [x] Create CRUD endpoints:
   - `POST /api/resumes` - Upload/create resume
   - `GET /api/resumes/{id}` - Retrieve resume
   - `POST /api/jobs` - Add job description
   - `GET /api/jobs/{id}` - Retrieve job
-- [ ] Add input validation with Pydantic models
-- [ ] Set up basic error handling
-- [ ] Add API tests with pytest
+- [x] Add input validation with Pydantic models
+- [x] Set up basic error handling
+- [x] Add API tests with pytest
 
 ### Deliverables
 
