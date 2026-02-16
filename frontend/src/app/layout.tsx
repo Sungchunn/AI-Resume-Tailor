@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { QueryProvider } from "@/providers/QueryProvider";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "AI Resume Tailor",
@@ -12,7 +14,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="min-h-screen">
+        <QueryProvider>{children}</QueryProvider>
+      </body>
     </html>
   );
 }

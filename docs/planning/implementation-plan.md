@@ -6,21 +6,34 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 
 ---
 
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | Next.js 15 + Bun |
+| Backend | FastAPI + Python 3.11 |
+| Backend Package Manager | **Poetry** |
+| Database | PostgreSQL + Redis |
+| Local Dev | Docker Compose |
+
+---
+
 ## Phase 0: Project Setup & Infrastructure
 
 **Goal:** Establish the monorepo structure, Docker environment, and basic configuration.
 
 ### Tasks
 
-- [ ] Create folder structure (`/frontend`, `/backend`, `/scripts`, `/docs`)
-- [ ] Set up `.gitignore` with comprehensive patterns
-- [ ] Create `docker-compose.yml` for local development
+- [x] Create folder structure (`/frontend`, `/backend`, `/scripts`, `/docs`)
+- [x] Set up `.gitignore` with comprehensive patterns
+- [x] Create `docker-compose.yml` for local development
   - PostgreSQL database
   - Redis cache
   - Backend service
-- [ ] Initialize FastAPI backend with basic health endpoint
-- [ ] Initialize Next.js 15 frontend with Bun
-- [ ] Create `.env.example` files for both frontend and backend
+- [x] Initialize FastAPI backend with basic health endpoint
+- [x] Initialize Next.js 15 frontend with Bun
+- [x] Create `.env.example` files for both frontend and backend
+- [x] Set up Poetry for backend dependency management
 - [ ] Set up the type-sync script (`/scripts/generate-client.sh`)
 - [ ] Write initial `README.md`
 
@@ -68,20 +81,20 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 
 ### Tasks
 
-- [ ] Set up project structure (app router)
-- [ ] Configure Tailwind CSS
-- [ ] Create layout components
+- [x] Set up project structure (app router)
+- [x] Configure Tailwind CSS v4 with @tailwindcss/postcss
+- [x] Create layout components
   - Header/Navigation
   - Footer
   - Sidebar (dashboard)
-- [ ] Build core pages:
+- [x] Build core pages:
   - Landing page
   - Dashboard
   - Resume upload/editor page
   - Job description input page
-- [ ] Integrate generated API client from type-sync
-- [ ] Add form handling (React Hook Form or similar)
-- [ ] Set up state management (Zustand or React Query)
+- [x] Integrate generated API client from type-sync
+- [x] Add form handling (React Hook Form + Zod validation)
+- [x] Set up state management (TanStack Query)
 
 ### Deliverables
 

@@ -77,7 +77,34 @@
 1. Run `git diff` to review changes
 2. Verify NO secrets or credentials in diff
 3. Ensure documentation is updated in `/docs/` if needed
-4. Use clear, descriptive commit messages
+4. Use clear, descriptive commit messages with scope prefix
+
+### Commit Message Format
+
+**All commits must specify the scope of changes using a prefix.**
+
+Format: `<scope>: <description>`
+
+Valid scopes:
+- `frontend:` - Changes to `/frontend` (Next.js, React, UI)
+- `backend:` - Changes to `/backend` (FastAPI, Python, API)
+- `database:` - Database schema, migrations, Redis config
+- `infra:` - Docker, CI/CD, deployment configs
+- `docs:` - Documentation only changes
+
+For changes spanning multiple areas, use the primary scope or combine:
+- `frontend/backend:` - Full-stack changes
+- `backend/database:` - API + schema changes
+
+Examples:
+```
+frontend: add resume preview component
+backend: implement PDF export endpoint
+database: add user preferences table migration
+infra: update docker-compose for redis cluster
+docs: update API documentation for v2 endpoints
+frontend/backend: implement real-time save feature
+```
 
 ### File Patterns to Never Commit
 
@@ -127,8 +154,13 @@ bun install                   # Install dependencies
 bun dev                       # Start dev server
 
 # Backend (from /backend)
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+poetry install                # Install all dependencies
+poetry install --only main    # Install production deps only
+poetry add <package>          # Add a new dependency
+poetry add -G dev <package>   # Add a dev dependency
+poetry run uvicorn app.main:app --reload  # Run with Poetry
+poetry shell                  # Activate virtual environment
+poetry run pytest             # Run tests
 
 # Type sync
 ./scripts/generate-client.sh  # Generate TS types from OpenAPI
