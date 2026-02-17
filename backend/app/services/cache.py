@@ -76,6 +76,26 @@ class CacheService:
         key = self._make_key("job_parsed", raw_content)
         await self.redis.delete(key)
 
+    # Generic cache methods (for ICache protocol)
+    async def get(self, key: str) -> Any | None:
+        """Get cached value by key."""
+        data = await self.redis.get(key)
+        if data:
+            return json.loads(data)
+        return None
+
+    async def set(self, key: str, value: Any, ttl_seconds: int = 3600) -> None:
+        """Set cached value with TTL."""
+        await self.redis.setex(key, ttl_seconds, json.dumps(value))
+
+    async def delete(self, key: str) -> None:
+        """Delete cached value."""
+        await self.redis.delete(key)
+
+    async def exists(self, key: str) -> bool:
+        """Check if key exists."""
+        return bool(await self.redis.exists(key))
+
     async def close(self) -> None:
         """Close the Redis connection."""
         await self.redis.close()
