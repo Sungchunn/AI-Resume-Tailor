@@ -9,7 +9,7 @@ from alembic import context
 
 from app.core.config import get_settings
 from app.db.session import Base
-from app.models import User, Resume, JobDescription, TailoredResume  # noqa: F401
+from app.models import User, Resume, JobDescription, TailoredResume, ExperienceBlock, Workshop  # noqa: F401
 
 config = context.config
 settings = get_settings()
