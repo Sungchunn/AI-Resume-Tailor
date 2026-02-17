@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes import auth, resumes, jobs, tailor, export, blocks, match, workshops
+from app.api.routes import auth, resumes, jobs, tailor, export, blocks, match, workshops, ats
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -13,3 +13,6 @@ api_router.include_router(export.router, prefix="/export", tags=["export"])
 api_router.include_router(blocks.router, prefix="/v1/blocks", tags=["blocks"])
 api_router.include_router(match.router, prefix="/v1/match", tags=["match"])
 api_router.include_router(workshops.router, prefix="/v1/workshops", tags=["workshops"])
+
+# Phase 5: ATS Analysis
+api_router.include_router(ats.router, prefix="/v1/ats", tags=["ats"])
