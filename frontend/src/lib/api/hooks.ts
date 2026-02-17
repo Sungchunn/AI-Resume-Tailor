@@ -1,5 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { resumeApi, jobApi, tailorApi } from "./client";
+import {
+  resumeApi,
+  jobApi,
+  tailorApi,
+  blockApi,
+  matchApi,
+  workshopApi,
+} from "./client";
 import type {
   ResumeCreate,
   ResumeUpdate,
@@ -7,6 +14,20 @@ import type {
   JobUpdate,
   TailorRequest,
   QuickMatchRequest,
+  BlockCreate,
+  BlockUpdate,
+  BlockImportRequest,
+  BlockEmbedRequest,
+  BlockType,
+  MatchRequest,
+  WorkshopCreate,
+  WorkshopUpdate,
+  PullBlocksRequest,
+  SuggestRequest,
+  UpdateSectionsRequest,
+  UpdateStatusRequest,
+  ExportRequest,
+  WorkshopStatus,
 } from "./types";
 
 // Query Keys
@@ -27,7 +48,32 @@ export const queryKeys = {
     detail: (id: number) => [...queryKeys.tailored.all, "detail", id] as const,
     byResume: (resumeId: number) =>
       [...queryKeys.tailored.all, "resume", resumeId] as const,
-    byJob: (jobId: number) => [...queryKeys.tailored.all, "job", jobId] as const,
+    byJob: (jobId: number) =>
+      [...queryKeys.tailored.all, "job", jobId] as const,
+  },
+  blocks: {
+    all: ["blocks"] as const,
+    list: (params?: {
+      block_types?: BlockType[];
+      tags?: string[];
+      verified_only?: boolean;
+    }) => [...queryKeys.blocks.all, "list", params] as const,
+    detail: (id: number) => [...queryKeys.blocks.all, "detail", id] as const,
+  },
+  match: {
+    all: ["match"] as const,
+    result: (jobDescription: string) =>
+      [...queryKeys.match.all, "result", jobDescription] as const,
+    forJob: (jobId: number) => [...queryKeys.match.all, "job", jobId] as const,
+    gaps: (jobDescription: string) =>
+      [...queryKeys.match.all, "gaps", jobDescription] as const,
+  },
+  workshops: {
+    all: ["workshops"] as const,
+    list: (status?: WorkshopStatus) =>
+      [...queryKeys.workshops.all, "list", status] as const,
+    detail: (id: number) =>
+      [...queryKeys.workshops.all, "detail", id] as const,
   },
 };
 
@@ -195,5 +241,338 @@ export function useDeleteTailoredResume() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tailored.all });
     },
+  });
+}
+
+// Block Hooks (Vault)
+export function useBlocks(params?: {
+  block_types?: BlockType[];
+  tags?: string[];
+  verified_only?: boolean;
+  limit?: number;
+  offset?: number;
+}) {
+  return useQuery({
+    queryKey: queryKeys.blocks.list(params),
+    queryFn: () => blockApi.list(params),
+  });
+}
+
+export function useBlock(id: number) {
+  return useQuery({
+    queryKey: queryKeys.blocks.detail(id),
+    queryFn: () => blockApi.get(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateBlock() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: BlockCreate) => blockApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.blocks.all });
+    },
+  });
+}
+
+export function useUpdateBlock() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: BlockUpdate }) =>
+      blockApi.update(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.blocks.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.blocks.all });
+    },
+  });
+}
+
+export function useDeleteBlock() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => blockApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.blocks.all });
+    },
+  });
+}
+
+export function useVerifyBlock() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, verified }: { id: number; verified?: boolean }) =>
+      blockApi.verify(id, verified),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.blocks.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.blocks.all });
+    },
+  });
+}
+
+export function useImportBlocks() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: BlockImportRequest) => blockApi.import(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.blocks.all });
+    },
+  });
+}
+
+export function useEmbedBlocks() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data?: BlockEmbedRequest) => blockApi.embed(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.blocks.all });
+    },
+  });
+}
+
+// Match Hooks (Semantic Search)
+export function useMatch(data: MatchRequest, enabled: boolean = true) {
+  return useQuery({
+    queryKey: queryKeys.match.result(data.job_description),
+    queryFn: () => matchApi.match(data),
+    enabled,
+  });
+}
+
+export function useMatchMutation() {
+  return useMutation({
+    mutationFn: (data: MatchRequest) => matchApi.match(data),
+  });
+}
+
+export function useMatchForJob(jobId: number) {
+  return useQuery({
+    queryKey: queryKeys.match.forJob(jobId),
+    queryFn: () => matchApi.getForJob(jobId),
+    enabled: !!jobId,
+  });
+}
+
+export function useAnalyzeGaps() {
+  return useMutation({
+    mutationFn: (data: MatchRequest) => matchApi.analyzeGaps(data),
+  });
+}
+
+// Workshop Hooks
+export function useWorkshops(status?: WorkshopStatus) {
+  return useQuery({
+    queryKey: queryKeys.workshops.list(status),
+    queryFn: () => workshopApi.list({ status }),
+  });
+}
+
+export function useWorkshop(id: number) {
+  return useQuery({
+    queryKey: queryKeys.workshops.detail(id),
+    queryFn: () => workshopApi.get(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateWorkshop() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: WorkshopCreate) => workshopApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.workshops.all });
+    },
+  });
+}
+
+export function useUpdateWorkshop() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: WorkshopUpdate }) =>
+      workshopApi.update(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.workshops.detail(id),
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.workshops.all });
+    },
+  });
+}
+
+export function useDeleteWorkshop() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => workshopApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.workshops.all });
+    },
+  });
+}
+
+export function usePullBlocks() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      workshopId,
+      data,
+    }: {
+      workshopId: number;
+      data: PullBlocksRequest;
+    }) => workshopApi.pullBlocks(workshopId, data),
+    onSuccess: (_, { workshopId }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.workshops.detail(workshopId),
+      });
+    },
+  });
+}
+
+export function useRemoveBlockFromWorkshop() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      workshopId,
+      blockId,
+    }: {
+      workshopId: number;
+      blockId: number;
+    }) => workshopApi.removeBlock(workshopId, blockId),
+    onSuccess: (_, { workshopId }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.workshops.detail(workshopId),
+      });
+    },
+  });
+}
+
+export function useGenerateSuggestions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      workshopId,
+      data,
+    }: {
+      workshopId: number;
+      data?: SuggestRequest;
+    }) => workshopApi.suggest(workshopId, data),
+    onSuccess: (_, { workshopId }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.workshops.detail(workshopId),
+      });
+    },
+  });
+}
+
+export function useAcceptDiff() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      workshopId,
+      diffIndex,
+    }: {
+      workshopId: number;
+      diffIndex: number;
+    }) => workshopApi.acceptDiff(workshopId, { diff_index: diffIndex }),
+    onSuccess: (_, { workshopId }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.workshops.detail(workshopId),
+      });
+    },
+  });
+}
+
+export function useRejectDiff() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      workshopId,
+      diffIndex,
+    }: {
+      workshopId: number;
+      diffIndex: number;
+    }) => workshopApi.rejectDiff(workshopId, { diff_index: diffIndex }),
+    onSuccess: (_, { workshopId }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.workshops.detail(workshopId),
+      });
+    },
+  });
+}
+
+export function useClearDiffs() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (workshopId: number) => workshopApi.clearDiffs(workshopId),
+    onSuccess: (_, workshopId) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.workshops.detail(workshopId),
+      });
+    },
+  });
+}
+
+export function useUpdateSections() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      workshopId,
+      data,
+    }: {
+      workshopId: number;
+      data: UpdateSectionsRequest;
+    }) => workshopApi.updateSections(workshopId, data),
+    onSuccess: (_, { workshopId }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.workshops.detail(workshopId),
+      });
+    },
+  });
+}
+
+export function useUpdateWorkshopStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      workshopId,
+      data,
+    }: {
+      workshopId: number;
+      data: UpdateStatusRequest;
+    }) => workshopApi.updateStatus(workshopId, data),
+    onSuccess: (_, { workshopId }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.workshops.detail(workshopId),
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.workshops.all });
+    },
+  });
+}
+
+export function useExportWorkshop() {
+  return useMutation({
+    mutationFn: ({
+      workshopId,
+      data,
+    }: {
+      workshopId: number;
+      data: ExportRequest;
+    }) => workshopApi.export(workshopId, data),
   });
 }
