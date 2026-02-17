@@ -209,6 +209,25 @@ class ExportService:
         return buffer.getvalue()
 
 
+    # Async wrapper methods for workshop router compatibility
+    async def export_pdf(self, content: dict[str, Any], template: str = "default") -> bytes:
+        """Export resume content as PDF bytes."""
+        return self.generate_pdf(content)
+
+    async def export_docx(self, content: dict[str, Any], template: str = "default") -> bytes:
+        """Export resume content as DOCX bytes."""
+        return self.generate_docx(content)
+
+    async def export_txt(self, content: dict[str, Any], template: str = "default") -> str:
+        """Export resume content as plain text."""
+        return self.generate_plain_text(content)
+
+    async def export_json(self, content: dict[str, Any], template: str = "default") -> str:
+        """Export resume content as JSON string."""
+        import json
+        return json.dumps(content, indent=2)
+
+
 def get_export_service() -> ExportService:
     """Get the export service instance."""
     return ExportService()

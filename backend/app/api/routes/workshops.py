@@ -9,7 +9,7 @@ Provides CRUD operations for workshops and all related operations:
 - Export to various formats
 """
 
-from typing import Optional, List
+from typing import Optional, List, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,7 +32,10 @@ from app.schemas.workshop import (
     UpdateSectionsRequest,
     UpdateStatusRequest,
     ExportRequest,
+    WritebackRequest,
+    WritebackProposal,
 )
+from app.schemas.block import BlockResponse
 
 router = APIRouter()
 
@@ -476,6 +479,113 @@ async def update_status(
         )
     await db.commit()
     return WorkshopResponse.model_validate(workshop)
+
+
+@router.post("/{workshop_id}/writeback/preview", response_model=WritebackProposal)
+async def preview_writeback(
+    workshop_id: int,
+    writeback_in: WritebackRequest,
+    db: AsyncSession = Depends(get_db_session),
+    current_user_id: int = Depends(get_current_user_id),
+) -> WritebackProposal:
+    """
+    Preview a write-back to the Vault.
+
+    Shows what would happen (create/update) without executing.
+    """
+    from app.services.writeback import get_writeback_service
+
+    # Verify workshop exists
+    workshop = await workshop_repository.get(
+        db, workshop_id=workshop_id, user_id=current_user_id
+    )
+    if not workshop:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workshop not found",
+        )
+
+    writeback_service = get_writeback_service()
+
+    proposal = await writeback_service.propose_writeback(
+        db=db,
+        workshop_id=workshop_id,
+        user_id=current_user_id,
+        edited_content=writeback_in.edited_content,
+        source_block_id=writeback_in.source_block_id,
+    )
+
+    return WritebackProposal(
+        action=proposal["action"],
+        preview=proposal["preview"],
+        original=proposal["original"],
+        changes=proposal["changes"],
+    )
+
+
+@router.post("/{workshop_id}/writeback", response_model=BlockResponse)
+async def execute_writeback(
+    workshop_id: int,
+    writeback_in: WritebackRequest,
+    db: AsyncSession = Depends(get_db_session),
+    current_user_id: int = Depends(get_current_user_id),
+) -> BlockResponse:
+    """
+    Execute a write-back to the Vault.
+
+    Creates or updates a block based on Workshop edits.
+    """
+    from app.services.writeback import get_writeback_service
+
+    # Verify workshop exists
+    workshop = await workshop_repository.get(
+        db, workshop_id=workshop_id, user_id=current_user_id
+    )
+    if not workshop:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workshop not found",
+        )
+
+    writeback_service = get_writeback_service()
+
+    block = await writeback_service.execute_writeback(
+        db=db,
+        workshop_id=workshop_id,
+        user_id=current_user_id,
+        edited_content=writeback_in.edited_content,
+        source_block_id=writeback_in.source_block_id,
+        create_new=writeback_in.create_new,
+    )
+
+    return BlockResponse.model_validate(block)
+
+
+@router.get("/{workshop_id}/blocks", response_model=List[BlockResponse])
+async def get_pulled_blocks(
+    workshop_id: int,
+    db: AsyncSession = Depends(get_db_session),
+    current_user_id: int = Depends(get_current_user_id),
+) -> List[BlockResponse]:
+    """Get all blocks pulled into this workshop."""
+    workshop = await workshop_repository.get(
+        db, workshop_id=workshop_id, user_id=current_user_id
+    )
+    if not workshop:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workshop not found",
+        )
+
+    block_ids = workshop.get("pulled_block_ids", [])
+    if not block_ids:
+        return []
+
+    blocks = await block_repository.get_by_ids(
+        db, block_ids=block_ids, user_id=current_user_id
+    )
+
+    return [BlockResponse.model_validate(b) for b in blocks]
 
 
 @router.post("/{workshop_id}/export")
