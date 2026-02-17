@@ -29,6 +29,21 @@ services:
       timeout: 5s
       retries: 5
 
+  flyway:
+    image: flyway/flyway:10-alpine
+    container_name: resume-tailor-flyway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend/flyway/sql:/flyway/sql:ro
+      - ./backend/flyway/flyway.conf:/flyway/conf/flyway.conf:ro
+    command: migrate
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-resume_tailor}
+      FLYWAY_USER: ${POSTGRES_USER:-postgres}
+      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+
   backend:
     build:
       context: ./backend
@@ -43,8 +58,8 @@ services:
       - ./backend:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
-      postgres:
-        condition: service_healthy
+      flyway:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
 
