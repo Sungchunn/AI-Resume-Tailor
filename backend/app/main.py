@@ -2,6 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import api_router
+from app.core.config import get_settings
+from app.middleware.rate_limiter import RateLimitMiddleware, RateLimitConfig
+
+settings = get_settings()
 
 app = FastAPI(
     title="AI Resume Tailor API",
@@ -9,6 +13,21 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# Add middleware in order (last added = first executed)
+# Rate limiting middleware
+if settings.rate_limit_enabled:
+    rate_limit_config = RateLimitConfig(
+        default_requests_per_minute=settings.rate_limit_default_per_minute,
+        default_requests_per_hour=settings.rate_limit_default_per_hour,
+        ai_requests_per_minute=settings.rate_limit_ai_per_minute,
+        ai_requests_per_hour=settings.rate_limit_ai_per_hour,
+        auth_requests_per_minute=settings.rate_limit_auth_per_minute,
+        auth_requests_per_hour=settings.rate_limit_auth_per_hour,
+        enabled=True,
+    )
+    app.add_middleware(RateLimitMiddleware, config=rate_limit_config)
+
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],

@@ -22,6 +22,18 @@ class Settings(BaseSettings):
     # Environment
     environment: str = "development"
 
+    # Rate Limiting
+    rate_limit_enabled: bool = True
+    rate_limit_default_per_minute: int = 60
+    rate_limit_default_per_hour: int = 1000
+    rate_limit_ai_per_minute: int = 10
+    rate_limit_ai_per_hour: int = 100
+    rate_limit_auth_per_minute: int = 10
+    rate_limit_auth_per_hour: int = 50
+
+    # Audit Logging
+    audit_log_enabled: bool = True
+
     class Config:
         env_file = ".env"
         case_sensitive = False

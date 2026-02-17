@@ -4,5 +4,14 @@ from app.models.job import JobDescription
 from app.models.tailored_resume import TailoredResume
 from app.models.experience_block import ExperienceBlock
 from app.models.workshop import Workshop
+from app.models.audit_log import AuditLog
 
-__all__ = ["User", "Resume", "JobDescription", "TailoredResume", "ExperienceBlock", "Workshop"]
+__all__ = [
+    "User",
+    "Resume",
+    "JobDescription",
+    "TailoredResume",
+    "ExperienceBlock",
+    "Workshop",
+    "AuditLog",
+]
