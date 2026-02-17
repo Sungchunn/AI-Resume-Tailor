@@ -336,3 +336,13 @@ export interface ExportRequest {
   format: "pdf" | "docx" | "txt" | "json";
   template?: string;
 }
+
+// Upload Types
+export interface DocumentExtractionResponse {
+  raw_content: string;
+  source_filename: string;
+  file_type: "pdf" | "docx";
+  page_count: number | null;
+  word_count: number;
+  warnings: string[];
+}

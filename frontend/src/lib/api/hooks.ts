@@ -6,6 +6,7 @@ import {
   blockApi,
   matchApi,
   workshopApi,
+  uploadApi,
 } from "./client";
 import type {
   ResumeCreate,
@@ -574,5 +575,12 @@ export function useExportWorkshop() {
       workshopId: number;
       data: ExportRequest;
     }) => workshopApi.export(workshopId, data),
+  });
+}
+
+// Upload Hooks
+export function useExtractDocument() {
+  return useMutation({
+    mutationFn: (file: File) => uploadApi.extractDocument(file),
   });
 }

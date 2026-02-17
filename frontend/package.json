@@ -18,6 +18,7 @@
     "postcss": "^8.5.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-dropzone": "^15.0.0",
     "react-hook-form": "^7.71.1",
     "tailwindcss": "^4.1.18",
     "zod": "^4.3.6"
