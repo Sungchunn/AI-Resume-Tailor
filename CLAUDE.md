@@ -40,7 +40,7 @@
 
 **All `.md` documentation files must be placed under `/docs`.**
 
-```
+```text
 /docs
 ├── /planning          # Project plans and phases
 ├── /features          # Feature-specific documentation
@@ -51,6 +51,24 @@
 
 - Create a new subdirectory for each new feature or project implementation
 - Keep the root directory clean - only `README.md` and `CLAUDE.md` at root
+
+#### Documentation File Naming Convention
+
+All new documentation files in `/docs/architecture`, `/docs/features`, and `/docs/planning` must include a date prefix for tracking purposes.
+
+Format: `DDMMYY_name.md`
+
+Examples:
+
+```text
+180226_api-design.md           # Created Feb 18, 2026
+150126_auth-implementation.md  # Created Jan 15, 2026
+010326_deployment-guide.md     # Created Mar 1, 2026
+```
+
+- Use lowercase with hyphens for the name portion
+- The date represents the creation date of the document
+- This helps track document age and maintain chronological context
 
 ### 4. Context Management
 
@@ -86,6 +104,7 @@
 Format: `<scope>: <description>`
 
 Valid scopes:
+
 - `frontend:` - Changes to `/frontend` (Next.js, React, UI)
 - `backend:` - Changes to `/backend` (FastAPI, Python, API)
 - `database:` - Database schema, migrations, Redis config
@@ -93,11 +112,13 @@ Valid scopes:
 - `docs:` - Documentation only changes
 
 For changes spanning multiple areas, use the primary scope or combine:
+
 - `frontend/backend:` - Full-stack changes
 - `backend/database:` - API + schema changes
 
 Examples:
-```
+
+```text
 frontend: add resume preview component
 backend: implement PDF export endpoint
 database: add user preferences table migration
@@ -130,9 +151,10 @@ secrets.yaml
 
 ## Project Phases
 
-See `/docs/planning/implementation-plan.md` for the full breakdown.
+See `/docs/planning/170226_implementation-plan.md` for the full breakdown.
 
 Development is split into phases:
+
 - **Phase 0:** Project Setup & Infrastructure
 - **Phase 1:** Core Backend API
 - **Phase 2:** Frontend Foundation
