@@ -1,15 +1,15 @@
-import anthropic
+import google.generativeai as genai
 from functools import lru_cache
 
 from app.core.config import get_settings
 
 
 class AIClient:
-    """Wrapper around Anthropic API client."""
+    """Wrapper around Google Gemini API client."""
 
     def __init__(self, api_key: str, model: str):
-        self.client = anthropic.Anthropic(api_key=api_key)
-        self.model = model
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel(model)
 
     async def generate(
         self,
@@ -19,14 +19,19 @@ class AIClient:
         temperature: float = 0.7,
     ) -> str:
         """Generate a response from the AI model."""
-        message = self.client.messages.create(
-            model=self.model,
-            max_tokens=max_tokens,
+        # Combine system and user prompts for Gemini
+        full_prompt = f"{system_prompt}\n\n{user_prompt}"
+
+        generation_config = genai.GenerationConfig(
+            max_output_tokens=max_tokens,
             temperature=temperature,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}],
         )
-        return message.content[0].text
+
+        response = self.model.generate_content(
+            full_prompt,
+            generation_config=generation_config,
+        )
+        return response.text
 
     async def generate_json(
         self,
@@ -35,7 +40,7 @@ class AIClient:
         max_tokens: int = 4096,
     ) -> str:
         """Generate a JSON response from the AI model."""
-        json_system = f"{system_prompt}\n\nIMPORTANT: Respond ONLY with valid JSON. No markdown, no explanations."
+        json_system = f"{system_prompt}\n\nIMPORTANT: Respond ONLY with valid JSON. No markdown code blocks, no explanations, just the raw JSON object."
         return await self.generate(
             system_prompt=json_system,
             user_prompt=user_prompt,
@@ -49,6 +54,6 @@ def get_ai_client() -> AIClient:
     """Get a singleton AI client instance."""
     settings = get_settings()
     return AIClient(
-        api_key=settings.anthropic_api_key,
-        model=settings.anthropic_model,
+        api_key=settings.gemini_api_key,
+        model=settings.gemini_model,
     )

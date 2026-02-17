@@ -113,7 +113,7 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 ### Tasks
 
 - [x] Research and select AI provider (OpenAI, Anthropic, etc.)
-  - Selected Anthropic Claude as the AI provider
+  - Selected Google Gemini as the AI provider
 - [x] Create AI service layer in backend
   - Created `/backend/app/services/` with AI client, cache, parsers
 - [x] Implement resume parsing:
