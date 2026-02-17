@@ -1,4 +1,6 @@
 from datetime import datetime
+from typing import Any
+
 from pydantic import BaseModel
 
 
@@ -13,7 +15,7 @@ class SuggestionSchema(BaseModel):
 
 class TailoredContentSchema(BaseModel):
     summary: str
-    experience: list[dict]
+    experience: list[dict[str, Any]]
     skills: list[str]
     highlights: list[str]
 
