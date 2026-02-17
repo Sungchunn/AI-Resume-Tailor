@@ -15,6 +15,32 @@ import type {
   UserResponse,
   Token,
   TokenRefresh,
+  BlockCreate,
+  BlockUpdate,
+  BlockResponse,
+  BlockListResponse,
+  BlockImportRequest,
+  BlockImportResponse,
+  BlockEmbedRequest,
+  BlockEmbedResponse,
+  BlockType,
+  MatchRequest,
+  MatchResponse,
+  GapAnalysisResponse,
+  WorkshopCreate,
+  WorkshopUpdate,
+  WorkshopResponse,
+  WorkshopListResponse,
+  PullBlocksRequest,
+  PullBlocksResponse,
+  SuggestRequest,
+  SuggestResponse,
+  DiffActionRequest,
+  DiffActionResponse,
+  UpdateSectionsRequest,
+  UpdateStatusRequest,
+  ExportRequest,
+  WorkshopStatus,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -236,4 +262,206 @@ export const tailorApi = {
     fetchApi(`/api/tailor/${id}`, {
       method: "DELETE",
     }),
+};
+
+// Block API (Vault)
+export const blockApi = {
+  list: (
+    params: {
+      block_types?: BlockType[];
+      tags?: string[];
+      verified_only?: boolean;
+      limit?: number;
+      offset?: number;
+    } = {}
+  ): Promise<BlockListResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params.block_types) {
+      params.block_types.forEach((bt) => searchParams.append("block_types", bt));
+    }
+    if (params.tags) {
+      params.tags.forEach((tag) => searchParams.append("tags", tag));
+    }
+    if (params.verified_only) {
+      searchParams.append("verified_only", "true");
+    }
+    if (params.limit !== undefined) {
+      searchParams.append("limit", String(params.limit));
+    }
+    if (params.offset !== undefined) {
+      searchParams.append("offset", String(params.offset));
+    }
+    const query = searchParams.toString();
+    return fetchApi(`/api/v1/blocks${query ? `?${query}` : ""}`);
+  },
+
+  get: (id: number): Promise<BlockResponse> =>
+    fetchApi(`/api/v1/blocks/${id}`),
+
+  create: (data: BlockCreate): Promise<BlockResponse> =>
+    fetchApi("/api/v1/blocks", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: number, data: BlockUpdate): Promise<BlockResponse> =>
+    fetchApi(`/api/v1/blocks/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: number): Promise<void> =>
+    fetchApi(`/api/v1/blocks/${id}`, {
+      method: "DELETE",
+    }),
+
+  verify: (id: number, verified: boolean = true): Promise<BlockResponse> =>
+    fetchApi(`/api/v1/blocks/${id}/verify`, {
+      method: "POST",
+      body: JSON.stringify({ verified }),
+    }),
+
+  import: (data: BlockImportRequest): Promise<BlockImportResponse> =>
+    fetchApi("/api/v1/blocks/import", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  embed: (data?: BlockEmbedRequest): Promise<BlockEmbedResponse> =>
+    fetchApi("/api/v1/blocks/embed", {
+      method: "POST",
+      body: JSON.stringify(data || {}),
+    }),
+
+  embedSingle: (id: number): Promise<BlockResponse> =>
+    fetchApi(`/api/v1/blocks/${id}/embed`, {
+      method: "POST",
+    }),
+};
+
+// Match API (Semantic Search)
+export const matchApi = {
+  match: (data: MatchRequest): Promise<MatchResponse> =>
+    fetchApi("/api/v1/match", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  analyzeGaps: (data: MatchRequest): Promise<GapAnalysisResponse> =>
+    fetchApi("/api/v1/match/analyze", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  getForJob: (jobId: number, limit: number = 20): Promise<MatchResponse> =>
+    fetchApi(`/api/v1/match/job/${jobId}?limit=${limit}`),
+};
+
+// Workshop API
+export const workshopApi = {
+  list: (
+    params: {
+      status?: WorkshopStatus;
+      limit?: number;
+      offset?: number;
+    } = {}
+  ): Promise<WorkshopListResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params.status) {
+      searchParams.append("status", params.status);
+    }
+    if (params.limit !== undefined) {
+      searchParams.append("limit", String(params.limit));
+    }
+    if (params.offset !== undefined) {
+      searchParams.append("offset", String(params.offset));
+    }
+    const query = searchParams.toString();
+    return fetchApi(`/api/v1/workshops${query ? `?${query}` : ""}`);
+  },
+
+  get: (id: number): Promise<WorkshopResponse> =>
+    fetchApi(`/api/v1/workshops/${id}`),
+
+  create: (data: WorkshopCreate): Promise<WorkshopResponse> =>
+    fetchApi("/api/v1/workshops", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: number, data: WorkshopUpdate): Promise<WorkshopResponse> =>
+    fetchApi(`/api/v1/workshops/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: number): Promise<void> =>
+    fetchApi(`/api/v1/workshops/${id}`, {
+      method: "DELETE",
+    }),
+
+  pullBlocks: (id: number, data: PullBlocksRequest): Promise<PullBlocksResponse> =>
+    fetchApi(`/api/v1/workshops/${id}/pull`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  removeBlock: (workshopId: number, blockId: number): Promise<WorkshopResponse> =>
+    fetchApi(`/api/v1/workshops/${workshopId}/blocks/${blockId}`, {
+      method: "DELETE",
+    }),
+
+  suggest: (id: number, data?: SuggestRequest): Promise<SuggestResponse> =>
+    fetchApi(`/api/v1/workshops/${id}/suggest`, {
+      method: "POST",
+      body: JSON.stringify(data || {}),
+    }),
+
+  acceptDiff: (id: number, data: DiffActionRequest): Promise<DiffActionResponse> =>
+    fetchApi(`/api/v1/workshops/${id}/diffs/accept`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  rejectDiff: (id: number, data: DiffActionRequest): Promise<DiffActionResponse> =>
+    fetchApi(`/api/v1/workshops/${id}/diffs/reject`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  clearDiffs: (id: number): Promise<WorkshopResponse> =>
+    fetchApi(`/api/v1/workshops/${id}/diffs/clear`, {
+      method: "POST",
+    }),
+
+  updateSections: (id: number, data: UpdateSectionsRequest): Promise<WorkshopResponse> =>
+    fetchApi(`/api/v1/workshops/${id}/sections`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  updateStatus: (id: number, data: UpdateStatusRequest): Promise<WorkshopResponse> =>
+    fetchApi(`/api/v1/workshops/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  export: async (id: number, data: ExportRequest): Promise<Blob> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/workshops/${id}/export`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${tokenManager.getAccessToken()}`,
+        },
+        body: JSON.stringify(data),
+      }
+    );
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "Export failed" }));
+      throw new Error(error.detail || `HTTP ${response.status}`);
+    }
+    return response.blob();
+  },
 };

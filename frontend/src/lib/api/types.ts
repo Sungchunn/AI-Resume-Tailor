@@ -141,3 +141,198 @@ export interface TailoredResumeListItem {
   match_score: number | null;
   created_at: string;
 }
+
+// Block Types (Vault)
+export type BlockType =
+  | "achievement"
+  | "responsibility"
+  | "skill"
+  | "project"
+  | "certification"
+  | "education";
+
+export interface BlockCreate {
+  content: string;
+  block_type: BlockType;
+  tags?: string[];
+  source_company?: string | null;
+  source_role?: string | null;
+  source_date_start?: string | null;
+  source_date_end?: string | null;
+}
+
+export interface BlockUpdate {
+  content?: string;
+  block_type?: BlockType;
+  tags?: string[];
+  source_company?: string | null;
+  source_role?: string | null;
+  source_date_start?: string | null;
+  source_date_end?: string | null;
+  verified?: boolean;
+}
+
+export interface BlockResponse {
+  id: number;
+  user_id: number;
+  content: string;
+  block_type: BlockType;
+  tags: string[];
+  source_company?: string | null;
+  source_role?: string | null;
+  source_date_start?: string | null;
+  source_date_end?: string | null;
+  verified: boolean;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export interface BlockListResponse {
+  blocks: BlockResponse[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface BlockImportRequest {
+  raw_content: string;
+  source_company?: string | null;
+  source_role?: string | null;
+}
+
+export interface BlockImportResponse {
+  imported_count: number;
+  blocks: BlockResponse[];
+}
+
+export interface BlockEmbedRequest {
+  block_ids?: number[] | null;
+}
+
+export interface BlockEmbedResponse {
+  embedded_count: number;
+  block_ids: number[];
+}
+
+// Semantic Match Types
+export interface SemanticMatchResult {
+  block: BlockResponse;
+  score: number;
+  matched_keywords: string[];
+}
+
+export interface MatchRequest {
+  job_description: string;
+  limit?: number;
+  block_types?: BlockType[];
+  tags?: string[];
+}
+
+export interface MatchResponse {
+  matches: SemanticMatchResult[];
+  query_keywords: string[];
+  total_vault_blocks: number;
+}
+
+export interface GapAnalysisResponse {
+  match_score: number;
+  skill_matches: string[];
+  skill_gaps: string[];
+  keyword_coverage: number;
+  recommendations: string[];
+}
+
+// Workshop Types
+export type WorkshopStatus = "draft" | "in_progress" | "exported";
+
+export type DiffOperation = "add" | "remove" | "replace" | "move" | "copy" | "test";
+
+export type SuggestionImpact = "high" | "medium" | "low";
+
+export interface DiffSuggestion {
+  operation: DiffOperation;
+  path: string;
+  value: unknown;
+  original_value?: unknown;
+  reason: string;
+  impact: SuggestionImpact;
+  source_block_id?: number | null;
+}
+
+export interface WorkshopCreate {
+  job_title: string;
+  job_company?: string | null;
+  job_description?: string | null;
+}
+
+export interface WorkshopUpdate {
+  job_title?: string;
+  job_company?: string | null;
+  job_description?: string | null;
+}
+
+export interface WorkshopResponse {
+  id: number;
+  user_id: number;
+  job_title: string;
+  job_company?: string | null;
+  job_description?: string | null;
+  status: WorkshopStatus;
+  sections: Record<string, unknown>;
+  pulled_block_ids: number[];
+  pending_diffs: DiffSuggestion[];
+  created_at: string;
+  updated_at?: string | null;
+  exported_at?: string | null;
+}
+
+export interface WorkshopListResponse {
+  workshops: WorkshopResponse[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface PullBlocksRequest {
+  block_ids: number[];
+}
+
+export interface PullBlocksResponse {
+  workshop: WorkshopResponse;
+  newly_pulled: number[];
+  already_pulled: number[];
+}
+
+export interface SuggestRequest {
+  max_suggestions?: number;
+  focus_sections?: string[] | null;
+}
+
+export interface SuggestResponse {
+  workshop: WorkshopResponse;
+  new_suggestions_count: number;
+  gaps_identified: string[];
+}
+
+export interface DiffActionRequest {
+  diff_index: number;
+}
+
+export interface DiffActionResponse {
+  workshop: WorkshopResponse;
+  action: "accept" | "reject";
+  applied_diff?: DiffSuggestion | null;
+}
+
+export interface UpdateSectionsRequest {
+  sections: Record<string, unknown>;
+}
+
+export interface UpdateStatusRequest {
+  status: WorkshopStatus;
+}
+
+export interface ExportRequest {
+  format: "pdf" | "docx" | "txt" | "json";
+  template?: string;
+}
