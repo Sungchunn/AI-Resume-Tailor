@@ -112,22 +112,28 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 
 ### Tasks
 
-- [ ] Research and select AI provider (OpenAI, Anthropic, etc.)
-- [ ] Create AI service layer in backend
-- [ ] Implement resume parsing:
+- [x] Research and select AI provider (OpenAI, Anthropic, etc.)
+  - Selected Anthropic Claude as the AI provider
+- [x] Create AI service layer in backend
+  - Created `/backend/app/services/` with AI client, cache, parsers
+- [x] Implement resume parsing:
   - Extract sections (experience, skills, education)
   - Normalize data structure
-- [ ] Implement job description analysis:
+- [x] Implement job description analysis:
   - Extract key requirements
   - Identify keywords and skills
-- [ ] Build tailoring algorithm:
+- [x] Build tailoring algorithm:
   - Match resume content to job requirements
   - Generate tailored suggestions
   - Rewrite bullet points for relevance
-- [ ] Create tailoring endpoint:
+- [x] Create tailoring endpoint:
   - `POST /api/tailor` - Generate tailored resume
-- [ ] Add AI response caching with Redis
-- [ ] Build frontend UI for:
+  - `POST /api/tailor/quick-match` - Quick match analysis
+  - `GET /api/tailor/{id}` - Get tailored resume
+  - `GET /api/tailor` - List tailored resumes
+  - `DELETE /api/tailor/{id}` - Delete tailored resume
+- [x] Add AI response caching with Redis
+- [x] Build frontend UI for:
   - Viewing AI suggestions
   - Accepting/rejecting changes
   - Downloading tailored resume

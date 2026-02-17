@@ -5,6 +5,11 @@ import type {
   JobCreate,
   JobUpdate,
   JobResponse,
+  TailorRequest,
+  TailorResponse,
+  QuickMatchRequest,
+  QuickMatchResponse,
+  TailoredResumeListItem,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -84,6 +89,35 @@ export const jobApi = {
 
   delete: (id: number): Promise<void> =>
     fetchApi(`/api/jobs/${id}`, {
+      method: "DELETE",
+    }),
+};
+
+// Tailor API
+export const tailorApi = {
+  tailor: (data: TailorRequest): Promise<TailorResponse> =>
+    fetchApi("/api/tailor", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  quickMatch: (data: QuickMatchRequest): Promise<QuickMatchResponse> =>
+    fetchApi("/api/tailor/quick-match", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  get: (id: number): Promise<TailorResponse> =>
+    fetchApi(`/api/tailor/${id}`),
+
+  listByResume: (resumeId: number): Promise<TailoredResumeListItem[]> =>
+    fetchApi(`/api/tailor?resume_id=${resumeId}`),
+
+  listByJob: (jobId: number): Promise<TailoredResumeListItem[]> =>
+    fetchApi(`/api/tailor?job_id=${jobId}`),
+
+  delete: (id: number): Promise<void> =>
+    fetchApi(`/api/tailor/${id}`, {
       method: "DELETE",
     }),
 };

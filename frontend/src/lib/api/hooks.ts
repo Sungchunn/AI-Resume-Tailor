@@ -1,6 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { resumeApi, jobApi } from "./client";
-import type { ResumeCreate, ResumeUpdate, JobCreate, JobUpdate } from "./types";
+import { resumeApi, jobApi, tailorApi } from "./client";
+import type {
+  ResumeCreate,
+  ResumeUpdate,
+  JobCreate,
+  JobUpdate,
+  TailorRequest,
+  QuickMatchRequest,
+} from "./types";
 
 // Query Keys
 export const queryKeys = {
@@ -13,6 +20,13 @@ export const queryKeys = {
     all: ["jobs"] as const,
     list: () => [...queryKeys.jobs.all, "list"] as const,
     detail: (id: number) => [...queryKeys.jobs.all, "detail", id] as const,
+  },
+  tailored: {
+    all: ["tailored"] as const,
+    detail: (id: number) => [...queryKeys.tailored.all, "detail", id] as const,
+    byResume: (resumeId: number) =>
+      [...queryKeys.tailored.all, "resume", resumeId] as const,
+    byJob: (jobId: number) => [...queryKeys.tailored.all, "job", jobId] as const,
   },
 };
 
@@ -114,6 +128,64 @@ export function useDeleteJob() {
     mutationFn: (id: number) => jobApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
+    },
+  });
+}
+
+// Tailor Hooks
+export function useTailorResume() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: TailorRequest) => tailorApi.tailor(data),
+    onSuccess: (_, { resume_id, job_id }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.tailored.byResume(resume_id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.tailored.byJob(job_id),
+      });
+    },
+  });
+}
+
+export function useQuickMatch() {
+  return useMutation({
+    mutationFn: (data: QuickMatchRequest) => tailorApi.quickMatch(data),
+  });
+}
+
+export function useTailoredResume(id: number) {
+  return useQuery({
+    queryKey: queryKeys.tailored.detail(id),
+    queryFn: () => tailorApi.get(id),
+    enabled: !!id,
+  });
+}
+
+export function useTailoredResumesByResume(resumeId: number) {
+  return useQuery({
+    queryKey: queryKeys.tailored.byResume(resumeId),
+    queryFn: () => tailorApi.listByResume(resumeId),
+    enabled: !!resumeId,
+  });
+}
+
+export function useTailoredResumesByJob(jobId: number) {
+  return useQuery({
+    queryKey: queryKeys.tailored.byJob(jobId),
+    queryFn: () => tailorApi.listByJob(jobId),
+    enabled: !!jobId,
+  });
+}
+
+export function useDeleteTailoredResume() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => tailorApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tailored.all });
     },
   });
 }

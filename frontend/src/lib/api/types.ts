@@ -48,3 +48,65 @@ export interface JobResponse extends JobBase {
 export interface ApiError {
   detail: string;
 }
+
+// Tailor Types
+export interface TailorRequest {
+  resume_id: number;
+  job_id: number;
+}
+
+export interface QuickMatchRequest {
+  resume_id: number;
+  job_id: number;
+}
+
+export interface Suggestion {
+  section: string;
+  type: string;
+  original: string;
+  suggested: string;
+  reason: string;
+  impact: string;
+}
+
+export interface TailoredContent {
+  summary: string;
+  experience: Array<{
+    title: string;
+    company: string;
+    location: string;
+    start_date: string;
+    end_date: string;
+    bullets: string[];
+  }>;
+  skills: string[];
+  highlights: string[];
+}
+
+export interface TailorResponse {
+  id: number;
+  resume_id: number;
+  job_id: number;
+  tailored_content: TailoredContent;
+  suggestions: Suggestion[];
+  match_score: number;
+  skill_matches: string[];
+  skill_gaps: string[];
+  keyword_coverage: number;
+  created_at: string;
+}
+
+export interface QuickMatchResponse {
+  match_score: number;
+  keyword_coverage: number;
+  skill_matches: string[];
+  skill_gaps: string[];
+}
+
+export interface TailoredResumeListItem {
+  id: number;
+  resume_id: number;
+  job_id: number;
+  match_score: number | null;
+  created_at: string;
+}

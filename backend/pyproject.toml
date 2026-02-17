@@ -23,6 +23,8 @@ python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 # HTTP client (for AI services)
 httpx = "^0.26.0"
+# AI
+anthropic = "^0.42.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
