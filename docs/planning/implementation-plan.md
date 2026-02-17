@@ -34,7 +34,7 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 - [x] Initialize Next.js 15 frontend with Bun
 - [x] Create `.env.example` files for both frontend and backend
 - [x] Set up Poetry for backend dependency management
-- [ ] Set up the type-sync script (`/scripts/generate-client.sh`)
+- [x] Set up the type-sync script (`/scripts/generate-client.sh`)
 - [ ] Write initial `README.md`
 
 ### Deliverables
@@ -92,6 +92,8 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
   - Dashboard
   - Resume upload/editor page
   - Job description input page
+  - Resume detail/edit pages
+  - Job detail/edit pages
 - [x] Integrate generated API client from type-sync
 - [x] Add form handling (React Hook Form + Zod validation)
 - [x] Set up state management (TanStack Query)
