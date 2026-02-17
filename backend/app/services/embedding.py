@@ -36,6 +36,7 @@ import hashlib
 import google.generativeai as genai
 
 from app.core.config import get_settings
+from app.services.pii_stripper import get_pii_stripper
 
 
 class EmbeddingTaskType(str, Enum):
@@ -77,11 +78,19 @@ class EmbeddingService:
         query_embedding = await service.embed_query("Python backend experience")
     """
 
-    def __init__(self, api_key: str):
-        """Initialize the embedding service with Gemini API key."""
+    def __init__(self, api_key: str, strip_pii: bool = True):
+        """Initialize the embedding service with Gemini API key.
+
+        Args:
+            api_key: Gemini API key
+            strip_pii: Whether to strip PII before embedding (default: True)
+                       SECURITY: Should always be True in production.
+        """
         genai.configure(api_key=api_key)
         self.model = EMBEDDING_MODEL
         self.dimensions = EMBEDDING_DIMENSIONS
+        self.strip_pii = strip_pii
+        self._pii_stripper = get_pii_stripper() if strip_pii else None
 
     async def embed_document(self, content: str, title: Optional[str] = None) -> List[float]:
         """
@@ -197,6 +206,10 @@ class EmbeddingService:
         """
         Internal method to generate embeddings with specified task type.
 
+        SECURITY: PII is automatically stripped before embedding when
+        strip_pii=True (default). This prevents PII from being stored
+        in vector databases.
+
         Args:
             text: Text to embed
             task_type: Gemini task type for optimal retrieval
@@ -205,6 +218,12 @@ class EmbeddingService:
         Returns:
             768-dimensional embedding vector
         """
+        # Strip PII before embedding (security measure)
+        if self._pii_stripper:
+            text = self._pii_stripper.strip(text)
+            if title:
+                title = self._pii_stripper.strip(title)
+
         # Prepare embedding request
         embed_content_args = {
             "model": f"models/{self.model}",
