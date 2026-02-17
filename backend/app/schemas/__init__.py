@@ -1,4 +1,4 @@
-from app.schemas.user import UserCreate, UserResponse, UserBase
+from app.schemas.user import UserCreate, UserResponse, UserBase, UserLogin, Token, TokenRefresh
 from app.schemas.resume import ResumeCreate, ResumeUpdate, ResumeResponse, ResumeBase
 from app.schemas.job import JobCreate, JobUpdate, JobResponse, JobBase
 from app.schemas.tailor import (
@@ -12,7 +12,10 @@ from app.schemas.tailor import (
 __all__ = [
     "UserBase",
     "UserCreate",
+    "UserLogin",
     "UserResponse",
+    "Token",
+    "TokenRefresh",
     "ResumeBase",
     "ResumeCreate",
     "ResumeUpdate",

@@ -1,18 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useResumes, useJobs } from "@/lib/api";
+import { useResumes, useJobs, useTailoredResumes } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { StatCardSkeleton, TableRowSkeleton } from "@/components/ui";
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const { data: resumes, isLoading: resumesLoading } = useResumes();
   const { data: jobs, isLoading: jobsLoading } = useJobs();
+  const { data: tailored, isLoading: tailoredLoading } = useTailoredResumes();
+  const isStatsLoading = resumesLoading || jobsLoading || tailoredLoading;
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="mt-1 text-gray-600">
-          Welcome back! Here&apos;s an overview of your resume tailoring activity.
+          Welcome back{user?.full_name ? `, ${user.full_name}` : ""}! Here&apos;s an overview of your resume tailoring activity.
         </p>
       </div>
 
@@ -74,7 +79,9 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Tailored Resumes</p>
-              <p className="mt-1 text-3xl font-semibold text-gray-900">0</p>
+              <p className="mt-1 text-3xl font-semibold text-gray-900">
+                {tailoredLoading ? "..." : tailored?.length ?? 0}
+              </p>
             </div>
             <div className="rounded-full bg-purple-100 p-3">
               <svg

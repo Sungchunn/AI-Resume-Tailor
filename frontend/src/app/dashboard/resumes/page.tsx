@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useResumes, useDeleteResume } from "@/lib/api";
+import { CardGridSkeleton, ErrorMessage } from "@/components/ui";
 
 export default function ResumesPage() {
-  const { data: resumes, isLoading, error } = useResumes();
+  const { data: resumes, isLoading, error, refetch } = useResumes();
   const deleteResume = useDeleteResume();
 
   const handleDelete = async (id: number) => {
@@ -28,13 +29,12 @@ export default function ResumesPage() {
       </div>
 
       {isLoading ? (
-        <div className="card">
-          <p className="text-gray-600">Loading resumes...</p>
-        </div>
+        <CardGridSkeleton count={3} />
       ) : error ? (
-        <div className="card bg-red-50 border-red-200">
-          <p className="text-red-600">Error loading resumes. Please try again.</p>
-        </div>
+        <ErrorMessage
+          message="Failed to load resumes. Please try again."
+          onRetry={() => refetch()}
+        />
       ) : resumes && resumes.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {resumes.map((resume) => (

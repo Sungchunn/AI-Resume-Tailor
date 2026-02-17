@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useJobs, useDeleteJob } from "@/lib/api";
+import { CardGridSkeleton, ErrorMessage } from "@/components/ui";
 
 export default function JobsPage() {
-  const { data: jobs, isLoading, error } = useJobs();
+  const { data: jobs, isLoading, error, refetch } = useJobs();
   const deleteJob = useDeleteJob();
 
   const handleDelete = async (id: number) => {
@@ -28,13 +29,12 @@ export default function JobsPage() {
       </div>
 
       {isLoading ? (
-        <div className="card">
-          <p className="text-gray-600">Loading jobs...</p>
-        </div>
+        <CardGridSkeleton count={3} />
       ) : error ? (
-        <div className="card bg-red-50 border-red-200">
-          <p className="text-red-600">Error loading jobs. Please try again.</p>
-        </div>
+        <ErrorMessage
+          message="Failed to load jobs. Please try again."
+          onRetry={() => refetch()}
+        />
       ) : jobs && jobs.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {jobs.map((job) => (

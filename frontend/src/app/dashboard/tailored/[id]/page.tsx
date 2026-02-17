@@ -1,13 +1,17 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTailoredResume, useDeleteTailoredResume } from "@/lib/api";
+import { useTailoredResume, useDeleteTailoredResume, tokenManager } from "@/lib/api";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
+
+type ExportFormat = "pdf" | "docx" | "txt";
 
 export default function TailoredResumePage({ params }: PageProps) {
   const { id } = use(params);
@@ -18,6 +22,20 @@ export default function TailoredResumePage({ params }: PageProps) {
   const [activeTab, setActiveTab] = useState<"content" | "suggestions">(
     "content"
   );
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this tailored resume?")) {
@@ -26,19 +44,41 @@ export default function TailoredResumePage({ params }: PageProps) {
     }
   };
 
-  const handleDownload = () => {
+  const handleExport = async (format: ExportFormat) => {
     if (!tailored) return;
+    setIsExporting(true);
+    setShowExportMenu(false);
 
-    const content = generatePlainText(tailored.tailored_content);
-    const blob = new Blob([content], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `tailored-resume-${tailored.id}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      const token = tokenManager.getAccessToken();
+      const response = await fetch(
+        `${API_BASE_URL}/api/export/${tailored.id}?format=${format}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Export failed");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `tailored-resume-${tailored.id}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed:", err);
+      alert("Failed to export resume. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   if (isLoading) {
@@ -102,9 +142,80 @@ export default function TailoredResumePage({ params }: PageProps) {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleDownload} className="btn-secondary">
-              Download
-            </button>
+            <div className="relative" ref={exportMenuRef}>
+              <button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                disabled={isExporting}
+                className="btn-secondary inline-flex items-center gap-2"
+              >
+                {isExporting ? (
+                  <>
+                    <svg
+                      className="animate-spin h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    Download
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                      />
+                    </svg>
+                  </>
+                )}
+              </button>
+              {showExportMenu && (
+                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                  <div className="py-1">
+                    <button
+                      onClick={() => handleExport("pdf")}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Download as PDF
+                    </button>
+                    <button
+                      onClick={() => handleExport("docx")}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Download as Word (.docx)
+                    </button>
+                    <button
+                      onClick={() => handleExport("txt")}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Download as Plain Text
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
             <button
               onClick={handleDelete}
               disabled={deleteTailored.isPending}

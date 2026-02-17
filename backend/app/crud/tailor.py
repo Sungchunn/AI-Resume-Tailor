@@ -1,8 +1,10 @@
 import json
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.models.tailored_resume import TailoredResume
+from app.models.resume import Resume
 
 
 class TailoredResumeCRUD:
@@ -69,6 +71,20 @@ class TailoredResumeCRUD:
         result = await db.execute(
             select(TailoredResume)
             .where(TailoredResume.job_id == job_id)
+            .offset(skip)
+            .limit(limit)
+            .order_by(TailoredResume.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def get_by_user(
+        self, db: AsyncSession, user_id: int, skip: int = 0, limit: int = 100
+    ) -> list[TailoredResume]:
+        """Get all tailored resumes for a specific user (via resume ownership)."""
+        result = await db.execute(
+            select(TailoredResume)
+            .join(Resume, TailoredResume.resume_id == Resume.id)
+            .where(Resume.owner_id == user_id)
             .offset(skip)
             .limit(limit)
             .order_by(TailoredResume.created_at.desc())

@@ -152,19 +152,19 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 
 ### Tasks
 
-- [ ] Add authentication:
+- [x] Add authentication:
   - JWT-based auth
   - Sign up / Login pages
   - Protected routes
-- [ ] Implement user dashboard:
+- [x] Implement user dashboard:
   - Saved resumes
   - Job history
   - Tailored resume history
-- [ ] Add export options:
+- [x] Add export options:
   - PDF download
   - Word document
   - Plain text
-- [ ] Error handling and loading states
+- [x] Error handling and loading states
 - [ ] Responsive design polish
 - [ ] Set up deployment:
   - Frontend to Vercel

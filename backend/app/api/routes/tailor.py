@@ -214,9 +214,9 @@ async def list_tailored_resumes(
             db, job_id=job_id, skip=skip, limit=limit
         )
     else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Must specify either resume_id or job_id",
+        # List all tailored resumes for the current user
+        tailored_list = await tailored_resume_crud.get_by_user(
+            db, user_id=current_user_id, skip=skip, limit=limit
         )
 
     return [TailoredResumeListResponse.model_validate(t) for t in tailored_list]

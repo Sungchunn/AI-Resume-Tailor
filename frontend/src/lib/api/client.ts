@@ -10,23 +10,105 @@ import type {
   QuickMatchRequest,
   QuickMatchResponse,
   TailoredResumeListItem,
+  UserCreate,
+  UserLogin,
+  UserResponse,
+  Token,
+  TokenRefresh,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// Token storage keys
+const ACCESS_TOKEN_KEY = "access_token";
+const REFRESH_TOKEN_KEY = "refresh_token";
+
+// Token management
+export const tokenManager = {
+  getAccessToken: (): string | null => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(ACCESS_TOKEN_KEY);
+  },
+
+  getRefreshToken: (): string | null => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(REFRESH_TOKEN_KEY);
+  },
+
+  setTokens: (accessToken: string, refreshToken: string): void => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  },
+
+  clearTokens: (): void => {
+    if (typeof window === "undefined") return;
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+  },
+
+  isAuthenticated: (): boolean => {
+    return !!tokenManager.getAccessToken();
+  },
+};
+
 async function fetchApi<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  includeAuth = true
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
+  };
+
+  // Add auth header if token exists and auth is required
+  if (includeAuth) {
+    const token = tokenManager.getAccessToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+
   const response = await fetch(url, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
+    headers,
   });
+
+  // Handle 401 - try to refresh token
+  if (response.status === 401 && includeAuth) {
+    const refreshToken = tokenManager.getRefreshToken();
+    if (refreshToken) {
+      try {
+        const refreshed = await authApi.refresh({ refresh_token: refreshToken });
+        tokenManager.setTokens(refreshed.access_token, refreshed.refresh_token);
+
+        // Retry the original request with new token
+        headers["Authorization"] = `Bearer ${refreshed.access_token}`;
+        const retryResponse = await fetch(url, {
+          ...options,
+          headers,
+        });
+
+        if (!retryResponse.ok) {
+          const error = await retryResponse.json().catch(() => ({ detail: "Unknown error" }));
+          throw new Error(error.detail || `HTTP ${retryResponse.status}`);
+        }
+
+        if (retryResponse.status === 204) {
+          return undefined as T;
+        }
+
+        return retryResponse.json();
+      } catch {
+        // Refresh failed, clear tokens
+        tokenManager.clearTokens();
+        throw new Error("Session expired. Please log in again.");
+      }
+    }
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: "Unknown error" }));
@@ -40,6 +122,37 @@ async function fetchApi<T>(
 
   return response.json();
 }
+
+// Auth API
+export const authApi = {
+  register: (data: UserCreate): Promise<UserResponse> =>
+    fetchApi("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }, false),
+
+  login: async (data: UserLogin): Promise<Token> => {
+    const token = await fetchApi<Token>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }, false);
+    tokenManager.setTokens(token.access_token, token.refresh_token);
+    return token;
+  },
+
+  refresh: (data: TokenRefresh): Promise<Token> =>
+    fetchApi("/api/auth/refresh", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }, false),
+
+  me: (): Promise<UserResponse> =>
+    fetchApi("/api/auth/me"),
+
+  logout: (): void => {
+    tokenManager.clearTokens();
+  },
+};
 
 // Resume API
 export const resumeApi = {
@@ -109,6 +222,9 @@ export const tailorApi = {
 
   get: (id: number): Promise<TailorResponse> =>
     fetchApi(`/api/tailor/${id}`),
+
+  list: (): Promise<TailoredResumeListItem[]> =>
+    fetchApi("/api/tailor"),
 
   listByResume: (resumeId: number): Promise<TailoredResumeListItem[]> =>
     fetchApi(`/api/tailor?resume_id=${resumeId}`),

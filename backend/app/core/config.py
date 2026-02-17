@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     jwt_secret_key: str = "your-super-secret-key-change-in-production"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 7
 
     # AI Provider (Gemini)
     gemini_api_key: str = ""

@@ -23,6 +23,7 @@ export const queryKeys = {
   },
   tailored: {
     all: ["tailored"] as const,
+    list: () => [...queryKeys.tailored.all, "list"] as const,
     detail: (id: number) => [...queryKeys.tailored.all, "detail", id] as const,
     byResume: (resumeId: number) =>
       [...queryKeys.tailored.all, "resume", resumeId] as const,
@@ -176,6 +177,13 @@ export function useTailoredResumesByJob(jobId: number) {
     queryKey: queryKeys.tailored.byJob(jobId),
     queryFn: () => tailorApi.listByJob(jobId),
     enabled: !!jobId,
+  });
+}
+
+export function useTailoredResumes() {
+  return useQuery({
+    queryKey: queryKeys.tailored.list(),
+    queryFn: () => tailorApi.list(),
   });
 }
 

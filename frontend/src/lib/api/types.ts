@@ -1,6 +1,37 @@
 // API Types - matches backend Pydantic schemas
 // These will be replaced by auto-generated types from OpenAPI spec
 
+// Auth Types
+export interface UserCreate {
+  email: string;
+  password: string;
+  full_name?: string;
+}
+
+export interface UserLogin {
+  email: string;
+  password: string;
+}
+
+export interface UserResponse {
+  id: number;
+  email: string;
+  full_name?: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface Token {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+}
+
+export interface TokenRefresh {
+  refresh_token: string;
+}
+
+// Resume Types
 export interface ResumeBase {
   title: string;
   raw_content: string;
