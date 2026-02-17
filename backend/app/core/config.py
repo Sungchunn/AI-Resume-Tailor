@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     # Audit Logging
     audit_log_enabled: bool = True
 
+    # Document Upload
+    max_upload_size_mb: int = 10
+
     class Config:
         env_file = ".env"
         case_sensitive = False
