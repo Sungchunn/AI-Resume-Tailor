@@ -19,3 +19,5 @@ class User(Base):
     # Relationships
     resumes = relationship("Resume", back_populates="owner", cascade="all, delete-orphan")
     job_descriptions = relationship("JobDescription", back_populates="owner", cascade="all, delete-orphan")
+    experience_blocks = relationship("ExperienceBlock", back_populates="owner", cascade="all, delete-orphan")
+    workshops = relationship("Workshop", back_populates="owner", cascade="all, delete-orphan")
