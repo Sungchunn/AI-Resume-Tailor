@@ -20,7 +20,7 @@
 ### Current State vs. Target Architecture
 
 | Feature | Current Implementation | Master Plan Target | Gap |
-|---------|----------------------|-------------------|-----|
+| ------- | ---------------------- | ------------------ | --- |
 | **Data Model** | Monolithic `parsed_content` JSON | Atomic ExperienceBlocks with embeddings | Model exists, not integrated |
 | **AI Approach** | Full rewrite/generation | Diff-based, line-by-line suggestions | Not implemented |
 | **Retrieval** | None (AI sees full resume) | RAG with pgvector semantic search | Service exists, no routes |

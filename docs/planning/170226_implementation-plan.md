@@ -9,7 +9,7 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 ## Tech Stack
 
 | Layer | Technology |
-|-------|------------|
+| ----- | ---------- |
 | Frontend | Next.js 15 + Bun |
 | Backend | FastAPI + Python 3.11 |
 | Backend Package Manager | **Poetry** |
@@ -22,7 +22,7 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 
 **Goal:** Establish the monorepo structure, Docker environment, and basic configuration.
 
-### Tasks
+### Phase 0 Tasks
 
 - [x] Create folder structure (`/frontend`, `/backend`, `/scripts`, `/docs`)
 - [x] Set up `.gitignore` with comprehensive patterns
@@ -37,7 +37,7 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 - [x] Set up the type-sync script (`/scripts/generate-client.sh`)
 - [ ] Write initial `README.md`
 
-### Deliverables
+### Phase 0 Deliverables
 
 - Working `docker-compose up` that starts all services
 - Frontend accessible at `localhost:3000`
@@ -50,7 +50,7 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 
 **Goal:** Build the essential API endpoints for resume and job management.
 
-### Tasks
+### Phase 1 Tasks
 
 - [x] Set up database models with SQLAlchemy/SQLModel
   - User model
@@ -67,7 +67,7 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 - [x] Set up basic error handling
 - [x] Add API tests with pytest
 
-### Deliverables
+### Phase 1 Deliverables
 
 - Functional REST API for resume/job CRUD
 - Database migrations working
@@ -79,7 +79,7 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 
 **Goal:** Build the core UI components and pages.
 
-### Tasks
+### Phase 2 Tasks
 
 - [x] Set up project structure (app router)
 - [x] Configure Tailwind CSS v4 with @tailwindcss/postcss
@@ -98,7 +98,7 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 - [x] Add form handling (React Hook Form + Zod validation)
 - [x] Set up state management (TanStack Query)
 
-### Deliverables
+### Phase 2 Deliverables
 
 - Navigable UI with all core pages
 - Forms connected to backend API
@@ -110,7 +110,7 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 
 **Goal:** Implement the AI-powered resume tailoring feature.
 
-### Tasks
+### Phase 3 Tasks
 
 - [x] Research and select AI provider (OpenAI, Anthropic, etc.)
   - Selected Google Gemini as the AI provider
@@ -138,7 +138,7 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
   - Accepting/rejecting changes
   - Downloading tailored resume
 
-### Deliverables
+### Phase 3 Deliverables
 
 - Working AI tailoring pipeline
 - User can upload resume, paste job, get tailored output
@@ -150,7 +150,7 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 
 **Goal:** Production-ready application with authentication and deployment.
 
-### Tasks
+### Phase 4 Tasks
 
 - [x] Add authentication:
   - JWT-based auth
@@ -173,7 +173,7 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
 - [ ] Environment variable management for production
 - [ ] Basic analytics/monitoring
 
-### Deliverables
+### Phase 4 Deliverables
 
 - Deployed, production-ready application
 - Users can sign up, save work, and export resumes
