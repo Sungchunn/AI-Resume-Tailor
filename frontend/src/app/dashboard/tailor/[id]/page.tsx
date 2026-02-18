@@ -19,9 +19,7 @@ export default function TailoredResumePage({ params }: PageProps) {
   const tailoredId = parseInt(id, 10);
   const { data: tailored, isLoading, error } = useTailoredResume(tailoredId);
   const deleteTailored = useDeleteTailoredResume();
-  const [activeTab, setActiveTab] = useState<"content" | "suggestions">(
-    "content"
-  );
+  const [activeTab, setActiveTab] = useState<"content" | "suggestions">("content");
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
@@ -40,7 +38,7 @@ export default function TailoredResumePage({ params }: PageProps) {
   const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this tailored resume?")) {
       await deleteTailored.mutateAsync(tailoredId);
-      router.push("/dashboard/tailored");
+      router.push("/dashboard/tailor");
     }
   };
 
@@ -98,8 +96,8 @@ export default function TailoredResumePage({ params }: PageProps) {
       <div className="max-w-4xl">
         <div className="card text-center py-12">
           <p className="text-red-600 mb-4">Failed to load tailored resume</p>
-          <Link href="/dashboard/tailored" className="btn-primary">
-            Back to Tailored Resumes
+          <Link href="/dashboard/tailor" className="btn-primary">
+            Back to Tailor
           </Link>
         </div>
       </div>
@@ -110,7 +108,7 @@ export default function TailoredResumePage({ params }: PageProps) {
     <div className="max-w-4xl">
       <div className="mb-6">
         <Link
-          href="/dashboard/tailored"
+          href="/dashboard/tailor"
           className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
         >
           <svg
@@ -126,7 +124,7 @@ export default function TailoredResumePage({ params }: PageProps) {
               d="M15.75 19.5L8.25 12l7.5-7.5"
             />
           </svg>
-          Back to Tailored Resumes
+          Back to Tailor
         </Link>
       </div>
 
@@ -134,9 +132,7 @@ export default function TailoredResumePage({ params }: PageProps) {
       <div className="card mb-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Tailored Resume
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900">Tailored Resume</h1>
             <p className="mt-1 text-sm text-gray-500">
               Created {new Date(tailored.created_at).toLocaleString()}
             </p>
@@ -152,7 +148,6 @@ export default function TailoredResumePage({ params }: PageProps) {
                   <>
                     <svg
                       className="animate-spin h-4 w-4"
-                      xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
                     >
@@ -265,14 +260,10 @@ export default function TailoredResumePage({ params }: PageProps) {
 
       {/* Skills Analysis */}
       <div className="card mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Skills Analysis
-        </h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Skills Analysis</h2>
         <div className="grid md:grid-cols-2 gap-6">
           <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-2">
-              Matching Skills
-            </h3>
+            <h3 className="text-sm font-medium text-gray-700 mb-2">Matching Skills</h3>
             <div className="flex flex-wrap gap-2">
               {tailored.skill_matches.length > 0 ? (
                 tailored.skill_matches.map((skill) => (
@@ -289,9 +280,7 @@ export default function TailoredResumePage({ params }: PageProps) {
             </div>
           </div>
           <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-2">
-              Skills to Consider Adding
-            </h3>
+            <h3 className="text-sm font-medium text-gray-700 mb-2">Skills to Consider Adding</h3>
             <div className="flex flex-wrap gap-2">
               {tailored.skill_gaps.length > 0 ? (
                 tailored.skill_gaps.map((skill) => (
@@ -341,9 +330,7 @@ export default function TailoredResumePage({ params }: PageProps) {
         <div className="card">
           {/* Summary */}
           <section className="mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">
-              Professional Summary
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">Professional Summary</h2>
             <p className="text-gray-700 whitespace-pre-wrap">
               {tailored.tailored_content.summary}
             </p>
@@ -352,9 +339,7 @@ export default function TailoredResumePage({ params }: PageProps) {
           {/* Highlights */}
           {tailored.tailored_content.highlights.length > 0 && (
             <section className="mb-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">
-                Key Highlights
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-3">Key Highlights</h2>
               <ul className="list-disc list-inside space-y-1 text-gray-700">
                 {tailored.tailored_content.highlights.map((highlight, i) => (
                   <li key={i}>{highlight}</li>
@@ -365,9 +350,7 @@ export default function TailoredResumePage({ params }: PageProps) {
 
           {/* Experience */}
           <section className="mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">
-              Experience
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">Experience</h2>
             <div className="space-y-6">
               {tailored.tailored_content.experience.map((exp, i) => (
                 <div key={i} className="border-l-2 border-gray-200 pl-4">
@@ -438,9 +421,7 @@ export default function TailoredResumePage({ params }: PageProps) {
 
                 {suggestion.original && (
                   <div className="mb-3">
-                    <div className="text-xs font-medium text-gray-500 mb-1">
-                      Original
-                    </div>
+                    <div className="text-xs font-medium text-gray-500 mb-1">Original</div>
                     <p className="text-sm text-gray-600 bg-red-50 p-2 rounded">
                       {suggestion.original}
                     </p>
@@ -448,18 +429,14 @@ export default function TailoredResumePage({ params }: PageProps) {
                 )}
 
                 <div className="mb-3">
-                  <div className="text-xs font-medium text-gray-500 mb-1">
-                    Suggested
-                  </div>
+                  <div className="text-xs font-medium text-gray-500 mb-1">Suggested</div>
                   <p className="text-sm text-gray-900 bg-green-50 p-2 rounded">
                     {suggestion.suggested}
                   </p>
                 </div>
 
                 <div>
-                  <div className="text-xs font-medium text-gray-500 mb-1">
-                    Reason
-                  </div>
+                  <div className="text-xs font-medium text-gray-500 mb-1">Reason</div>
                   <p className="text-sm text-gray-600">{suggestion.reason}</p>
                 </div>
               </div>
@@ -467,55 +444,13 @@ export default function TailoredResumePage({ params }: PageProps) {
           )}
         </div>
       )}
+
+      {/* Action to create another */}
+      <div className="mt-8 text-center">
+        <Link href="/dashboard/tailor" className="btn-secondary">
+          Tailor Another Resume
+        </Link>
+      </div>
     </div>
   );
-}
-
-function generatePlainText(
-  content: {
-    summary: string;
-    experience: Array<{
-      title: string;
-      company: string;
-      location: string;
-      start_date: string;
-      end_date: string;
-      bullets: string[];
-    }>;
-    skills: string[];
-    highlights: string[];
-  }
-): string {
-  let text = "";
-
-  text += "PROFESSIONAL SUMMARY\n";
-  text += "=".repeat(50) + "\n";
-  text += content.summary + "\n\n";
-
-  if (content.highlights.length > 0) {
-    text += "KEY HIGHLIGHTS\n";
-    text += "=".repeat(50) + "\n";
-    content.highlights.forEach((h) => {
-      text += `- ${h}\n`;
-    });
-    text += "\n";
-  }
-
-  text += "EXPERIENCE\n";
-  text += "=".repeat(50) + "\n";
-  content.experience.forEach((exp) => {
-    text += `${exp.title}\n`;
-    text += `${exp.company} | ${exp.location}\n`;
-    text += `${exp.start_date} - ${exp.end_date}\n`;
-    exp.bullets.forEach((b) => {
-      text += `- ${b}\n`;
-    });
-    text += "\n";
-  });
-
-  text += "SKILLS\n";
-  text += "=".repeat(50) + "\n";
-  text += content.skills.join(", ") + "\n";
-
-  return text;
 }

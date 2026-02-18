@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useResumes, useJobs, useTailoredResumes } from "@/lib/api";
+import { useResumes, useJobs, useTailoredResumes, useBlocks } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { StatCardSkeleton, TableRowSkeleton } from "@/components/ui";
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { data: resumes, isLoading: resumesLoading } = useResumes();
   const { data: jobs, isLoading: jobsLoading } = useJobs();
   const { data: tailored, isLoading: tailoredLoading } = useTailoredResumes();
-  const isStatsLoading = resumesLoading || jobsLoading || tailoredLoading;
+  const { data: blocksData, isLoading: blocksLoading } = useBlocks({});
+
+  const hasResumes = resumes && resumes.length > 0;
+  const hasJobs = jobs && jobs.length > 0;
+  const canTailor = hasResumes && hasJobs;
 
   return (
     <div className="space-y-8">
@@ -21,12 +24,45 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {/* Primary CTA - Start Tailoring */}
+      <div className="card bg-gradient-to-r from-primary-600 to-primary-700 text-white">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-semibold">Ready to Tailor Your Resume?</h2>
+            <p className="mt-1 text-primary-100">
+              {canTailor
+                ? "Select a resume and job description to generate a tailored version optimized for the position."
+                : "Add a resume and job description to get started with AI-powered tailoring."}
+            </p>
+          </div>
+          <Link
+            href="/dashboard/tailor"
+            className="inline-flex items-center justify-center px-6 py-3 bg-white text-primary-700 font-semibold rounded-lg hover:bg-primary-50 transition-colors shrink-0"
+          >
+            <svg
+              className="mr-2 h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+              />
+            </svg>
+            Start Tailoring
+          </Link>
+        </div>
+      </div>
+
       {/* Stats Cards */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="card">
+      <div className="grid gap-6 md:grid-cols-4">
+        <Link href="/dashboard/library" className="card hover:border-primary-300 transition-colors">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">My Resumes</p>
+              <p className="text-sm font-medium text-gray-600">Resumes</p>
               <p className="mt-1 text-3xl font-semibold text-gray-900">
                 {resumesLoading ? "..." : resumes?.length ?? 0}
               </p>
@@ -47,12 +83,12 @@ export default function DashboardPage() {
               </svg>
             </div>
           </div>
-        </div>
+        </Link>
 
-        <div className="card">
+        <Link href="/dashboard/library" className="card hover:border-primary-300 transition-colors">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Job Descriptions</p>
+              <p className="text-sm font-medium text-gray-600">Jobs</p>
               <p className="mt-1 text-3xl font-semibold text-gray-900">
                 {jobsLoading ? "..." : jobs?.length ?? 0}
               </p>
@@ -73,12 +109,38 @@ export default function DashboardPage() {
               </svg>
             </div>
           </div>
-        </div>
+        </Link>
 
-        <div className="card">
+        <Link href="/dashboard/library" className="card hover:border-primary-300 transition-colors">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Tailored Resumes</p>
+              <p className="text-sm font-medium text-gray-600">Vault Blocks</p>
+              <p className="mt-1 text-3xl font-semibold text-gray-900">
+                {blocksLoading ? "..." : blocksData?.total ?? 0}
+              </p>
+            </div>
+            <div className="rounded-full bg-orange-100 p-3">
+              <svg
+                className="h-6 w-6 text-orange-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
+                />
+              </svg>
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/tailor" className="card hover:border-primary-300 transition-colors">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Tailored</p>
               <p className="mt-1 text-3xl font-semibold text-gray-900">
                 {tailoredLoading ? "..." : tailored?.length ?? 0}
               </p>
@@ -99,15 +161,15 @@ export default function DashboardPage() {
               </svg>
             </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Quick Actions */}
       <div className="card">
         <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <Link
-            href="/dashboard/resumes/new"
+            href="/dashboard/library/resumes/new"
             className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition-colors"
           >
             <div className="rounded-full bg-primary-100 p-2">
@@ -132,7 +194,7 @@ export default function DashboardPage() {
           </Link>
 
           <Link
-            href="/dashboard/jobs/new"
+            href="/dashboard/library/jobs/new"
             className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition-colors"
           >
             <div className="rounded-full bg-green-100 p-2">
@@ -157,7 +219,7 @@ export default function DashboardPage() {
           </Link>
 
           <Link
-            href="/dashboard/tailored"
+            href="/dashboard/tailor"
             className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition-colors"
           >
             <div className="rounded-full bg-purple-100 p-2">
@@ -183,50 +245,58 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Tailored Resumes */}
       <div className="card">
-        <h2 className="text-lg font-semibold text-gray-900">Recent Resumes</h2>
-        {resumesLoading ? (
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Recent Tailored Resumes</h2>
+          {tailored && tailored.length > 0 && (
+            <Link href="/dashboard/tailor" className="text-sm text-primary-600 hover:text-primary-700">
+              View all
+            </Link>
+          )}
+        </div>
+        {tailoredLoading ? (
           <p className="mt-4 text-gray-600">Loading...</p>
-        ) : resumes && resumes.length > 0 ? (
-          <ul className="mt-4 divide-y divide-gray-200">
-            {resumes.slice(0, 5).map((resume) => (
-              <li key={resume.id} className="py-3">
-                <Link
-                  href={`/dashboard/resumes/${resume.id}`}
-                  className="flex items-center justify-between hover:bg-gray-50 -mx-2 px-2 py-1 rounded"
-                >
-                  <div>
-                    <p className="font-medium text-gray-900">{resume.title}</p>
-                    <p className="text-sm text-gray-600">
-                      Created {new Date(resume.created_at).toLocaleDateString()}
-                    </p>
+        ) : tailored && tailored.length > 0 ? (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {tailored.slice(0, 6).map((item) => (
+              <Link
+                key={item.id}
+                href={`/dashboard/tailor/${item.id}`}
+                className="p-4 border rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    {new Date(item.created_at).toLocaleDateString()}
                   </div>
-                  <svg
-                    className="h-5 w-5 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                    />
-                  </svg>
-                </Link>
-              </li>
+                  {item.match_score !== null && (
+                    <div
+                      className={`text-xl font-bold ${
+                        item.match_score >= 70
+                          ? "text-green-600"
+                          : item.match_score >= 40
+                          ? "text-yellow-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {Math.round(item.match_score)}%
+                    </div>
+                  )}
+                </div>
+                <div className="mt-2 text-sm text-gray-500">
+                  Tailored Resume #{item.id}
+                </div>
+              </Link>
             ))}
-          </ul>
+          </div>
         ) : (
           <div className="mt-4 text-center py-8">
-            <p className="text-gray-600">No resumes yet.</p>
+            <p className="text-gray-600">No tailored resumes yet.</p>
             <Link
-              href="/dashboard/resumes/new"
+              href="/dashboard/tailor"
               className="mt-2 inline-flex items-center text-primary-600 hover:text-primary-700"
             >
-              Create your first resume
+              Create your first tailored resume
               <svg
                 className="ml-1 h-4 w-4"
                 fill="none"

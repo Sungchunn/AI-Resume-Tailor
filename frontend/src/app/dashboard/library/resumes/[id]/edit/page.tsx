@@ -47,7 +47,7 @@ export default function EditResumePage({ params }: PageProps) {
   const onSubmit = async (data: ResumeFormData) => {
     try {
       await updateResume.mutateAsync({ id: resumeId, data });
-      router.push(`/dashboard/resumes/${resumeId}`);
+      router.push(`/dashboard/library/resumes/${resumeId}`);
     } catch {
       // Error is handled by mutation
     }
@@ -68,7 +68,7 @@ export default function EditResumePage({ params }: PageProps) {
       <div className="max-w-3xl">
         <div className="mb-6">
           <Link
-            href="/dashboard/resumes"
+            href="/dashboard/library"
             className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
           >
             <svg
@@ -84,7 +84,7 @@ export default function EditResumePage({ params }: PageProps) {
                 d="M15.75 19.5L8.25 12l7.5-7.5"
               />
             </svg>
-            Back to Resumes
+            Back to Library
           </Link>
         </div>
         <div className="card bg-red-50 border-red-200">
@@ -98,7 +98,7 @@ export default function EditResumePage({ params }: PageProps) {
     <div className="max-w-3xl">
       <div className="mb-6">
         <Link
-          href={`/dashboard/resumes/${resumeId}`}
+          href={`/dashboard/library/resumes/${resumeId}`}
           className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
         >
           <svg
@@ -175,7 +175,7 @@ export default function EditResumePage({ params }: PageProps) {
                 ? "Saving..."
                 : "Save Changes"}
             </button>
-            <Link href={`/dashboard/resumes/${resumeId}`} className="btn-ghost">
+            <Link href={`/dashboard/library/resumes/${resumeId}`} className="btn-ghost">
               Cancel
             </Link>
           </div>

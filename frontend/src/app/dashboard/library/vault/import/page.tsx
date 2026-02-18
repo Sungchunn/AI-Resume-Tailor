@@ -56,13 +56,13 @@ export default function ImportWizardPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
         <Link
-          href="/dashboard/vault"
+          href="/dashboard/library"
           className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Back to Vault
+          Back to Library
         </Link>
         <h1 className="mt-2 text-2xl font-bold text-gray-900">Import from Resume</h1>
         <p className="mt-1 text-gray-600">
@@ -191,7 +191,7 @@ Example:
                 )}
               </button>
               <button
-                onClick={() => router.push("/dashboard/vault")}
+                onClick={() => router.push("/dashboard/library")}
                 className="btn-secondary"
               >
                 Cancel
@@ -300,8 +300,8 @@ Example:
               You can now use them to build tailored resumes.
             </p>
             <div className="mt-6 flex justify-center gap-3">
-              <Link href="/dashboard/vault" className="btn-primary">
-                View Vault
+              <Link href="/dashboard/library" className="btn-primary">
+                View Library
               </Link>
               <button
                 onClick={() => {

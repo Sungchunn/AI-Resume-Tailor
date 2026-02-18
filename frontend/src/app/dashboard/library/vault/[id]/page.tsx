@@ -32,7 +32,7 @@ export default function BlockPage({ params }: { params: Promise<{ id: string }> 
       { id: blockId, data },
       {
         onSuccess: () => {
-          router.push("/dashboard/vault");
+          router.push("/dashboard/library");
         },
       }
     );
@@ -42,7 +42,7 @@ export default function BlockPage({ params }: { params: Promise<{ id: string }> 
     if (confirm("Are you sure you want to delete this block?")) {
       deleteBlock.mutate(blockId, {
         onSuccess: () => {
-          router.push("/dashboard/vault");
+          router.push("/dashboard/library");
         },
       });
     }
@@ -76,13 +76,13 @@ export default function BlockPage({ params }: { params: Promise<{ id: string }> 
       <div className="flex items-center justify-between">
         <div>
           <Link
-            href="/dashboard/vault"
+            href="/dashboard/library"
             className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Vault
+            Back to Library
           </Link>
           <h1 className="mt-2 text-2xl font-bold text-gray-900">
             Edit {blockTypeLabels[block.block_type]}
@@ -144,7 +144,7 @@ export default function BlockPage({ params }: { params: Promise<{ id: string }> 
         <BlockEditor
           block={block}
           onSave={handleSave}
-          onCancel={() => router.push("/dashboard/vault")}
+          onCancel={() => router.push("/dashboard/library")}
           isSaving={updateBlock.isPending}
         />
       </div>

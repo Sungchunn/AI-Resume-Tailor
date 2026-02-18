@@ -19,7 +19,7 @@ export default function JobDetailPage({ params }: PageProps) {
   const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this job description?")) {
       await deleteJob.mutateAsync(jobId);
-      router.push("/dashboard/jobs");
+      router.push("/dashboard/library");
     }
   };
 
@@ -38,7 +38,7 @@ export default function JobDetailPage({ params }: PageProps) {
       <div className="max-w-4xl">
         <div className="mb-6">
           <Link
-            href="/dashboard/jobs"
+            href="/dashboard/library"
             className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
           >
             <svg
@@ -54,7 +54,7 @@ export default function JobDetailPage({ params }: PageProps) {
                 d="M15.75 19.5L8.25 12l7.5-7.5"
               />
             </svg>
-            Back to Jobs
+            Back to Library
           </Link>
         </div>
         <div className="card bg-red-50 border-red-200">
@@ -68,7 +68,7 @@ export default function JobDetailPage({ params }: PageProps) {
     <div className="max-w-4xl">
       <div className="mb-6">
         <Link
-          href="/dashboard/jobs"
+          href="/dashboard/library"
           className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
         >
           <svg
@@ -84,7 +84,7 @@ export default function JobDetailPage({ params }: PageProps) {
               d="M15.75 19.5L8.25 12l7.5-7.5"
             />
           </svg>
-          Back to Jobs
+          Back to Library
         </Link>
       </div>
 
@@ -101,7 +101,7 @@ export default function JobDetailPage({ params }: PageProps) {
           </div>
           <div className="flex items-center gap-2">
             <Link
-              href={`/dashboard/jobs/${jobId}/edit`}
+              href={`/dashboard/library/jobs/${jobId}/edit`}
               className="btn-primary"
             >
               Edit
@@ -167,8 +167,8 @@ export default function JobDetailPage({ params }: PageProps) {
 
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Tailor a Resume</h2>
-          <Link href="/dashboard/resumes" className="btn-secondary">
-            Select Resume to Tailor
+          <Link href="/dashboard/tailor" className="btn-secondary">
+            Start Tailoring
           </Link>
         </div>
         <p className="mt-2 text-sm text-gray-600">

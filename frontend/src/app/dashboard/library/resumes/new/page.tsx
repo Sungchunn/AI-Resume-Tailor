@@ -37,7 +37,7 @@ export default function NewResumePage() {
   const onSubmit = async (data: ResumeFormData) => {
     try {
       await createResume.mutateAsync(data);
-      router.push("/dashboard/resumes");
+      router.push("/dashboard/library");
     } catch {
       // Error is handled by mutation
     }
@@ -53,7 +53,7 @@ export default function NewResumePage() {
     <div className="max-w-3xl">
       <div className="mb-6">
         <Link
-          href="/dashboard/resumes"
+          href="/dashboard/library"
           className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
         >
           <svg
@@ -69,7 +69,7 @@ export default function NewResumePage() {
               d="M15.75 19.5L8.25 12l7.5-7.5"
             />
           </svg>
-          Back to Resumes
+          Back to Library
         </Link>
       </div>
 
@@ -220,7 +220,7 @@ export default function NewResumePage() {
                 ? "Creating..."
                 : "Create Resume"}
             </button>
-            <Link href="/dashboard/resumes" className="btn-ghost">
+            <Link href="/dashboard/library" className="btn-ghost">
               Cancel
             </Link>
           </div>

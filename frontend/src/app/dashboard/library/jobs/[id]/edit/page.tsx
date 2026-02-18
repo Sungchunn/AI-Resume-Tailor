@@ -56,7 +56,7 @@ export default function EditJobPage({ params }: PageProps) {
         url: data.url || null,
       };
       await updateJob.mutateAsync({ id: jobId, data: payload });
-      router.push(`/dashboard/jobs/${jobId}`);
+      router.push(`/dashboard/library/jobs/${jobId}`);
     } catch {
       // Error is handled by mutation
     }
@@ -77,7 +77,7 @@ export default function EditJobPage({ params }: PageProps) {
       <div className="max-w-3xl">
         <div className="mb-6">
           <Link
-            href="/dashboard/jobs"
+            href="/dashboard/library"
             className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
           >
             <svg
@@ -93,7 +93,7 @@ export default function EditJobPage({ params }: PageProps) {
                 d="M15.75 19.5L8.25 12l7.5-7.5"
               />
             </svg>
-            Back to Jobs
+            Back to Library
           </Link>
         </div>
         <div className="card bg-red-50 border-red-200">
@@ -107,7 +107,7 @@ export default function EditJobPage({ params }: PageProps) {
     <div className="max-w-3xl">
       <div className="mb-6">
         <Link
-          href={`/dashboard/jobs/${jobId}`}
+          href={`/dashboard/library/jobs/${jobId}`}
           className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
         >
           <svg
@@ -222,7 +222,7 @@ export default function EditJobPage({ params }: PageProps) {
                 ? "Saving..."
                 : "Save Changes"}
             </button>
-            <Link href={`/dashboard/jobs/${jobId}`} className="btn-ghost">
+            <Link href={`/dashboard/library/jobs/${jobId}`} className="btn-ghost">
               Cancel
             </Link>
           </div>
