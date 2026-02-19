@@ -101,5 +101,32 @@ class TailoredResumeCRUD:
             await db.delete(db_obj)
             await db.commit()
 
+    async def update(
+        self,
+        db: AsyncSession,
+        id: int,
+        tailored_content: dict | None = None,
+        style_settings: dict | None = None,
+        section_order: list[str] | None = None,
+    ) -> TailoredResume | None:
+        """Update a tailored resume's content, style, or section order."""
+        result = await db.execute(
+            select(TailoredResume).where(TailoredResume.id == id)
+        )
+        db_obj = result.scalar_one_or_none()
+        if not db_obj:
+            return None
+
+        if tailored_content is not None:
+            db_obj.tailored_content = json.dumps(tailored_content)
+        if style_settings is not None:
+            db_obj.style_settings = style_settings
+        if section_order is not None:
+            db_obj.section_order = section_order
+
+        await db.commit()
+        await db.refresh(db_obj)
+        return db_obj
+
 
 tailored_resume_crud = TailoredResumeCRUD()

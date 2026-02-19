@@ -11,6 +11,8 @@ from app.schemas.tailor import (
     QuickMatchRequest,
     QuickMatchResponse,
     TailoredResumeListResponse,
+    TailoredResumeUpdateRequest,
+    TailoredResumeFullResponse,
 )
 from app.services import (
     get_ai_client,
@@ -178,6 +180,66 @@ async def get_tailored_resume(
         skill_gaps=[],
         keyword_coverage=0.0,
         created_at=tailored.created_at,
+    )
+
+
+@router.patch("/{tailored_id}", response_model=TailoredResumeFullResponse)
+async def update_tailored_resume(
+    tailored_id: int,
+    request: TailoredResumeUpdateRequest,
+    db: AsyncSession = Depends(get_db_session),
+    current_user_id: int = Depends(get_current_user_id),
+) -> TailoredResumeFullResponse:
+    """Update a tailored resume's content, style settings, or section order."""
+    tailored = await tailored_resume_crud.get(db, id=tailored_id)
+    if not tailored:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tailored resume not found",
+        )
+
+    # Verify ownership through original resume
+    resume = await resume_crud.get(db, id=tailored.resume_id)
+    if not resume or resume.owner_id != current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to update this tailored resume",
+        )
+
+    # Update the tailored resume
+    updated = await tailored_resume_crud.update(
+        db,
+        id=tailored_id,
+        tailored_content=request.tailored_content.model_dump() if request.tailored_content else None,
+        style_settings=request.style_settings.model_dump(exclude_none=True) if request.style_settings else None,
+        section_order=request.section_order,
+    )
+
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update tailored resume",
+        )
+
+    # Parse stored content
+    tailored_content = json.loads(updated.tailored_content)
+    suggestions = updated.suggestions or []
+
+    return TailoredResumeFullResponse(
+        id=updated.id,
+        resume_id=updated.resume_id,
+        job_id=updated.job_id,
+        job_listing_id=updated.job_listing_id,
+        tailored_content=tailored_content,
+        suggestions=suggestions,
+        match_score=updated.match_score or 0.0,
+        skill_matches=[],
+        skill_gaps=[],
+        keyword_coverage=0.0,
+        style_settings=updated.style_settings or {},
+        section_order=updated.section_order or ["summary", "experience", "skills", "education", "projects"],
+        created_at=updated.created_at,
+        updated_at=updated.updated_at,
     )
 
 
