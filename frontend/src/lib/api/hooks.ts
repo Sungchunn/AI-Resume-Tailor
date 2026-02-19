@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   resumeApi,
   jobApi,
+  jobListingApi,
   tailorApi,
   blockApi,
   matchApi,
@@ -15,6 +16,7 @@ import type {
   JobUpdate,
   TailorRequest,
   QuickMatchRequest,
+  TailoredResumeUpdateRequest,
   BlockCreate,
   BlockUpdate,
   BlockImportRequest,
@@ -29,6 +31,7 @@ import type {
   UpdateStatusRequest,
   ExportRequest,
   WorkshopStatus,
+  JobListingFilters,
 } from "./types";
 
 // Query Keys
@@ -75,6 +78,17 @@ export const queryKeys = {
       [...queryKeys.workshops.all, "list", status] as const,
     detail: (id: number) =>
       [...queryKeys.workshops.all, "detail", id] as const,
+  },
+  jobListings: {
+    all: ["jobListings"] as const,
+    list: (filters?: JobListingFilters) =>
+      [...queryKeys.jobListings.all, "list", filters] as const,
+    detail: (id: number) =>
+      [...queryKeys.jobListings.all, "detail", id] as const,
+    saved: () => [...queryKeys.jobListings.all, "saved"] as const,
+    applied: () => [...queryKeys.jobListings.all, "applied"] as const,
+    search: (query: string) =>
+      [...queryKeys.jobListings.all, "search", query] as const,
   },
 };
 
@@ -240,6 +254,19 @@ export function useDeleteTailoredResume() {
   return useMutation({
     mutationFn: (id: number) => tailorApi.delete(id),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tailored.all });
+    },
+  });
+}
+
+export function useUpdateTailoredResume() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: TailoredResumeUpdateRequest }) =>
+      tailorApi.update(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tailored.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.tailored.all });
     },
   });
@@ -582,5 +609,82 @@ export function useExportWorkshop() {
 export function useExtractDocument() {
   return useMutation({
     mutationFn: (file: File) => uploadApi.extractDocument(file),
+  });
+}
+
+// Job Listing Hooks (system-wide jobs from external sources)
+export function useJobListings(filters?: JobListingFilters) {
+  return useQuery({
+    queryKey: queryKeys.jobListings.list(filters),
+    queryFn: () => jobListingApi.list(filters),
+  });
+}
+
+export function useJobListing(id: number) {
+  return useQuery({
+    queryKey: queryKeys.jobListings.detail(id),
+    queryFn: () => jobListingApi.get(id),
+    enabled: !!id,
+  });
+}
+
+export function useSavedJobListings(limit = 50, offset = 0) {
+  return useQuery({
+    queryKey: queryKeys.jobListings.saved(),
+    queryFn: () => jobListingApi.getSaved(limit, offset),
+  });
+}
+
+export function useAppliedJobListings(limit = 50, offset = 0) {
+  return useQuery({
+    queryKey: queryKeys.jobListings.applied(),
+    queryFn: () => jobListingApi.getApplied(limit, offset),
+  });
+}
+
+export function useSearchJobListings(query: string, limit = 20, offset = 0) {
+  return useQuery({
+    queryKey: queryKeys.jobListings.search(query),
+    queryFn: () => jobListingApi.search(query, limit, offset),
+    enabled: query.length > 0,
+  });
+}
+
+export function useSaveJobListing() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, save }: { id: number; save?: boolean }) =>
+      jobListingApi.save(id, save),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.all });
+    },
+  });
+}
+
+export function useHideJobListing() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, hide }: { id: number; hide?: boolean }) =>
+      jobListingApi.hide(id, hide),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.all });
+    },
+  });
+}
+
+export function useMarkJobApplied() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, applied }: { id: number; applied?: boolean }) =>
+      jobListingApi.markApplied(id, applied),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.all });
+    },
   });
 }

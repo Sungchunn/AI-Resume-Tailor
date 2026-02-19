@@ -127,6 +127,29 @@ export interface TailorResponse {
   created_at: string;
 }
 
+export interface TailoredResumeFullResponse {
+  id: number;
+  resume_id: number;
+  job_id: number | null;
+  job_listing_id: number | null;
+  tailored_content: TailoredContent;
+  suggestions: Suggestion[];
+  match_score: number;
+  skill_matches: string[];
+  skill_gaps: string[];
+  keyword_coverage: number;
+  style_settings: ResumeStyle;
+  section_order: string[];
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface TailoredResumeUpdateRequest {
+  tailored_content?: TailoredContent;
+  style_settings?: ResumeStyle;
+  section_order?: string[];
+}
+
 export interface QuickMatchResponse {
   match_score: number;
   keyword_coverage: number;
@@ -345,4 +368,128 @@ export interface DocumentExtractionResponse {
   page_count: number | null;
   word_count: number;
   warnings: string[];
+}
+
+// ============================================================================
+// Job Listing Types (System-wide jobs from external sources)
+// ============================================================================
+
+export type SeniorityLevel = "entry" | "mid" | "senior" | "lead" | "executive";
+export type JobListingSortBy =
+  | "date_posted"
+  | "salary_min"
+  | "salary_max"
+  | "company_name"
+  | "job_title"
+  | "created_at";
+export type SortOrder = "asc" | "desc";
+
+export interface JobListingResponse {
+  id: number;
+  external_job_id: string;
+  job_title: string;
+  company_name: string;
+  location: string | null;
+  seniority: string | null;
+  job_function: string | null;
+  industry: string | null;
+  job_description: string;
+  job_url: string;
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_currency: string;
+  salary_period: string | null;
+  date_posted: string | null;
+  source_platform: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string | null;
+  // User interaction fields
+  is_saved: boolean;
+  is_hidden: boolean;
+  applied_at: string | null;
+}
+
+export interface JobListingListResponse {
+  listings: JobListingResponse[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface JobListingFilters {
+  location?: string;
+  seniority?: string;
+  job_function?: string;
+  industry?: string;
+  salary_min?: number;
+  salary_max?: number;
+  date_posted_after?: string;
+  search?: string;
+  is_saved?: boolean;
+  is_hidden?: boolean;
+  applied?: boolean;
+  sort_by?: JobListingSortBy;
+  sort_order?: SortOrder;
+  limit?: number;
+  offset?: number;
+}
+
+export interface SaveJobRequest {
+  save: boolean;
+}
+
+export interface HideJobRequest {
+  hide: boolean;
+}
+
+export interface ApplyJobRequest {
+  applied: boolean;
+}
+
+export interface UserJobInteractionResponse {
+  id: number;
+  user_id: number;
+  job_listing_id: number;
+  is_saved: boolean;
+  is_hidden: boolean;
+  applied_at: string | null;
+  last_viewed_at: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface JobInteractionActionResponse {
+  success: boolean;
+  message: string;
+  interaction: UserJobInteractionResponse;
+}
+
+// ============================================================================
+// Resume Style Types (for PDF generation)
+// ============================================================================
+
+export interface ResumeStyle {
+  font_family?: string;
+  font_size_body?: number;
+  font_size_heading?: number;
+  font_size_subheading?: number;
+  margin_top?: number;
+  margin_bottom?: number;
+  margin_left?: number;
+  margin_right?: number;
+  line_spacing?: number;
+  section_spacing?: number;
+}
+
+export interface PDFPreviewRequest {
+  sections: Record<string, unknown>;
+  style?: ResumeStyle;
+}
+
+export interface PDFPreviewResponse {
+  pdf_url: string;
+  content_hash: string;
+  cached: boolean;
+  expires_at: string;
 }

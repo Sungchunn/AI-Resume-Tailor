@@ -10,6 +10,8 @@ import type {
   QuickMatchRequest,
   QuickMatchResponse,
   TailoredResumeListItem,
+  TailoredResumeFullResponse,
+  TailoredResumeUpdateRequest,
   UserCreate,
   UserLogin,
   UserResponse,
@@ -42,6 +44,13 @@ import type {
   ExportRequest,
   WorkshopStatus,
   DocumentExtractionResponse,
+  JobListingResponse,
+  JobListingListResponse,
+  JobListingFilters,
+  SaveJobRequest,
+  HideJobRequest,
+  ApplyJobRequest,
+  JobInteractionActionResponse,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -262,6 +271,12 @@ export const tailorApi = {
   delete: (id: number): Promise<void> =>
     fetchApi(`/api/tailor/${id}`, {
       method: "DELETE",
+    }),
+
+  update: (id: number, data: TailoredResumeUpdateRequest): Promise<TailoredResumeFullResponse> =>
+    fetchApi(`/api/tailor/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
     }),
 };
 
@@ -488,4 +503,60 @@ export const uploadApi = {
 
     return response.json();
   },
+};
+
+// Job Listings API (system-wide jobs from external sources)
+export const jobListingApi = {
+  list: (filters: JobListingFilters = {}): Promise<JobListingListResponse> => {
+    const searchParams = new URLSearchParams();
+
+    if (filters.location) searchParams.append("location", filters.location);
+    if (filters.seniority) searchParams.append("seniority", filters.seniority);
+    if (filters.job_function) searchParams.append("job_function", filters.job_function);
+    if (filters.industry) searchParams.append("industry", filters.industry);
+    if (filters.salary_min !== undefined) searchParams.append("salary_min", String(filters.salary_min));
+    if (filters.salary_max !== undefined) searchParams.append("salary_max", String(filters.salary_max));
+    if (filters.date_posted_after) searchParams.append("date_posted_after", filters.date_posted_after);
+    if (filters.search) searchParams.append("search", filters.search);
+    if (filters.is_saved !== undefined) searchParams.append("is_saved", String(filters.is_saved));
+    if (filters.is_hidden !== undefined) searchParams.append("is_hidden", String(filters.is_hidden));
+    if (filters.applied !== undefined) searchParams.append("applied", String(filters.applied));
+    if (filters.sort_by) searchParams.append("sort_by", filters.sort_by);
+    if (filters.sort_order) searchParams.append("sort_order", filters.sort_order);
+    if (filters.limit !== undefined) searchParams.append("limit", String(filters.limit));
+    if (filters.offset !== undefined) searchParams.append("offset", String(filters.offset));
+
+    const query = searchParams.toString();
+    return fetchApi(`/api/job-listings${query ? `?${query}` : ""}`);
+  },
+
+  search: (q: string, limit = 20, offset = 0): Promise<JobListingListResponse> =>
+    fetchApi(`/api/job-listings/search?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`),
+
+  get: (id: number): Promise<JobListingResponse> =>
+    fetchApi(`/api/job-listings/${id}`),
+
+  getSaved: (limit = 50, offset = 0): Promise<JobListingListResponse> =>
+    fetchApi(`/api/job-listings/saved?limit=${limit}&offset=${offset}`),
+
+  getApplied: (limit = 50, offset = 0): Promise<JobListingListResponse> =>
+    fetchApi(`/api/job-listings/applied?limit=${limit}&offset=${offset}`),
+
+  save: (id: number, save = true): Promise<JobInteractionActionResponse> =>
+    fetchApi(`/api/job-listings/${id}/save`, {
+      method: "POST",
+      body: JSON.stringify({ save } as SaveJobRequest),
+    }),
+
+  hide: (id: number, hide = true): Promise<JobInteractionActionResponse> =>
+    fetchApi(`/api/job-listings/${id}/hide`, {
+      method: "POST",
+      body: JSON.stringify({ hide } as HideJobRequest),
+    }),
+
+  markApplied: (id: number, applied = true): Promise<JobInteractionActionResponse> =>
+    fetchApi(`/api/job-listings/${id}/applied`, {
+      method: "POST",
+      body: JSON.stringify({ applied } as ApplyJobRequest),
+    }),
 };
