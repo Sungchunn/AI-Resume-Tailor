@@ -6,14 +6,14 @@ The API uses JWT (JSON Web Token) authentication with Bearer scheme. Users must 
 
 ## Token Types
 
-| Token | Purpose | Default Expiry |
-|-------|---------|----------------|
-| Access Token | API request authentication | 30 minutes |
-| Refresh Token | Obtain new access tokens | 7 days |
+| Token         | Purpose                    | Default Expiry |
+|---------------|----------------------------|----------------|
+| Access Token  | API request authentication | 30 minutes     |
+| Refresh Token | Obtain new access tokens   | 7 days         |
 
 ## Authentication Flow
 
-```
+```text
 ┌──────────┐     Register/Login      ┌──────────┐
 │  Client  │ ──────────────────────► │   API    │
 │          │ ◄────────────────────── │          │
@@ -45,7 +45,7 @@ The API uses JWT (JSON Web Token) authentication with Bearer scheme. Users must 
 
 Create a new user account.
 
-```
+```http
 POST /api/auth/register
 ```
 
@@ -53,11 +53,11 @@ POST /api/auth/register
 
 **Request Body:**
 
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `email` | string | Yes | Valid email format |
-| `full_name` | string | Yes | 1-255 characters |
-| `password` | string | Yes | 8-100 characters |
+| Field       | Type   | Required | Constraints        |
+|-------------|--------|----------|--------------------|
+| `email`     | string | Yes      | Valid email format |
+| `full_name` | string | Yes      | 1-255 characters   |
+| `password`  | string | Yes      | 8-100 characters   |
 
 **Example Request:**
 
@@ -85,10 +85,10 @@ curl -X POST http://localhost:8000/api/auth/register \
 
 **Error Responses:**
 
-| Status | Condition |
-|--------|-----------|
-| 400 | Email already registered |
-| 422 | Validation error (invalid email, password too short) |
+| Status | Condition                                            |
+|--------|------------------------------------------------------|
+| 400    | Email already registered                             |
+| 422    | Validation error (invalid email, password too short) |
 
 ---
 
@@ -96,7 +96,7 @@ curl -X POST http://localhost:8000/api/auth/register \
 
 Authenticate and receive access tokens.
 
-```
+```http
 POST /api/auth/login
 ```
 
@@ -104,10 +104,10 @@ POST /api/auth/login
 
 **Request Body:**
 
-| Field | Type | Required |
-|-------|------|----------|
-| `email` | string | Yes |
-| `password` | string | Yes |
+| Field      | Type   | Required |
+|------------|--------|----------|
+| `email`    | string | Yes      |
+| `password` | string | Yes      |
 
 **Example Request:**
 
@@ -132,9 +132,9 @@ curl -X POST http://localhost:8000/api/auth/login \
 
 **Error Responses:**
 
-| Status | Condition |
-|--------|-----------|
-| 401 | Invalid email or password |
+| Status | Condition                 |
+|--------|---------------------------|
+| 401    | Invalid email or password |
 
 ---
 
@@ -142,7 +142,7 @@ curl -X POST http://localhost:8000/api/auth/login \
 
 Exchange a refresh token for a new access token.
 
-```
+```http
 POST /api/auth/refresh
 ```
 
@@ -150,9 +150,9 @@ POST /api/auth/refresh
 
 **Request Body:**
 
-| Field | Type | Required |
-|-------|------|----------|
-| `refresh_token` | string | Yes |
+| Field           | Type   | Required |
+|-----------------|--------|----------|
+| `refresh_token` | string | Yes      |
 
 **Example Request:**
 
@@ -176,9 +176,9 @@ curl -X POST http://localhost:8000/api/auth/refresh \
 
 **Error Responses:**
 
-| Status | Condition |
-|--------|-----------|
-| 401 | Invalid or expired refresh token |
+| Status | Condition                        |
+|--------|----------------------------------|
+| 401    | Invalid or expired refresh token |
 
 ---
 
@@ -186,7 +186,7 @@ curl -X POST http://localhost:8000/api/auth/refresh \
 
 Retrieve the authenticated user's profile.
 
-```
+```http
 GET /api/auth/me
 ```
 
@@ -213,9 +213,9 @@ curl http://localhost:8000/api/auth/me \
 
 **Error Responses:**
 
-| Status | Condition |
-|--------|-----------|
-| 401 | Missing or invalid token |
+| Status | Condition                |
+|--------|--------------------------|
+| 401    | Missing or invalid token |
 
 ---
 
@@ -223,7 +223,7 @@ curl http://localhost:8000/api/auth/me \
 
 Include the access token in the `Authorization` header for all authenticated requests:
 
-```
+```http
 Authorization: Bearer <access_token>
 ```
 
@@ -243,12 +243,12 @@ curl http://localhost:8000/api/resumes \
 
 ### JWT Configuration
 
-| Setting | Default | Environment Variable |
-|---------|---------|---------------------|
-| Algorithm | HS256 | `JWT_ALGORITHM` |
-| Access Token Expiry | 30 minutes | `ACCESS_TOKEN_EXPIRE_MINUTES` |
-| Refresh Token Expiry | 7 days | `REFRESH_TOKEN_EXPIRE_DAYS` |
-| Secret Key | (required) | `JWT_SECRET_KEY` |
+| Setting              | Default    | Environment Variable         |
+|----------------------|------------|------------------------------|
+| Algorithm            | HS256      | `JWT_ALGORITHM`              |
+| Access Token Expiry  | 30 minutes | `ACCESS_TOKEN_EXPIRE_MINUTES`|
+| Refresh Token Expiry | 7 days     | `REFRESH_TOKEN_EXPIRE_DAYS`  |
+| Secret Key           | (required) | `JWT_SECRET_KEY`             |
 
 ### Token Payload
 
@@ -276,11 +276,11 @@ Refresh tokens contain:
 
 Authentication endpoints have specific rate limits:
 
-| Endpoint | Per Minute | Per Hour |
-|----------|-----------|----------|
-| `/auth/login` | 10 | 50 |
-| `/auth/register` | 10 | 50 |
-| `/auth/refresh` | 10 | 50 |
+| Endpoint         | Per Minute | Per Hour |
+|------------------|------------|----------|
+| `/auth/login`    | 10         | 50       |
+| `/auth/register` | 10         | 50       |
+| `/auth/refresh`  | 10         | 50       |
 
 See [Errors & Rate Limits](180226_errors-rate-limits.md) for details.
 

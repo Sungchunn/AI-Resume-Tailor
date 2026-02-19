@@ -34,6 +34,7 @@
 ### What Exists (Phase 0-3 Complete)
 
 ✅ **Working Features:**
+
 - User authentication (JWT with refresh tokens)
 - Resume CRUD with AI parsing
 - Job description CRUD with AI analysis
@@ -43,6 +44,7 @@
 - Frontend dashboard with all pages
 
 ✅ **Partially Implemented (not integrated):**
+
 - `ExperienceBlock` model with pgvector support
 - `EmbeddingService` with proper task_type separation
 - HNSW index configuration (not yet migrated)
@@ -50,6 +52,7 @@
 ### What's Missing (Target for v2)
 
 ❌ **Core Vault & Workshop:**
+
 - Block CRUD API routes
 - Semantic search endpoints (`/match`)
 - Workshop model and endpoints
@@ -57,12 +60,14 @@
 - Write-back loop
 
 ❌ **AI Enhancements:**
+
 - Streaming suggestions (WebSocket)
 - Vault-constrained generation (no hallucination)
 - Block type classifier
 - PII stripper
 
 ❌ **Production Readiness:**
+
 - Rate limiting
 - Audit logging
 - ATS compatibility checks
@@ -844,7 +849,7 @@ CREATE INDEX IF NOT EXISTS ix_workshops_status
 #### 1.2 Tasks
 
 | Task | Description | Priority |
-|------|-------------|----------|
+| ---- | ----------- | -------- |
 | Create Alembic migration for pgvector | Enable extension and create tables | P0 |
 | Implement `BlockRepository` | Implements `IBlockRepository` protocol | P0 |
 | Implement `WorkshopRepository` | Implements `IWorkshopRepository` protocol | P0 |
@@ -868,7 +873,7 @@ CREATE INDEX IF NOT EXISTS ix_workshops_status
 
 #### 2.1 API Endpoints
 
-```
+```text
 # Vault (Experience Blocks) Operations
 POST   /api/v1/blocks              # Create experience block
 GET    /api/v1/blocks              # List blocks (paginated, filterable)
@@ -889,7 +894,7 @@ GET    /api/v1/match/:job_id       # Get cached match results
 #### 2.2 Tasks
 
 | Task | Description | Priority |
-|------|-------------|----------|
+| ---- | ----------- | -------- |
 | Create `blocks` router | CRUD endpoints for experience blocks | P0 |
 | Implement `BlockSplitter` service | Split resume into atomic blocks | P0 |
 | Implement `BlockClassifier` service | Classify block types with AI | P1 |
@@ -914,7 +919,7 @@ GET    /api/v1/match/:job_id       # Get cached match results
 
 #### 3.1 API Endpoints
 
-```
+```text
 # Workshop Operations
 POST   /api/v1/workshops                    # Create workshop for job
 GET    /api/v1/workshops                    # List workshops
@@ -940,7 +945,7 @@ POST   /api/v1/workshops/:id/export         # Export as PDF/DOCX
 #### 3.2 Tasks
 
 | Task | Description | Priority |
-|------|-------------|----------|
+| ---- | ----------- | -------- |
 | Create Workshop model | SQLAlchemy model | P0 |
 | Implement `DiffEngine` service | JSON Patch generation/application | P0 |
 | Create `workshops` router | Full workshop API | P0 |
@@ -1004,7 +1009,7 @@ Output format:
 
 #### 4.1 New Pages
 
-```
+```text
 /dashboard/vault                 # View all experience blocks
 /dashboard/vault/import          # Import resume → blocks
 /dashboard/vault/[id]            # View/edit single block
@@ -1019,7 +1024,7 @@ Output format:
 #### 4.2 Key Components
 
 | Component | Description |
-|-----------|-------------|
+| --------- | ----------- |
 | `VaultList` | Display all blocks with filters (type, tags, verified) |
 | `BlockCard` | Single block display with edit/verify actions |
 | `BlockEditor` | Edit block content, tags, provenance |
@@ -1033,7 +1038,7 @@ Output format:
 #### 4.3 Tasks
 
 | Task | Description | Priority |
-|------|-------------|----------|
+| ---- | ----------- | -------- |
 | Create Vault pages | List, view, edit blocks | P0 |
 | Build import wizard | Resume → blocks flow | P1 |
 | Create Workshop editor | Main editing interface | P0 |
@@ -1059,7 +1064,7 @@ Output format:
 #### 5.1 Security Tasks
 
 | Task | Description | Priority |
-|------|-------------|----------|
+| ---- | ----------- | -------- |
 | Implement `PIIStripper` | Remove PII before embedding | P0 |
 | Add rate limiting | Redis-based, per-user | P0 |
 | Implement audit logging | Track all operations | P1 |
@@ -1069,7 +1074,7 @@ Output format:
 #### 5.2 Performance Tasks
 
 | Task | Description | Priority |
-|------|-------------|----------|
+| ---- | ----------- | -------- |
 | Query optimization | Index analysis, query profiling | P1 |
 | Caching strategy | Cache match results, embeddings | P1 |
 | Batch embedding job | Background worker for embeddings | P1 |
@@ -1181,7 +1186,7 @@ class ATSAnalyzer:
 
 ### From Current → Target Architecture
 
-```
+```text
 Week 1: Deploy new schema alongside existing
         - Add experience_blocks table
         - Add workshops table
@@ -1277,7 +1282,7 @@ async def migrate_resume_to_blocks(
 
 ### New Files to Create
 
-```
+```text
 backend/
 ├── app/
 │   ├── core/
@@ -1340,32 +1345,37 @@ frontend/
 
 ## Success Criteria
 
-### Phase 1 Complete When:
+### Phase 1 Complete When
+
 - [ ] pgvector extension enabled
 - [ ] experience_blocks table exists with HNSW index
 - [ ] workshops table exists
 - [ ] All repository tests pass
 
-### Phase 2 Complete When:
+### Phase 2 Complete When
+
 - [ ] Block CRUD API functional
 - [ ] Import endpoint works (resume → blocks)
 - [ ] Semantic search returns relevant results
 - [ ] API docs show all endpoints
 
-### Phase 3 Complete When:
+### Phase 3 Complete When
+
 - [ ] Workshop creation works
 - [ ] Pull blocks into workshop works
 - [ ] AI suggestions generated (Vault-constrained)
 - [ ] Accept/reject diffs works
 - [ ] Write-back creates/updates blocks
 
-### Phase 4 Complete When:
+### Phase 4 Complete When
+
 - [ ] Vault UI shows all blocks
 - [ ] Import wizard works end-to-end
 - [ ] Workshop editor functional
 - [ ] Export produces valid PDF/DOCX
 
-### Phase 5 Complete When:
+### Phase 5 Complete When
+
 - [ ] PII stripped from all embeddings
 - [ ] Rate limiting active
 - [ ] Audit logs for all mutations
