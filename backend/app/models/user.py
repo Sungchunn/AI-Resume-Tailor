@@ -21,3 +21,6 @@ class User(Base):
     job_descriptions = relationship("JobDescription", back_populates="owner", cascade="all, delete-orphan")
     experience_blocks = relationship("ExperienceBlock", back_populates="owner", cascade="all, delete-orphan")
     workshops = relationship("Workshop", back_populates="owner", cascade="all, delete-orphan")
+    job_interactions = relationship(
+        "UserJobInteraction", back_populates="user", cascade="all, delete-orphan"
+    )

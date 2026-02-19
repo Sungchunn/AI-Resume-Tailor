@@ -1,6 +1,19 @@
 from fastapi import APIRouter
 
-from app.api.routes import auth, resumes, jobs, tailor, export, blocks, match, workshops, ats, upload
+from app.api.routes import (
+    auth,
+    resumes,
+    jobs,
+    job_listings,
+    tailor,
+    export,
+    blocks,
+    match,
+    workshops,
+    ats,
+    upload,
+    webhooks,
+)
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -17,3 +30,9 @@ api_router.include_router(workshops.router, prefix="/v1/workshops", tags=["works
 
 # Phase 5: ATS Analysis
 api_router.include_router(ats.router, prefix="/v1/ats", tags=["ats"])
+
+# Job Listings (system-wide jobs from external sources)
+api_router.include_router(job_listings.router, prefix="/job-listings", tags=["job-listings"])
+
+# Webhooks (n8n integration)
+api_router.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])

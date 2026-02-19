@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     # Environment
     environment: str = "development"
 
+    # Webhook Authentication (for n8n job listing ingestion)
+    n8n_webhook_api_key: str = ""
+
     # Rate Limiting
     rate_limit_enabled: bool = True
     rate_limit_default_per_minute: int = 60

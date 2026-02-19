@@ -1,0 +1,480 @@
+"""
+CRUD operations for JobListing and UserJobInteraction models.
+
+Provides repository-style operations with advanced filtering,
+full-text search, and user interaction tracking.
+"""
+
+from datetime import datetime, timezone
+from typing import Any
+
+from sqlalchemy import select, func, or_, and_, update
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from app.models.job_listing import JobListing
+from app.models.user_job_interaction import UserJobInteraction
+from app.schemas.job_listing import (
+    JobListingCreate,
+    JobListingUpdate,
+    JobListingFilters,
+    WebhookJobListing,
+    SortBy,
+    SortOrder,
+)
+
+
+class JobListingRepository:
+    """Repository for JobListing operations."""
+
+    async def create(
+        self,
+        db: AsyncSession,
+        *,
+        obj_in: JobListingCreate,
+    ) -> JobListing:
+        """Create a new job listing."""
+        db_obj = JobListing(
+            external_job_id=obj_in.external_job_id,
+            job_title=obj_in.job_title,
+            company_name=obj_in.company_name,
+            location=obj_in.location,
+            seniority=obj_in.seniority,
+            job_function=obj_in.job_function,
+            industry=obj_in.industry,
+            job_description=obj_in.job_description,
+            job_url=obj_in.job_url,
+            salary_min=obj_in.salary_min,
+            salary_max=obj_in.salary_max,
+            salary_currency=obj_in.salary_currency,
+            salary_period=obj_in.salary_period,
+            date_posted=obj_in.date_posted,
+            source_platform=obj_in.source_platform,
+            is_active=obj_in.is_active,
+        )
+        db.add(db_obj)
+        await db.flush()
+        await db.refresh(db_obj)
+        return db_obj
+
+    async def get(self, db: AsyncSession, *, id: int) -> JobListing | None:
+        """Get a job listing by ID."""
+        result = await db.execute(
+            select(JobListing).where(JobListing.id == id)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_external_id(
+        self, db: AsyncSession, *, external_job_id: str
+    ) -> JobListing | None:
+        """Get a job listing by external ID."""
+        result = await db.execute(
+            select(JobListing).where(JobListing.external_job_id == external_job_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def list(
+        self,
+        db: AsyncSession,
+        *,
+        filters: JobListingFilters,
+        user_id: int | None = None,
+    ) -> tuple[list[JobListing], int]:
+        """
+        List job listings with filtering and pagination.
+
+        Returns tuple of (listings, total_count).
+        """
+        query = select(JobListing)
+        count_query = select(func.count(JobListing.id))
+
+        # Build filter conditions
+        conditions = []
+
+        # Active only filter
+        if filters.active_only:
+            conditions.append(JobListing.is_active == True)
+
+        # Location filter
+        if filters.location:
+            locations = [loc.strip() for loc in filters.location.split(",")]
+            location_conditions = [
+                JobListing.location.ilike(f"%{loc}%") for loc in locations
+            ]
+            conditions.append(or_(*location_conditions))
+        elif filters.locations:
+            location_conditions = [
+                JobListing.location.ilike(f"%{loc}%") for loc in filters.locations
+            ]
+            conditions.append(or_(*location_conditions))
+
+        # Seniority filter
+        if filters.seniority:
+            seniorities = [s.strip().lower() for s in filters.seniority.split(",")]
+            seniority_conditions = [
+                func.lower(JobListing.seniority) == s for s in seniorities
+            ]
+            conditions.append(or_(*seniority_conditions))
+        elif filters.seniorities:
+            seniority_conditions = [
+                func.lower(JobListing.seniority) == s.lower() for s in filters.seniorities
+            ]
+            conditions.append(or_(*seniority_conditions))
+
+        # Job function filter
+        if filters.job_function:
+            conditions.append(
+                JobListing.job_function.ilike(f"%{filters.job_function}%")
+            )
+
+        # Industry filter
+        if filters.industry:
+            conditions.append(JobListing.industry.ilike(f"%{filters.industry}%"))
+
+        # Salary filters
+        if filters.salary_min is not None:
+            conditions.append(
+                or_(
+                    JobListing.salary_max >= filters.salary_min,
+                    JobListing.salary_max.is_(None),
+                )
+            )
+        if filters.salary_max is not None:
+            conditions.append(
+                or_(
+                    JobListing.salary_min <= filters.salary_max,
+                    JobListing.salary_min.is_(None),
+                )
+            )
+
+        # Date posted filter
+        if filters.date_posted_after:
+            conditions.append(JobListing.date_posted >= filters.date_posted_after)
+
+        # Full-text search using pg_trgm
+        if filters.search:
+            search_term = filters.search.strip()
+            conditions.append(
+                or_(
+                    JobListing.job_title.ilike(f"%{search_term}%"),
+                    JobListing.job_description.ilike(f"%{search_term}%"),
+                    JobListing.company_name.ilike(f"%{search_term}%"),
+                )
+            )
+
+        # User interaction filters (requires user_id)
+        if user_id is not None:
+            # Join with user interactions
+            query = query.outerjoin(
+                UserJobInteraction,
+                and_(
+                    UserJobInteraction.job_listing_id == JobListing.id,
+                    UserJobInteraction.user_id == user_id,
+                ),
+            )
+            count_query = count_query.outerjoin(
+                UserJobInteraction,
+                and_(
+                    UserJobInteraction.job_listing_id == JobListing.id,
+                    UserJobInteraction.user_id == user_id,
+                ),
+            )
+
+            # Filter by saved status
+            if filters.is_saved is not None:
+                if filters.is_saved:
+                    conditions.append(UserJobInteraction.is_saved == True)
+                else:
+                    conditions.append(
+                        or_(
+                            UserJobInteraction.is_saved == False,
+                            UserJobInteraction.is_saved.is_(None),
+                        )
+                    )
+
+            # Filter by hidden status
+            if filters.is_hidden is not None:
+                if filters.is_hidden:
+                    conditions.append(UserJobInteraction.is_hidden == True)
+                else:
+                    conditions.append(
+                        or_(
+                            UserJobInteraction.is_hidden == False,
+                            UserJobInteraction.is_hidden.is_(None),
+                        )
+                    )
+
+            # Filter by applied status
+            if filters.applied is not None:
+                if filters.applied:
+                    conditions.append(UserJobInteraction.applied_at.isnot(None))
+                else:
+                    conditions.append(UserJobInteraction.applied_at.is_(None))
+
+        # Apply all conditions
+        if conditions:
+            query = query.where(and_(*conditions))
+            count_query = count_query.where(and_(*conditions))
+
+        # Get total count
+        total_result = await db.execute(count_query)
+        total = total_result.scalar() or 0
+
+        # Apply sorting
+        sort_column = self._get_sort_column(filters.sort_by)
+        if filters.sort_order == SortOrder.DESC:
+            query = query.order_by(sort_column.desc())
+        else:
+            query = query.order_by(sort_column.asc())
+
+        # Apply pagination
+        query = query.offset(filters.offset).limit(filters.limit)
+
+        # Execute query
+        result = await db.execute(query)
+        listings = list(result.scalars().all())
+
+        return listings, total
+
+    def _get_sort_column(self, sort_by: SortBy):
+        """Get the SQLAlchemy column for sorting."""
+        mapping = {
+            SortBy.DATE_POSTED: JobListing.date_posted,
+            SortBy.SALARY_MIN: JobListing.salary_min,
+            SortBy.SALARY_MAX: JobListing.salary_max,
+            SortBy.COMPANY_NAME: JobListing.company_name,
+            SortBy.JOB_TITLE: JobListing.job_title,
+            SortBy.CREATED_AT: JobListing.created_at,
+        }
+        return mapping.get(sort_by, JobListing.date_posted)
+
+    async def update(
+        self,
+        db: AsyncSession,
+        *,
+        db_obj: JobListing,
+        obj_in: JobListingUpdate,
+    ) -> JobListing:
+        """Update a job listing."""
+        update_data = obj_in.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(db_obj, field, value)
+        db.add(db_obj)
+        await db.flush()
+        await db.refresh(db_obj)
+        return db_obj
+
+    async def upsert_from_webhook(
+        self,
+        db: AsyncSession,
+        *,
+        job_data: WebhookJobListing,
+    ) -> tuple[JobListing, bool]:
+        """
+        Insert or update a job listing from webhook data.
+
+        Returns tuple of (listing, is_created).
+        """
+        existing = await self.get_by_external_id(db, external_job_id=job_data.external_job_id)
+
+        if existing:
+            # Update existing listing
+            for field, value in job_data.model_dump().items():
+                setattr(existing, field, value)
+            await db.flush()
+            await db.refresh(existing)
+            return existing, False
+        else:
+            # Create new listing
+            create_data = JobListingCreate(**job_data.model_dump())
+            new_listing = await self.create(db, obj_in=create_data)
+            return new_listing, True
+
+    async def deactivate(self, db: AsyncSession, *, id: int) -> bool:
+        """Mark a job listing as inactive (soft delete)."""
+        result = await db.execute(
+            update(JobListing)
+            .where(JobListing.id == id)
+            .values(is_active=False)
+        )
+        await db.flush()
+        return result.rowcount > 0
+
+    async def count(
+        self,
+        db: AsyncSession,
+        *,
+        active_only: bool = True,
+    ) -> int:
+        """Count job listings."""
+        query = select(func.count(JobListing.id))
+        if active_only:
+            query = query.where(JobListing.is_active == True)
+        result = await db.execute(query)
+        return result.scalar() or 0
+
+
+class UserJobInteractionRepository:
+    """Repository for UserJobInteraction operations."""
+
+    async def get_or_create(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: int,
+        job_listing_id: int,
+    ) -> UserJobInteraction:
+        """Get existing interaction or create a new one."""
+        result = await db.execute(
+            select(UserJobInteraction).where(
+                UserJobInteraction.user_id == user_id,
+                UserJobInteraction.job_listing_id == job_listing_id,
+            )
+        )
+        interaction = result.scalar_one_or_none()
+
+        if interaction is None:
+            interaction = UserJobInteraction(
+                user_id=user_id,
+                job_listing_id=job_listing_id,
+            )
+            db.add(interaction)
+            await db.flush()
+            await db.refresh(interaction)
+
+        return interaction
+
+    async def get(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: int,
+        job_listing_id: int,
+    ) -> UserJobInteraction | None:
+        """Get interaction for user and job."""
+        result = await db.execute(
+            select(UserJobInteraction).where(
+                UserJobInteraction.user_id == user_id,
+                UserJobInteraction.job_listing_id == job_listing_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def set_saved(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: int,
+        job_listing_id: int,
+        is_saved: bool,
+    ) -> UserJobInteraction:
+        """Set the saved status for a job listing."""
+        interaction = await self.get_or_create(
+            db, user_id=user_id, job_listing_id=job_listing_id
+        )
+        interaction.is_saved = is_saved
+        await db.flush()
+        await db.refresh(interaction)
+        return interaction
+
+    async def set_hidden(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: int,
+        job_listing_id: int,
+        is_hidden: bool,
+    ) -> UserJobInteraction:
+        """Set the hidden status for a job listing."""
+        interaction = await self.get_or_create(
+            db, user_id=user_id, job_listing_id=job_listing_id
+        )
+        interaction.is_hidden = is_hidden
+        await db.flush()
+        await db.refresh(interaction)
+        return interaction
+
+    async def set_applied(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: int,
+        job_listing_id: int,
+        applied: bool,
+    ) -> UserJobInteraction:
+        """Set the applied status for a job listing."""
+        interaction = await self.get_or_create(
+            db, user_id=user_id, job_listing_id=job_listing_id
+        )
+        if applied:
+            interaction.applied_at = datetime.now(timezone.utc)
+        else:
+            interaction.applied_at = None
+        await db.flush()
+        await db.refresh(interaction)
+        return interaction
+
+    async def record_view(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: int,
+        job_listing_id: int,
+    ) -> UserJobInteraction:
+        """Record that a user viewed a job listing."""
+        interaction = await self.get_or_create(
+            db, user_id=user_id, job_listing_id=job_listing_id
+        )
+        interaction.last_viewed_at = datetime.now(timezone.utc)
+        await db.flush()
+        await db.refresh(interaction)
+        return interaction
+
+    async def get_saved_jobs(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: int,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[UserJobInteraction]:
+        """Get all saved jobs for a user."""
+        result = await db.execute(
+            select(UserJobInteraction)
+            .where(
+                UserJobInteraction.user_id == user_id,
+                UserJobInteraction.is_saved == True,
+            )
+            .options(selectinload(UserJobInteraction.job_listing))
+            .offset(offset)
+            .limit(limit)
+            .order_by(UserJobInteraction.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def get_applied_jobs(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: int,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[UserJobInteraction]:
+        """Get all applied jobs for a user."""
+        result = await db.execute(
+            select(UserJobInteraction)
+            .where(
+                UserJobInteraction.user_id == user_id,
+                UserJobInteraction.applied_at.isnot(None),
+            )
+            .options(selectinload(UserJobInteraction.job_listing))
+            .offset(offset)
+            .limit(limit)
+            .order_by(UserJobInteraction.applied_at.desc())
+        )
+        return list(result.scalars().all())
+
+
+# Module-level singleton instances
+job_listing_repository = JobListingRepository()
+user_job_interaction_repository = UserJobInteractionRepository()
