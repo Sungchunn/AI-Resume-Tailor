@@ -15,6 +15,7 @@ from sqlalchemy import (
     Boolean,
     Index,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -37,12 +38,22 @@ class JobListing(Base):
     # Core job fields
     job_title = Column(String(500), nullable=False)
     company_name = Column(String(255), nullable=False)
+    company_url = Column(String(2000), nullable=True)
+    company_logo = Column(String(2000), nullable=True)
     location = Column(String(500), nullable=True)
+    city = Column(String(255), nullable=True)
+    state = Column(String(255), nullable=True)
+    country = Column(String(255), nullable=True)
+    is_remote = Column(Boolean, default=False, nullable=False)
     seniority = Column(String(100), nullable=True)  # Entry, Mid, Senior, Lead
     job_function = Column(String(255), nullable=True)  # Engineering, Design, etc.
     industry = Column(String(255), nullable=True)
     job_description = Column(Text, nullable=False)
     job_url = Column(String(2000), nullable=False)
+    job_url_direct = Column(String(2000), nullable=True)
+    job_type = Column(JSONB, nullable=True)  # e.g. ["Full-time", "Contract"]
+    emails = Column(JSONB, nullable=True)  # e.g. ["careers@company.com"]
+    easy_apply = Column(Boolean, default=False, nullable=False)
 
     # Salary information
     salary_min = Column(Integer, nullable=True)
@@ -52,7 +63,10 @@ class JobListing(Base):
 
     # Metadata
     date_posted = Column(DateTime(timezone=True), nullable=True)
+    scraped_at = Column(DateTime(timezone=True), nullable=True)
     source_platform = Column(String(100), nullable=True)  # linkedin, indeed
+    region = Column(String(100), nullable=True)  # e.g. thailand, taiwan, singapore
+    last_synced_at = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -79,6 +93,10 @@ class JobListing(Base):
         Index("ix_job_listings_date_posted", "date_posted", postgresql_ops={"date_posted": "DESC"}),
         Index("ix_job_listings_salary", "salary_min", "salary_max"),
         Index("ix_job_listings_active", "is_active"),
+        Index("ix_job_listings_country", "country"),
+        Index("ix_job_listings_is_remote", "is_remote"),
+        Index("ix_job_listings_region", "region"),
+        Index("ix_job_listings_easy_apply", "easy_apply"),
     )
 
     def __repr__(self) -> str:
