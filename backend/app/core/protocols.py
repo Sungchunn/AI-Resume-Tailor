@@ -26,15 +26,15 @@ Usage:
 from typing import (
     Protocol,
     List,
-    Optional,
     Dict,
     Any,
     AsyncIterator,
-    TypedDict,
     runtime_checkable,
 )
 from datetime import date, datetime
 from enum import Enum
+
+from pydantic import BaseModel, Field, ConfigDict
 
 
 # =============================================================================
@@ -81,120 +81,132 @@ class SuggestionImpact(str, Enum):
     LOW = "low"  # Minor optimization
 
 
-class WorkshopStatus(str, Enum):
-    """Status of a workshop."""
+class ResumeBuildStatus(str, Enum):
+    """Status of a resume build."""
 
     DRAFT = "draft"  # Initial state
     IN_PROGRESS = "in_progress"  # User is actively editing
     EXPORTED = "exported"  # Has been exported at least once
 
 
+# Backward compatibility alias
+WorkshopStatus = ResumeBuildStatus
+
+
 # =============================================================================
-# TYPED DICTS - Structured data shapes
+# PYDANTIC MODELS - Structured data shapes
 # =============================================================================
 
 
-class ExperienceBlockData(TypedDict):
+class ExperienceBlockData(BaseModel):
     """Data shape for experience blocks (API responses)."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     user_id: int
     content: str
-    block_type: str
-    tags: List[str]
-    source_company: Optional[str]
-    source_role: Optional[str]
-    source_date_start: Optional[str]  # ISO date string
-    source_date_end: Optional[str]  # ISO date string
-    verified: bool
-    created_at: str  # ISO datetime string
-    updated_at: Optional[str]
+    block_type: BlockType
+    tags: list[str] = Field(default_factory=list)
+    source_company: str | None = None
+    source_role: str | None = None
+    source_date_start: date | None = None
+    source_date_end: date | None = None
+    verified: bool = False
+    created_at: datetime
+    updated_at: datetime | None = None
 
 
-class DiffSuggestionData(TypedDict):
+class DiffSuggestionData(BaseModel):
     """Data shape for a diff suggestion."""
 
-    operation: str  # DiffOperation value
+    operation: DiffOperation
     path: str  # JSON Pointer (RFC 6901)
     value: Any  # New value
-    original_value: Optional[Any]  # What's being replaced
+    original_value: Any | None = None  # What's being replaced
     reason: str  # Why this improves job fit
-    impact: str  # SuggestionImpact value
-    source_block_id: Optional[int]  # Which Vault block supports this
+    impact: SuggestionImpact
+    source_block_id: int | None = None  # Which Vault block supports this
 
 
-class SemanticMatchData(TypedDict):
+class SemanticMatchData(BaseModel):
     """Data shape for semantic search result."""
 
     block: ExperienceBlockData
-    score: float  # 0-1, higher is better
-    matched_keywords: List[str]
+    score: float = Field(ge=0, le=1)  # 0-1, higher is better
+    matched_keywords: list[str] = Field(default_factory=list)
 
 
-class WorkshopData(TypedDict):
-    """Data shape for workshop state."""
+class ResumeBuildData(BaseModel):
+    """Data shape for resume build state."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     user_id: int
     job_title: str
-    job_company: Optional[str]
-    job_description: Optional[str]
-    status: str  # WorkshopStatus value
-    pulled_block_ids: List[int]
-    pending_diffs: List[DiffSuggestionData]
-    sections: Dict[str, Any]
-    created_at: str
-    updated_at: Optional[str]
+    job_company: str | None = None
+    job_description: str | None = None
+    status: ResumeBuildStatus = ResumeBuildStatus.DRAFT
+    pulled_block_ids: list[int] = Field(default_factory=list)
+    pending_diffs: list[DiffSuggestionData] = Field(default_factory=list)
+    sections: Dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+    updated_at: datetime | None = None
 
 
-class ATSReportData(TypedDict):
+# Backward compatibility alias
+WorkshopData = ResumeBuildData
+
+
+class ATSReportData(BaseModel):
     """Data shape for ATS compatibility report."""
 
-    format_score: float  # 0-100
-    keyword_coverage: float  # 0-1
-    matched_keywords: List[str]
-    missing_keywords: List[str]
-    missing_from_vault: List[str]  # Keywords user doesn't have
-    warnings: List[str]
-    suggestions: List[str]
+    format_score: float = Field(ge=0, le=100)  # 0-100
+    keyword_coverage: float = Field(ge=0, le=1)  # 0-1
+    matched_keywords: list[str] = Field(default_factory=list)
+    missing_keywords: list[str] = Field(default_factory=list)
+    missing_from_vault: list[str] = Field(default_factory=list)  # Keywords user doesn't have
+    warnings: list[str] = Field(default_factory=list)
+    suggestions: list[str] = Field(default_factory=list)
 
 
-class GapAnalysisData(TypedDict):
+class GapAnalysisData(BaseModel):
     """Data shape for skill gap analysis."""
 
-    match_score: int  # 0-100
-    skill_matches: List[str]
-    skill_gaps: List[str]
-    keyword_coverage: float
-    recommendations: List[str]
+    match_score: int = Field(ge=0, le=100)  # 0-100
+    skill_matches: list[str] = Field(default_factory=list)
+    skill_gaps: list[str] = Field(default_factory=list)
+    keyword_coverage: float = Field(ge=0, le=1)
+    recommendations: list[str] = Field(default_factory=list)
 
 
-class WritebackProposalData(TypedDict):
+class WritebackProposalData(BaseModel):
     """Data shape for write-back proposal."""
 
     action: str  # "create" or "update"
     preview: ExperienceBlockData
-    original: Optional[ExperienceBlockData]
-    changes: List[str]
+    original: ExperienceBlockData | None = None
+    changes: list[str] = Field(default_factory=list)
 
 
-class SplitBlockData(TypedDict):
+class SplitBlockData(BaseModel):
     """Data shape for a split block (from splitter)."""
 
     content: str
-    block_type: str
-    suggested_tags: List[str]
-    source_company: Optional[str]
-    source_role: Optional[str]
+    block_type: BlockType
+    suggested_tags: list[str] = Field(default_factory=list)
+    source_company: str | None = None
+    source_role: str | None = None
 
 
-class PIIEntityData(TypedDict):
+class PIIEntityData(BaseModel):
     """Data shape for detected PII entity."""
 
     type: str  # email, phone, name, address, ssn
     value: str
-    start: int
-    end: int
+    start: int = Field(ge=0)
+    end: int = Field(ge=0)
 
 
 # =============================================================================
@@ -222,7 +234,7 @@ class IEmbeddingService(Protocol):
     async def embed_document(
         self,
         content: str,
-        title: Optional[str] = None,
+        title: str | None = None,
     ) -> List[float]:
         """
         Generate embedding for content being stored (RETRIEVAL_DOCUMENT).
@@ -261,7 +273,7 @@ class IEmbeddingService(Protocol):
     async def embed_batch_documents(
         self,
         contents: List[str],
-        titles: Optional[List[str]] = None,
+        titles: List[str] | None = None,
     ) -> List[List[float]]:
         """
         Batch embed multiple documents.
@@ -295,8 +307,8 @@ class IEmbeddingService(Protocol):
     def check_needs_embedding(
         self,
         new_content: str,
-        current_hash: Optional[str],
-        current_embedding: Optional[List[float]],
+        current_hash: str | None,
+        current_embedding: List[float] | None,
     ) -> bool:
         """
         Check if content needs (re-)embedding.
@@ -405,7 +417,7 @@ class ICacheService(Protocol):
     - Cache invalidation
     """
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """Get cached value or None if not found/expired."""
         ...
 
@@ -480,11 +492,11 @@ class IBlockRepository(Protocol):
         user_id: int,
         content: str,
         block_type: BlockType,
-        tags: Optional[List[str]] = None,
-        source_company: Optional[str] = None,
-        source_role: Optional[str] = None,
-        source_date_start: Optional[date] = None,
-        source_date_end: Optional[date] = None,
+        tags: List[str] | None = None,
+        source_company: str | None = None,
+        source_role: str | None = None,
+        source_date_start: date | None = None,
+        source_date_end: date | None = None,
     ) -> ExperienceBlockData:
         """
         Create a new experience block.
@@ -508,7 +520,7 @@ class IBlockRepository(Protocol):
         self,
         block_id: int,
         user_id: int,
-    ) -> Optional[ExperienceBlockData]:
+    ) -> ExperienceBlockData | None:
         """
         Get block by ID with user ownership check.
 
@@ -524,8 +536,8 @@ class IBlockRepository(Protocol):
     async def list(
         self,
         user_id: int,
-        block_types: Optional[List[BlockType]] = None,
-        tags: Optional[List[str]] = None,
+        block_types: List[BlockType] | None = None,
+        tags: List[str] | None = None,
         verified_only: bool = False,
         limit: int = 100,
         offset: int = 0,
@@ -550,11 +562,11 @@ class IBlockRepository(Protocol):
         self,
         block_id: int,
         user_id: int,
-        content: Optional[str] = None,
-        block_type: Optional[BlockType] = None,
-        tags: Optional[List[str]] = None,
-        verified: Optional[bool] = None,
-    ) -> Optional[ExperienceBlockData]:
+        content: str | None = None,
+        block_type: BlockType | None = None,
+        tags: List[str] | None = None,
+        verified: bool | None = None,
+    ) -> ExperienceBlockData | None:
         """
         Update block with user ownership check.
 
@@ -597,8 +609,8 @@ class IBlockRepository(Protocol):
         user_id: int,
         query_embedding: List[float],
         limit: int = 20,
-        block_types: Optional[List[BlockType]] = None,
-        tags: Optional[List[str]] = None,
+        block_types: List[BlockType] | None = None,
+        tags: List[str] | None = None,
     ) -> List[SemanticMatchData]:
         """
         Semantic search using vector similarity.
@@ -623,7 +635,7 @@ class IBlockRepository(Protocol):
 
     async def get_needing_embedding(
         self,
-        user_id: Optional[int] = None,
+        user_id: int | None = None,
         batch_size: int = 100,
     ) -> List[ExperienceBlockData]:
         """
@@ -660,12 +672,12 @@ class IBlockRepository(Protocol):
 
 
 @runtime_checkable
-class IWorkshopRepository(Protocol):
+class IResumeBuildRepository(Protocol):
     """
-    Interface for Workshop data access.
+    Interface for ResumeBuild data access.
 
-    Workshops are job-specific workspaces for tailoring resumes.
-    Each workshop targets one job and pulls relevant blocks from the Vault.
+    Resume builds are job-specific workspaces for tailoring resumes.
+    Each resume build targets one job and pulls relevant blocks from the Vault.
     """
 
     async def create(
@@ -673,10 +685,10 @@ class IWorkshopRepository(Protocol):
         user_id: int,
         job_title: str,
         job_description: str,
-        job_company: Optional[str] = None,
-    ) -> WorkshopData:
+        job_company: str | None = None,
+    ) -> ResumeBuildData:
         """
-        Create a new workshop for a job.
+        Create a new resume build for a job.
 
         Args:
             user_id: Owner's user ID
@@ -685,45 +697,45 @@ class IWorkshopRepository(Protocol):
             job_company: Company name
 
         Returns:
-            Created workshop data
+            Created resume build data
         """
         ...
 
     async def get(
         self,
-        workshop_id: int,
+        resume_build_id: int,
         user_id: int,
-    ) -> Optional[WorkshopData]:
-        """Get workshop by ID with user ownership check."""
+    ) -> ResumeBuildData | None:
+        """Get resume build by ID with user ownership check."""
         ...
 
     async def list(
         self,
         user_id: int,
-        status: Optional[WorkshopStatus] = None,
+        status: ResumeBuildStatus | None = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> List[WorkshopData]:
-        """List user's workshops with optional status filter."""
+    ) -> List[ResumeBuildData]:
+        """List user's resume builds with optional status filter."""
         ...
 
     async def update_sections(
         self,
-        workshop_id: int,
+        resume_build_id: int,
         user_id: int,
         sections: Dict[str, Any],
-    ) -> Optional[WorkshopData]:
-        """Update workshop content sections."""
+    ) -> ResumeBuildData | None:
+        """Update resume build content sections."""
         ...
 
     async def pull_blocks(
         self,
-        workshop_id: int,
+        resume_build_id: int,
         user_id: int,
         block_ids: List[int],
-    ) -> Optional[WorkshopData]:
+    ) -> ResumeBuildData | None:
         """
-        Pull blocks from Vault into workshop.
+        Pull blocks from Vault into resume build.
 
         Adds block IDs to pulled_block_ids list.
         """
@@ -731,19 +743,19 @@ class IWorkshopRepository(Protocol):
 
     async def add_pending_diffs(
         self,
-        workshop_id: int,
+        resume_build_id: int,
         user_id: int,
         diffs: List[DiffSuggestionData],
-    ) -> Optional[WorkshopData]:
+    ) -> ResumeBuildData | None:
         """Add AI-generated diff suggestions."""
         ...
 
     async def accept_diff(
         self,
-        workshop_id: int,
+        resume_build_id: int,
         user_id: int,
         diff_index: int,
-    ) -> Optional[WorkshopData]:
+    ) -> ResumeBuildData | None:
         """
         Accept a pending diff and apply it.
 
@@ -753,10 +765,10 @@ class IWorkshopRepository(Protocol):
 
     async def reject_diff(
         self,
-        workshop_id: int,
+        resume_build_id: int,
         user_id: int,
         diff_index: int,
-    ) -> Optional[WorkshopData]:
+    ) -> ResumeBuildData | None:
         """
         Reject a pending diff.
 
@@ -766,20 +778,24 @@ class IWorkshopRepository(Protocol):
 
     async def update_status(
         self,
-        workshop_id: int,
+        resume_build_id: int,
         user_id: int,
-        status: WorkshopStatus,
-    ) -> Optional[WorkshopData]:
-        """Update workshop status."""
+        status: ResumeBuildStatus,
+    ) -> ResumeBuildData | None:
+        """Update resume build status."""
         ...
 
     async def delete(
         self,
-        workshop_id: int,
+        resume_build_id: int,
         user_id: int,
     ) -> bool:
-        """Delete workshop (hard delete)."""
+        """Delete resume build (hard delete)."""
         ...
+
+
+# Backward compatibility alias
+IWorkshopRepository = IResumeBuildRepository
 
 
 @runtime_checkable
@@ -794,8 +810,8 @@ class IBlockSplitter(Protocol):
     async def split(
         self,
         raw_content: str,
-        source_company: Optional[str] = None,
-        source_role: Optional[str] = None,
+        source_company: str | None = None,
+        source_role: str | None = None,
     ) -> List[SplitBlockData]:
         """
         Split raw resume content into atomic blocks.
@@ -932,8 +948,8 @@ class ISemanticMatcher(Protocol):
         user_id: int,
         job_description: str,
         limit: int = 20,
-        block_types: Optional[List[BlockType]] = None,
-        tags: Optional[List[str]] = None,
+        block_types: List[BlockType] | None = None,
+        tags: List[str] | None = None,
     ) -> List[SemanticMatchData]:
         """
         Find experience blocks that match a job description.
@@ -1072,7 +1088,7 @@ class IWriteBackService(Protocol):
         workshop_id: int,
         user_id: int,
         edited_content: str,
-        source_block_id: Optional[int] = None,
+        source_block_id: int | None = None,
     ) -> WritebackProposalData:
         """
         Propose a write-back to the Vault.
@@ -1095,7 +1111,7 @@ class IWriteBackService(Protocol):
         workshop_id: int,
         user_id: int,
         edited_content: str,
-        source_block_id: Optional[int] = None,
+        source_block_id: int | None = None,
         create_new: bool = False,
     ) -> ExperienceBlockData:
         """
