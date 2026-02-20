@@ -26,6 +26,7 @@ from app.models import (  # noqa: F401 - imported for model registration
     ExperienceBlock,
     Workshop,
     AuditLog,
+    ScraperRun,
 )
 from app.core.config import get_settings
 
