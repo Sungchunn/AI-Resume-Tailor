@@ -7,7 +7,7 @@ This document describes how to connect the existing n8n APIFY LinkedIn scraper w
 The following endpoints are available for job listing ingestion:
 
 | Endpoint | Method | Description |
-|----------|--------|-------------|
+| -------- | ------ | ----------- |
 | `/api/webhooks/job-listings` | POST | Batch ingest (up to 2000 jobs) |
 | `/api/webhooks/job-listings/single` | POST | Single job ingest |
 | `/api/webhooks/job-listings/{external_job_id}` | DELETE | Deactivate a job |
@@ -27,7 +27,7 @@ The existing "Linkedin Jobs v3" workflow has 4 parallel APIFY scraper branches. 
 3. Add a **Code node** to build the payload envelope
 4. Add an **HTTP Request node** to POST to the webapp
 
-```
+```mermaid
 [APIFY: Thai]       ──→ [Code: Tag "thailand"]  ──┐
 [APIFY: Taiwan]     ──→ [Code: Tag "taiwan"]    ──┤
 [APIFY: Singapore]  ──→ [Code: Tag "singapore"] ──┼──→ [Merge] ──→ [Code: Build Payload] ──→ [HTTP Request]
@@ -49,6 +49,7 @@ After each APIFY scraper node, add a **Code** node:
 5. Paste the appropriate code (see below)
 
 **Code for Thailand branch:**
+
 ```javascript
 for (const item of $input.all()) {
   item.json.region = "thailand";
@@ -57,6 +58,7 @@ return $input.all();
 ```
 
 **Code for Taiwan branch:**
+
 ```javascript
 for (const item of $input.all()) {
   item.json.region = "taiwan";
@@ -65,6 +67,7 @@ return $input.all();
 ```
 
 **Code for Singapore branch:**
+
 ```javascript
 for (const item of $input.all()) {
   item.json.region = "singapore";
@@ -73,6 +76,7 @@ return $input.all();
 ```
 
 **Code for 4th region branch:**
+
 ```javascript
 for (const item of $input.all()) {
   item.json.region = "other";
@@ -126,7 +130,7 @@ return [{
 4. Configure as follows:
 
 | Setting | Value |
-|---------|-------|
+| ------- | ----- |
 | Method | POST |
 | URL | `{{ $env.WEBAPP_WEBHOOK_URL }}/api/webhooks/job-listings` |
 | Authentication | None |
@@ -136,6 +140,7 @@ return [{
 | JSON | `={{ $json }}` |
 
 **Additional Settings:**
+
 - **Options** → **Timeout**: 120000 (2 minutes)
 - **Options** → **Retry On Fail**: ON
 - **Options** → **Max Tries**: 3
@@ -433,6 +438,7 @@ docker-compose logs -f backend
 ```
 
 Look for lines like:
-```
+
+```txt
 INFO: Batch ingestion complete: received=1600, created=1450, updated=150, errors=0
 ```
