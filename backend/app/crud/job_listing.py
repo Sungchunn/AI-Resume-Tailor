@@ -367,64 +367,57 @@ class JobListingRepository:
 
         # Parse date fields that might be strings
         date_posted = None
-        if job_data.datePosted:
-            if isinstance(job_data.datePosted, str):
+        if job_data.postedAt:
+            if isinstance(job_data.postedAt, str):
                 try:
-                    date_posted = datetime.fromisoformat(job_data.datePosted.replace("Z", "+00:00"))
+                    # Handle date-only format like "2026-02-20"
+                    if "T" not in job_data.postedAt:
+                        date_posted = datetime.strptime(job_data.postedAt, "%Y-%m-%d")
+                    else:
+                        date_posted = datetime.fromisoformat(job_data.postedAt.replace("Z", "+00:00"))
                 except ValueError:
-                    logger.warning(f"Could not parse datePosted: {job_data.datePosted}")
+                    logger.warning(f"Could not parse postedAt: {job_data.postedAt}")
             else:
-                date_posted = job_data.datePosted
+                date_posted = job_data.postedAt
 
-        scraped_at = None
-        if job_data.scrapedAt:
-            if isinstance(job_data.scrapedAt, str):
-                try:
-                    scraped_at = datetime.fromisoformat(job_data.scrapedAt.replace("Z", "+00:00"))
-                except ValueError:
-                    logger.warning(f"Could not parse scrapedAt: {job_data.scrapedAt}")
-            else:
-                scraped_at = job_data.scrapedAt
+        # Determine if remote from employmentType or location
+        is_remote = False
+        if job_data.location and "remote" in job_data.location.lower():
+            is_remote = True
 
-        # Extract compensation fields
-        salary_min = None
-        salary_max = None
-        salary_currency = "USD"
-        salary_period = None
-        if job_data.compensation:
-            salary_min = job_data.compensation.minAmount
-            salary_max = job_data.compensation.maxAmount
-            salary_currency = job_data.compensation.currency or "USD"
-            salary_period = job_data.compensation.interval
+        # Convert employmentType to job_type list if present
+        job_type = None
+        if job_data.employmentType:
+            job_type = [job_data.employmentType]
 
         # Build the update/create data
         data = {
             "external_job_id": external_id,
             "job_title": job_data.title,
             "company_name": job_data.companyName,
-            "company_url": job_data.companyUrl,
+            "company_url": job_data.companyLinkedinUrl,
             "company_logo": job_data.companyLogo,
             "location": job_data.location,
-            "city": job_data.city,
-            "state": job_data.state,
-            "country": job_data.country,
-            "is_remote": job_data.isRemote or False,
-            "seniority": job_data.jobLevel,
+            "city": None,  # Not provided by this actor
+            "state": None,
+            "country": None,
+            "is_remote": is_remote,
+            "seniority": job_data.seniorityLevel,
             "job_function": job_data.jobFunction,
-            "industry": job_data.companyIndustry,
-            "job_description": job_data.description,
-            "job_url": job_data.jobUrl,
-            "job_url_direct": job_data.jobUrlDirect,
-            "job_type": job_data.jobType,
-            "emails": job_data.emails,
-            "easy_apply": job_data.easyApply or False,
+            "industry": job_data.industries,
+            "job_description": job_data.descriptionText,
+            "job_url": job_data.link,
+            "job_url_direct": job_data.applyUrl if job_data.applyUrl else None,
+            "job_type": job_type,
+            "emails": None,  # Not provided by this actor
+            "easy_apply": not bool(job_data.applyUrl),  # Easy apply if no external URL
             "applicants_count": job_data.applicantsCount,
-            "salary_min": salary_min,
-            "salary_max": salary_max,
-            "salary_currency": salary_currency,
-            "salary_period": salary_period,
+            "salary_min": None,  # Would need to parse from salaryInfo
+            "salary_max": None,
+            "salary_currency": "USD",
+            "salary_period": None,
             "date_posted": date_posted,
-            "scraped_at": scraped_at,
+            "scraped_at": now,
             "source_platform": source_platform,
             "region": job_data.region,
             "last_synced_at": now,
@@ -507,68 +500,59 @@ class JobListingRepository:
                 try:
                     # Parse date fields
                     date_posted = None
-                    if job_data.datePosted:
-                        if isinstance(job_data.datePosted, str):
+                    if job_data.postedAt:
+                        if isinstance(job_data.postedAt, str):
                             try:
-                                date_posted = datetime.fromisoformat(
-                                    job_data.datePosted.replace("Z", "+00:00")
-                                )
+                                # Handle date-only format like "2026-02-20"
+                                if "T" not in job_data.postedAt:
+                                    date_posted = datetime.strptime(job_data.postedAt, "%Y-%m-%d")
+                                else:
+                                    date_posted = datetime.fromisoformat(
+                                        job_data.postedAt.replace("Z", "+00:00")
+                                    )
                             except ValueError:
                                 pass
                         else:
-                            date_posted = job_data.datePosted
+                            date_posted = job_data.postedAt
 
-                    scraped_at = None
-                    if job_data.scrapedAt:
-                        if isinstance(job_data.scrapedAt, str):
-                            try:
-                                scraped_at = datetime.fromisoformat(
-                                    job_data.scrapedAt.replace("Z", "+00:00")
-                                )
-                            except ValueError:
-                                pass
-                        else:
-                            scraped_at = job_data.scrapedAt
+                    # Determine if remote from location
+                    is_remote = False
+                    if job_data.location and "remote" in job_data.location.lower():
+                        is_remote = True
 
-                    # Extract compensation
-                    salary_min = None
-                    salary_max = None
-                    salary_currency = "USD"
-                    salary_period = None
-                    if job_data.compensation:
-                        salary_min = job_data.compensation.minAmount
-                        salary_max = job_data.compensation.maxAmount
-                        salary_currency = job_data.compensation.currency or "USD"
-                        salary_period = job_data.compensation.interval
+                    # Convert employmentType to job_type list
+                    job_type = None
+                    if job_data.employmentType:
+                        job_type = [job_data.employmentType]
 
                     values_list.append(
                         {
                             "external_job_id": job_data.id,
                             "job_title": job_data.title,
                             "company_name": job_data.companyName,
-                            "company_url": job_data.companyUrl,
+                            "company_url": job_data.companyLinkedinUrl,
                             "company_logo": job_data.companyLogo,
                             "location": job_data.location,
-                            "city": job_data.city,
-                            "state": job_data.state,
-                            "country": job_data.country,
-                            "is_remote": job_data.isRemote or False,
-                            "seniority": job_data.jobLevel,
+                            "city": None,
+                            "state": None,
+                            "country": None,
+                            "is_remote": is_remote,
+                            "seniority": job_data.seniorityLevel,
                             "job_function": job_data.jobFunction,
-                            "industry": job_data.companyIndustry,
-                            "job_description": job_data.description,
-                            "job_url": job_data.jobUrl,
-                            "job_url_direct": job_data.jobUrlDirect,
-                            "job_type": job_data.jobType,
-                            "emails": job_data.emails,
-                            "easy_apply": job_data.easyApply or False,
+                            "industry": job_data.industries,
+                            "job_description": job_data.descriptionText,
+                            "job_url": job_data.link,
+                            "job_url_direct": job_data.applyUrl if job_data.applyUrl else None,
+                            "job_type": job_type,
+                            "emails": None,
+                            "easy_apply": not bool(job_data.applyUrl),
                             "applicants_count": job_data.applicantsCount,
-                            "salary_min": salary_min,
-                            "salary_max": salary_max,
-                            "salary_currency": salary_currency,
-                            "salary_period": salary_period,
+                            "salary_min": None,
+                            "salary_max": None,
+                            "salary_currency": "USD",
+                            "salary_period": None,
                             "date_posted": date_posted,
-                            "scraped_at": scraped_at,
+                            "scraped_at": now,
                             "source_platform": source_platform,
                             "region": job_data.region,
                             "last_synced_at": now,

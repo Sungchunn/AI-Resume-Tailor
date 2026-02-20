@@ -81,35 +81,36 @@ class ScraperStatsResponse(BaseModel):
 
 
 # Hardcoded scraper configurations using exact user URLs
+# TODO: Re-enable all regions after testing
 SCRAPER_CONFIGS = [
     ScraperConfig(
         region=ScraperRegion.THAILAND,
         geo_id="105146118",
-        count=100,
+        count=10,  # Reduced for testing
         search_url="https://www.linkedin.com/jobs/search/?currentJobId=4340303441&f_E=1%2C2%2C3&f_TPR=r604800&f_WT=1%2C3&geoId=105146118&keywords=%22data%20analyst%22%20OR%20%22data%20engineer%22%20OR%20%22data%20specialist%22%20OR%20%22software%20engineer%22%20OR%20%22n8n%22&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true",
     ),
-    ScraperConfig(
-        region=ScraperRegion.MALAYSIA,
-        geo_id="104187078",
-        count=100,
-        search_url="https://www.linkedin.com/jobs/search/?currentJobId=4325263422&f_E=1%2C2%2C3&f_TPR=r604800&f_WT=1%2C3&geoId=104187078&keywords=%22data%20analyst%22%20OR%20%22data%20engineer%22%20OR%20%22data%20specialist%22%20OR%20%22software%20engineer%22%20OR%20%22n8n%22&origin=JOB_SEARCH_PAGE_LOCATION_AUTOCOMPLETE&refresh=true",
-    ),
-    ScraperConfig(
-        region=ScraperRegion.SINGAPORE,
-        geo_id="102454443",
-        count=200,
-        search_url="https://www.linkedin.com/jobs/search/?currentJobId=4317344775&f_E=1%2C2%2C3&f_TPR=r604800&f_WT=1%2C3&geoId=102454443&keywords=%22data%20analyst%22%20OR%20%22data%20engineer%22%20OR%20%22data%20specialist%22%20OR%20%22software%20engineer%22%20OR%20%22n8n%22&origin=JOB_SEARCH_PAGE_SEARCH_BUTTON&refresh=true",
-    ),
-    ScraperConfig(
-        region=ScraperRegion.EUROPE,
-        geo_id="91000002",
-        count=200,
-        search_url="https://www.linkedin.com/jobs/search/?alertAction=viewjobs&currentJobId=4373121301&f_E=1%2C2&f_T=9%2C2732%2C25201%2C30128%2C25764%2C3172%2C25194&f_TPR=a1771468957-&f_WT=2&geoId=91000002&keywords=software%20engineer&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true&sortBy=R&spellCorrectionEnabled=true",
-    ),
-    ScraperConfig(
-        region=ScraperRegion.APAC,
-        geo_id="91000003",
-        count=300,
-        search_url="https://www.linkedin.com/jobs/search/?alertAction=viewjobs&currentJobId=4375472384&distance=25&f_E=1%2C2&f_T=9%2C25201%2C30128%2C25194%2C2732%2C25764%2C3172&f_TPR=a1771468957-&geoId=91000003&keywords=software%20engineer&origin=JOB_ALERT_IN_APP_NOTIFICATION&originToLandingJobPostings=4375472384%2C4373671523%2C4373681426%2C4374067823%2C4370507154%2C4366980504&savedSearchId=15671109132&sortBy=R",
-    ),
+    # ScraperConfig(
+    #     region=ScraperRegion.MALAYSIA,
+    #     geo_id="104187078",
+    #     count=100,
+    #     search_url="https://www.linkedin.com/jobs/search/?currentJobId=4325263422&f_E=1%2C2%2C3&f_TPR=r604800&f_WT=1%2C3&geoId=104187078&keywords=%22data%20analyst%22%20OR%20%22data%20engineer%22%20OR%20%22data%20specialist%22%20OR%20%22software%20engineer%22%20OR%20%22n8n%22&origin=JOB_SEARCH_PAGE_LOCATION_AUTOCOMPLETE&refresh=true",
+    # ),
+    # ScraperConfig(
+    #     region=ScraperRegion.SINGAPORE,
+    #     geo_id="102454443",
+    #     count=200,
+    #     search_url="https://www.linkedin.com/jobs/search/?currentJobId=4317344775&f_E=1%2C2%2C3&f_TPR=r604800&f_WT=1%2C3&geoId=102454443&keywords=%22data%20analyst%22%20OR%20%22data%20engineer%22%20OR%20%22data%20specialist%22%20OR%20%22software%20engineer%22%20OR%20%22n8n%22&origin=JOB_SEARCH_PAGE_SEARCH_BUTTON&refresh=true",
+    # ),
+    # ScraperConfig(
+    #     region=ScraperRegion.EUROPE,
+    #     geo_id="91000002",
+    #     count=200,
+    #     search_url="https://www.linkedin.com/jobs/search/?alertAction=viewjobs&currentJobId=4373121301&f_E=1%2C2&f_T=9%2C2732%2C25201%2C30128%2C25764%2C3172%2C25194&f_TPR=a1771468957-&f_WT=2&geoId=91000002&keywords=software%20engineer&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true&sortBy=R&spellCorrectionEnabled=true",
+    # ),
+    # ScraperConfig(
+    #     region=ScraperRegion.APAC,
+    #     geo_id="91000003",
+    #     count=300,
+    #     search_url="https://www.linkedin.com/jobs/search/?alertAction=viewjobs&currentJobId=4375472384&distance=25&f_E=1%2C2&f_T=9%2C25201%2C30128%2C25194%2C2732%2C25764%2C3172&f_TPR=a1771468957-&geoId=91000003&keywords=software%20engineer&origin=JOB_ALERT_IN_APP_NOTIFICATION&originToLandingJobPostings=4375472384%2C4373671523%2C4373681426%2C4374067823%2C4370507154%2C4366980504&savedSearchId=15671109132&sortBy=R",
+    # ),
 ]

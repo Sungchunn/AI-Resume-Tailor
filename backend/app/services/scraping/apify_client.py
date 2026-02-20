@@ -58,8 +58,9 @@ class ApifyClient:
         started_at = datetime.now(timezone.utc)
 
         # Build the actor input payload
+        # The LinkedIn Jobs Scraper expects urls as array of objects with url key
         actor_input = {
-            "searchUrl": config.search_url,
+            "urls": [config.search_url],
             "maxItems": config.count,
             "proxyConfiguration": {"useApifyProxy": True},
         }

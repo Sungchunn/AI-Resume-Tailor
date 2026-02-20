@@ -281,42 +281,53 @@ class ApifyJobListing(BaseModel):
     """
     Schema for a single job from APIFY LinkedIn scraper.
 
-    Accepts the exact APIFY camelCase field names and transforms them
-    to the internal snake_case format.
+    Field names match the actual output from the hKByXkMQaC5Qt9UMN actor.
     """
 
     # Required fields
     id: str = Field(..., min_length=1, max_length=255, description="LinkedIn job ID")
     title: str = Field(..., min_length=1, max_length=500)
-    jobUrl: str = Field(..., min_length=1, max_length=2000)
+    link: str = Field(..., min_length=1, max_length=2000, description="Job URL")
 
     # Company info
     companyName: str = Field(..., min_length=1, max_length=255)
-    companyUrl: str | None = None
+    companyLinkedinUrl: str | None = None
     companyLogo: str | None = None
-    companyIndustry: str | None = None
+    companyWebsite: str | None = None
+    companyDescription: str | None = None
+    companySlogan: str | None = None
+    companyEmployeesCount: int | None = None
+    companyAddress: dict[str, Any] | None = None
 
     # Location
     location: str | None = None
-    city: str | None = None
-    state: str | None = None
-    country: str | None = None
-    isRemote: bool = False
 
     # Job details
-    jobUrlDirect: str | None = None
-    datePosted: datetime | str | None = None
-    compensation: ApifyCompensation | None = None
-    jobType: list[str] | None = None
-    jobLevel: str | None = None
+    applyUrl: str | None = None
+    postedAt: datetime | str | None = None
+    salaryInfo: list[str] | None = None
+    salary: str | None = None
+    employmentType: str | None = None
+    seniorityLevel: str | None = None
     jobFunction: str | None = None
-    description: str = Field(..., min_length=1)
-    emails: list[str] | None = None
-    easyApply: bool = False
+    industries: str | None = None
+    descriptionText: str = Field(..., min_length=1, description="Plain text description")
+    descriptionHtml: str | None = None
     applicantsCount: str | None = None
-    scrapedAt: datetime | str | None = None
+    benefits: list[str] | None = None
 
-    # Added by n8n Code node
+    # Tracking/metadata from actor
+    trackingId: str | None = None
+    refId: str | None = None
+    inputUrl: str | None = None
+
+    # Job poster info (optional)
+    jobPosterName: str | None = None
+    jobPosterTitle: str | None = None
+    jobPosterPhoto: str | None = None
+    jobPosterProfileUrl: str | None = None
+
+    # Added by our code
     region: str | None = None
 
     model_config = {"populate_by_name": True}
