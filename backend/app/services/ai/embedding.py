@@ -32,7 +32,8 @@ from enum import Enum
 from functools import lru_cache
 import hashlib
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from app.core.config import get_settings
 from app.services.core.pii_stripper import get_pii_stripper
@@ -85,7 +86,7 @@ class EmbeddingService:
             strip_pii: Whether to strip PII before embedding (default: True)
                        SECURITY: Should always be True in production.
         """
-        genai.configure(api_key=api_key)
+        self.client = genai.Client(api_key=api_key)
         self.model = EMBEDDING_MODEL
         self.dimensions = EMBEDDING_DIMENSIONS
         self.strip_pii = strip_pii
@@ -223,22 +224,26 @@ class EmbeddingService:
             if title:
                 title = self._pii_stripper.strip(title)
 
-        # Prepare embedding request
-        embed_content_args = {
-            "model": f"models/{self.model}",
-            "content": text,
-            "task_type": task_type.value,
-        }
-
-        # Title only applies to document embeddings
+        # Prepare content - include title if provided for document embeddings
+        content = text
         if title and task_type == EmbeddingTaskType.RETRIEVAL_DOCUMENT:
-            embed_content_args["title"] = title
+            content = f"{title}\n\n{text}"
+
+        # Configure embedding request
+        config = types.EmbedContentConfig(
+            task_type=task_type.value,
+            output_dimensionality=self.dimensions,
+        )
 
         # Generate embedding
-        result = genai.embed_content(**embed_content_args)
+        result = self.client.models.embed_content(
+            model=self.model,
+            contents=content,
+            config=config,
+        )
 
         # Return the embedding vector
-        return result["embedding"]
+        return result.embeddings[0].values
 
     @staticmethod
     def compute_content_hash(content: str) -> str:

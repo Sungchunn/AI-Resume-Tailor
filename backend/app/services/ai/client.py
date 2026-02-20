@@ -1,5 +1,7 @@
-import google.generativeai as genai
 from functools import lru_cache
+
+from google import genai
+from google.genai import types
 
 from app.core.config import get_settings
 
@@ -8,8 +10,8 @@ class AIClient:
     """Wrapper around Google Gemini API client."""
 
     def __init__(self, api_key: str, model: str):
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(model)
+        self.client = genai.Client(api_key=api_key)
+        self.model = model
 
     async def generate(
         self,
@@ -22,14 +24,15 @@ class AIClient:
         # Combine system and user prompts for Gemini
         full_prompt = f"{system_prompt}\n\n{user_prompt}"
 
-        generation_config = genai.GenerationConfig(
+        config = types.GenerateContentConfig(
             max_output_tokens=max_tokens,
             temperature=temperature,
         )
 
-        response = self.model.generate_content(
-            full_prompt,
-            generation_config=generation_config,
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=full_prompt,
+            config=config,
         )
         return response.text
 
