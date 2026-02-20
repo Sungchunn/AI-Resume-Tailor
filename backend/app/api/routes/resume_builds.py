@@ -9,8 +9,6 @@ Provides CRUD operations for resume builds and all related operations:
 - Export to various formats
 """
 
-from typing import Optional, List, Any
-
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -561,12 +559,12 @@ async def execute_writeback(
     return BlockResponse.model_validate(block)
 
 
-@router.get("/{resume_build_id}/blocks", response_model=List[BlockResponse])
+@router.get("/{resume_build_id}/blocks", response_model=list[BlockResponse])
 async def get_pulled_blocks(
     resume_build_id: int,
     db: AsyncSession = Depends(get_db_session),
     current_user_id: int = Depends(get_current_user_id),
-) -> List[BlockResponse]:
+) -> list[BlockResponse]:
     """Get all blocks pulled into this resume build."""
     resume_build = await resume_build_repository.get(
         db, resume_build_id=resume_build_id, user_id=current_user_id

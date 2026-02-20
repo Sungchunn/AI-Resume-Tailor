@@ -7,7 +7,7 @@ related to resume build management.
 
 import copy
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
 
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,7 +52,7 @@ class ResumeBuildRepository:
         user_id: int,
         job_title: str,
         job_description: str,
-        job_company: Optional[str] = None,
+        job_company: str | None = None,
     ) -> ResumeBuildData:
         """Create a new resume build for a job."""
         db_obj = ResumeBuild(
@@ -76,7 +76,7 @@ class ResumeBuildRepository:
         *,
         resume_build_id: int,
         user_id: int,
-    ) -> Optional[ResumeBuildData]:
+    ) -> ResumeBuildData | None:
         """Get resume build by ID with user ownership check."""
         result = await db.execute(
             select(ResumeBuild).where(
@@ -95,7 +95,7 @@ class ResumeBuildRepository:
         *,
         resume_build_id: int,
         user_id: int,
-    ) -> Optional[ResumeBuild]:
+    ) -> ResumeBuild | None:
         """Get the raw SQLAlchemy model (for internal use)."""
         result = await db.execute(
             select(ResumeBuild).where(
@@ -112,10 +112,10 @@ class ResumeBuildRepository:
         db: AsyncSession,
         *,
         user_id: int,
-        status: Optional[ResumeBuildStatus] = None,
+        status: ResumeBuildStatus | None = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> List[ResumeBuildData]:
+    ) -> list[ResumeBuildData]:
         """List user's resume builds with optional status filter."""
         conditions = [ResumeBuild.user_id == user_id]
 
@@ -138,7 +138,7 @@ class ResumeBuildRepository:
         db: AsyncSession,
         *,
         user_id: int,
-        status: Optional[ResumeBuildStatus] = None,
+        status: ResumeBuildStatus | None = None,
     ) -> int:
         """Count resume builds matching filters."""
         conditions = [ResumeBuild.user_id == user_id]
@@ -158,8 +158,8 @@ class ResumeBuildRepository:
         *,
         resume_build_id: int,
         user_id: int,
-        sections: Dict[str, Any],
-    ) -> Optional[ResumeBuildData]:
+        sections: dict[str, Any],
+    ) -> ResumeBuildData | None:
         """Update resume build content sections (merge with existing)."""
         resume_build = await self.get_model(db, resume_build_id=resume_build_id, user_id=user_id)
         if not resume_build:
@@ -185,8 +185,8 @@ class ResumeBuildRepository:
         *,
         resume_build_id: int,
         user_id: int,
-        block_ids: List[int],
-    ) -> Optional[ResumeBuildData]:
+        block_ids: list[int],
+    ) -> ResumeBuildData | None:
         """Pull blocks from Vault into resume build."""
         resume_build = await self.get_model(db, resume_build_id=resume_build_id, user_id=user_id)
         if not resume_build:
@@ -213,7 +213,7 @@ class ResumeBuildRepository:
         resume_build_id: int,
         user_id: int,
         block_id: int,
-    ) -> Optional[ResumeBuildData]:
+    ) -> ResumeBuildData | None:
         """Remove a block from resume build's pulled blocks."""
         resume_build = await self.get_model(db, resume_build_id=resume_build_id, user_id=user_id)
         if not resume_build:
@@ -235,8 +235,8 @@ class ResumeBuildRepository:
         *,
         resume_build_id: int,
         user_id: int,
-        diffs: List[DiffSuggestionData],
-    ) -> Optional[ResumeBuildData]:
+        diffs: list[DiffSuggestionData],
+    ) -> ResumeBuildData | None:
         """Add AI-generated diff suggestions."""
         resume_build = await self.get_model(db, resume_build_id=resume_build_id, user_id=user_id)
         if not resume_build:
@@ -259,7 +259,7 @@ class ResumeBuildRepository:
         resume_build_id: int,
         user_id: int,
         diff_index: int,
-    ) -> Optional[ResumeBuildData]:
+    ) -> ResumeBuildData | None:
         """
         Accept a pending diff and apply it to sections.
 
@@ -297,7 +297,7 @@ class ResumeBuildRepository:
         resume_build_id: int,
         user_id: int,
         diff_index: int,
-    ) -> Optional[ResumeBuildData]:
+    ) -> ResumeBuildData | None:
         """Reject a pending diff (remove without applying)."""
         resume_build = await self.get_model(db, resume_build_id=resume_build_id, user_id=user_id)
         if not resume_build:
@@ -323,7 +323,7 @@ class ResumeBuildRepository:
         resume_build_id: int,
         user_id: int,
         status: ResumeBuildStatus,
-    ) -> Optional[ResumeBuildData]:
+    ) -> ResumeBuildData | None:
         """Update resume build status."""
         resume_build = await self.get_model(db, resume_build_id=resume_build_id, user_id=user_id)
         if not resume_build:
@@ -362,8 +362,8 @@ class ResumeBuildRepository:
         *,
         resume_build_id: int,
         user_id: int,
-        embedding: List[float],
-    ) -> Optional[ResumeBuildData]:
+        embedding: list[float],
+    ) -> ResumeBuildData | None:
         """Update resume build's job description embedding."""
         resume_build = await self.get_model(db, resume_build_id=resume_build_id, user_id=user_id)
         if not resume_build:
@@ -381,7 +381,7 @@ class ResumeBuildRepository:
         *,
         resume_build_id: int,
         user_id: int,
-    ) -> Optional[ResumeBuildData]:
+    ) -> ResumeBuildData | None:
         """Clear all pending diffs from resume build."""
         resume_build = await self.get_model(db, resume_build_id=resume_build_id, user_id=user_id)
         if not resume_build:
@@ -395,9 +395,9 @@ class ResumeBuildRepository:
 
     def _apply_diff(
         self,
-        document: Dict[str, Any],
-        diff: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        document: dict[str, Any],
+        diff: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Apply a single JSON Patch diff to a document.
 

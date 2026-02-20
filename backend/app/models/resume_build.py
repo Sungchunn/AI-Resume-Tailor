@@ -1,8 +1,8 @@
 """
-Workshop Model - Job-specific tailoring workspace
+ResumeBuild Model - Job-specific tailoring workspace
 
-Workshops are where users build tailored resumes for specific jobs.
-Each workshop:
+Resume builds are where users build tailored resumes for specific jobs.
+Each resume build:
 - Targets one job description
 - Pulls relevant experience blocks from the user's Vault
 - Accumulates AI-generated diff suggestions
@@ -11,7 +11,7 @@ Each workshop:
 """
 
 from datetime import datetime
-from typing import Optional, List, Dict, Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from sqlalchemy import (
     Column,
@@ -37,12 +37,12 @@ if TYPE_CHECKING:
 GEMINI_EMBEDDING_DIMENSIONS = 768
 
 
-class Workshop(Base):
+class ResumeBuild(Base):
     """
     Job-specific workspace for resume tailoring.
 
     Workflow:
-    1. User creates workshop with job title/description
+    1. User creates resume build with job title/description
     2. System embeds job description for semantic matching
     3. User pulls relevant blocks from their Vault
     4. AI generates diff-based suggestions
@@ -53,7 +53,7 @@ class Workshop(Base):
     (RFC 6902) which can be accepted/rejected individually.
     """
 
-    __tablename__ = "workshops"
+    __tablename__ = "resume_builds"
 
     # Identity
     id = Column(Integer, primary_key=True, index=True)
@@ -72,14 +72,14 @@ class Workshop(Base):
 
     # Resume sections being built (JSONB for flexibility)
     # Structure: {"summary": "...", "experience": [...], "skills": [...]}
-    sections: Mapped[Dict[str, Any]] = Column(JSONB, default=dict)
+    sections: Mapped[dict[str, Any]] = Column(JSONB, default=dict)
 
     # IDs of experience blocks pulled from the Vault
-    pulled_block_ids: Mapped[List[int]] = Column(ARRAY(Integer), default=list)
+    pulled_block_ids: Mapped[list[int]] = Column(ARRAY(Integer), default=list)
 
     # Pending AI suggestions (JSON Patch operations)
     # Each diff has: operation, path, value, reason, impact, source_block_id
-    pending_diffs: Mapped[List[Dict[str, Any]]] = Column(JSONB, default=list)
+    pending_diffs: Mapped[list[dict[str, Any]]] = Column(JSONB, default=list)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -87,33 +87,33 @@ class Workshop(Base):
     exported_at = Column(DateTime(timezone=True), nullable=True)  # Last export time
 
     # Relationships
-    owner: Mapped["User"] = relationship("User", back_populates="workshops")
+    owner: Mapped["User"] = relationship("User", back_populates="resume_builds")
 
     # Indexes
     __table_args__ = (
-        Index("ix_workshops_user_id", "user_id"),
-        Index("ix_workshops_status", "user_id", "status"),
+        Index("ix_resume_builds_user_id", "user_id"),
+        Index("ix_resume_builds_status", "user_id", "status"),
     )
 
     def is_draft(self) -> bool:
-        """Check if workshop is in draft status."""
+        """Check if resume build is in draft status."""
         return self.status == "draft"
 
     def is_in_progress(self) -> bool:
-        """Check if workshop is being actively worked on."""
+        """Check if resume build is being actively worked on."""
         return self.status == "in_progress"
 
     def is_exported(self) -> bool:
-        """Check if workshop has been exported."""
+        """Check if resume build has been exported."""
         return self.status == "exported"
 
     def mark_in_progress(self) -> None:
-        """Transition workshop to in_progress status."""
+        """Transition resume build to in_progress status."""
         if self.status == "draft":
             self.status = "in_progress"
 
     def mark_exported(self) -> None:
-        """Transition workshop to exported status and record timestamp."""
+        """Transition resume build to exported status and record timestamp."""
         self.status = "exported"
         self.exported_at = datetime.utcnow()
 
@@ -129,19 +129,19 @@ class Workshop(Base):
         if self.pulled_block_ids and block_id in self.pulled_block_ids:
             self.pulled_block_ids = [bid for bid in self.pulled_block_ids if bid != block_id]
 
-    def add_pending_diff(self, diff: Dict[str, Any]) -> None:
+    def add_pending_diff(self, diff: dict[str, Any]) -> None:
         """Add a diff suggestion to pending diffs."""
         if self.pending_diffs is None:
             self.pending_diffs = []
         self.pending_diffs = self.pending_diffs + [diff]
 
-    def get_pending_diff(self, index: int) -> Optional[Dict[str, Any]]:
+    def get_pending_diff(self, index: int) -> dict[str, Any] | None:
         """Get a specific pending diff by index."""
         if self.pending_diffs and 0 <= index < len(self.pending_diffs):
             return self.pending_diffs[index]
         return None
 
-    def remove_pending_diff(self, index: int) -> Optional[Dict[str, Any]]:
+    def remove_pending_diff(self, index: int) -> dict[str, Any] | None:
         """Remove and return a pending diff by index."""
         if self.pending_diffs and 0 <= index < len(self.pending_diffs):
             diff = self.pending_diffs[index]
@@ -163,7 +163,7 @@ class Workshop(Base):
         new_sections[section_name] = content
         self.sections = new_sections
 
-    def get_section(self, section_name: str) -> Optional[Any]:
+    def get_section(self, section_name: str) -> Any | None:
         """Get a specific section of the resume."""
         if self.sections:
             return self.sections.get(section_name)
@@ -171,6 +171,6 @@ class Workshop(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<Workshop(id={self.id}, job_title='{self.job_title}', "
+            f"<ResumeBuild(id={self.id}, job_title='{self.job_title}', "
             f"user_id={self.user_id}, status='{self.status}')>"
         )

@@ -46,13 +46,13 @@ from app.schemas.block import (
     GapAnalysisResponse,
     BlockVerifyRequest,
 )
-from app.schemas.workshop import (
+from app.schemas.resume_build import (
     DiffSuggestion,
-    WorkshopBase,
-    WorkshopCreate,
-    WorkshopUpdate,
-    WorkshopResponse,
-    WorkshopListResponse,
+    ResumeBuildBase,
+    ResumeBuildCreate,
+    ResumeBuildUpdate,
+    ResumeBuildResponse,
+    ResumeBuildListResponse,
     PullBlocksRequest,
     PullBlocksResponse,
     RemoveBlockRequest,
@@ -66,6 +66,13 @@ from app.schemas.workshop import (
     WritebackProposal,
     ExportRequest,
 )
+
+# Backward compatibility aliases
+WorkshopBase = ResumeBuildBase
+WorkshopCreate = ResumeBuildCreate
+WorkshopUpdate = ResumeBuildUpdate
+WorkshopResponse = ResumeBuildResponse
+WorkshopListResponse = ResumeBuildListResponse
 
 __all__ = [
     # User schemas
@@ -127,13 +134,13 @@ __all__ = [
     "MatchResponse",
     "GapAnalysisResponse",
     "BlockVerifyRequest",
-    # Workshop schemas
+    # Resume Build schemas
     "DiffSuggestion",
-    "WorkshopBase",
-    "WorkshopCreate",
-    "WorkshopUpdate",
-    "WorkshopResponse",
-    "WorkshopListResponse",
+    "ResumeBuildBase",
+    "ResumeBuildCreate",
+    "ResumeBuildUpdate",
+    "ResumeBuildResponse",
+    "ResumeBuildListResponse",
     "PullBlocksRequest",
     "PullBlocksResponse",
     "RemoveBlockRequest",
@@ -146,4 +153,10 @@ __all__ = [
     "WritebackRequest",
     "WritebackProposal",
     "ExportRequest",
+    # Backward compatibility aliases
+    "WorkshopBase",
+    "WorkshopCreate",
+    "WorkshopUpdate",
+    "WorkshopResponse",
+    "WorkshopListResponse",
 ]
