@@ -63,7 +63,7 @@ async def create_resume_build(
 
 @router.get("", response_model=ResumeBuildListResponse)
 async def list_resume_builds(
-    status_filter: Optional[str] = Query(None, alias="status", description="Filter by status"),
+    status_filter: str | None = Query(None, alias="status", description="Filter by status"),
     limit: int = Query(50, ge=1, le=200, description="Maximum results"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
     db: AsyncSession = Depends(get_db_session),
@@ -84,7 +84,7 @@ async def list_resume_builds(
                 detail=f"Invalid status. Must be one of: {[s.value for s in ResumeBuildStatus]}",
             )
 
-    resume_builds = await resume_build_repository.list(
+    resume_builds = await resume_build_repository.list_builds(
         db,
         user_id=current_user_id,
         status=resume_build_status,

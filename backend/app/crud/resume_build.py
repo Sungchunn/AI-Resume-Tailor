@@ -107,7 +107,7 @@ class ResumeBuildRepository:
         )
         return result.scalar_one_or_none()
 
-    async def list(
+    async def list_builds(
         self,
         db: AsyncSession,
         *,

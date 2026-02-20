@@ -73,7 +73,7 @@ async def list_blocks(
     Supports filtering by block type, tags, and verification status.
     Results are paginated.
     """
-    blocks = await block_repository.list(
+    blocks = await block_repository.list_blocks(
         db,
         user_id=current_user_id,
         block_types=block_types,
