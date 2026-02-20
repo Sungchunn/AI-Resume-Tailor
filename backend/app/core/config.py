@@ -40,6 +40,17 @@ class Settings(BaseSettings):
     # Document Upload
     max_upload_size_mb: int = 10
 
+    # APIFY Integration
+    apify_api_token: str = ""
+    apify_actor_id: str = "hKByXkMQaC5Qt9UMN"
+    apify_timeout_seconds: int = 300
+    apify_max_retries: int = 3
+
+    # Scraper Schedule
+    scraper_schedule_hour: int = 6  # UTC
+    scraper_schedule_minute: int = 0
+    scraper_enabled: bool = True
+
     class Config:
         env_file = ".env"
         case_sensitive = False
