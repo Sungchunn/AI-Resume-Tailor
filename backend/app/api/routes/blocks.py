@@ -232,26 +232,26 @@ async def import_blocks(
     created_blocks = []
     for split_block in split_blocks:
         # Classify if not already classified
-        block_type_str = split_block.get("block_type")
+        block_type_str = getattr(split_block, "block_type", None)
         if block_type_str:
             block_type = BlockType(block_type_str)
         else:
-            block_type = await classifier.classify(split_block["content"])
+            block_type = await classifier.classify(split_block.content)
 
         # Suggest tags if not provided
-        tags = split_block.get("suggested_tags", [])
+        tags = getattr(split_block, "suggested_tags", [])
         if not tags:
-            tags = await classifier.suggest_tags(split_block["content"])
+            tags = await classifier.suggest_tags(split_block.content)
 
         # Create the block
         block_data = await block_repository.create(
             db,
             user_id=current_user_id,
-            content=split_block["content"],
+            content=split_block.content,
             block_type=block_type,
             tags=tags,
-            source_company=split_block.get("source_company") or import_in.source_company,
-            source_role=split_block.get("source_role") or import_in.source_role,
+            source_company=getattr(split_block, "source_company", None) or import_in.source_company,
+            source_role=getattr(split_block, "source_role", None) or import_in.source_role,
         )
         created_blocks.append(block_data)
 
@@ -295,17 +295,17 @@ async def embed_blocks(
     embedded_ids = []
     for block in blocks_to_embed:
         # Generate embedding
-        embedding = await embedding_service.embed_document(block["content"])
-        content_hash = embedding_service.compute_content_hash(block["content"])
+        embedding = await embedding_service.embed_document(block.content)
+        content_hash = embedding_service.compute_content_hash(block.content)
 
         # Update the block
         await block_repository.update_embedding(
             db,
-            block_id=block["id"],
+            block_id=block.id,
             embedding=embedding,
             content_hash=content_hash,
         )
-        embedded_ids.append(block["id"])
+        embedded_ids.append(block.id)
 
     await db.commit()
 
@@ -336,8 +336,8 @@ async def embed_single_block(
     embedding_service = get_embedding_service()
 
     # Generate embedding
-    embedding = await embedding_service.embed_document(block["content"])
-    content_hash = embedding_service.compute_content_hash(block["content"])
+    embedding = await embedding_service.embed_document(block.content)
+    content_hash = embedding_service.compute_content_hash(block.content)
 
     # Update the block
     await block_repository.update_embedding(
