@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 
-from app.services.ats_analyzer import ATSAnalyzer, get_ats_analyzer
+from app.services.job.ats_analyzer import ATSAnalyzer, get_ats_analyzer
 
 
 class TestATSAnalyzer:

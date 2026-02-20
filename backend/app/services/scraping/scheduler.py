@@ -32,8 +32,8 @@ from app.schemas.scraper import (
     ScraperConfig,
     ScraperRunResult,
 )
-from app.services.apify_client import ApifyClientError, get_apify_client
-from app.services.cache import get_cache_service
+from app.services.scraping.apify_client import ApifyClientError, get_apify_client
+from app.services.core.cache import get_cache_service
 
 logger = logging.getLogger(__name__)
 

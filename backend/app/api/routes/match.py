@@ -35,7 +35,7 @@ async def match_blocks(
     Uses semantic search to find the most relevant blocks from the user's
     Vault based on the job description text.
     """
-    from app.services.semantic_matcher import get_semantic_matcher
+    from app.services.ai.semantic_matcher import get_semantic_matcher
 
     matcher = get_semantic_matcher()
 
@@ -81,7 +81,7 @@ async def analyze_gaps(
     First performs semantic matching, then analyzes which job requirements
     are well-covered and which have gaps.
     """
-    from app.services.semantic_matcher import get_semantic_matcher
+    from app.services.ai.semantic_matcher import get_semantic_matcher
 
     matcher = get_semantic_matcher()
 
@@ -125,8 +125,8 @@ async def get_cached_match(
     If a job has been analyzed before, returns cached results.
     Otherwise fetches the job description and performs matching.
     """
-    from app.services.semantic_matcher import get_semantic_matcher
-    from app.services.cache import get_cache_service
+    from app.services.ai.semantic_matcher import get_semantic_matcher
+    from app.services.core.cache import get_cache_service
     from app.crud.job import job_crud
     from app.crud.block import block_repository
 

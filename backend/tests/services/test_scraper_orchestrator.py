@@ -14,8 +14,8 @@ from unittest.mock import AsyncMock, patch, MagicMock
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.scraper_orchestrator import ScraperOrchestrator
-from app.services.apify_client import ApifyClient
+from app.services.scraping.orchestrator import ScraperOrchestrator
+from app.services.scraping.apify_client import ApifyClient
 from app.schemas.scraper import ScraperConfig, ScraperRegion, ScraperRunResult
 from app.schemas.job_listing import ApifyJobListing
 from app.crud.job_listing import job_listing_repository

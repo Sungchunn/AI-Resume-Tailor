@@ -1,7 +1,7 @@
 """Tests for the PIIStripper service."""
 
 import pytest
-from app.services.pii_stripper import PIIStripper, get_pii_stripper
+from app.services.core.pii_stripper import PIIStripper, get_pii_stripper
 
 
 class TestPIIStripper:

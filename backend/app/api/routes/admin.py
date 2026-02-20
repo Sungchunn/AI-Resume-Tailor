@@ -20,7 +20,7 @@ from app.schemas.scraper import (
     ScraperStatsResponse,
     ScraperStatusResponse,
 )
-from app.services.scheduler import get_scheduler_service
+from app.services.scraping.scheduler import get_scheduler_service
 
 router = APIRouter()
 

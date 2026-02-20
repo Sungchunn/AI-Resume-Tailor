@@ -19,7 +19,7 @@ from typing import List, Dict, Any, Set, Optional
 from functools import lru_cache
 
 from app.core.protocols import ExperienceBlockData, ATSReportData
-from app.services.ai_client import get_ai_client
+from app.services.ai.client import get_ai_client
 
 
 class ATSAnalyzer:

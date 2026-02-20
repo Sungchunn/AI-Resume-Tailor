@@ -6,7 +6,7 @@ from app.api.deps import get_current_user
 from app.core.config import get_settings
 from app.models.user import User
 from app.schemas.upload import DocumentExtractionResponse
-from app.services.document_extractor import DocumentExtractionError, extract_text
+from app.services.export.document_extractor import DocumentExtractionError, extract_text
 
 router = APIRouter()
 settings = get_settings()

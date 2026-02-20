@@ -2,8 +2,8 @@ import json
 import hashlib
 from typing import TypedDict
 
-from app.services.ai_client import AIClient
-from app.services.cache import CacheService
+from app.services.ai.client import AIClient
+from app.services.core.cache import CacheService
 
 
 class ContactInfo(TypedDict, total=False):

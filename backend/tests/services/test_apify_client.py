@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, patch, MagicMock
 
 import httpx
 
-from app.services.apify_client import ApifyClient, ApifyClientError
+from app.services.scraping.apify_client import ApifyClient, ApifyClientError
 from app.schemas.scraper import ScraperConfig, ScraperRegion
 
 
@@ -368,12 +368,12 @@ class TestApifyClientConfiguration:
             )
 
             # When using get_apify_client, it should use settings
-            from app.services.apify_client import get_apify_client
+            from app.services.scraping.apify_client import get_apify_client
 
             # Clear the cached client
-            import app.services.apify_client
+            import app.services.scraping.apify_client
 
-            app.services.apify_client.get_apify_client.cache_clear()
+            app.services.scraping.apify_client.get_apify_client.cache_clear()
 
             client = get_apify_client()
 

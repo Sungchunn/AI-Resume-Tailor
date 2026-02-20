@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
 
-from app.services.audit import (
+from app.services.core.audit import (
     AuditService,
     AuditAction,
     get_audit_service,

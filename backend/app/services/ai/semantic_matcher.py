@@ -17,8 +17,8 @@ from app.core.protocols import (
     GapAnalysisData,
 )
 from app.crud.block import block_repository
-from app.services.embedding import get_embedding_service
-from app.services.ai_client import get_ai_client
+from app.services.ai.embedding import get_embedding_service
+from app.services.ai.client import get_ai_client
 
 
 KEYWORD_EXTRACTION_PROMPT = """You are an expert at extracting key requirements from job descriptions.

@@ -10,7 +10,7 @@ from functools import lru_cache
 from typing import List
 
 from app.core.protocols import BlockType
-from app.services.ai_client import get_ai_client
+from app.services.ai.client import get_ai_client
 
 
 CLASSIFY_SYSTEM_PROMPT = """You are an expert at classifying professional experience content.

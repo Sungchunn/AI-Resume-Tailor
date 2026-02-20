@@ -18,7 +18,7 @@ from app.core.protocols import (
     DiffOperation,
     SuggestionImpact,
 )
-from app.services.ai_client import get_ai_client
+from app.services.ai.client import get_ai_client
 
 
 DIFF_SUGGESTION_PROMPT = """You are a precision resume tailoring assistant.

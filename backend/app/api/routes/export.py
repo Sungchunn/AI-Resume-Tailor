@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db_session, get_current_user_id
 from app.crud import resume_crud
 from app.crud.tailor import tailored_resume_crud
-from app.services.export import get_export_service
+from app.services.export.service import get_export_service
 
 router = APIRouter()
 

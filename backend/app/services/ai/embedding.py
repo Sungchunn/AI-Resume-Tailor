@@ -36,7 +36,7 @@ import hashlib
 import google.generativeai as genai
 
 from app.core.config import get_settings
-from app.services.pii_stripper import get_pii_stripper
+from app.services.core.pii_stripper import get_pii_stripper
 
 
 class EmbeddingTaskType(str, Enum):

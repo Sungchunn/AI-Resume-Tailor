@@ -6,7 +6,7 @@ requiring the AI client (which is mocked for unit tests).
 """
 
 import pytest
-from app.services.diff_engine import DiffEngine
+from app.services.job.diff_engine import DiffEngine
 
 
 @pytest.fixture

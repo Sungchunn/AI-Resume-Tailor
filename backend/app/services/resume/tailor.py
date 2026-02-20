@@ -1,10 +1,10 @@
 import json
 from typing import TypedDict
 
-from app.services.ai_client import AIClient
-from app.services.cache import CacheService
-from app.services.resume_parser import ResumeParser, ParsedResume
-from app.services.job_analyzer import JobAnalyzer, ParsedJob
+from app.services.ai.client import AIClient
+from app.services.core.cache import CacheService
+from app.services.resume.parser import ResumeParser, ParsedResume
+from app.services.job.analyzer import JobAnalyzer, ParsedJob
 
 
 class Suggestion(TypedDict):

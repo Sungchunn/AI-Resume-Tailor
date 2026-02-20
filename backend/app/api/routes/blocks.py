@@ -27,7 +27,7 @@ from app.schemas.block import (
     BlockEmbedResponse,
     BlockVerifyRequest,
 )
-from app.services.embedding import get_embedding_service
+from app.services.ai.embedding import get_embedding_service
 
 router = APIRouter()
 
@@ -218,8 +218,8 @@ async def import_blocks(
     The imported blocks will need embedding generation after import.
     """
     # Import the services here to avoid circular imports
-    from app.services.block_splitter import get_block_splitter
-    from app.services.block_classifier import get_block_classifier
+    from app.services.resume.block_splitter import get_block_splitter
+    from app.services.resume.block_classifier import get_block_classifier
 
     splitter = get_block_splitter()
     classifier = get_block_classifier()

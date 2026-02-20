@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import api_router
 from app.core.config import get_settings
 from app.middleware.rate_limiter import RateLimitConfig, RateLimitMiddleware
-from app.services.scheduler import get_scheduler_service
+from app.services.scraping.scheduler import get_scheduler_service
 
 settings = get_settings()
 

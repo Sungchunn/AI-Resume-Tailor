@@ -16,7 +16,7 @@ from app.schemas.scraper import (
     ScraperConfig,
     ScraperRunResult,
 )
-from app.services.apify_client import get_apify_client
+from app.services.scraping.apify_client import get_apify_client
 
 logger = logging.getLogger(__name__)
 

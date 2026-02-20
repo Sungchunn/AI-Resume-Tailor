@@ -18,8 +18,8 @@ from app.core.protocols import (
     BlockType,
 )
 from app.crud.block import block_repository
-from app.services.block_classifier import get_block_classifier
-from app.services.embedding import get_embedding_service
+from app.services.resume.block_classifier import get_block_classifier
+from app.services.ai.embedding import get_embedding_service
 
 
 class WriteBackService:

@@ -10,7 +10,7 @@ from functools import lru_cache
 from typing import List, Optional
 
 from app.core.protocols import SplitBlockData
-from app.services.ai_client import get_ai_client
+from app.services.ai.client import get_ai_client
 
 
 SPLIT_SYSTEM_PROMPT = """You are a resume parsing expert. Your task is to split raw resume content into atomic experience blocks.
