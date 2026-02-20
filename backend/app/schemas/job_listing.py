@@ -49,12 +49,22 @@ class JobListingBase(BaseModel):
     external_job_id: str = Field(..., min_length=1, max_length=255)
     job_title: str = Field(..., min_length=1, max_length=500)
     company_name: str = Field(..., min_length=1, max_length=255)
+    company_url: str | None = Field(None, max_length=2000)
+    company_logo: str | None = Field(None, max_length=2000)
     location: str | None = Field(None, max_length=500)
+    city: str | None = Field(None, max_length=255)
+    state: str | None = Field(None, max_length=255)
+    country: str | None = Field(None, max_length=255)
+    is_remote: bool = False
     seniority: str | None = Field(None, max_length=100)
     job_function: str | None = Field(None, max_length=255)
     industry: str | None = Field(None, max_length=255)
     job_description: str = Field(..., min_length=1)
     job_url: str = Field(..., min_length=1, max_length=2000)
+    job_url_direct: str | None = Field(None, max_length=2000)
+    job_type: list[str] | None = None
+    emails: list[str] | None = None
+    easy_apply: bool = False
 
     # Salary information
     salary_min: int | None = Field(None, ge=0)
@@ -64,7 +74,10 @@ class JobListingBase(BaseModel):
 
     # Metadata
     date_posted: datetime | None = None
+    scraped_at: datetime | None = None
     source_platform: str | None = Field(None, max_length=100)
+    region: str | None = Field(None, max_length=100)
+    last_synced_at: datetime | None = None
 
 
 class JobListingCreate(JobListingBase):
@@ -78,18 +91,30 @@ class JobListingUpdate(BaseModel):
 
     job_title: str | None = Field(None, min_length=1, max_length=500)
     company_name: str | None = Field(None, min_length=1, max_length=255)
+    company_url: str | None = Field(None, max_length=2000)
+    company_logo: str | None = Field(None, max_length=2000)
     location: str | None = Field(None, max_length=500)
+    city: str | None = Field(None, max_length=255)
+    state: str | None = Field(None, max_length=255)
+    country: str | None = Field(None, max_length=255)
+    is_remote: bool | None = None
     seniority: str | None = Field(None, max_length=100)
     job_function: str | None = Field(None, max_length=255)
     industry: str | None = Field(None, max_length=255)
     job_description: str | None = Field(None, min_length=1)
     job_url: str | None = Field(None, min_length=1, max_length=2000)
+    job_url_direct: str | None = Field(None, max_length=2000)
+    job_type: list[str] | None = None
+    emails: list[str] | None = None
+    easy_apply: bool | None = None
     salary_min: int | None = Field(None, ge=0)
     salary_max: int | None = Field(None, ge=0)
     salary_currency: str | None = Field(None, max_length=10)
     salary_period: str | None = Field(None, max_length=20)
     date_posted: datetime | None = None
+    scraped_at: datetime | None = None
     source_platform: str | None = Field(None, max_length=100)
+    region: str | None = Field(None, max_length=100)
     is_active: bool | None = None
 
 
@@ -224,43 +249,135 @@ class JobInteractionActionResponse(BaseModel):
 
 
 # ============================================================================
-# Webhook Schemas (n8n Ingestion)
+# Webhook Schemas (n8n/APIFY Ingestion)
 # ============================================================================
 
 
-class WebhookJobListing(BaseModel):
-    """Schema for a single job from n8n webhook."""
+class ApifyCompensation(BaseModel):
+    """Nested compensation object from APIFY LinkedIn scraper."""
 
-    external_job_id: str = Field(..., min_length=1, max_length=255)
-    job_title: str = Field(..., min_length=1, max_length=500)
-    company_name: str = Field(..., min_length=1, max_length=255)
+    minAmount: int | None = Field(None, alias="minAmount")
+    maxAmount: int | None = Field(None, alias="maxAmount")
+    currency: str | None = "USD"
+    interval: str | None = None  # "yearly", "hourly", etc.
+
+
+class ApifyJobListing(BaseModel):
+    """
+    Schema for a single job from APIFY LinkedIn scraper.
+
+    Accepts the exact APIFY camelCase field names and transforms them
+    to the internal snake_case format.
+    """
+
+    # Required fields
+    id: str = Field(..., min_length=1, max_length=255, description="LinkedIn job ID")
+    title: str = Field(..., min_length=1, max_length=500)
+    jobUrl: str = Field(..., min_length=1, max_length=2000)
+
+    # Company info
+    companyName: str = Field(..., min_length=1, max_length=255)
+    companyUrl: str | None = None
+    companyLogo: str | None = None
+    companyIndustry: str | None = None
+
+    # Location
     location: str | None = None
-    seniority: str | None = None
-    job_function: str | None = None
-    industry: str | None = None
-    job_description: str = Field(..., min_length=1)
-    job_url: str = Field(..., min_length=1, max_length=2000)
-    salary_min: int | None = None
-    salary_max: int | None = None
-    salary_currency: str = "USD"
-    salary_period: str | None = None
-    date_posted: datetime | None = None
-    source_platform: str | None = None
+    city: str | None = None
+    state: str | None = None
+    country: str | None = None
+    isRemote: bool = False
+
+    # Job details
+    jobUrlDirect: str | None = None
+    datePosted: datetime | str | None = None
+    compensation: ApifyCompensation | None = None
+    jobType: list[str] | None = None
+    jobLevel: str | None = None
+    jobFunction: str | None = None
+    description: str = Field(..., min_length=1)
+    emails: list[str] | None = None
+    easyApply: bool = False
+    scrapedAt: datetime | str | None = None
+
+    # Added by n8n Code node
+    region: str | None = None
+
+    model_config = {"populate_by_name": True}
 
 
-class WebhookBatchRequest(BaseModel):
-    """Schema for batch job ingestion from n8n."""
+class ApifyBatchMetadata(BaseModel):
+    """Metadata envelope for batch job ingestion from n8n."""
 
-    jobs: list[WebhookJobListing] = Field(..., min_length=1, max_length=1000)
+    source: str = "linkedin"
+    scraper: str | None = None
+    scrapedAt: datetime | str | None = None
+    totalJobs: int | None = None
+    regions: list[str] | None = None
+
+
+class ApifyBatchRequest(BaseModel):
+    """
+    Schema for batch job ingestion from n8n with APIFY data.
+
+    This matches the expected payload structure from the n8n workflow:
+    {
+      "jobs": [...],
+      "metadata": {...}
+    }
+    """
+
+    jobs: list[ApifyJobListing] = Field(..., min_length=1, max_length=2000)
+    metadata: ApifyBatchMetadata | None = None
 
 
 class WebhookBatchResponse(BaseModel):
     """Response for batch job ingestion."""
 
+    received: int
     created: int
     updated: int
-    failed: int
-    errors: list[dict[str, Any]] = Field(default_factory=list)
+    errors: int
+    error_details: list[dict[str, Any]] = Field(default_factory=list)
+
+
+# Legacy schemas for backwards compatibility
+class WebhookJobListing(BaseModel):
+    """Legacy schema for a single job from n8n webhook (snake_case)."""
+
+    external_job_id: str = Field(..., min_length=1, max_length=255)
+    job_title: str = Field(..., min_length=1, max_length=500)
+    company_name: str = Field(..., min_length=1, max_length=255)
+    company_url: str | None = None
+    company_logo: str | None = None
+    location: str | None = None
+    city: str | None = None
+    state: str | None = None
+    country: str | None = None
+    is_remote: bool = False
+    seniority: str | None = None
+    job_function: str | None = None
+    industry: str | None = None
+    job_description: str = Field(..., min_length=1)
+    job_url: str = Field(..., min_length=1, max_length=2000)
+    job_url_direct: str | None = None
+    job_type: list[str] | None = None
+    emails: list[str] | None = None
+    easy_apply: bool = False
+    salary_min: int | None = None
+    salary_max: int | None = None
+    salary_currency: str = "USD"
+    salary_period: str | None = None
+    date_posted: datetime | None = None
+    scraped_at: datetime | None = None
+    source_platform: str | None = None
+    region: str | None = None
+
+
+class WebhookBatchRequest(BaseModel):
+    """Legacy schema for batch job ingestion from n8n (snake_case)."""
+
+    jobs: list[WebhookJobListing] = Field(..., min_length=1, max_length=2000)
 
 
 # ============================================================================

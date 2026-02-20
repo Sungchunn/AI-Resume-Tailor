@@ -5,6 +5,7 @@ Provides repository-style operations with advanced filtering,
 full-text search, and user interaction tracking.
 """
 
+import logging
 from datetime import datetime, timezone
 from typing import Any
 
@@ -19,9 +20,12 @@ from app.schemas.job_listing import (
     JobListingUpdate,
     JobListingFilters,
     WebhookJobListing,
+    ApifyJobListing,
     SortBy,
     SortOrder,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class JobListingRepository:
@@ -271,16 +275,19 @@ class JobListingRepository:
         job_data: WebhookJobListing,
     ) -> tuple[JobListing, bool]:
         """
-        Insert or update a job listing from webhook data.
+        Insert or update a job listing from webhook data (legacy snake_case format).
 
         Returns tuple of (listing, is_created).
         """
         existing = await self.get_by_external_id(db, external_job_id=job_data.external_job_id)
+        now = datetime.now(timezone.utc)
 
         if existing:
             # Update existing listing
-            for field, value in job_data.model_dump().items():
+            data = job_data.model_dump()
+            for field, value in data.items():
                 setattr(existing, field, value)
+            existing.last_synced_at = now
             await db.flush()
             await db.refresh(existing)
             return existing, False
@@ -288,6 +295,105 @@ class JobListingRepository:
             # Create new listing
             create_data = JobListingCreate(**job_data.model_dump())
             new_listing = await self.create(db, obj_in=create_data)
+            new_listing.last_synced_at = now
+            await db.flush()
+            await db.refresh(new_listing)
+            return new_listing, True
+
+    async def upsert_from_apify(
+        self,
+        db: AsyncSession,
+        *,
+        job_data: ApifyJobListing,
+        source_platform: str = "linkedin",
+    ) -> tuple[JobListing, bool]:
+        """
+        Insert or update a job listing from APIFY scraper data.
+
+        Transforms APIFY camelCase fields to internal snake_case format.
+        Returns tuple of (listing, is_created).
+        """
+        external_id = job_data.id
+        existing = await self.get_by_external_id(db, external_job_id=external_id)
+        now = datetime.now(timezone.utc)
+
+        # Parse date fields that might be strings
+        date_posted = None
+        if job_data.datePosted:
+            if isinstance(job_data.datePosted, str):
+                try:
+                    date_posted = datetime.fromisoformat(job_data.datePosted.replace("Z", "+00:00"))
+                except ValueError:
+                    logger.warning(f"Could not parse datePosted: {job_data.datePosted}")
+            else:
+                date_posted = job_data.datePosted
+
+        scraped_at = None
+        if job_data.scrapedAt:
+            if isinstance(job_data.scrapedAt, str):
+                try:
+                    scraped_at = datetime.fromisoformat(job_data.scrapedAt.replace("Z", "+00:00"))
+                except ValueError:
+                    logger.warning(f"Could not parse scrapedAt: {job_data.scrapedAt}")
+            else:
+                scraped_at = job_data.scrapedAt
+
+        # Extract compensation fields
+        salary_min = None
+        salary_max = None
+        salary_currency = "USD"
+        salary_period = None
+        if job_data.compensation:
+            salary_min = job_data.compensation.minAmount
+            salary_max = job_data.compensation.maxAmount
+            salary_currency = job_data.compensation.currency or "USD"
+            salary_period = job_data.compensation.interval
+
+        # Build the update/create data
+        data = {
+            "external_job_id": external_id,
+            "job_title": job_data.title,
+            "company_name": job_data.companyName,
+            "company_url": job_data.companyUrl,
+            "company_logo": job_data.companyLogo,
+            "location": job_data.location,
+            "city": job_data.city,
+            "state": job_data.state,
+            "country": job_data.country,
+            "is_remote": job_data.isRemote or False,
+            "seniority": job_data.jobLevel,
+            "job_function": job_data.jobFunction,
+            "industry": job_data.companyIndustry,
+            "job_description": job_data.description,
+            "job_url": job_data.jobUrl,
+            "job_url_direct": job_data.jobUrlDirect,
+            "job_type": job_data.jobType,
+            "emails": job_data.emails,
+            "easy_apply": job_data.easyApply or False,
+            "salary_min": salary_min,
+            "salary_max": salary_max,
+            "salary_currency": salary_currency,
+            "salary_period": salary_period,
+            "date_posted": date_posted,
+            "scraped_at": scraped_at,
+            "source_platform": source_platform,
+            "region": job_data.region,
+            "last_synced_at": now,
+        }
+
+        if existing:
+            # Update existing listing
+            for field, value in data.items():
+                setattr(existing, field, value)
+            await db.flush()
+            await db.refresh(existing)
+            return existing, False
+        else:
+            # Create new listing
+            new_listing = JobListing(**data, is_active=True)
+            db.add(new_listing)
+            await db.flush()
+            await db.refresh(new_listing)
             return new_listing, True
 
     async def deactivate(self, db: AsyncSession, *, id: int) -> bool:
