@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # Database
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/resume_tailor"
+    database_url_sync: str | None = None  # Sync URL for Alembic migrations (psycopg2)
 
     # Redis
     redis_url: str = "redis://localhost:6379"
