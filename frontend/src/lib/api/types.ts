@@ -265,8 +265,9 @@ export interface GapAnalysisResponse {
   recommendations: string[];
 }
 
-// Workshop Types
-export type WorkshopStatus = "draft" | "in_progress" | "exported";
+// Resume Build Types (formerly Workshop Types)
+export type ResumeBuildStatus = "draft" | "in_progress" | "exported";
+export type WorkshopStatus = ResumeBuildStatus; // Backward compatibility
 
 export type DiffOperation = "add" | "remove" | "replace" | "move" | "copy" | "test";
 
@@ -282,25 +283,27 @@ export interface DiffSuggestion {
   source_block_id?: number | null;
 }
 
-export interface WorkshopCreate {
+export interface ResumeBuildCreate {
   job_title: string;
   job_company?: string | null;
   job_description?: string | null;
 }
+export type WorkshopCreate = ResumeBuildCreate; // Backward compatibility
 
-export interface WorkshopUpdate {
+export interface ResumeBuildUpdate {
   job_title?: string;
   job_company?: string | null;
   job_description?: string | null;
 }
+export type WorkshopUpdate = ResumeBuildUpdate; // Backward compatibility
 
-export interface WorkshopResponse {
+export interface ResumeBuildResponse {
   id: number;
   user_id: number;
   job_title: string;
   job_company?: string | null;
   job_description?: string | null;
-  status: WorkshopStatus;
+  status: ResumeBuildStatus;
   sections: Record<string, unknown>;
   pulled_block_ids: number[];
   pending_diffs: DiffSuggestion[];
@@ -308,7 +311,15 @@ export interface WorkshopResponse {
   updated_at?: string | null;
   exported_at?: string | null;
 }
+export type WorkshopResponse = ResumeBuildResponse; // Backward compatibility
 
+export interface ResumeBuildListResponse {
+  resume_builds: ResumeBuildResponse[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+// Note: WorkshopListResponse has different field name (workshops vs resume_builds)
 export interface WorkshopListResponse {
   workshops: WorkshopResponse[];
   total: number;
@@ -321,7 +332,7 @@ export interface PullBlocksRequest {
 }
 
 export interface PullBlocksResponse {
-  workshop: WorkshopResponse;
+  workshop: WorkshopResponse;  // Kept as 'workshop' for backward compatibility (client transforms from API's 'resume_build')
   newly_pulled: number[];
   already_pulled: number[];
 }
@@ -332,7 +343,7 @@ export interface SuggestRequest {
 }
 
 export interface SuggestResponse {
-  workshop: WorkshopResponse;
+  workshop: WorkshopResponse;  // Kept as 'workshop' for backward compatibility
   new_suggestions_count: number;
   gaps_identified: string[];
 }
@@ -342,7 +353,7 @@ export interface DiffActionRequest {
 }
 
 export interface DiffActionResponse {
-  workshop: WorkshopResponse;
+  workshop: WorkshopResponse;  // Kept as 'workshop' for backward compatibility
   action: "accept" | "reject";
   applied_diff?: DiffSuggestion | null;
 }
@@ -352,7 +363,7 @@ export interface UpdateSectionsRequest {
 }
 
 export interface UpdateStatusRequest {
-  status: WorkshopStatus;
+  status: ResumeBuildStatus;
 }
 
 export interface ExportRequest {

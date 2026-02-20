@@ -373,9 +373,9 @@ export const matchApi = {
     fetchApi(`/api/v1/match/job/${jobId}?limit=${limit}`),
 };
 
-// Workshop API
-export const workshopApi = {
-  list: (
+// Resume Build API (formerly Workshop API)
+export const resumeBuildApi = {
+  list: async (
     params: {
       status?: WorkshopStatus;
       limit?: number;
@@ -393,78 +393,92 @@ export const workshopApi = {
       searchParams.append("offset", String(params.offset));
     }
     const query = searchParams.toString();
-    return fetchApi(`/api/v1/workshops${query ? `?${query}` : ""}`);
+    const response = await fetchApi<{ resume_builds: WorkshopResponse[]; total: number; limit: number; offset: number }>(`/api/v1/resume-builds${query ? `?${query}` : ""}`);
+    // Transform response for backward compatibility
+    return { workshops: response.resume_builds, total: response.total, limit: response.limit, offset: response.offset };
   },
 
   get: (id: number): Promise<WorkshopResponse> =>
-    fetchApi(`/api/v1/workshops/${id}`),
+    fetchApi(`/api/v1/resume-builds/${id}`),
 
   create: (data: WorkshopCreate): Promise<WorkshopResponse> =>
-    fetchApi("/api/v1/workshops", {
+    fetchApi("/api/v1/resume-builds", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   update: (id: number, data: WorkshopUpdate): Promise<WorkshopResponse> =>
-    fetchApi(`/api/v1/workshops/${id}`, {
+    fetchApi(`/api/v1/resume-builds/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
 
   delete: (id: number): Promise<void> =>
-    fetchApi(`/api/v1/workshops/${id}`, {
+    fetchApi(`/api/v1/resume-builds/${id}`, {
       method: "DELETE",
     }),
 
-  pullBlocks: (id: number, data: PullBlocksRequest): Promise<PullBlocksResponse> =>
-    fetchApi(`/api/v1/workshops/${id}/pull`, {
+  pullBlocks: async (id: number, data: PullBlocksRequest): Promise<PullBlocksResponse> => {
+    const response = await fetchApi<{ resume_build: WorkshopResponse; newly_pulled: number[]; already_pulled: number[] }>(`/api/v1/resume-builds/${id}/pull`, {
       method: "POST",
       body: JSON.stringify(data),
-    }),
+    });
+    // Transform for backward compatibility
+    return { workshop: response.resume_build, newly_pulled: response.newly_pulled, already_pulled: response.already_pulled };
+  },
 
-  removeBlock: (workshopId: number, blockId: number): Promise<WorkshopResponse> =>
-    fetchApi(`/api/v1/workshops/${workshopId}/blocks/${blockId}`, {
+  removeBlock: (resumeBuildId: number, blockId: number): Promise<WorkshopResponse> =>
+    fetchApi(`/api/v1/resume-builds/${resumeBuildId}/blocks/${blockId}`, {
       method: "DELETE",
     }),
 
-  suggest: (id: number, data?: SuggestRequest): Promise<SuggestResponse> =>
-    fetchApi(`/api/v1/workshops/${id}/suggest`, {
+  suggest: async (id: number, data?: SuggestRequest): Promise<SuggestResponse> => {
+    const response = await fetchApi<{ resume_build: WorkshopResponse; new_suggestions_count: number; gaps_identified: string[] }>(`/api/v1/resume-builds/${id}/suggest`, {
       method: "POST",
       body: JSON.stringify(data || {}),
-    }),
+    });
+    // Transform for backward compatibility
+    return { workshop: response.resume_build, new_suggestions_count: response.new_suggestions_count, gaps_identified: response.gaps_identified };
+  },
 
-  acceptDiff: (id: number, data: DiffActionRequest): Promise<DiffActionResponse> =>
-    fetchApi(`/api/v1/workshops/${id}/diffs/accept`, {
+  acceptDiff: async (id: number, data: DiffActionRequest): Promise<DiffActionResponse> => {
+    const response = await fetchApi<{ resume_build: WorkshopResponse; action: "accept" | "reject"; applied_diff?: unknown }>(`/api/v1/resume-builds/${id}/diffs/accept`, {
       method: "POST",
       body: JSON.stringify(data),
-    }),
+    });
+    // Transform for backward compatibility
+    return { workshop: response.resume_build, action: response.action, applied_diff: response.applied_diff as DiffActionResponse["applied_diff"] };
+  },
 
-  rejectDiff: (id: number, data: DiffActionRequest): Promise<DiffActionResponse> =>
-    fetchApi(`/api/v1/workshops/${id}/diffs/reject`, {
+  rejectDiff: async (id: number, data: DiffActionRequest): Promise<DiffActionResponse> => {
+    const response = await fetchApi<{ resume_build: WorkshopResponse; action: "accept" | "reject"; applied_diff?: unknown }>(`/api/v1/resume-builds/${id}/diffs/reject`, {
       method: "POST",
       body: JSON.stringify(data),
-    }),
+    });
+    // Transform for backward compatibility
+    return { workshop: response.resume_build, action: response.action, applied_diff: response.applied_diff as DiffActionResponse["applied_diff"] };
+  },
 
   clearDiffs: (id: number): Promise<WorkshopResponse> =>
-    fetchApi(`/api/v1/workshops/${id}/diffs/clear`, {
+    fetchApi(`/api/v1/resume-builds/${id}/diffs/clear`, {
       method: "POST",
     }),
 
   updateSections: (id: number, data: UpdateSectionsRequest): Promise<WorkshopResponse> =>
-    fetchApi(`/api/v1/workshops/${id}/sections`, {
+    fetchApi(`/api/v1/resume-builds/${id}/sections`, {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
 
   updateStatus: (id: number, data: UpdateStatusRequest): Promise<WorkshopResponse> =>
-    fetchApi(`/api/v1/workshops/${id}/status`, {
+    fetchApi(`/api/v1/resume-builds/${id}/status`, {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
 
   export: async (id: number, data: ExportRequest): Promise<Blob> => {
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/workshops/${id}/export`,
+      `${API_BASE_URL}/api/v1/resume-builds/${id}/export`,
       {
         method: "POST",
         headers: {
@@ -481,6 +495,9 @@ export const workshopApi = {
     return response.blob();
   },
 };
+
+// Backward compatibility alias
+export const workshopApi = resumeBuildApi;
 
 // Upload API
 export const uploadApi = {
