@@ -7,6 +7,7 @@ from app.models.tailored_resume import TailoredResume
 from app.models.experience_block import ExperienceBlock
 from app.models.workshop import Workshop
 from app.models.audit_log import AuditLog
+from app.models.scraper_run import ScraperRun
 
 __all__ = [
     "User",
@@ -18,4 +19,5 @@ __all__ = [
     "ExperienceBlock",
     "Workshop",
     "AuditLog",
+    "ScraperRun",
 ]

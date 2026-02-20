@@ -1,18 +1,19 @@
 from fastapi import APIRouter
 
 from app.api.routes import (
-    auth,
-    resumes,
-    jobs,
-    job_listings,
-    tailor,
-    export,
-    blocks,
-    match,
-    workshops,
+    admin,
     ats,
+    auth,
+    blocks,
+    export,
+    job_listings,
+    jobs,
+    match,
+    resumes,
+    tailor,
     upload,
     webhooks,
+    workshops,
 )
 
 api_router = APIRouter()
@@ -36,3 +37,6 @@ api_router.include_router(job_listings.router, prefix="/job-listings", tags=["jo
 
 # Webhooks (n8n integration)
 api_router.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
+
+# Admin endpoints (scheduler management)
+api_router.include_router(admin.router, prefix="/admin", tags=["admin"])

@@ -1,16 +1,34 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import api_router
 from app.core.config import get_settings
-from app.middleware.rate_limiter import RateLimitMiddleware, RateLimitConfig
+from app.middleware.rate_limiter import RateLimitConfig, RateLimitMiddleware
+from app.services.scheduler import get_scheduler_service
 
 settings = get_settings()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifecycle - startup and shutdown events."""
+    # Startup: Initialize scheduler
+    scheduler = get_scheduler_service()
+    scheduler.start()
+
+    yield
+
+    # Shutdown: Stop scheduler gracefully
+    scheduler.stop()
+
 
 app = FastAPI(
     title="AI Resume Tailor API",
     description="API for AI-powered resume customization",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # Add middleware in order (last added = first executed)
