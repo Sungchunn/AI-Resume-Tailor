@@ -16,6 +16,21 @@ const SENIORITY_OPTIONS = [
   { value: "executive", label: "Executive" },
 ];
 
+const REGION_OPTIONS = [
+  { value: "thailand", label: "Thailand" },
+  { value: "malaysia", label: "Malaysia" },
+  { value: "singapore", label: "Singapore" },
+  { value: "europe", label: "Europe" },
+  { value: "apac", label: "APAC" },
+];
+
+const APPLICANT_PRESETS = [
+  { value: 25, label: "< 25" },
+  { value: 50, label: "< 50" },
+  { value: 100, label: "< 100" },
+  { value: undefined, label: "Any" },
+];
+
 const SORT_OPTIONS: { value: JobListingSortBy; label: string }[] = [
   { value: "date_posted", label: "Date Posted" },
   { value: "salary_max", label: "Salary (High to Low)" },
@@ -48,6 +63,55 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
     onFiltersChange({
       ...filters,
       seniority: newSeniorities.length > 0 ? newSeniorities.join(",") : undefined,
+      offset: 0,
+    });
+  };
+
+  const handleRegionChange = (value: string) => {
+    const currentRegions = filters.region?.split(",") || [];
+    let newRegions: string[];
+
+    if (currentRegions.includes(value)) {
+      newRegions = currentRegions.filter((r) => r !== value);
+    } else {
+      newRegions = [...currentRegions, value];
+    }
+
+    onFiltersChange({
+      ...filters,
+      region: newRegions.length > 0 ? newRegions.join(",") : undefined,
+      offset: 0,
+    });
+  };
+
+  const handleRemoteOnlyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onFiltersChange({
+      ...filters,
+      is_remote: e.target.checked ? true : undefined,
+      offset: 0,
+    });
+  };
+
+  const handleEasyApplyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onFiltersChange({
+      ...filters,
+      easy_apply: e.target.checked ? true : undefined,
+      offset: 0,
+    });
+  };
+
+  const handleApplicantsMaxChange = (value: number | undefined) => {
+    onFiltersChange({
+      ...filters,
+      applicants_max: value,
+      offset: 0,
+    });
+  };
+
+  const handleApplicantsIncludeNaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onFiltersChange({
+      ...filters,
+      applicants_include_na: e.target.checked,
       offset: 0,
     });
   };
@@ -95,14 +159,20 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
       offset: 0,
       sort_by: "date_posted",
       sort_order: "desc",
+      applicants_include_na: true,
     });
   };
 
   const selectedSeniorities = filters.seniority?.split(",") || [];
+  const selectedRegions = filters.region?.split(",") || [];
   const hasActiveFilters =
     filters.search ||
     filters.location ||
+    filters.region ||
     filters.seniority ||
+    filters.is_remote ||
+    filters.easy_apply ||
+    filters.applicants_max !== undefined ||
     filters.salary_min ||
     filters.salary_max ||
     filters.is_saved;
@@ -169,6 +239,82 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
                 </label>
               ))}
             </div>
+          </div>
+
+          {/* Region */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Region
+            </label>
+            <div className="space-y-2">
+              {REGION_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedRegions.includes(option.value)}
+                    onChange={() => handleRegionChange(option.value)}
+                    className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <span className="text-sm text-gray-600">{option.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Remote & Easy Apply Toggles */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.is_remote === true}
+                onChange={handleRemoteOnlyChange}
+                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-600">Remote only</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.easy_apply === true}
+                onChange={handleEasyApplyChange}
+                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-600">Easy Apply only</span>
+            </label>
+          </div>
+
+          {/* Applicant Count */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Max Applicants
+            </label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {APPLICANT_PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  onClick={() => handleApplicantsMaxChange(preset.value)}
+                  className={`px-3 py-1 text-sm rounded-full border transition-colors ${
+                    filters.applicants_max === preset.value
+                      ? "bg-primary-100 border-primary-500 text-primary-700"
+                      : "border-gray-300 text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.applicants_include_na !== false}
+                onChange={handleApplicantsIncludeNaChange}
+                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-600">Include jobs with unknown applicant count</span>
+            </label>
           </div>
 
           {/* Salary Range */}

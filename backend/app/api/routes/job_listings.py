@@ -71,11 +71,20 @@ def _build_listing_response(
 async def list_job_listings(
     # Location filters
     location: Annotated[str | None, Query(description="Location filter (comma-separated)")] = None,
+    # Region filter
+    region: Annotated[str | None, Query(description="Region filter (comma-separated)")] = None,
     # Seniority filters
     seniority: Annotated[str | None, Query(description="Seniority levels (comma-separated)")] = None,
     # Category filters
     job_function: Annotated[str | None, Query(description="Job function filter")] = None,
     industry: Annotated[str | None, Query(description="Industry filter")] = None,
+    # Remote filter
+    is_remote: Annotated[bool | None, Query(description="Filter by remote status")] = None,
+    # Easy Apply filter
+    easy_apply: Annotated[bool | None, Query(description="Filter by Easy Apply availability")] = None,
+    # Applicant count filters
+    applicants_max: Annotated[int | None, Query(ge=0, description="Maximum applicant count")] = None,
+    applicants_include_na: Annotated[bool, Query(description="Include jobs with unknown applicant count")] = True,
     # Salary filters
     salary_min: Annotated[int | None, Query(ge=0, description="Minimum salary")] = None,
     salary_max: Annotated[int | None, Query(ge=0, description="Maximum salary")] = None,
@@ -106,9 +115,14 @@ async def list_job_listings(
     """
     filters = JobListingFilters(
         location=location,
+        region=region,
         seniority=seniority,
         job_function=job_function,
         industry=industry,
+        is_remote=is_remote,
+        easy_apply=easy_apply,
+        applicants_max=applicants_max,
+        applicants_include_na=applicants_include_na,
         salary_min=salary_min,
         salary_max=salary_max,
         date_posted_after=date_posted_after,
@@ -159,6 +173,9 @@ async def search_job_listings(
         search=q,
         limit=limit,
         offset=offset,
+        applicants_max=None,
+        salary_min=None,
+        salary_max=None,
     )
 
     listings, total = await job_listing_repository.list(
@@ -192,6 +209,9 @@ async def list_saved_jobs(
         is_saved=True,
         limit=limit,
         offset=offset,
+        applicants_max=None,
+        salary_min=None,
+        salary_max=None,
     )
 
     listings, total = await job_listing_repository.list(
@@ -225,6 +245,9 @@ async def list_applied_jobs(
         applied=True,
         limit=limit,
         offset=offset,
+        applicants_max=None,
+        salary_min=None,
+        salary_max=None,
     )
 
     listings, total = await job_listing_repository.list(

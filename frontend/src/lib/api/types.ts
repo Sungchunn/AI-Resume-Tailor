@@ -419,9 +419,14 @@ export interface JobListingListResponse {
 
 export interface JobListingFilters {
   location?: string;
+  region?: string;
   seniority?: string;
   job_function?: string;
   industry?: string;
+  is_remote?: boolean;
+  easy_apply?: boolean;
+  applicants_max?: number;
+  applicants_include_na?: boolean;
   salary_min?: number;
   salary_max?: number;
   date_posted_after?: string;

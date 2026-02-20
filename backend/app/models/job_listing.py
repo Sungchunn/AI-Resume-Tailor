@@ -54,6 +54,7 @@ class JobListing(Base):
     job_type = Column(JSONB, nullable=True)  # e.g. ["Full-time", "Contract"]
     emails = Column(JSONB, nullable=True)  # e.g. ["careers@company.com"]
     easy_apply = Column(Boolean, default=False, nullable=False)
+    applicants_count = Column(String(50), nullable=True)  # e.g. "25", "100+", "Over 200"
 
     # Salary information
     salary_min = Column(Integer, nullable=True)

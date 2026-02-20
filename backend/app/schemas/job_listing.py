@@ -65,6 +65,7 @@ class JobListingBase(BaseModel):
     job_type: list[str] | None = None
     emails: list[str] | None = None
     easy_apply: bool = False
+    applicants_count: str | None = Field(None, max_length=50)
 
     # Salary information
     salary_min: int | None = Field(None, ge=0)
@@ -107,6 +108,7 @@ class JobListingUpdate(BaseModel):
     job_type: list[str] | None = None
     emails: list[str] | None = None
     easy_apply: bool | None = None
+    applicants_count: str | None = Field(None, max_length=50)
     salary_min: int | None = Field(None, ge=0)
     salary_max: int | None = Field(None, ge=0)
     salary_currency: str | None = Field(None, max_length=10)
@@ -155,6 +157,9 @@ class JobListingFilters(BaseModel):
     location: str | None = None
     locations: list[str] | None = None
 
+    # Region filter (comma-separated for multi-select)
+    region: str | None = None
+
     # Seniority filters (comma-separated for multi-select)
     seniority: str | None = None
     seniorities: list[str] | None = None
@@ -162,6 +167,16 @@ class JobListingFilters(BaseModel):
     # Category filters
     job_function: str | None = None
     industry: str | None = None
+
+    # Remote filter
+    is_remote: bool | None = None
+
+    # Easy Apply filter
+    easy_apply: bool | None = None
+
+    # Applicant count filters
+    applicants_max: int | None = Field(None, ge=0)
+    applicants_include_na: bool = True
 
     # Salary filters
     salary_min: int | None = Field(None, ge=0)
@@ -298,6 +313,7 @@ class ApifyJobListing(BaseModel):
     description: str = Field(..., min_length=1)
     emails: list[str] | None = None
     easyApply: bool = False
+    applicantsCount: str | None = None
     scrapedAt: datetime | str | None = None
 
     # Added by n8n Code node
@@ -364,6 +380,7 @@ class WebhookJobListing(BaseModel):
     job_type: list[str] | None = None
     emails: list[str] | None = None
     easy_apply: bool = False
+    applicants_count: str | None = None
     salary_min: int | None = None
     salary_max: int | None = None
     salary_currency: str = "USD"
