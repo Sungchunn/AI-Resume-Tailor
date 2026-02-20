@@ -1,5 +1,6 @@
-from pydantic_settings import BaseSettings
 from functools import lru_cache
+
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -50,6 +51,9 @@ class Settings(BaseSettings):
     scraper_schedule_hour: int = 6  # UTC
     scraper_schedule_minute: int = 0
     scraper_enabled: bool = True
+    scraper_max_concurrent: int = 2  # Max concurrent APIFY calls (1 = sequential)
+    scraper_retry_attempts: int = 2  # Retry attempts for transient failures
+    scraper_retry_delay: int = 60  # Seconds between retries
 
     class Config:
         env_file = ".env"

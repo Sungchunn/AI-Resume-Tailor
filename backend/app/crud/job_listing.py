@@ -5,24 +5,25 @@ Provides repository-style operations with advanced filtering,
 full-text search, and user interaction tracking.
 """
 
+from __future__ import annotations
+
 import logging
 from datetime import datetime, timezone
-from typing import Any
 
-from sqlalchemy import select, func, or_, and_, update, cast, Integer
+from sqlalchemy import Integer, and_, cast, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.job_listing import JobListing
 from app.models.user_job_interaction import UserJobInteraction
 from app.schemas.job_listing import (
-    JobListingCreate,
-    JobListingUpdate,
-    JobListingFilters,
-    WebhookJobListing,
     ApifyJobListing,
+    JobListingCreate,
+    JobListingFilters,
+    JobListingUpdate,
     SortBy,
     SortOrder,
+    WebhookJobListing,
 )
 
 logger = logging.getLogger(__name__)
