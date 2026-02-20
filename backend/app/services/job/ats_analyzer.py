@@ -15,7 +15,7 @@ Implements the IATSAnalyzer protocol from app.core.protocols.
 """
 
 import re
-from typing import List, Dict, Any, Set, Optional
+from typing import Any
 from functools import lru_cache
 
 from app.core.protocols import ExperienceBlockData, ATSReportData
@@ -56,8 +56,8 @@ class ATSAnalyzer:
 
     def analyze_structure(
         self,
-        resume_content: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        resume_content: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Analyze structural ATS compatibility.
 
@@ -79,10 +79,10 @@ class ATSAnalyzer:
                 "suggestions": [...]
             }
         """
-        warnings: List[str] = []
-        suggestions: List[str] = []
-        sections_found: List[str] = []
-        sections_missing: List[str] = []
+        warnings: list[str] = []
+        suggestions: list[str] = []
+        sections_found: list[str] = []
+        sections_missing: list[str] = []
 
         # Get all content keys
         content_keys = set(resume_content.keys()) if resume_content else set()
@@ -139,9 +139,9 @@ class ATSAnalyzer:
 
     async def analyze_keywords(
         self,
-        resume_blocks: List[ExperienceBlockData],
+        resume_blocks: list[ExperienceBlockData],
         job_description: str,
-        vault_blocks: List[ExperienceBlockData],
+        vault_blocks: list[ExperienceBlockData],
     ) -> ATSReportData:
         """
         Analyze keyword coverage.
@@ -174,9 +174,9 @@ class ATSAnalyzer:
         ).lower()
 
         # Categorize keywords
-        matched_keywords: List[str] = []
-        missing_keywords: List[str] = []
-        missing_from_vault: List[str] = []
+        matched_keywords: list[str] = []
+        missing_keywords: list[str] = []
+        missing_from_vault: list[str] = []
 
         for keyword in job_keywords:
             keyword_lower = keyword.lower()
@@ -199,7 +199,7 @@ class ATSAnalyzer:
         )
 
         # Generate warnings
-        warnings: List[str] = []
+        warnings: list[str] = []
         if keyword_coverage < 0.3:
             warnings.append(
                 "Low keyword match - your resume may not pass ATS keyword filters"
@@ -220,7 +220,7 @@ class ATSAnalyzer:
             "suggestions": suggestions,
         }
 
-    async def _extract_keywords(self, job_description: str) -> List[str]:
+    async def _extract_keywords(self, job_description: str) -> list[str]:
         """
         Extract important keywords from job description using AI.
 
@@ -265,7 +265,7 @@ Do not include common words like "experience", "ability", "skills".
             # Fallback to basic keyword extraction
             return self._basic_keyword_extraction(job_description)
 
-    def _basic_keyword_extraction(self, text: str) -> List[str]:
+    def _basic_keyword_extraction(self, text: str) -> list[str]:
         """
         Fallback keyword extraction using pattern matching.
         """
@@ -281,7 +281,7 @@ Do not include common words like "experience", "ability", "skills".
             r"\b(Leadership|Management|Communication|Problem.solving)\b",
         ]
 
-        keywords: Set[str] = set()
+        keywords: set[str] = set()
 
         for pattern in tech_patterns:
             matches = re.findall(pattern, text, re.IGNORECASE)
@@ -291,13 +291,13 @@ Do not include common words like "experience", "ability", "skills".
 
     def _generate_keyword_suggestions(
         self,
-        missing_keywords: List[str],
-        vault_blocks: List[ExperienceBlockData],
-    ) -> List[str]:
+        missing_keywords: list[str],
+        vault_blocks: list[ExperienceBlockData],
+    ) -> list[str]:
         """
         Generate actionable suggestions for adding missing keywords.
         """
-        suggestions: List[str] = []
+        suggestions: list[str] = []
 
         # Find which vault blocks contain the missing keywords
         for keyword in missing_keywords[:5]:  # Limit to top 5
@@ -319,7 +319,7 @@ Do not include common words like "experience", "ability", "skills".
 
         return suggestions
 
-    def get_ats_tips(self) -> List[str]:
+    def get_ats_tips(self) -> list[str]:
         """
         Return general ATS optimization tips.
         """

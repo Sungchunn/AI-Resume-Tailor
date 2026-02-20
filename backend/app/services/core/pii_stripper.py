@@ -9,7 +9,6 @@ Implements the IPIIStripper protocol from app.core.protocols.
 """
 
 import re
-from typing import List
 from functools import lru_cache
 
 from app.core.protocols import PIIEntityData
@@ -152,7 +151,7 @@ class PIIStripper:
 
         return result
 
-    def detect(self, text: str) -> List[PIIEntityData]:
+    def detect(self, text: str) -> list[PIIEntityData]:
         """
         Detect PII entities in text without removing them.
 
@@ -167,7 +166,7 @@ class PIIStripper:
         if not text:
             return []
 
-        entities: List[PIIEntityData] = []
+        entities: list[PIIEntityData] = []
 
         # Check all patterns
         all_patterns = {**self.PATTERNS, **self.LABELED_PATTERNS}
@@ -213,8 +212,8 @@ class PIIStripper:
         return type_mapping.get(pattern_name, pattern_name)
 
     def _dedupe_overlapping(
-        self, entities: List[PIIEntityData]
-    ) -> List[PIIEntityData]:
+        self, entities: list[PIIEntityData]
+    ) -> list[PIIEntityData]:
         """Remove overlapping entity detections, keeping the longer match."""
         if not entities:
             return []
@@ -224,7 +223,7 @@ class PIIStripper:
             entities, key=lambda e: (e["start"], -(e["end"] - e["start"]))
         )
 
-        result: List[PIIEntityData] = []
+        result: list[PIIEntityData] = []
         last_end = -1
 
         for entity in sorted_entities:

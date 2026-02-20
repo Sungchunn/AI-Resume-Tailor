@@ -4,7 +4,6 @@ ATS Analysis API Routes
 Provides endpoints for ATS (Applicant Tracking System) compatibility analysis.
 """
 
-from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,14 +28,14 @@ class ATSStructureResponse(BaseModel):
     """Response for ATS structure analysis."""
 
     format_score: int = Field(..., description="Format compatibility score 0-100")
-    sections_found: List[str] = Field(
+    sections_found: list[str] = Field(
         ..., description="Standard sections found in resume"
     )
-    sections_missing: List[str] = Field(
+    sections_missing: list[str] = Field(
         ..., description="Standard sections missing from resume"
     )
-    warnings: List[str] = Field(..., description="Potential issues found")
-    suggestions: List[str] = Field(..., description="Improvement suggestions")
+    warnings: list[str] = Field(..., description="Potential issues found")
+    suggestions: list[str] = Field(..., description="Improvement suggestions")
 
 
 class ATSKeywordRequest(BaseModel):
@@ -45,7 +44,7 @@ class ATSKeywordRequest(BaseModel):
     job_description: str = Field(
         ..., min_length=50, description="Job description to analyze against"
     )
-    resume_block_ids: Optional[List[int]] = Field(
+    resume_block_ids: list[int] | None = Field(
         None, description="Block IDs to use for resume (uses all if not provided)"
     )
 
@@ -56,23 +55,23 @@ class ATSKeywordResponse(BaseModel):
     keyword_coverage: float = Field(
         ..., ge=0, le=1, description="Keyword coverage 0-1"
     )
-    matched_keywords: List[str] = Field(
+    matched_keywords: list[str] = Field(
         ..., description="Keywords found in resume"
     )
-    missing_keywords: List[str] = Field(
+    missing_keywords: list[str] = Field(
         ..., description="Keywords in job but not in resume (available in vault)"
     )
-    missing_from_vault: List[str] = Field(
+    missing_from_vault: list[str] = Field(
         ..., description="Keywords not found in user's vault"
     )
-    warnings: List[str] = Field(..., description="Important warnings")
-    suggestions: List[str] = Field(..., description="Actionable suggestions")
+    warnings: list[str] = Field(..., description="Important warnings")
+    suggestions: list[str] = Field(..., description="Actionable suggestions")
 
 
 class ATSTipsResponse(BaseModel):
     """Response for ATS optimization tips."""
 
-    tips: List[str] = Field(..., description="General ATS optimization tips")
+    tips: list[str] = Field(..., description="General ATS optimization tips")
 
 
 @router.post("/structure", response_model=ATSStructureResponse)

@@ -30,7 +30,6 @@ See: https://ai.google.dev/gemini-api/docs/embeddings
 
 from enum import Enum
 from functools import lru_cache
-from typing import List, Optional
 import hashlib
 
 import google.generativeai as genai
@@ -92,7 +91,7 @@ class EmbeddingService:
         self.strip_pii = strip_pii
         self._pii_stripper = get_pii_stripper() if strip_pii else None
 
-    async def embed_document(self, content: str, title: Optional[str] = None) -> List[float]:
+    async def embed_document(self, content: str, title: str | None = None) -> list[float]:
         """
         Generate embedding for a DOCUMENT (content being stored/indexed).
 
@@ -121,7 +120,7 @@ class EmbeddingService:
             title=title,
         )
 
-    async def embed_query(self, query: str) -> List[float]:
+    async def embed_query(self, query: str) -> list[float]:
         """
         Generate embedding for a QUERY (search/match operation).
 
@@ -150,7 +149,7 @@ class EmbeddingService:
             task_type=EmbeddingTaskType.RETRIEVAL_QUERY,
         )
 
-    async def embed_for_similarity(self, text: str) -> List[float]:
+    async def embed_for_similarity(self, text: str) -> list[float]:
         """
         Generate embedding for similarity comparison.
 
@@ -170,9 +169,9 @@ class EmbeddingService:
 
     async def embed_batch_documents(
         self,
-        contents: List[str],
-        titles: Optional[List[str]] = None,
-    ) -> List[List[float]]:
+        contents: list[str],
+        titles: list[str] | None = None,
+    ) -> list[list[float]]:
         """
         Batch embed multiple documents efficiently.
 
@@ -201,8 +200,8 @@ class EmbeddingService:
         self,
         text: str,
         task_type: EmbeddingTaskType,
-        title: Optional[str] = None,
-    ) -> List[float]:
+        title: str | None = None,
+    ) -> list[float]:
         """
         Internal method to generate embeddings with specified task type.
 
@@ -261,8 +260,8 @@ class EmbeddingService:
     def check_needs_embedding(
         self,
         new_content: str,
-        current_hash: Optional[str],
-        current_embedding: Optional[List[float]],
+        current_hash: str | None,
+        current_embedding: list[float] | None,
     ) -> bool:
         """
         Check if content needs (re-)embedding.

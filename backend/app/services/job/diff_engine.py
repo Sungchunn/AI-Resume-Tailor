@@ -9,7 +9,7 @@ the user's Vault - no hallucination allowed.
 import json
 import copy
 from functools import lru_cache
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 from app.core.protocols import (
     DiffSuggestionData,
@@ -100,10 +100,10 @@ class DiffEngine:
         self,
         workshop: WorkshopData,
         job_description: str,
-        available_blocks: List[ExperienceBlockData],
+        available_blocks: list[ExperienceBlockData],
         max_suggestions: int = 10,
-        focus_sections: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        focus_sections: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Generate diff suggestions for a workshop.
 
@@ -182,7 +182,7 @@ class DiffEngine:
 
     def _format_blocks_for_prompt(
         self,
-        blocks: List[ExperienceBlockData],
+        blocks: list[ExperienceBlockData],
     ) -> str:
         """Format blocks for inclusion in prompt."""
         formatted = []
@@ -199,9 +199,9 @@ Source: {block.get('source_company', 'N/A')} - {block.get('source_role', 'N/A')}
 
     def _validate_suggestion(
         self,
-        raw: Dict[str, Any],
-        available_blocks: List[ExperienceBlockData],
-    ) -> Optional[DiffSuggestionData]:
+        raw: dict[str, Any],
+        available_blocks: list[ExperienceBlockData],
+    ) -> DiffSuggestionData | None:
         """Validate and normalize a suggestion."""
         # Required fields
         operation = raw.get("operation", "").lower()
@@ -244,9 +244,9 @@ Source: {block.get('source_company', 'N/A')} - {block.get('source_role', 'N/A')}
 
     def apply_diff(
         self,
-        document: Dict[str, Any],
+        document: dict[str, Any],
         diff: DiffSuggestionData,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Apply a single diff to a document.
 
@@ -329,9 +329,9 @@ Source: {block.get('source_company', 'N/A')} - {block.get('source_role', 'N/A')}
 
     def apply_diffs(
         self,
-        document: Dict[str, Any],
-        diffs: List[DiffSuggestionData],
-    ) -> Dict[str, Any]:
+        document: dict[str, Any],
+        diffs: list[DiffSuggestionData],
+    ) -> dict[str, Any]:
         """
         Apply multiple diffs in order.
 
@@ -349,9 +349,9 @@ Source: {block.get('source_company', 'N/A')} - {block.get('source_role', 'N/A')}
 
     def revert_diff(
         self,
-        document: Dict[str, Any],
+        document: dict[str, Any],
         diff: DiffSuggestionData,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Revert a previously applied diff.
 
@@ -436,9 +436,9 @@ Source: {block.get('source_company', 'N/A')} - {block.get('source_role', 'N/A')}
 
     def preview_diff(
         self,
-        document: Dict[str, Any],
+        document: dict[str, Any],
         diff: DiffSuggestionData,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Preview a diff without applying it.
 
@@ -470,7 +470,7 @@ Source: {block.get('source_company', 'N/A')} - {block.get('source_role', 'N/A')}
 
     def _get_value_at_path(
         self,
-        document: Dict[str, Any],
+        document: dict[str, Any],
         path: str,
     ) -> Any:
         """Get value at a JSON Pointer path."""

@@ -5,8 +5,6 @@ Provides semantic matching endpoints for finding relevant experience blocks
 based on job descriptions.
 """
 
-from typing import Optional, List
-
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 

@@ -13,7 +13,7 @@ Features:
 """
 
 import time
-from typing import Optional, Callable
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from fastapi import Request, Response
@@ -210,14 +210,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app,
-        redis_url: Optional[str] = None,
-        config: Optional[RateLimitConfig] = None,
+        redis_url: str | None = None,
+        config: RateLimitConfig | None = None,
     ):
         super().__init__(app)
         self.config = config or rate_limit_settings
         self.redis_url = redis_url or get_settings().redis_url
-        self._redis: Optional[redis.Redis] = None
-        self._limiter: Optional[RateLimiter] = None
+        self._redis: redis.Redis | None = None
+        self._limiter: RateLimiter | None = None
 
     async def _get_limiter(self) -> RateLimiter:
         """Lazy initialization of Redis connection and limiter."""

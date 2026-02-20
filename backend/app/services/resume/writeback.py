@@ -7,7 +7,6 @@ those edits back to their Vault as new or updated blocks.
 
 import json
 from functools import lru_cache
-from typing import Optional, List
 from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,7 +43,7 @@ class WriteBackService:
         workshop_id: int,
         user_id: int,
         edited_content: str,
-        source_block_id: Optional[int] = None,
+        source_block_id: int | None = None,
     ) -> WritebackProposalData:
         """
         Propose a write-back to the Vault.
@@ -121,7 +120,7 @@ class WriteBackService:
         workshop_id: int,
         user_id: int,
         edited_content: str,
-        source_block_id: Optional[int] = None,
+        source_block_id: int | None = None,
         create_new: bool = False,
     ) -> ExperienceBlockData:
         """
@@ -213,7 +212,7 @@ class WriteBackService:
         self,
         db: AsyncSession,
         user_id: int,
-        block_ids: List[int],
+        block_ids: list[int],
         merged_content: str,
     ) -> ExperienceBlockData:
         """

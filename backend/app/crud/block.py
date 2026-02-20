@@ -6,7 +6,6 @@ related to experience blocks.
 """
 
 from datetime import date, datetime
-from typing import Optional, List
 
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,11 +51,11 @@ class BlockRepository:
         user_id: int,
         content: str,
         block_type: BlockType,
-        tags: Optional[List[str]] = None,
-        source_company: Optional[str] = None,
-        source_role: Optional[str] = None,
-        source_date_start: Optional[date] = None,
-        source_date_end: Optional[date] = None,
+        tags: list[str] | None = None,
+        source_company: str | None = None,
+        source_role: str | None = None,
+        source_date_start: date | None = None,
+        source_date_end: date | None = None,
     ) -> ExperienceBlockData:
         """
         Create a new experience block.
@@ -85,7 +84,7 @@ class BlockRepository:
         *,
         block_id: int,
         user_id: int,
-    ) -> Optional[ExperienceBlockData]:
+    ) -> ExperienceBlockData | None:
         """Get block by ID with user ownership check."""
         result = await db.execute(
             select(ExperienceBlock).where(
@@ -105,7 +104,7 @@ class BlockRepository:
         *,
         block_id: int,
         user_id: int,
-    ) -> Optional[ExperienceBlock]:
+    ) -> ExperienceBlock | None:
         """Get the raw SQLAlchemy model (for internal use)."""
         result = await db.execute(
             select(ExperienceBlock).where(
@@ -123,12 +122,12 @@ class BlockRepository:
         db: AsyncSession,
         *,
         user_id: int,
-        block_types: Optional[List[BlockType]] = None,
-        tags: Optional[List[str]] = None,
+        block_types: list[BlockType] | None = None,
+        tags: list[str] | None = None,
         verified_only: bool = False,
         limit: int = 100,
         offset: int = 0,
-    ) -> List[ExperienceBlockData]:
+    ) -> list[ExperienceBlockData]:
         """List blocks with filters."""
         conditions = [
             ExperienceBlock.user_id == user_id,
@@ -161,8 +160,8 @@ class BlockRepository:
         db: AsyncSession,
         *,
         user_id: int,
-        block_types: Optional[List[BlockType]] = None,
-        tags: Optional[List[str]] = None,
+        block_types: list[BlockType] | None = None,
+        tags: list[str] | None = None,
         verified_only: bool = False,
     ) -> int:
         """Count blocks matching filters."""
@@ -192,15 +191,15 @@ class BlockRepository:
         *,
         block_id: int,
         user_id: int,
-        content: Optional[str] = None,
-        block_type: Optional[BlockType] = None,
-        tags: Optional[List[str]] = None,
-        verified: Optional[bool] = None,
-        source_company: Optional[str] = None,
-        source_role: Optional[str] = None,
-        source_date_start: Optional[date] = None,
-        source_date_end: Optional[date] = None,
-    ) -> Optional[ExperienceBlockData]:
+        content: str | None = None,
+        block_type: BlockType | None = None,
+        tags: list[str] | None = None,
+        verified: bool | None = None,
+        source_company: str | None = None,
+        source_role: str | None = None,
+        source_date_start: date | None = None,
+        source_date_end: date | None = None,
+    ) -> ExperienceBlockData | None:
         """
         Update block with user ownership check.
 
@@ -266,11 +265,11 @@ class BlockRepository:
         db: AsyncSession,
         *,
         user_id: int,
-        query_embedding: List[float],
+        query_embedding: list[float],
         limit: int = 20,
-        block_types: Optional[List[BlockType]] = None,
-        tags: Optional[List[str]] = None,
-    ) -> List[SemanticMatchData]:
+        block_types: list[BlockType] | None = None,
+        tags: list[str] | None = None,
+    ) -> list[SemanticMatchData]:
         """
         Semantic search using vector similarity.
 
@@ -320,9 +319,9 @@ class BlockRepository:
         self,
         db: AsyncSession,
         *,
-        user_id: Optional[int] = None,
+        user_id: int | None = None,
         batch_size: int = 100,
-    ) -> List[ExperienceBlockData]:
+    ) -> list[ExperienceBlockData]:
         """Get blocks that need embedding generation."""
         conditions = [
             ExperienceBlock.deleted_at.is_(None),
@@ -347,7 +346,7 @@ class BlockRepository:
         db: AsyncSession,
         *,
         block_id: int,
-        embedding: List[float],
+        embedding: list[float],
         content_hash: str,
     ) -> None:
         """Update block's embedding and content hash."""
@@ -368,7 +367,7 @@ class BlockRepository:
         block_id: int,
         user_id: int,
         verified: bool = True,
-    ) -> Optional[ExperienceBlockData]:
+    ) -> ExperienceBlockData | None:
         """Mark block as verified or unverified."""
         return await self.update(
             db,
@@ -381,9 +380,9 @@ class BlockRepository:
         self,
         db: AsyncSession,
         *,
-        block_ids: List[int],
+        block_ids: list[int],
         user_id: int,
-    ) -> List[ExperienceBlockData]:
+    ) -> list[ExperienceBlockData]:
         """Get multiple blocks by IDs (for workshop block pulling)."""
         if not block_ids:
             return []

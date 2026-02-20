@@ -8,8 +8,6 @@ Provides CRUD operations for experience blocks (the Vault) including:
 - Embedding generation triggers
 """
 
-from typing import Optional, List
-
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -61,8 +59,8 @@ async def create_block(
 
 @router.get("", response_model=BlockListResponse)
 async def list_blocks(
-    block_types: Optional[List[BlockType]] = Query(None, description="Filter by block types"),
-    tags: Optional[List[str]] = Query(None, description="Filter by tags (AND logic)"),
+    block_types: list[BlockType] | None = Query(None, description="Filter by block types"),
+    tags: list[str] | None = Query(None, description="Filter by tags (AND logic)"),
     verified_only: bool = Query(False, description="Only return verified blocks"),
     limit: int = Query(100, ge=1, le=500, description="Maximum results"),
     offset: int = Query(0, ge=0, description="Pagination offset"),

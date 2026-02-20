@@ -28,7 +28,7 @@ Usage:
 """
 
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 from functools import lru_cache
 
 from fastapi import Request
@@ -82,16 +82,16 @@ class AuditService:
         self,
         db: AsyncSession,
         action: str,
-        user_id: Optional[int] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[int] = None,
-        details: Optional[dict[str, Any]] = None,
-        old_value: Optional[dict[str, Any]] = None,
-        new_value: Optional[dict[str, Any]] = None,
+        user_id: int | None = None,
+        resource_type: str | None = None,
+        resource_id: int | None = None,
+        details: dict[str, Any] | None = None,
+        old_value: dict[str, Any] | None = None,
+        new_value: dict[str, Any] | None = None,
         status: str = "success",
-        error_message: Optional[str] = None,
-        request: Optional[Request] = None,
-    ) -> Optional[AuditLog]:
+        error_message: str | None = None,
+        request: Request | None = None,
+    ) -> AuditLog | None:
         """
         Create an audit log entry.
 
@@ -169,10 +169,10 @@ class AuditService:
         user_id: int,
         resource_type: str,
         resource_id: int,
-        new_value: Optional[dict[str, Any]] = None,
-        request: Optional[Request] = None,
-        details: Optional[dict[str, Any]] = None,
-    ) -> Optional[AuditLog]:
+        new_value: dict[str, Any] | None = None,
+        request: Request | None = None,
+        details: dict[str, Any] | None = None,
+    ) -> AuditLog | None:
         """Log a resource creation."""
         return await self.log(
             db=db,
@@ -190,10 +190,10 @@ class AuditService:
         db: AsyncSession,
         user_id: int,
         resource_type: str,
-        resource_id: Optional[int] = None,
-        request: Optional[Request] = None,
-        details: Optional[dict[str, Any]] = None,
-    ) -> Optional[AuditLog]:
+        resource_id: int | None = None,
+        request: Request | None = None,
+        details: dict[str, Any] | None = None,
+    ) -> AuditLog | None:
         """Log a resource read/access."""
         return await self.log(
             db=db,
@@ -211,11 +211,11 @@ class AuditService:
         user_id: int,
         resource_type: str,
         resource_id: int,
-        old_value: Optional[dict[str, Any]] = None,
-        new_value: Optional[dict[str, Any]] = None,
-        request: Optional[Request] = None,
-        details: Optional[dict[str, Any]] = None,
-    ) -> Optional[AuditLog]:
+        old_value: dict[str, Any] | None = None,
+        new_value: dict[str, Any] | None = None,
+        request: Request | None = None,
+        details: dict[str, Any] | None = None,
+    ) -> AuditLog | None:
         """Log a resource update."""
         return await self.log(
             db=db,
@@ -235,10 +235,10 @@ class AuditService:
         user_id: int,
         resource_type: str,
         resource_id: int,
-        old_value: Optional[dict[str, Any]] = None,
-        request: Optional[Request] = None,
-        details: Optional[dict[str, Any]] = None,
-    ) -> Optional[AuditLog]:
+        old_value: dict[str, Any] | None = None,
+        request: Request | None = None,
+        details: dict[str, Any] | None = None,
+    ) -> AuditLog | None:
         """Log a resource deletion."""
         return await self.log(
             db=db,
@@ -254,11 +254,11 @@ class AuditService:
     async def log_login(
         self,
         db: AsyncSession,
-        user_id: Optional[int] = None,
+        user_id: int | None = None,
         success: bool = True,
-        request: Optional[Request] = None,
-        details: Optional[dict[str, Any]] = None,
-    ) -> Optional[AuditLog]:
+        request: Request | None = None,
+        details: dict[str, Any] | None = None,
+    ) -> AuditLog | None:
         """Log a login attempt."""
         return await self.log(
             db=db,
@@ -276,8 +276,8 @@ class AuditService:
         resource_type: str,
         resource_id: int,
         export_format: str,
-        request: Optional[Request] = None,
-    ) -> Optional[AuditLog]:
+        request: Request | None = None,
+    ) -> AuditLog | None:
         """Log an export operation."""
         return await self.log(
             db=db,
@@ -294,11 +294,11 @@ class AuditService:
         db: AsyncSession,
         user_id: int,
         operation: str,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[int] = None,
-        request: Optional[Request] = None,
-        details: Optional[dict[str, Any]] = None,
-    ) -> Optional[AuditLog]:
+        resource_type: str | None = None,
+        resource_id: int | None = None,
+        request: Request | None = None,
+        details: dict[str, Any] | None = None,
+    ) -> AuditLog | None:
         """Log an AI operation (parsing, tailoring, etc.)."""
         return await self.log(
             db=db,
@@ -318,9 +318,9 @@ class AuditService:
         user_id: int,
         limit: int = 100,
         offset: int = 0,
-        action: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        since: Optional[datetime] = None,
+        action: str | None = None,
+        resource_type: str | None = None,
+        since: datetime | None = None,
     ) -> list[AuditLog]:
         """
         Get audit log entries for a user.

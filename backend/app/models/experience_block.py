@@ -19,7 +19,7 @@ See: https://ai.google.dev/gemini-api/docs/embeddings
 
 import hashlib
 from datetime import datetime
-from typing import Optional, List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Column,
@@ -76,7 +76,7 @@ class ExperienceBlock(Base):
     block_type = Column(String(50), nullable=False)  # achievement, responsibility, skill, project, certification, education
 
     # Taxonomy for filtering
-    tags: Mapped[List[str]] = Column(ARRAY(String), default=list)  # ["python", "leadership", "backend"]
+    tags: Mapped[list[str]] = Column(ARRAY(String), default=list)  # ["python", "leadership", "backend"]
 
     # Provenance (source context)
     source_company = Column(String(255), nullable=True)
@@ -137,7 +137,7 @@ class ExperienceBlock(Base):
         """
         return hashlib.sha256(self.content.encode("utf-8")).hexdigest()
 
-    def check_needs_reembedding(self, new_content: Optional[str] = None) -> bool:
+    def check_needs_reembedding(self, new_content: str | None = None) -> bool:
         """
         Check if the block needs re-embedding based on content changes.
 
@@ -172,13 +172,13 @@ class ExperienceBlock(Base):
     async def search_experience(
         cls,
         db: AsyncSession,
-        query_vector: List[float],
+        query_vector: list[float],
         user_id: int,
         limit: int = 20,
-        block_types: Optional[List[str]] = None,
-        tags: Optional[List[str]] = None,
+        block_types: list[str] | None = None,
+        tags: list[str] | None = None,
         include_unverified: bool = True,
-    ) -> List["ExperienceBlock"]:
+    ) -> list["ExperienceBlock"]:
         """
         Hybrid semantic search with filter-first optimization.
 
@@ -249,9 +249,9 @@ class ExperienceBlock(Base):
     async def get_blocks_needing_embedding(
         cls,
         db: AsyncSession,
-        user_id: Optional[int] = None,
+        user_id: int | None = None,
         batch_size: int = 100,
-    ) -> List["ExperienceBlock"]:
+    ) -> list["ExperienceBlock"]:
         """
         Get blocks that need embedding (new or content changed).
 

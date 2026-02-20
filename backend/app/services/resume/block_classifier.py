@@ -7,7 +7,6 @@ suggest relevant taxonomy tags.
 
 import json
 from functools import lru_cache
-from typing import List
 
 from app.core.protocols import BlockType
 from app.services.ai.client import get_ai_client
@@ -116,7 +115,7 @@ class BlockClassifier:
 
         return type_mapping.get(classification, BlockType.RESPONSIBILITY)
 
-    async def classify_batch(self, contents: List[str]) -> List[BlockType]:
+    async def classify_batch(self, contents: list[str]) -> list[BlockType]:
         """
         Classify multiple blocks efficiently.
 
@@ -170,7 +169,7 @@ class BlockClassifier:
 
         return result
 
-    async def suggest_tags(self, content: str) -> List[str]:
+    async def suggest_tags(self, content: str) -> list[str]:
         """
         Suggest taxonomy tags for a block based on content.
 
@@ -202,7 +201,7 @@ class BlockClassifier:
         # Fallback: empty list
         return []
 
-    async def suggest_tags_batch(self, contents: List[str]) -> List[List[str]]:
+    async def suggest_tags_batch(self, contents: list[str]) -> list[list[str]]:
         """
         Suggest tags for multiple blocks.
 

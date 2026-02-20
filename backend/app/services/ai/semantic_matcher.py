@@ -7,7 +7,6 @@ relevant experience blocks for a given job description.
 
 import json
 from functools import lru_cache
-from typing import List, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -97,9 +96,9 @@ class SemanticMatcher:
         user_id: int,
         job_description: str,
         limit: int = 20,
-        block_types: Optional[List[BlockType]] = None,
-        tags: Optional[List[str]] = None,
-    ) -> List[SemanticMatchData]:
+        block_types: list[BlockType] | None = None,
+        tags: list[str] | None = None,
+    ) -> list[SemanticMatchData]:
         """
         Find experience blocks that match a job description.
 
@@ -152,7 +151,7 @@ class SemanticMatcher:
 
         return enhanced_matches
 
-    async def extract_keywords(self, job_description: str) -> List[str]:
+    async def extract_keywords(self, job_description: str) -> list[str]:
         """
         Extract key requirements from a job description.
 
@@ -182,7 +181,7 @@ class SemanticMatcher:
         db: AsyncSession,
         user_id: int,
         job_description: str,
-        matched_blocks: List[SemanticMatchData],
+        matched_blocks: list[SemanticMatchData],
     ) -> GapAnalysisData:
         """
         Analyze skill gaps between job requirements and matched experience.
@@ -236,9 +235,9 @@ class SemanticMatcher:
         self,
         db: AsyncSession,
         user_id: int,
-        keywords: List[str],
+        keywords: list[str],
         limit_per_keyword: int = 3,
-    ) -> dict[str, List[SemanticMatchData]]:
+    ) -> dict[str, list[SemanticMatchData]]:
         """
         Find the best blocks for each keyword.
 

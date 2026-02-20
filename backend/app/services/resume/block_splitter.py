@@ -7,7 +7,6 @@ searchable experience blocks for the Vault.
 
 import json
 from functools import lru_cache
-from typing import List, Optional
 
 from app.core.protocols import SplitBlockData
 from app.services.ai.client import get_ai_client
@@ -76,9 +75,9 @@ class BlockSplitter:
     async def split(
         self,
         raw_content: str,
-        source_company: Optional[str] = None,
-        source_role: Optional[str] = None,
-    ) -> List[SplitBlockData]:
+        source_company: str | None = None,
+        source_role: str | None = None,
+    ) -> list[SplitBlockData]:
         """
         Split raw resume content into atomic blocks.
 
@@ -128,7 +127,7 @@ class BlockSplitter:
                 }]
 
         # Validate and normalize blocks
-        result: List[SplitBlockData] = []
+        result: list[SplitBlockData] = []
         for block in blocks:
             if not isinstance(block, dict):
                 continue
@@ -157,9 +156,9 @@ class BlockSplitter:
         self,
         section_content: str,
         section_type: str,
-        source_company: Optional[str] = None,
-        source_role: Optional[str] = None,
-    ) -> List[SplitBlockData]:
+        source_company: str | None = None,
+        source_role: str | None = None,
+    ) -> list[SplitBlockData]:
         """
         Split a specific section of a resume.
 
