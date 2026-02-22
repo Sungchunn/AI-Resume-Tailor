@@ -3,6 +3,9 @@ Admin API endpoints for scraper management.
 
 Provides endpoints for monitoring and controlling the background
 scraper job that fetches LinkedIn job listings.
+
+Requires admin authentication - user must be logged in and have
+their email in the ADMIN_EMAILS configuration.
 """
 
 from datetime import datetime, timedelta, timezone
@@ -12,7 +15,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db_session
+from app.api.deps import get_db_session, require_admin
 from app.crud.scraper_run import scraper_run_repository
 from app.models.job_listing import JobListing
 from app.schemas.scraper import (
@@ -22,7 +25,7 @@ from app.schemas.scraper import (
 )
 from app.services.scraping.scheduler import get_scheduler_service
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_admin)])
 
 
 class ScraperRunHistoryItem(BaseModel):

@@ -1,10 +1,11 @@
 from typing import Annotated, AsyncGenerator
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.security import decode_token
 from app.db import get_db
 from app.models import User
@@ -98,3 +99,39 @@ async def get_optional_user_id(
 
     user_id = payload.get("sub")
     return int(user_id) if user_id else None
+
+
+async def verify_webhook_key(
+    x_api_key: Annotated[str, Header(alias="X-API-Key")],
+) -> None:
+    """
+    Validate webhook API key from X-API-Key header.
+    Used to authenticate webhook requests from n8n/external services.
+    """
+    settings = get_settings()
+    if not settings.n8n_webhook_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Webhook not configured",
+        )
+    if x_api_key != settings.n8n_webhook_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key",
+        )
+
+
+async def require_admin(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    """
+    Require the current user to be an admin.
+    Checks if the user's email is in the admin_emails list.
+    """
+    settings = get_settings()
+    if current_user.email not in settings.admin_emails:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    return current_user

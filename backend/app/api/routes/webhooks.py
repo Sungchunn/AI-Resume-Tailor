@@ -2,7 +2,7 @@
 Webhook endpoints for external integrations.
 
 Supports n8n/APIFY LinkedIn job listing ingestion.
-These endpoints are unauthenticated for webhook access.
+These endpoints require API key authentication via X-API-Key header.
 """
 
 import logging
@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db_session
+from app.api.deps import get_db_session, verify_webhook_key
 from app.crud import job_listing_repository
 from app.schemas.job_listing import (
     ApifyBatchRequest,
@@ -20,7 +20,7 @@ from app.schemas.job_listing import (
     WebhookBatchResponse,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(verify_webhook_key)])
 logger = logging.getLogger(__name__)
 
 
@@ -43,9 +43,9 @@ async def ingest_job_listings(
     Accepts up to 2000 job listings per request. Jobs are upserted based
     on the LinkedIn `id` field - existing jobs are updated, new jobs are created.
 
-    ## No Authentication Required
+    ## Authentication
 
-    This endpoint is unauthenticated for webhook access from n8n.
+    Requires `X-API-Key` header matching the configured webhook API key.
 
     ## Request Body
 
@@ -182,9 +182,9 @@ async def ingest_single_job_listing(
 
     Upserts the job based on the LinkedIn `id` field.
 
-    ## No Authentication Required
+    ## Authentication
 
-    This endpoint is unauthenticated for webhook access from n8n.
+    Requires `X-API-Key` header matching the configured webhook API key.
 
     ## Request Body
 
@@ -239,9 +239,9 @@ async def deactivate_job_listing(
 
     Marks the listing as inactive (soft delete).
 
-    ## No Authentication Required
+    ## Authentication
 
-    This endpoint is unauthenticated for webhook access from n8n.
+    Requires `X-API-Key` header matching the configured webhook API key.
     """
     listing = await job_listing_repository.get_by_external_id(
         db, external_job_id=external_job_id

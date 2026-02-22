@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -24,8 +25,17 @@ class Settings(BaseSettings):
     # Environment
     environment: str = "development"
 
+    # CORS Configuration
+    cors_origins: list[str] = ["http://localhost:3000"]
+
+    # Proxy Configuration
+    trust_proxy: bool = False  # Set True when behind reverse proxy
+
     # Webhook Authentication (for n8n job listing ingestion)
     n8n_webhook_api_key: str = ""
+
+    # Admin Authentication
+    admin_emails: list[str] = []
 
     # Rate Limiting
     rate_limit_enabled: bool = True
@@ -55,6 +65,14 @@ class Settings(BaseSettings):
     scraper_max_concurrent: int = 2  # Max concurrent APIFY calls (1 = sequential)
     scraper_retry_attempts: int = 2  # Retry attempts for transient failures
     scraper_retry_delay: int = 60  # Seconds between retries
+
+    @field_validator("jwt_secret_key")
+    @classmethod
+    def validate_jwt_secret(cls, v: str, info) -> str:
+        env = info.data.get("environment", "development")
+        if env != "development" and v == "your-super-secret-key-change-in-production":
+            raise ValueError("JWT secret must be changed in production")
+        return v
 
     class Config:
         env_file = ".env"
