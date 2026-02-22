@@ -7,7 +7,7 @@ those edits back to their Vault as new or updated blocks.
 
 import json
 from functools import lru_cache
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -87,7 +87,7 @@ class WriteBackService:
                     changes.append("Tags updated")
 
         # Build preview
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         preview: ExperienceBlockData = {
             "id": source_block_id or 0,  # 0 indicates new
             "user_id": user_id,

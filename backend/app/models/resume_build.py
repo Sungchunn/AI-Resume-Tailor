@@ -10,7 +10,7 @@ Each resume build:
 - Can be exported to PDF/DOCX when complete
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, TYPE_CHECKING
 
 from sqlalchemy import (
@@ -115,7 +115,7 @@ class ResumeBuild(Base):
     def mark_exported(self) -> None:
         """Transition resume build to exported status and record timestamp."""
         self.status = "exported"
-        self.exported_at = datetime.utcnow()
+        self.exported_at = datetime.now(timezone.utc)
 
     def add_pulled_block(self, block_id: int) -> None:
         """Add a block ID to the pulled blocks list."""

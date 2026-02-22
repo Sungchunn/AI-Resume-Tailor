@@ -196,6 +196,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         "/api/v1/auth/refresh": "auth",
         # Export endpoints
         "/api/v1/export": "export",
+        # Upload endpoints (use restricted category)
+        "/api/upload": "export",
     }
 
     # Paths to skip rate limiting
@@ -285,6 +287,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         Extract identifier for rate limiting.
 
         Uses user ID from JWT if authenticated, otherwise falls back to IP.
+        Only trusts X-Forwarded-For header when trust_proxy is enabled.
         """
         # Try to get user ID from request state (set by auth middleware)
         user_id = getattr(request.state, "user_id", None)
@@ -292,14 +295,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return f"user:{user_id}"
 
         # Fall back to IP address
-        # Check for X-Forwarded-For header (behind proxy)
-        forwarded_for = request.headers.get("X-Forwarded-For")
-        if forwarded_for:
-            # Take the first IP (client IP)
-            ip = forwarded_for.split(",")[0].strip()
-        else:
-            ip = request.client.host if request.client else "unknown"
+        settings = get_settings()
+        if settings.trust_proxy:
+            # Only trust X-Forwarded-For when behind a trusted proxy
+            forwarded_for = request.headers.get("X-Forwarded-For")
+            if forwarded_for:
+                # Take the rightmost IP (closest to us, added by our proxy)
+                ip = forwarded_for.split(",")[-1].strip()
+                return f"ip:{ip}"
 
+        ip = request.client.host if request.client else "unknown"
         return f"ip:{ip}"
 
     def _get_category(self, path: str) -> str:

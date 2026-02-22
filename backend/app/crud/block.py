@@ -5,7 +5,7 @@ Implements the IBlockRepository protocol for all database operations
 related to experience blocks.
 """
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -224,7 +224,7 @@ class BlockRepository:
         if verified is not None:
             block.verified = verified
             if verified:
-                block.verification_date = datetime.utcnow()
+                block.verification_date = datetime.now(timezone.utc)
 
         if source_company is not None:
             block.source_company = source_company
@@ -255,7 +255,7 @@ class BlockRepository:
         if not block:
             return False
 
-        block.deleted_at = datetime.utcnow()
+        block.deleted_at = datetime.now(timezone.utc)
         db.add(block)
         await db.flush()
         return True

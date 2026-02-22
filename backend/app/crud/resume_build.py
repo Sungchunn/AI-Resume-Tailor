@@ -6,7 +6,7 @@ related to resume build management.
 """
 
 import copy
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import select, and_, func
@@ -333,7 +333,7 @@ class ResumeBuildRepository:
         resume_build.status = status_value
 
         if status == ResumeBuildStatus.EXPORTED:
-            resume_build.exported_at = datetime.utcnow()
+            resume_build.exported_at = datetime.now(timezone.utc)
 
         db.add(resume_build)
         await db.flush()
