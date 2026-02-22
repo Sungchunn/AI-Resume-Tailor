@@ -1,9 +1,20 @@
+import asyncio
+import logging
 from functools import lru_cache
 
 from google import genai
-from google.genai import types
+from google.genai import errors, types
 
 from app.core.config import get_settings
+
+
+logger = logging.getLogger(__name__)
+
+
+class AIServiceError(Exception):
+    """Raised when AI service operations fail."""
+
+    pass
 
 
 class AIClient:
@@ -29,12 +40,20 @@ class AIClient:
             temperature=temperature,
         )
 
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=full_prompt,
-            config=config,
-        )
-        return response.text
+        try:
+            response = await asyncio.to_thread(
+                self.client.models.generate_content,
+                model=self.model,
+                contents=full_prompt,
+                config=config,
+            )
+            return response.text
+        except errors.APIError as e:
+            logger.error(f"Gemini API error: {e.message} (code: {e.code})")
+            raise AIServiceError(f"AI generation failed: {e.message}") from e
+        except Exception as e:
+            logger.error(f"Unexpected AI error: {e}")
+            raise AIServiceError("AI service unavailable") from e
 
     async def generate_json(
         self,

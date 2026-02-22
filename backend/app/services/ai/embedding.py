@@ -28,6 +28,7 @@ Available task types (for reference):
 See: https://ai.google.dev/gemini-api/docs/embeddings
 """
 
+import asyncio
 from enum import Enum
 from functools import lru_cache
 import hashlib
@@ -235,8 +236,9 @@ class EmbeddingService:
             output_dimensionality=self.dimensions,
         )
 
-        # Generate embedding
-        result = self.client.models.embed_content(
+        # Generate embedding (non-blocking)
+        result = await asyncio.to_thread(
+            self.client.models.embed_content,
             model=self.model,
             contents=content,
             config=config,

@@ -27,6 +27,7 @@ Usage:
     )
 """
 
+import logging
 from datetime import datetime, timezone
 from typing import Any
 from functools import lru_cache
@@ -37,6 +38,8 @@ from sqlalchemy import select
 
 from app.models.audit_log import AuditLog
 from app.core.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 class AuditAction:
@@ -156,8 +159,9 @@ class AuditService:
 
             return audit_log
 
-        except Exception:
-            # Silently fail - audit logging should never break the main operation
+        except Exception as e:
+            # Log the error but don't break the main operation
+            logger.warning(f"Audit logging failed: {e}", exc_info=True)
             await db.rollback()
             return None
 
