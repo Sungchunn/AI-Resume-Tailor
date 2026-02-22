@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class SuggestionSchema(BaseModel):
@@ -22,13 +22,24 @@ class TailoredContentSchema(BaseModel):
 
 class TailorRequest(BaseModel):
     resume_id: int
-    job_id: int
+    job_id: int | None = None
+    job_listing_id: int | None = None
+
+    @model_validator(mode="after")
+    def validate_job_source(self) -> "TailorRequest":
+        """Ensure exactly one job source is provided."""
+        if self.job_id is None and self.job_listing_id is None:
+            raise ValueError("Either job_id or job_listing_id must be provided")
+        if self.job_id is not None and self.job_listing_id is not None:
+            raise ValueError("Only one of job_id or job_listing_id can be provided")
+        return self
 
 
 class TailorResponse(BaseModel):
     id: int
     resume_id: int
-    job_id: int
+    job_id: int | None = None
+    job_listing_id: int | None = None
     tailored_content: TailoredContentSchema
     suggestions: list[SuggestionSchema]
     match_score: float
@@ -43,7 +54,17 @@ class TailorResponse(BaseModel):
 
 class QuickMatchRequest(BaseModel):
     resume_id: int
-    job_id: int
+    job_id: int | None = None
+    job_listing_id: int | None = None
+
+    @model_validator(mode="after")
+    def validate_job_source(self) -> "QuickMatchRequest":
+        """Ensure exactly one job source is provided."""
+        if self.job_id is None and self.job_listing_id is None:
+            raise ValueError("Either job_id or job_listing_id must be provided")
+        if self.job_id is not None and self.job_listing_id is not None:
+            raise ValueError("Only one of job_id or job_listing_id can be provided")
+        return self
 
 
 class QuickMatchResponse(BaseModel):
@@ -56,7 +77,8 @@ class QuickMatchResponse(BaseModel):
 class TailoredResumeListResponse(BaseModel):
     id: int
     resume_id: int
-    job_id: int
+    job_id: int | None = None
+    job_listing_id: int | None = None
     match_score: float | None
     created_at: datetime
 

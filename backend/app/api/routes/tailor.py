@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db_session, get_current_user_id
 from app.crud import resume_crud, job_crud
+from app.crud.job_listing import job_listing_repository
 from app.crud.tailor import tailored_resume_crud
 from app.schemas.tailor import (
     TailorRequest,
@@ -40,7 +41,11 @@ async def tailor_resume(
     db: AsyncSession = Depends(get_db_session),
     current_user_id: int = Depends(get_current_user_id),
 ) -> TailorResponse:
-    """Tailor a resume for a specific job description using AI."""
+    """Tailor a resume for a specific job using AI.
+
+    Supports both user-created JobDescription (job_id) and
+    system-wide JobListing from scrapers (job_listing_id).
+    """
     # Verify resume exists and belongs to user
     resume = await resume_crud.get(db, id=request.resume_id)
     if not resume:
@@ -54,26 +59,38 @@ async def tailor_resume(
             detail="Not authorized to access this resume",
         )
 
-    # Verify job exists and belongs to user
-    job = await job_crud.get(db, id=request.job_id)
-    if not job:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Job description not found",
-        )
-    if job.owner_id != current_user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to access this job description",
-        )
+    # Get job content based on which source is provided
+    if request.job_id is not None:
+        # User-created job description
+        job = await job_crud.get(db, id=request.job_id)
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Job description not found",
+            )
+        if job.owner_id != current_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to access this job description",
+            )
+        raw_job = job.raw_content
+    else:
+        # System-wide job listing from scraper
+        job_listing = await job_listing_repository.get(db, id=request.job_listing_id)
+        if not job_listing:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Job listing not found",
+            )
+        raw_job = job_listing.job_description
 
     # Run tailoring
     service = get_tailoring_service()
     result = await service.tailor(
         resume_id=request.resume_id,
-        job_id=request.job_id,
+        job_id=request.job_id or request.job_listing_id,
         raw_resume=resume.raw_content,
-        raw_job=job.raw_content,
+        raw_job=raw_job,
     )
 
     # Save to database
@@ -81,6 +98,7 @@ async def tailor_resume(
         db,
         resume_id=request.resume_id,
         job_id=request.job_id,
+        job_listing_id=request.job_listing_id,
         tailored_content=result["tailored_content"],
         suggestions=result["suggestions"],
         match_score=result["match_score"],
@@ -90,6 +108,7 @@ async def tailor_resume(
         id=tailored.id,
         resume_id=tailored.resume_id,
         job_id=tailored.job_id,
+        job_listing_id=tailored.job_listing_id,
         tailored_content=result["tailored_content"],
         suggestions=result["suggestions"],
         match_score=result["match_score"],
@@ -106,7 +125,11 @@ async def quick_match(
     db: AsyncSession = Depends(get_db_session),
     current_user_id: int = Depends(get_current_user_id),
 ) -> QuickMatchResponse:
-    """Get a quick match score between a resume and job without full tailoring."""
+    """Get a quick match score between a resume and job without full tailoring.
+
+    Supports both user-created JobDescription (job_id) and
+    system-wide JobListing from scrapers (job_listing_id).
+    """
     # Verify resume exists and belongs to user
     resume = await resume_crud.get(db, id=request.resume_id)
     if not resume:
@@ -120,24 +143,36 @@ async def quick_match(
             detail="Not authorized to access this resume",
         )
 
-    # Verify job exists and belongs to user
-    job = await job_crud.get(db, id=request.job_id)
-    if not job:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Job description not found",
-        )
-    if job.owner_id != current_user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to access this job description",
-        )
+    # Get job content based on which source is provided
+    if request.job_id is not None:
+        # User-created job description
+        job = await job_crud.get(db, id=request.job_id)
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Job description not found",
+            )
+        if job.owner_id != current_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to access this job description",
+            )
+        raw_job = job.raw_content
+    else:
+        # System-wide job listing from scraper
+        job_listing = await job_listing_repository.get(db, id=request.job_listing_id)
+        if not job_listing:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Job listing not found",
+            )
+        raw_job = job_listing.job_description
 
     # Get quick match
     service = get_tailoring_service()
     result = await service.get_quick_match_score(
         raw_resume=resume.raw_content,
-        raw_job=job.raw_content,
+        raw_job=raw_job,
     )
 
     return QuickMatchResponse(**result)
@@ -173,6 +208,7 @@ async def get_tailored_resume(
         id=tailored.id,
         resume_id=tailored.resume_id,
         job_id=tailored.job_id,
+        job_listing_id=tailored.job_listing_id,
         tailored_content=tailored_content,
         suggestions=suggestions,
         match_score=tailored.match_score or 0.0,
@@ -247,12 +283,13 @@ async def update_tailored_resume(
 async def list_tailored_resumes(
     resume_id: int | None = None,
     job_id: int | None = None,
+    job_listing_id: int | None = None,
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db_session),
     current_user_id: int = Depends(get_current_user_id),
 ) -> list[TailoredResumeListResponse]:
-    """List tailored resumes, optionally filtered by resume or job."""
+    """List tailored resumes, optionally filtered by resume, job, or job listing."""
     if resume_id:
         # Verify ownership
         resume = await resume_crud.get(db, id=resume_id)
@@ -265,7 +302,7 @@ async def list_tailored_resumes(
             db, resume_id=resume_id, skip=skip, limit=limit
         )
     elif job_id:
-        # Verify ownership
+        # Verify ownership (user-created job descriptions)
         job = await job_crud.get(db, id=job_id)
         if not job or job.owner_id != current_user_id:
             raise HTTPException(
@@ -274,6 +311,17 @@ async def list_tailored_resumes(
             )
         tailored_list = await tailored_resume_crud.get_by_job(
             db, job_id=job_id, skip=skip, limit=limit
+        )
+    elif job_listing_id:
+        # Job listings are system-wide, verify it exists
+        job_listing = await job_listing_repository.get(db, id=job_listing_id)
+        if not job_listing:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Job listing not found",
+            )
+        tailored_list = await tailored_resume_crud.get_by_job_listing(
+            db, job_listing_id=job_listing_id, skip=skip, limit=limit
         )
     else:
         # List all tailored resumes for the current user

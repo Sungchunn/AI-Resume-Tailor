@@ -14,15 +14,25 @@ class TailoredResumeCRUD:
         self,
         db: AsyncSession,
         resume_id: int,
-        job_id: int,
         tailored_content: dict,
         suggestions: list[dict],
         match_score: float,
+        job_id: int | None = None,
+        job_listing_id: int | None = None,
     ) -> TailoredResume:
-        """Create a new tailored resume."""
+        """Create a new tailored resume.
+
+        Exactly one of job_id or job_listing_id must be provided.
+        """
+        if job_id is None and job_listing_id is None:
+            raise ValueError("Either job_id or job_listing_id must be provided")
+        if job_id is not None and job_listing_id is not None:
+            raise ValueError("Only one of job_id or job_listing_id can be provided")
+
         db_obj = TailoredResume(
             resume_id=resume_id,
             job_id=job_id,
+            job_listing_id=job_listing_id,
             tailored_content=json.dumps(tailored_content),
             suggestions=suggestions,
             match_score=match_score,
@@ -67,10 +77,23 @@ class TailoredResumeCRUD:
     async def get_by_job(
         self, db: AsyncSession, job_id: int, skip: int = 0, limit: int = 100
     ) -> list[TailoredResume]:
-        """Get all tailored resumes for a specific job."""
+        """Get all tailored resumes for a specific job description."""
         result = await db.execute(
             select(TailoredResume)
             .where(TailoredResume.job_id == job_id)
+            .offset(skip)
+            .limit(limit)
+            .order_by(TailoredResume.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def get_by_job_listing(
+        self, db: AsyncSession, job_listing_id: int, skip: int = 0, limit: int = 100
+    ) -> list[TailoredResume]:
+        """Get all tailored resumes for a specific job listing."""
+        result = await db.execute(
+            select(TailoredResume)
+            .where(TailoredResume.job_listing_id == job_listing_id)
             .offset(skip)
             .limit(limit)
             .order_by(TailoredResume.created_at.desc())
