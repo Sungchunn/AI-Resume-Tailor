@@ -518,3 +518,22 @@ export interface PDFPreviewResponse {
   cached: boolean;
   expires_at: string;
 }
+
+// ============================================================================
+// Admin Scraper Types
+// ============================================================================
+
+export interface AdHocScrapeRequest {
+  url: string;
+  count?: number;
+}
+
+export interface AdHocScrapeResponse {
+  status: string;
+  jobs_found: number;
+  jobs_created: number;
+  jobs_updated: number;
+  errors: number;
+  error_details: Array<Record<string, unknown>>;
+  duration_seconds: number | null;
+}

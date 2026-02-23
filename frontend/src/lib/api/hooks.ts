@@ -8,6 +8,7 @@ import {
   matchApi,
   workshopApi,
   uploadApi,
+  adminApi,
 } from "./client";
 import type {
   ResumeCreate,
@@ -32,6 +33,7 @@ import type {
   ExportRequest,
   WorkshopStatus,
   JobListingFilters,
+  AdHocScrapeRequest,
 } from "./types";
 
 // Query Keys
@@ -684,6 +686,19 @@ export function useMarkJobApplied() {
       jobListingApi.markApplied(id, applied),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.all });
+    },
+  });
+}
+
+// Admin Hooks
+export function useAdhocScrape() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: AdHocScrapeRequest) => adminApi.triggerAdhocScrape(data),
+    onSuccess: () => {
+      // Invalidate job listings to show newly scraped jobs
       queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.all });
     },
   });

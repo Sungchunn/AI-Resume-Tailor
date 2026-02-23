@@ -51,6 +51,8 @@ import type {
   HideJobRequest,
   ApplyJobRequest,
   JobInteractionActionResponse,
+  AdHocScrapeRequest,
+  AdHocScrapeResponse,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -575,5 +577,14 @@ export const jobListingApi = {
     fetchApi(`/api/job-listings/${id}/applied`, {
       method: "POST",
       body: JSON.stringify({ applied } as ApplyJobRequest),
+    }),
+};
+
+// Admin API
+export const adminApi = {
+  triggerAdhocScrape: (data: AdHocScrapeRequest): Promise<AdHocScrapeResponse> =>
+    fetchApi("/api/admin/scraper/adhoc", {
+      method: "POST",
+      body: JSON.stringify(data),
     }),
 };
