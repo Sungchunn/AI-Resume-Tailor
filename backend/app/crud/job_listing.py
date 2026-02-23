@@ -43,8 +43,12 @@ class JobListingRepository:
             external_job_id=obj_in.external_job_id,
             job_title=obj_in.job_title,
             company_name=obj_in.company_name,
-            company_url=obj_in.company_url,
             company_logo=obj_in.company_logo,
+            company_website=obj_in.company_website,
+            company_description=obj_in.company_description,
+            company_linkedin_url=obj_in.company_linkedin_url,
+            company_address_locality=obj_in.company_address_locality,
+            company_address_country=obj_in.company_address_country,
             location=obj_in.location,
             city=obj_in.city,
             state=obj_in.state,
@@ -57,8 +61,10 @@ class JobListingRepository:
             job_description_html=obj_in.job_description_html,
             job_url=obj_in.job_url,
             job_url_direct=obj_in.job_url_direct,
+            apply_url=obj_in.apply_url,
             job_type=obj_in.job_type,
             emails=obj_in.emails,
+            benefits=obj_in.benefits,
             easy_apply=obj_in.easy_apply,
             applicants_count=obj_in.applicants_count,
             salary_min=obj_in.salary_min,
@@ -391,13 +397,24 @@ class JobListingRepository:
         if job_data.employmentType:
             job_type = [job_data.employmentType]
 
+        # Extract company address fields from nested object
+        company_address_locality = None
+        company_address_country = None
+        if job_data.companyAddress:
+            company_address_locality = job_data.companyAddress.get("addressLocality")
+            company_address_country = job_data.companyAddress.get("addressCountry")
+
         # Build the update/create data
         data = {
             "external_job_id": external_id,
             "job_title": job_data.title,
             "company_name": job_data.companyName,
-            "company_url": job_data.companyLinkedinUrl,
             "company_logo": job_data.companyLogo,
+            "company_website": job_data.companyWebsite,
+            "company_description": job_data.companyDescription,
+            "company_linkedin_url": job_data.companyLinkedinUrl,
+            "company_address_locality": company_address_locality,
+            "company_address_country": company_address_country,
             "location": job_data.location,
             "city": None,  # Not provided by this actor
             "state": None,
@@ -410,8 +427,10 @@ class JobListingRepository:
             "job_description_html": job_data.descriptionHtml,
             "job_url": job_data.link,
             "job_url_direct": job_data.applyUrl if job_data.applyUrl else None,
+            "apply_url": job_data.applyUrl,
             "job_type": job_type,
             "emails": None,  # Not provided by this actor
+            "benefits": job_data.benefits,
             "easy_apply": not bool(job_data.applyUrl),  # Easy apply if no external URL
             "applicants_count": job_data.applicantsCount,
             "salary_min": None,  # Would need to parse from salaryInfo
@@ -527,13 +546,24 @@ class JobListingRepository:
                     if job_data.employmentType:
                         job_type = [job_data.employmentType]
 
+                    # Extract company address fields from nested object
+                    company_address_locality = None
+                    company_address_country = None
+                    if job_data.companyAddress:
+                        company_address_locality = job_data.companyAddress.get("addressLocality")
+                        company_address_country = job_data.companyAddress.get("addressCountry")
+
                     values_list.append(
                         {
                             "external_job_id": job_data.id,
                             "job_title": job_data.title,
                             "company_name": job_data.companyName,
-                            "company_url": job_data.companyLinkedinUrl,
                             "company_logo": job_data.companyLogo,
+                            "company_website": job_data.companyWebsite,
+                            "company_description": job_data.companyDescription,
+                            "company_linkedin_url": job_data.companyLinkedinUrl,
+                            "company_address_locality": company_address_locality,
+                            "company_address_country": company_address_country,
                             "location": job_data.location,
                             "city": None,
                             "state": None,
@@ -546,8 +576,10 @@ class JobListingRepository:
                             "job_description_html": job_data.descriptionHtml,
                             "job_url": job_data.link,
                             "job_url_direct": job_data.applyUrl if job_data.applyUrl else None,
+                            "apply_url": job_data.applyUrl,
                             "job_type": job_type,
                             "emails": None,
+                            "benefits": job_data.benefits,
                             "easy_apply": not bool(job_data.applyUrl),
                             "applicants_count": job_data.applicantsCount,
                             "salary_min": None,
