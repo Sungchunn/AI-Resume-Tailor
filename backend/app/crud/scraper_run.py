@@ -87,6 +87,65 @@ class ScraperRunRepository:
         await db.refresh(db_obj)
         return db_obj
 
+    async def create_adhoc(
+        self,
+        db: AsyncSession,
+        *,
+        status: str,
+        started_at: datetime,
+        completed_at: datetime,
+        duration_seconds: float,
+        jobs_found: int,
+        jobs_created: int,
+        jobs_updated: int,
+        errors: int,
+        error_details: list[dict] | None = None,
+        triggered_by: str | None = None,
+        config_snapshot: dict | None = None,
+    ) -> ScraperRun:
+        """
+        Create a scraper run record for ad-hoc scrapes.
+
+        Unlike batch scrapes, ad-hoc scrapes don't have regional breakdowns.
+
+        Args:
+            db: Database session
+            status: Run status (success, partial, error, timeout)
+            started_at: When the scrape started
+            completed_at: When the scrape completed
+            duration_seconds: Total duration
+            jobs_found: Number of jobs found
+            jobs_created: Number of new jobs created
+            jobs_updated: Number of existing jobs updated
+            errors: Number of errors
+            error_details: List of error details
+            triggered_by: Who/what triggered the run
+            config_snapshot: Snapshot of scraper config used
+
+        Returns:
+            Created ScraperRun record
+        """
+        db_obj = ScraperRun(
+            run_type="adhoc",
+            status=status,
+            started_at=started_at,
+            completed_at=completed_at,
+            duration_seconds=duration_seconds,
+            total_jobs_found=jobs_found,
+            total_jobs_created=jobs_created,
+            total_jobs_updated=jobs_updated,
+            total_errors=errors,
+            region_results=None,  # Ad-hoc scrapes don't have regional breakdown
+            error_details=error_details,
+            triggered_by=triggered_by,
+            config_snapshot=config_snapshot,
+        )
+
+        db.add(db_obj)
+        await db.flush()
+        await db.refresh(db_obj)
+        return db_obj
+
     async def get_latest(self, db: AsyncSession) -> ScraperRun | None:
         """Get the most recent scraper run."""
         result = await db.execute(

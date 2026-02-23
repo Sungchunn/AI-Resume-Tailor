@@ -44,6 +44,10 @@ class RateLimitConfig:
     export_requests_per_minute: int = 5
     export_requests_per_hour: int = 30
 
+    # Admin scraper endpoint limits (restrictive due to external API costs)
+    admin_scraper_requests_per_minute: int = 5
+    admin_scraper_requests_per_hour: int = 20
+
     # Sliding window size in seconds
     window_size_minutes: int = 60
 
@@ -171,6 +175,10 @@ class RateLimiter:
                 self.config.export_requests_per_minute,
                 self.config.export_requests_per_hour,
             ),
+            "admin_scraper": (
+                self.config.admin_scraper_requests_per_minute,
+                self.config.admin_scraper_requests_per_hour,
+            ),
         }
         return limits.get(category, limits["default"])
 
@@ -198,6 +206,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         "/api/v1/export": "export",
         # Upload endpoints (use restricted category)
         "/api/upload": "export",
+        # Admin scraper endpoints (expensive external API calls)
+        "/api/v1/admin/scraper/adhoc": "admin_scraper",
+        "/api/v1/admin/scraper/trigger": "admin_scraper",
     }
 
     # Paths to skip rate limiting

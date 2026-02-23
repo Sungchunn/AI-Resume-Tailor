@@ -17,6 +17,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db_session, require_admin
+from app.models.user import User
 from app.crud.job_listing import job_listing_repository
 from app.crud.scraper_run import scraper_run_repository
 from app.models.job_listing import JobListing
@@ -292,6 +293,7 @@ async def get_scraper_health(
 async def trigger_adhoc_scrape(
     request: AdHocScrapeRequest,
     db: AsyncSession = Depends(get_db_session),
+    admin_user: User = Depends(require_admin),
 ) -> AdHocScrapeResponse:
     """
     Trigger an ad-hoc scrape with a custom LinkedIn URL.
@@ -302,6 +304,7 @@ async def trigger_adhoc_scrape(
     Note: This is a long-running operation that may take several
     minutes depending on the count parameter.
     """
+    started_at = datetime.now(timezone.utc)
     apify_client = get_apify_client()
 
     # Run the ad-hoc scrape
@@ -324,17 +327,41 @@ async def trigger_adhoc_scrape(
         jobs_created = created_count
         jobs_updated = updated_count
         upsert_errors = errors
-        await db.commit()
 
     # Combine error details
     all_errors = result_meta.get("error_details", []) + upsert_errors
+    completed_at = datetime.now(timezone.utc)
+    duration = (completed_at - started_at).total_seconds()
+
+    # Determine final status
+    final_status = result_meta.get("status", "error")
+    if final_status == "success" and upsert_errors:
+        final_status = "partial"
+
+    # Create audit record for this ad-hoc scrape
+    await scraper_run_repository.create_adhoc(
+        db,
+        status=final_status,
+        started_at=started_at,
+        completed_at=completed_at,
+        duration_seconds=duration,
+        jobs_found=result_meta.get("jobs_found", 0),
+        jobs_created=jobs_created,
+        jobs_updated=jobs_updated,
+        errors=len(all_errors),
+        error_details=all_errors if all_errors else None,
+        triggered_by=f"admin:{admin_user.id}",
+        config_snapshot={"url": request.url, "count": request.count},
+    )
+
+    await db.commit()
 
     return AdHocScrapeResponse(
-        status=result_meta.get("status", "error"),
+        status=final_status,
         jobs_found=result_meta.get("jobs_found", 0),
         jobs_created=jobs_created,
         jobs_updated=jobs_updated,
         errors=len(all_errors),
         error_details=all_errors,
-        duration_seconds=result_meta.get("duration_seconds"),
+        duration_seconds=duration,
     )

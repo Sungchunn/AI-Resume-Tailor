@@ -8,6 +8,7 @@ and track results from scraper runs.
 from datetime import datetime
 from enum import Enum
 from typing import Any
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -89,9 +90,22 @@ class AdHocScrapeRequest(BaseModel):
     @field_validator("url")
     @classmethod
     def validate_linkedin_url(cls, v: str) -> str:
-        """Validate that the URL is a LinkedIn jobs URL."""
-        if "linkedin.com/jobs" not in v.lower():
-            raise ValueError("URL must be a LinkedIn jobs search URL")
+        """Validate that the URL is a legitimate LinkedIn jobs URL."""
+        parsed = urlparse(v)
+
+        # Must have valid scheme
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError("URL must use http or https scheme")
+
+        # Domain must be exactly linkedin.com or www.linkedin.com
+        domain = parsed.netloc.lower()
+        if domain not in ("linkedin.com", "www.linkedin.com"):
+            raise ValueError("URL must be from linkedin.com domain")
+
+        # Path must start with /jobs
+        if not parsed.path.lower().startswith("/jobs"):
+            raise ValueError("URL must be a LinkedIn jobs URL")
+
         return v
 
 

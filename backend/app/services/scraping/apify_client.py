@@ -207,13 +207,12 @@ class ApifyClient:
         Returns:
             Tuple of (parsed job listings, result metadata dict)
         """
-        from datetime import datetime, timezone
-
         started_at = datetime.now(timezone.utc)
 
         # Build the actor input payload for ad-hoc scraping
+        # Use maxItems for consistency with run_actor() method
         actor_input = {
-            "count": count,
+            "maxItems": count,
             "scrapeCompany": True,
             "splitByLocation": False,
             "urls": [url],
