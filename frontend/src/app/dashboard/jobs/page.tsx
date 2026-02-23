@@ -28,6 +28,10 @@ export default function JobListingsPage() {
   const totalPages = data ? Math.ceil(data.total / (filters.limit || 20)) : 0;
   const currentPage = Math.floor((filters.offset || 0) / (filters.limit || 20)) + 1;
 
+  // Check if no filters are applied (empty database vs no matching results)
+  const hasNoFilters = !filters.search && !filters.location && !filters.seniority && !filters.job_function && !filters.industry;
+  const isEmptyDatabase = data?.total === 0 && hasNoFilters;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -109,7 +113,13 @@ export default function JobListingsPage() {
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
               <p className="font-medium">Error loading jobs</p>
-              <p className="text-sm">{error.message}</p>
+              <p className="text-sm">
+                {error.message?.toLowerCase().includes("session expired") ||
+                error.message?.toLowerCase().includes("not authenticated") ||
+                error.message?.toLowerCase().includes("authentication")
+                  ? "Please log in to view job listings."
+                  : error.message}
+              </p>
             </div>
           )}
 
@@ -118,10 +128,12 @@ export default function JobListingsPage() {
             <div className="bg-gray-50 rounded-lg p-8 text-center">
               <BriefcaseIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-1">
-                No jobs found
+                {isEmptyDatabase ? "No jobs available" : "No jobs found"}
               </h3>
               <p className="text-gray-600">
-                Try adjusting your filters or search criteria
+                {isEmptyDatabase
+                  ? "Job listings will appear here once they are imported into the system."
+                  : "Try adjusting your filters or search criteria"}
               </p>
             </div>
           )}

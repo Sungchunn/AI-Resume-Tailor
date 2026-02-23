@@ -48,7 +48,13 @@ export default function SavedJobsPage() {
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
           <p className="font-medium">Error loading saved jobs</p>
-          <p className="text-sm">{error.message}</p>
+          <p className="text-sm">
+            {error.message?.toLowerCase().includes("session expired") ||
+            error.message?.toLowerCase().includes("not authenticated") ||
+            error.message?.toLowerCase().includes("authentication")
+              ? "Please log in to view your saved jobs."
+              : error.message}
+          </p>
         </div>
       )}
 
