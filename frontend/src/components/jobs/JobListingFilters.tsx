@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { JobListingFilters as Filters, JobListingSortBy, SortOrder } from "@/lib/api/types";
+import { ChevronDownIcon } from "@/components/icons";
 
 interface JobListingFiltersProps {
   filters: Filters;
@@ -199,7 +200,7 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
         className="flex items-center justify-between w-full text-sm font-medium text-gray-700 mb-3"
       >
         <span>Filters</span>
-        <ChevronIcon expanded={isExpanded} />
+        <ChevronDownIcon className={`h-5 w-5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
       </button>
 
       {isExpanded && (
@@ -401,19 +402,5 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
         </div>
       )}
     </div>
-  );
-}
-
-function ChevronIcon({ expanded }: { expanded: boolean }) {
-  return (
-    <svg
-      className={`h-5 w-5 transition-transform ${expanded ? "rotate-180" : ""}`}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-    </svg>
   );
 }

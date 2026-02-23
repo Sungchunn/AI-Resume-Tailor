@@ -3,6 +3,12 @@
 import Link from "next/link";
 import type { JobListingResponse } from "@/lib/api/types";
 import { useSaveJobListing, useHideJobListing } from "@/lib/api/hooks";
+import {
+  BookmarkIcon,
+  CurrencyIcon,
+  EyeSlashIcon,
+  MapPinIcon,
+} from "@/components/icons";
 
 interface JobListingCardProps {
   listing: JobListingResponse;
@@ -149,67 +155,5 @@ export function JobListingCard({ listing }: JobListingCardProps) {
         )}
       </div>
     </Link>
-  );
-}
-
-// Icon components
-function BookmarkIcon({ filled }: { filled?: boolean }) {
-  return filled ? (
-    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path
-        fillRule="evenodd"
-        d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"
-        clipRule="evenodd"
-      />
-    </svg>
-  ) : (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
-      />
-    </svg>
-  );
-}
-
-function EyeSlashIcon() {
-  return (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
-      />
-    </svg>
-  );
-}
-
-function MapPinIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
-      />
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
-      />
-    </svg>
-  );
-}
-
-function CurrencyIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
   );
 }
