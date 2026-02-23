@@ -400,6 +400,12 @@ export interface JobListingResponse {
   external_job_id: string;
   job_title: string;
   company_name: string;
+  company_logo: string | null;
+  company_website: string | null;
+  company_description: string | null;
+  company_linkedin_url: string | null;
+  company_address_locality: string | null;
+  company_address_country: string | null;
   location: string | null;
   seniority: string | null;
   job_function: string | null;
@@ -407,6 +413,8 @@ export interface JobListingResponse {
   job_description: string;
   job_description_html: string | null;
   job_url: string;
+  apply_url: string | null;
+  benefits: string[] | null;
   salary_min: number | null;
   salary_max: number | null;
   salary_currency: string;
