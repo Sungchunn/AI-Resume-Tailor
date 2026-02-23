@@ -49,8 +49,12 @@ class JobListingBase(BaseModel):
     external_job_id: str = Field(..., min_length=1, max_length=255)
     job_title: str = Field(..., min_length=1, max_length=500)
     company_name: str = Field(..., min_length=1, max_length=255)
-    company_url: str | None = Field(None, max_length=2000)
     company_logo: str | None = Field(None, max_length=2000)
+    company_website: str | None = Field(None, max_length=2000)
+    company_description: str | None = None
+    company_linkedin_url: str | None = Field(None, max_length=2000)
+    company_address_locality: str | None = Field(None, max_length=255)
+    company_address_country: str | None = Field(None, max_length=100)
     location: str | None = Field(None, max_length=500)
     city: str | None = Field(None, max_length=255)
     state: str | None = Field(None, max_length=255)
@@ -63,8 +67,10 @@ class JobListingBase(BaseModel):
     job_description_html: str | None = None  # HTML formatted description
     job_url: str = Field(..., min_length=1, max_length=2000)
     job_url_direct: str | None = Field(None, max_length=2000)
+    apply_url: str | None = Field(None, max_length=2000)
     job_type: list[str] | None = None
     emails: list[str] | None = None
+    benefits: list[str] | None = None
     easy_apply: bool = False
     applicants_count: str | None = Field(None, max_length=50)
 
@@ -93,8 +99,12 @@ class JobListingUpdate(BaseModel):
 
     job_title: str | None = Field(None, min_length=1, max_length=500)
     company_name: str | None = Field(None, min_length=1, max_length=255)
-    company_url: str | None = Field(None, max_length=2000)
     company_logo: str | None = Field(None, max_length=2000)
+    company_website: str | None = Field(None, max_length=2000)
+    company_description: str | None = None
+    company_linkedin_url: str | None = Field(None, max_length=2000)
+    company_address_locality: str | None = Field(None, max_length=255)
+    company_address_country: str | None = Field(None, max_length=100)
     location: str | None = Field(None, max_length=500)
     city: str | None = Field(None, max_length=255)
     state: str | None = Field(None, max_length=255)
@@ -107,8 +117,10 @@ class JobListingUpdate(BaseModel):
     job_description_html: str | None = None
     job_url: str | None = Field(None, min_length=1, max_length=2000)
     job_url_direct: str | None = Field(None, max_length=2000)
+    apply_url: str | None = Field(None, max_length=2000)
     job_type: list[str] | None = None
     emails: list[str] | None = None
+    benefits: list[str] | None = None
     easy_apply: bool | None = None
     applicants_count: str | None = Field(None, max_length=50)
     salary_min: int | None = Field(None, ge=0)
@@ -377,8 +389,12 @@ class WebhookJobListing(BaseModel):
     external_job_id: str = Field(..., min_length=1, max_length=255)
     job_title: str = Field(..., min_length=1, max_length=500)
     company_name: str = Field(..., min_length=1, max_length=255)
-    company_url: str | None = None
     company_logo: str | None = None
+    company_website: str | None = None
+    company_description: str | None = None
+    company_linkedin_url: str | None = None
+    company_address_locality: str | None = None
+    company_address_country: str | None = None
     location: str | None = None
     city: str | None = None
     state: str | None = None
@@ -391,8 +407,10 @@ class WebhookJobListing(BaseModel):
     job_description_html: str | None = None
     job_url: str = Field(..., min_length=1, max_length=2000)
     job_url_direct: str | None = None
+    apply_url: str | None = None
     job_type: list[str] | None = None
     emails: list[str] | None = None
+    benefits: list[str] | None = None
     easy_apply: bool = False
     applicants_count: str | None = None
     salary_min: int | None = None
