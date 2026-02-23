@@ -11,6 +11,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field, HttpUrl
 
+from app.utils.validators import OptionalHttpUrl
+
 
 # Enums for filtering
 class SeniorityLevel(str, Enum):
@@ -49,10 +51,10 @@ class JobListingBase(BaseModel):
     external_job_id: str = Field(..., min_length=1, max_length=255)
     job_title: str = Field(..., min_length=1, max_length=500)
     company_name: str = Field(..., min_length=1, max_length=255)
-    company_logo: str | None = Field(None, max_length=2000)
-    company_website: str | None = Field(None, max_length=2000)
+    company_logo: OptionalHttpUrl = None
+    company_website: OptionalHttpUrl = None
     company_description: str | None = None
-    company_linkedin_url: str | None = Field(None, max_length=2000)
+    company_linkedin_url: OptionalHttpUrl = None
     company_address_locality: str | None = Field(None, max_length=255)
     company_address_country: str | None = Field(None, max_length=100)
     location: str | None = Field(None, max_length=500)
@@ -66,8 +68,8 @@ class JobListingBase(BaseModel):
     job_description: str = Field(..., min_length=1)
     job_description_html: str | None = None  # HTML formatted description
     job_url: str = Field(..., min_length=1, max_length=2000)
-    job_url_direct: str | None = Field(None, max_length=2000)
-    apply_url: str | None = Field(None, max_length=2000)
+    job_url_direct: OptionalHttpUrl = None
+    apply_url: OptionalHttpUrl = None
     job_type: list[str] | None = None
     emails: list[str] | None = None
     benefits: list[str] | None = None
@@ -99,10 +101,10 @@ class JobListingUpdate(BaseModel):
 
     job_title: str | None = Field(None, min_length=1, max_length=500)
     company_name: str | None = Field(None, min_length=1, max_length=255)
-    company_logo: str | None = Field(None, max_length=2000)
-    company_website: str | None = Field(None, max_length=2000)
+    company_logo: OptionalHttpUrl = None
+    company_website: OptionalHttpUrl = None
     company_description: str | None = None
-    company_linkedin_url: str | None = Field(None, max_length=2000)
+    company_linkedin_url: OptionalHttpUrl = None
     company_address_locality: str | None = Field(None, max_length=255)
     company_address_country: str | None = Field(None, max_length=100)
     location: str | None = Field(None, max_length=500)
@@ -115,9 +117,9 @@ class JobListingUpdate(BaseModel):
     industry: str | None = Field(None, max_length=255)
     job_description: str | None = Field(None, min_length=1)
     job_description_html: str | None = None
-    job_url: str | None = Field(None, min_length=1, max_length=2000)
-    job_url_direct: str | None = Field(None, max_length=2000)
-    apply_url: str | None = Field(None, max_length=2000)
+    job_url: OptionalHttpUrl = None
+    job_url_direct: OptionalHttpUrl = None
+    apply_url: OptionalHttpUrl = None
     job_type: list[str] | None = None
     emails: list[str] | None = None
     benefits: list[str] | None = None
@@ -389,10 +391,10 @@ class WebhookJobListing(BaseModel):
     external_job_id: str = Field(..., min_length=1, max_length=255)
     job_title: str = Field(..., min_length=1, max_length=500)
     company_name: str = Field(..., min_length=1, max_length=255)
-    company_logo: str | None = None
-    company_website: str | None = None
+    company_logo: OptionalHttpUrl = None
+    company_website: OptionalHttpUrl = None
     company_description: str | None = None
-    company_linkedin_url: str | None = None
+    company_linkedin_url: OptionalHttpUrl = None
     company_address_locality: str | None = None
     company_address_country: str | None = None
     location: str | None = None
@@ -406,8 +408,8 @@ class WebhookJobListing(BaseModel):
     job_description: str = Field(..., min_length=1)
     job_description_html: str | None = None
     job_url: str = Field(..., min_length=1, max_length=2000)
-    job_url_direct: str | None = None
-    apply_url: str | None = None
+    job_url_direct: OptionalHttpUrl = None
+    apply_url: OptionalHttpUrl = None
     job_type: list[str] | None = None
     emails: list[str] | None = None
     benefits: list[str] | None = None
