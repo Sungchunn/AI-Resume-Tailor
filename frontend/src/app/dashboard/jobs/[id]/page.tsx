@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -13,6 +14,7 @@ export default function JobDetailPage() {
   const params = useParams();
   const router = useRouter();
   const jobId = parseInt(params.id as string, 10);
+  const [benefitsExpanded, setBenefitsExpanded] = useState(false);
 
   const { data: listing, isLoading, error } = useJobListing(jobId);
   const saveMutation = useSaveJobListing();
@@ -113,9 +115,19 @@ export default function JobDetailPage() {
       {/* Header */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">{listing.job_title}</h1>
-            <p className="text-lg text-gray-600 mt-1">{listing.company_name}</p>
+          <div className="flex items-start gap-4 flex-1">
+            {/* Company Logo */}
+            {listing.company_logo && (
+              <img
+                src={listing.company_logo}
+                alt={`${listing.company_name} logo`}
+                className="w-16 h-16 rounded-lg object-contain border border-gray-100"
+              />
+            )}
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-900">{listing.job_title}</h1>
+              <p className="text-lg text-gray-600 mt-1">{listing.company_name}</p>
+            </div>
           </div>
 
           {/* Action buttons */}
@@ -195,13 +207,26 @@ export default function JobDetailPage() {
       {/* Action bar */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 flex items-center justify-between">
         <div className="flex gap-3">
-          <button
-            onClick={handleOpenExternal}
-            className="btn-primary flex items-center gap-2"
-          >
-            <ExternalLinkIcon className="h-4 w-4" />
-            View on {listing.source_platform || "Source"}
-          </button>
+          {/* Apply Now button - prominent when apply_url exists */}
+          {listing.apply_url ? (
+            <a
+              href={listing.apply_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary bg-green-600 hover:bg-green-700 flex items-center gap-2"
+            >
+              <ExternalLinkIcon className="h-4 w-4" />
+              Apply Now
+            </a>
+          ) : (
+            <button
+              onClick={handleOpenExternal}
+              className="btn-primary flex items-center gap-2"
+            >
+              <ExternalLinkIcon className="h-4 w-4" />
+              View on {listing.source_platform || "Source"}
+            </button>
+          )}
           <button
             onClick={handleApply}
             className={`flex items-center gap-2 ${
@@ -214,6 +239,16 @@ export default function JobDetailPage() {
             <CheckIcon className="h-4 w-4" />
             {listing.applied_at ? "Applied" : "Mark as Applied"}
           </button>
+          {/* Show "View on Source" as secondary when apply_url exists */}
+          {listing.apply_url && (
+            <button
+              onClick={handleOpenExternal}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <ExternalLinkIcon className="h-4 w-4" />
+              View on {listing.source_platform || "Source"}
+            </button>
+          )}
         </div>
 
         <Link
@@ -223,6 +258,87 @@ export default function JobDetailPage() {
           Optimize Resume for This Job
         </Link>
       </div>
+
+      {/* Company Info Section */}
+      {(listing.company_description || listing.company_website || listing.company_linkedin_url || listing.company_address_locality) && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <BuildingIcon className="h-5 w-5 text-gray-500" />
+            About {listing.company_name}
+          </h2>
+
+          {/* Company Description */}
+          {listing.company_description && (
+            <p className="text-gray-700 mb-4 leading-relaxed">
+              {listing.company_description.length > 500
+                ? `${listing.company_description.slice(0, 500)}...`
+                : listing.company_description}
+            </p>
+          )}
+
+          {/* Company Links & Location */}
+          <div className="flex flex-wrap gap-4 text-sm">
+            {listing.company_website && (
+              <a
+                href={listing.company_website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                <GlobeIcon className="h-4 w-4" />
+                Company Website
+              </a>
+            )}
+            {listing.company_linkedin_url && (
+              <a
+                href={listing.company_linkedin_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                <LinkedInIcon className="h-4 w-4" />
+                LinkedIn
+              </a>
+            )}
+            {(listing.company_address_locality || listing.company_address_country) && (
+              <span className="flex items-center gap-1.5 text-gray-600">
+                <BuildingIcon className="h-4 w-4" />
+                HQ: {[listing.company_address_locality, listing.company_address_country].filter(Boolean).join(", ")}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Benefits Section (Collapsible) */}
+      {listing.benefits && listing.benefits.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <button
+            onClick={() => setBenefitsExpanded(!benefitsExpanded)}
+            className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <GiftIcon className="h-5 w-5 text-purple-500" />
+              <h2 className="text-lg font-semibold text-gray-900">Benefits</h2>
+              <span className="text-sm text-gray-500">({listing.benefits.length})</span>
+            </div>
+            <ChevronDownIcon className={`h-5 w-5 text-gray-500 transition-transform ${benefitsExpanded ? "rotate-180" : ""}`} />
+          </button>
+
+          {benefitsExpanded && (
+            <div className="px-4 pb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {listing.benefits.map((benefit, index) => (
+                  <div key={index} className="flex items-start gap-2 text-sm text-gray-700">
+                    <CheckIcon className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>{benefit}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Job description */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -344,6 +460,58 @@ function CheckIcon({ className }: { className?: string }) {
   return (
     <svg className={className || "h-5 w-5"} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+    </svg>
+  );
+}
+
+function BuildingIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"
+      />
+    </svg>
+  );
+}
+
+function GlobeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418"
+      />
+    </svg>
+  );
+}
+
+function LinkedInIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+    </svg>
+  );
+}
+
+function GiftIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
+      />
+    </svg>
+  );
+}
+
+function ChevronDownIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
     </svg>
   );
 }
