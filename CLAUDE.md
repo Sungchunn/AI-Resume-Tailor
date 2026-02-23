@@ -96,6 +96,27 @@ SELECT * FROM users WHERE id = :id
 SELECT id, email, name, created_at FROM users WHERE id = :id
 ```
 
+### 6. API Documentation Synchronization
+
+**Always update `/docs/api/` when backend API schemas change.**
+
+When modifying the backend API (adding endpoints, changing request/response schemas, updating error codes, etc.), you MUST update the corresponding documentation in `/docs/api/`:
+
+- `overview.md` - API introduction and routes summary
+- `authentication.md` - Auth endpoints and security
+- `resumes.md` - Resume CRUD operations
+- `jobs.md` - User-created job postings
+- `job-listings.md` - Scraped job listings from LinkedIn
+- `blocks.md` - Content blocks/vault management
+- `tailor-match.md` - AI tailoring and semantic matching
+- `resume-builds.md` - Resume building workshops
+- `upload-export.md` - Document upload and export
+- `ats.md` - ATS analysis endpoints
+- `admin.md` - Admin/scraper management
+- `errors-rate-limits.md` - Error handling and rate limits
+
+**Note:** API docs in `/docs/api/` are permanent documentation and do NOT use date prefixes.
+
 ---
 
 ## Development Workflow

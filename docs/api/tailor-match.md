@@ -18,7 +18,7 @@ The Tailor and Match APIs provide AI-powered resume customization and semantic s
 
 Generate an AI-tailored resume for a specific job.
 
-```
+```http
 POST /api/tailor
 ```
 
@@ -27,7 +27,10 @@ POST /api/tailor
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `resume_id` | UUID | Yes | Source resume ID |
-| `job_id` | UUID | Yes | Target job ID |
+| `job_id` | UUID | Conditional | Target job ID (user-created) |
+| `job_listing_id` | integer | Conditional | Target job listing ID (scraped) |
+
+> **Note:** Either `job_id` or `job_listing_id` must be provided, but not both.
 
 **Example Request:**
 
@@ -48,6 +51,7 @@ curl -X POST http://localhost:8000/api/tailor \
   "id": "aa0e8400-e29b-41d4-a716-446655440000",
   "resume_id": "550e8400-e29b-41d4-a716-446655440000",
   "job_id": "770e8400-e29b-41d4-a716-446655440000",
+  "job_listing_id": null,
   "tailored_content": "John Doe\nSenior Software Engineer\n\n[Tailored content optimized for the job...]",
   "suggestions": [
     "Consider adding more details about your AWS experience",
@@ -75,7 +79,7 @@ curl -X POST http://localhost:8000/api/tailor \
 
 Get a quick match analysis without generating a tailored resume.
 
-```
+```http
 POST /api/tailor/quick-match
 ```
 
@@ -84,7 +88,8 @@ POST /api/tailor/quick-match
 | Field | Type | Required |
 |-------|------|----------|
 | `resume_id` | UUID | Yes |
-| `job_id` | UUID | Yes |
+| `job_id` | UUID | Conditional |
+| `job_listing_id` | integer | Conditional |
 
 **Example Request:**
 
@@ -120,7 +125,7 @@ curl -X POST http://localhost:8000/api/tailor/quick-match \
 
 Retrieve a previously generated tailored resume.
 
-```
+```http
 GET /api/tailor/{tailored_id}
 ```
 
@@ -136,11 +141,39 @@ Full TailorResponse object.
 
 ---
 
+### Update Tailored Resume
+
+Update an existing tailored resume.
+
+```http
+PATCH /api/tailor/{tailored_id}
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tailored_id` | UUID | Tailored resume identifier |
+
+**Request Body:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `tailored_content` | string | Updated content |
+| `style_settings` | object | Style configuration |
+| `section_order` | string[] | Order of sections |
+
+**Response (200 OK):**
+
+Returns the updated tailored resume.
+
+---
+
 ### List Tailored Resumes
 
 List all tailored resumes with optional filtering.
 
-```
+```http
 GET /api/tailor
 ```
 
@@ -150,6 +183,7 @@ GET /api/tailor
 |-----------|------|-------------|
 | `resume_id` | UUID | Filter by source resume |
 | `job_id` | UUID | Filter by target job |
+| `job_listing_id` | integer | Filter by job listing |
 | `skip` | integer | Pagination offset |
 | `limit` | integer | Maximum results |
 
@@ -161,6 +195,7 @@ GET /api/tailor
     "id": "aa0e8400-e29b-41d4-a716-446655440000",
     "resume_id": "550e8400-e29b-41d4-a716-446655440000",
     "job_id": "770e8400-e29b-41d4-a716-446655440000",
+    "job_listing_id": null,
     "match_score": 78.5,
     "created_at": "2026-02-18T10:30:00.000000"
   }
@@ -173,7 +208,7 @@ GET /api/tailor
 
 Delete a tailored resume.
 
-```
+```http
 DELETE /api/tailor/{tailored_id}
 ```
 
@@ -197,7 +232,7 @@ The Semantic Match API uses vector embeddings to find the most relevant content 
 
 Find blocks matching a job description.
 
-```
+```http
 POST /v1/match
 ```
 
@@ -233,8 +268,7 @@ curl -X POST http://localhost:8000/v1/match \
         "id": "880e8400-e29b-41d4-a716-446655440001",
         "content": "Led migration of monolithic application to microservices architecture, reducing deployment time by 75%",
         "block_type": "ACHIEVEMENT",
-        "tags": ["architecture", "leadership"],
-        ...
+        "tags": ["architecture", "leadership"]
       },
       "score": 0.89,
       "matched_keywords": ["architecture", "leadership", "scalable"]
@@ -244,8 +278,7 @@ curl -X POST http://localhost:8000/v1/match \
         "id": "880e8400-e29b-41d4-a716-446655440002",
         "content": "Managed team of 5 engineers, conducting code reviews and mentoring junior developers",
         "block_type": "RESPONSIBILITY",
-        "tags": ["leadership", "mentoring"],
-        ...
+        "tags": ["leadership", "mentoring"]
       },
       "score": 0.82,
       "matched_keywords": ["leadership", "mentoring", "team"]
@@ -262,7 +295,7 @@ curl -X POST http://localhost:8000/v1/match \
 
 Analyze skill gaps between your vault and job requirements.
 
-```
+```http
 POST /v1/match/analyze
 ```
 
@@ -310,7 +343,7 @@ curl -X POST http://localhost:8000/v1/match/analyze \
 
 Find matching blocks for a saved job posting.
 
-```
+```http
 GET /v1/match/job/{job_id}
 ```
 
@@ -348,8 +381,9 @@ Match results are cached with a 15-minute TTL to improve performance:
 
 ```typescript
 {
-  resume_id: string;  // UUID
-  job_id: string;     // UUID
+  resume_id: string;           // UUID
+  job_id?: string;             // UUID (user-created job)
+  job_listing_id?: number;     // Scraped job listing ID
 }
 ```
 
@@ -359,7 +393,8 @@ Match results are cached with a 15-minute TTL to improve performance:
 {
   id: string;                    // UUID
   resume_id: string;             // UUID
-  job_id: string;                // UUID
+  job_id: string | null;         // UUID
+  job_listing_id: number | null;
   tailored_content: string;      // Optimized resume text
   suggestions: string[];         // Improvement suggestions
   match_score: number;           // 0-100
@@ -466,7 +501,8 @@ AI-powered endpoints have specific rate limits:
 
 ## Related Endpoints
 
-- [Resumes](180226_resumes.md) - Manage source resumes
-- [Jobs](180226_jobs.md) - Manage job postings
-- [Blocks](180226_blocks.md) - Manage content blocks
-- [Export](180226_upload-export.md) - Export tailored resumes
+- [Resumes](resumes.md) - Manage source resumes
+- [Jobs](jobs.md) - Manage user-created job postings
+- [Job Listings](job-listings.md) - Browse scraped job listings
+- [Blocks](blocks.md) - Manage content blocks
+- [Export](upload-export.md) - Export tailored resumes

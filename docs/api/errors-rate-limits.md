@@ -19,11 +19,13 @@ This document covers error handling conventions and rate limiting across all API
 | 401 | Unauthorized | Missing or invalid authentication |
 | 403 | Forbidden | Valid auth but insufficient permissions |
 | 404 | Not Found | Resource does not exist |
+| 409 | Conflict | Resource conflict (e.g., scraper already running) |
 | 413 | Payload Too Large | File upload exceeds size limit |
 | 415 | Unsupported Media Type | Invalid file format for upload |
 | 422 | Unprocessable Entity | Validation error or processing failure |
 | 429 | Too Many Requests | Rate limit exceeded |
 | 500 | Internal Server Error | Unexpected server error |
+| 503 | Service Unavailable | Service disabled or temporarily unavailable |
 
 ---
 
@@ -93,6 +95,11 @@ Validation errors include detailed field-level information:
 {
   "detail": "User account is inactive"
 }
+
+// Admin required
+{
+  "detail": "Admin access required"
+}
 ```
 
 ### Resource Errors (404)
@@ -106,6 +113,11 @@ Validation errors include detailed field-level information:
 // Job not found
 {
   "detail": "Job not found"
+}
+
+// Preset not found
+{
+  "detail": "Preset not found"
 }
 ```
 
@@ -125,6 +137,25 @@ Validation errors include detailed field-level information:
 // File too large
 {
   "detail": "File size exceeds maximum limit of 10MB"
+}
+
+// Invalid LinkedIn URL
+{
+  "detail": "URL must be from linkedin.com domain"
+}
+```
+
+### Conflict Errors (409)
+
+```json
+// Scraper already running
+{
+  "detail": "Scraper is already running on another instance"
+}
+
+// Cleanup already running
+{
+  "detail": "Cleanup is already running on another instance"
 }
 ```
 
@@ -208,7 +239,7 @@ Applied to computationally intensive AI operations:
 | `POST /v1/match` | 10 | 100 |
 | `POST /v1/match/analyze` | 10 | 100 |
 | `POST /v1/blocks/import` | 10 | 100 |
-| `POST /v1/workshops/*/suggest` | 10 | 100 |
+| `POST /v1/resume-builds/*/suggest` | 10 | 100 |
 
 ### Authentication Endpoints
 
@@ -227,7 +258,7 @@ Applied to resource-intensive file generation:
 | Endpoint | Per Minute | Per Hour |
 |----------|-----------|----------|
 | `GET /api/export/*` | 5 | 30 |
-| `POST /v1/workshops/*/export` | 5 | 30 |
+| `POST /v1/resume-builds/*/export` | 5 | 30 |
 
 ---
 
@@ -374,5 +405,5 @@ If Redis is unavailable, rate limiting degrades gracefully:
 
 ## Related Documentation
 
-- [Authentication](180226_authentication.md) - Auth endpoints and token management
-- [Overview](180226_overview.md) - API introduction and quick start
+- [Authentication](authentication.md) - Auth endpoints and token management
+- [Overview](overview.md) - API introduction and quick start

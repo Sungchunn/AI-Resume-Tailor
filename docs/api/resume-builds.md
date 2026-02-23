@@ -1,16 +1,16 @@
-# Workshops API
+# Resume Builds API
 
 ## Overview
 
-The Workshops API provides a collaborative workspace for building tailored resumes. A workshop is a session where users pull blocks from their vault, receive AI-powered suggestions, and build a resume targeted at a specific job.
+The Resume Builds API (formerly Workshops) provides a workspace for building tailored resumes. A resume build is a session where users pull blocks from their vault, receive AI-powered suggestions, and build a resume targeted at a specific job.
 
-**Base Path:** `/v1/workshops`
+**Base Path:** `/v1/resume-builds`
 
 **Authentication:** All endpoints require authentication.
 
 ---
 
-## Workshop Lifecycle
+## Resume Build Lifecycle
 
 ```
 ┌──────────┐     Create      ┌───────────┐     Pull Blocks    ┌─────────────┐
@@ -33,25 +33,25 @@ The Workshops API provides a collaborative workspace for building tailored resum
                         └──────────┘                       └───────────┘
 ```
 
-## Workshop Status Values
+## Status Values
 
 | Status | Description |
 |--------|-------------|
-| `DRAFT` | Initial state, job details entered |
-| `IN_PROGRESS` | Actively building the resume |
-| `EXPORTED` | Resume has been exported |
-| `COMPLETED` | Workshop finalized |
+| `draft` | Initial state, job details entered |
+| `in_progress` | Actively building the resume |
+| `exported` | Resume has been exported |
+| `completed` | Build finalized |
 
 ---
 
 ## Endpoints
 
-### Create Workshop
+### Create Resume Build
 
-Create a new resume workshop session.
+Create a new resume build session.
 
-```
-POST /v1/workshops
+```http
+POST /v1/resume-builds
 ```
 
 **Request Body:**
@@ -65,7 +65,7 @@ POST /v1/workshops
 **Example Request:**
 
 ```bash
-curl -X POST http://localhost:8000/v1/workshops \
+curl -X POST http://localhost:8000/v1/resume-builds \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -84,7 +84,7 @@ curl -X POST http://localhost:8000/v1/workshops \
   "job_title": "Senior Software Engineer",
   "job_company": "TechCorp",
   "job_description": "We are looking for a Senior Software Engineer...",
-  "status": "DRAFT",
+  "status": "draft",
   "sections": {},
   "pulled_block_ids": [],
   "pending_diffs": [],
@@ -95,26 +95,26 @@ curl -X POST http://localhost:8000/v1/workshops \
 
 ---
 
-### List Workshops
+### List Resume Builds
 
-Retrieve all workshops for the authenticated user.
+Retrieve all resume builds for the authenticated user.
 
-```
-GET /v1/workshops
+```http
+GET /v1/resume-builds
 ```
 
 **Query Parameters:**
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `status_filter` | string | None | Filter by status |
+| `status` | string | None | Filter by status |
 | `limit` | integer | 50 | Maximum results (1-100) |
 | `offset` | integer | 0 | Pagination offset |
 
 **Example Request:**
 
 ```bash
-curl "http://localhost:8000/v1/workshops?status_filter=IN_PROGRESS&limit=10" \
+curl "http://localhost:8000/v1/resume-builds?status=in_progress&limit=10" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -122,12 +122,12 @@ curl "http://localhost:8000/v1/workshops?status_filter=IN_PROGRESS&limit=10" \
 
 ```json
 {
-  "workshops": [
+  "builds": [
     {
       "id": "990e8400-e29b-41d4-a716-446655440000",
       "job_title": "Senior Software Engineer",
       "job_company": "TechCorp",
-      "status": "IN_PROGRESS",
+      "status": "in_progress",
       "created_at": "2026-02-18T10:30:00.000000"
     }
   ],
@@ -139,26 +139,26 @@ curl "http://localhost:8000/v1/workshops?status_filter=IN_PROGRESS&limit=10" \
 
 ---
 
-### Get Workshop
+### Get Resume Build
 
-Retrieve a specific workshop.
+Retrieve a specific resume build.
 
-```
-GET /v1/workshops/{workshop_id}
+```http
+GET /v1/resume-builds/{build_id}
 ```
 
 **Response (200 OK):**
 
-Full workshop object with all fields.
+Full resume build object with all fields.
 
 ---
 
-### Update Workshop
+### Update Resume Build
 
-Update workshop details.
+Update resume build details.
 
-```
-PATCH /v1/workshops/{workshop_id}
+```http
+PATCH /v1/resume-builds/{build_id}
 ```
 
 **Request Body:**
@@ -171,12 +171,12 @@ PATCH /v1/workshops/{workshop_id}
 
 ---
 
-### Delete Workshop
+### Delete Resume Build
 
-Delete a workshop.
+Delete a resume build.
 
-```
-DELETE /v1/workshops/{workshop_id}
+```http
+DELETE /v1/resume-builds/{build_id}
 ```
 
 **Response (204 No Content):**
@@ -187,10 +187,10 @@ No response body.
 
 ### Pull Blocks
 
-Add blocks from the vault to the workshop.
+Add blocks from the vault to the resume build.
 
-```
-POST /v1/workshops/{workshop_id}/pull
+```http
+POST /v1/resume-builds/{build_id}/pull
 ```
 
 **Request Body:**
@@ -202,7 +202,7 @@ POST /v1/workshops/{workshop_id}/pull
 **Example Request:**
 
 ```bash
-curl -X POST http://localhost:8000/v1/workshops/990e8400-e29b-41d4-a716-446655440000/pull \
+curl -X POST http://localhost:8000/v1/resume-builds/990e8400-e29b-41d4-a716-446655440000/pull \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -217,7 +217,7 @@ curl -X POST http://localhost:8000/v1/workshops/990e8400-e29b-41d4-a716-44665544
 
 ```json
 {
-  "workshop": {...},
+  "build": {...},
   "newly_pulled": [
     "880e8400-e29b-41d4-a716-446655440001",
     "880e8400-e29b-41d4-a716-446655440002"
@@ -228,12 +228,12 @@ curl -X POST http://localhost:8000/v1/workshops/990e8400-e29b-41d4-a716-44665544
 
 ---
 
-### Get Workshop Blocks
+### Get Build Blocks
 
-Retrieve all blocks pulled into a workshop.
+Retrieve all blocks pulled into a resume build.
 
-```
-GET /v1/workshops/{workshop_id}/blocks
+```http
+GET /v1/resume-builds/{build_id}/blocks
 ```
 
 **Response (200 OK):**
@@ -243,25 +243,24 @@ GET /v1/workshops/{workshop_id}/blocks
   {
     "id": "880e8400-e29b-41d4-a716-446655440001",
     "content": "Led migration to microservices...",
-    "block_type": "ACHIEVEMENT",
-    ...
+    "block_type": "ACHIEVEMENT"
   }
 ]
 ```
 
 ---
 
-### Remove Block from Workshop
+### Remove Block from Build
 
-Remove a block from the workshop.
+Remove a block from the resume build.
 
-```
-DELETE /v1/workshops/{workshop_id}/blocks/{block_id}
+```http
+DELETE /v1/resume-builds/{build_id}/blocks/{block_id}
 ```
 
 **Response (200 OK):**
 
-Returns updated workshop.
+Returns updated resume build.
 
 ---
 
@@ -269,8 +268,8 @@ Returns updated workshop.
 
 Request AI-powered improvement suggestions.
 
-```
-POST /v1/workshops/{workshop_id}/suggest
+```http
+POST /v1/resume-builds/{build_id}/suggest
 ```
 
 **Request Body:**
@@ -283,7 +282,7 @@ POST /v1/workshops/{workshop_id}/suggest
 **Example Request:**
 
 ```bash
-curl -X POST http://localhost:8000/v1/workshops/990e8400-e29b-41d4-a716-446655440000/suggest \
+curl -X POST http://localhost:8000/v1/resume-builds/990e8400-e29b-41d4-a716-446655440000/suggest \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -296,8 +295,7 @@ curl -X POST http://localhost:8000/v1/workshops/990e8400-e29b-41d4-a716-44665544
 
 ```json
 {
-  "workshop": {
-    ...
+  "build": {
     "pending_diffs": [
       {
         "operation": "replace",
@@ -333,8 +331,8 @@ curl -X POST http://localhost:8000/v1/workshops/990e8400-e29b-41d4-a716-44665544
 
 Accept a suggested change.
 
-```
-POST /v1/workshops/{workshop_id}/diffs/accept
+```http
+POST /v1/resume-builds/{build_id}/diffs/accept
 ```
 
 **Request Body:**
@@ -346,7 +344,7 @@ POST /v1/workshops/{workshop_id}/diffs/accept
 **Example Request:**
 
 ```bash
-curl -X POST http://localhost:8000/v1/workshops/990e8400-e29b-41d4-a716-446655440000/diffs/accept \
+curl -X POST http://localhost:8000/v1/resume-builds/990e8400-e29b-41d4-a716-446655440000/diffs/accept \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"diff_index": 0}'
@@ -358,7 +356,7 @@ curl -X POST http://localhost:8000/v1/workshops/990e8400-e29b-41d4-a716-44665544
 {
   "accepted": true,
   "diff_index": 0,
-  "workshop": {...}
+  "build": {...}
 }
 ```
 
@@ -368,8 +366,8 @@ curl -X POST http://localhost:8000/v1/workshops/990e8400-e29b-41d4-a716-44665544
 
 Reject a suggested change.
 
-```
-POST /v1/workshops/{workshop_id}/diffs/reject
+```http
+POST /v1/resume-builds/{build_id}/diffs/reject
 ```
 
 **Request Body:**
@@ -384,7 +382,7 @@ POST /v1/workshops/{workshop_id}/diffs/reject
 {
   "rejected": true,
   "diff_index": 0,
-  "workshop": {...}
+  "build": {...}
 }
 ```
 
@@ -394,13 +392,13 @@ POST /v1/workshops/{workshop_id}/diffs/reject
 
 Clear all pending suggestions.
 
-```
-POST /v1/workshops/{workshop_id}/diffs/clear
+```http
+POST /v1/resume-builds/{build_id}/diffs/clear
 ```
 
 **Response (200 OK):**
 
-Returns workshop with empty `pending_diffs`.
+Returns build with empty `pending_diffs`.
 
 ---
 
@@ -408,8 +406,8 @@ Returns workshop with empty `pending_diffs`.
 
 Directly update resume sections.
 
-```
-PATCH /v1/workshops/{workshop_id}/sections
+```http
+PATCH /v1/resume-builds/{build_id}/sections
 ```
 
 **Request Body:**
@@ -421,7 +419,7 @@ PATCH /v1/workshops/{workshop_id}/sections
 **Example Request:**
 
 ```bash
-curl -X PATCH http://localhost:8000/v1/workshops/990e8400-e29b-41d4-a716-446655440000/sections \
+curl -X PATCH http://localhost:8000/v1/resume-builds/990e8400-e29b-41d4-a716-446655440000/sections \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -437,10 +435,10 @@ curl -X PATCH http://localhost:8000/v1/workshops/990e8400-e29b-41d4-a716-4466554
 
 ### Update Status
 
-Update workshop status.
+Update resume build status.
 
-```
-PATCH /v1/workshops/{workshop_id}/status
+```http
+PATCH /v1/resume-builds/{build_id}/status
 ```
 
 **Request Body:**
@@ -455,8 +453,8 @@ PATCH /v1/workshops/{workshop_id}/status
 
 Preview writing edited content back to the vault.
 
-```
-POST /v1/workshops/{workshop_id}/writeback/preview
+```http
+POST /v1/resume-builds/{build_id}/writeback/preview
 ```
 
 **Request Body:**
@@ -492,8 +490,8 @@ POST /v1/workshops/{workshop_id}/writeback/preview
 
 Write edited content back to the vault.
 
-```
-POST /v1/workshops/{workshop_id}/writeback
+```http
+POST /v1/resume-builds/{build_id}/writeback
 ```
 
 **Request Body:**
@@ -506,12 +504,12 @@ Returns the created or updated block.
 
 ---
 
-### Export Workshop
+### Export Resume Build
 
-Export the workshop resume to a file.
+Export the resume build to a file.
 
-```
-POST /v1/workshops/{workshop_id}/export
+```http
+POST /v1/resume-builds/{build_id}/export
 ```
 
 **Request Body:**
@@ -524,7 +522,7 @@ POST /v1/workshops/{workshop_id}/export
 **Example Request:**
 
 ```bash
-curl -X POST http://localhost:8000/v1/workshops/990e8400-e29b-41d4-a716-446655440000/export \
+curl -X POST http://localhost:8000/v1/resume-builds/990e8400-e29b-41d4-a716-446655440000/export \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"format": "pdf"}' \
@@ -553,7 +551,7 @@ Binary file download with appropriate Content-Type header.
 }
 ```
 
-### WorkshopResponse
+### ResumeBuildResponse
 
 ```typescript
 {
@@ -562,7 +560,7 @@ Binary file download with appropriate Content-Type header.
   job_title: string;
   job_company: string | null;
   job_description: string;
-  status: WorkshopStatus;
+  status: ResumeBuildStatus;
   sections: object;
   pulled_block_ids: string[];
   pending_diffs: DiffSuggestion[];
@@ -573,7 +571,7 @@ Binary file download with appropriate Content-Type header.
 
 ## Usage Notes
 
-- Workshops provide a structured way to build tailored resumes
+- Resume builds provide a structured way to build tailored resumes
 - Pull relevant blocks from your vault to start building
 - Use AI suggestions to improve content and fill gaps
 - Review and accept/reject suggestions individually
@@ -582,6 +580,6 @@ Binary file download with appropriate Content-Type header.
 
 ## Related Endpoints
 
-- [Blocks](180226_blocks.md) - Manage content blocks
-- [Semantic Match](180226_tailor-match.md) - Find matching blocks for jobs
-- [ATS Analysis](180226_ats.md) - Check ATS compatibility
+- [Blocks](blocks.md) - Manage content blocks
+- [Semantic Match](tailor-match.md) - Find matching blocks for jobs
+- [ATS Analysis](ats.md) - Check ATS compatibility

@@ -282,7 +282,7 @@ Authentication endpoints have specific rate limits:
 | `/auth/register` | 10         | 50       |
 | `/auth/refresh`  | 10         | 50       |
 
-See [Errors & Rate Limits](180226_errors-rate-limits.md) for details.
+See [Errors & Rate Limits](errors-rate-limits.md) for details.
 
 ## Data Models
 

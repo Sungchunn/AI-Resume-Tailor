@@ -31,7 +31,7 @@ The Blocks API (also known as the Vault) provides management for individual cont
 
 Create a new content block.
 
-```
+```http
 POST /v1/blocks
 ```
 
@@ -90,7 +90,7 @@ curl -X POST http://localhost:8000/v1/blocks \
 
 Retrieve blocks with optional filtering.
 
-```
+```http
 GET /v1/blocks
 ```
 
@@ -139,7 +139,7 @@ curl "http://localhost:8000/v1/blocks?block_types=ACHIEVEMENT&block_types=SKILL&
 
 Retrieve a specific block by ID.
 
-```
+```http
 GET /v1/blocks/{block_id}
 ```
 
@@ -182,7 +182,7 @@ curl http://localhost:8000/v1/blocks/880e8400-e29b-41d4-a716-446655440000 \
 
 Partially update a block.
 
-```
+```http
 PATCH /v1/blocks/{block_id}
 ```
 
@@ -225,9 +225,9 @@ Returns the updated block.
 
 ### Delete Block
 
-Delete a block from the vault.
+Soft delete a block from the vault.
 
-```
+```http
 DELETE /v1/blocks/{block_id}
 ```
 
@@ -254,7 +254,7 @@ No response body.
 
 Mark a block as verified (user-confirmed accuracy).
 
-```
+```http
 POST /v1/blocks/{block_id}/verify
 ```
 
@@ -289,7 +289,7 @@ Returns the updated block with `verified: true`.
 
 Bulk import blocks from raw resume content.
 
-```
+```http
 POST /v1/blocks/import
 ```
 
@@ -324,22 +324,19 @@ curl -X POST http://localhost:8000/v1/blocks/import \
       "id": "880e8400-e29b-41d4-a716-446655440001",
       "content": "Led migration to microservices, reducing deployment time by 75%",
       "block_type": "ACHIEVEMENT",
-      "verified": false,
-      ...
+      "verified": false
     },
     {
       "id": "880e8400-e29b-41d4-a716-446655440002",
       "content": "Mentored team of 5 junior developers",
       "block_type": "RESPONSIBILITY",
-      "verified": false,
-      ...
+      "verified": false
     },
     {
       "id": "880e8400-e29b-41d4-a716-446655440003",
       "content": "Implemented CI/CD pipeline using GitHub Actions",
       "block_type": "ACHIEVEMENT",
-      "verified": false,
-      ...
+      "verified": false
     }
   ]
 }
@@ -351,7 +348,7 @@ curl -X POST http://localhost:8000/v1/blocks/import \
 
 Generate semantic embeddings for multiple blocks.
 
-```
+```http
 POST /v1/blocks/embed
 ```
 
@@ -393,7 +390,7 @@ curl -X POST http://localhost:8000/v1/blocks/embed \
 
 Generate semantic embedding for a single block.
 
-```
+```http
 POST /v1/blocks/{block_id}/embed
 ```
 
@@ -505,6 +502,6 @@ Returns the block with updated embedding.
 
 ## Related Endpoints
 
-- [Semantic Match](180226_tailor-match.md) - Find blocks matching job requirements
-- [Workshops](180226_workshops.md) - Pull blocks into resume editing sessions
-- [ATS Analysis](180226_ats.md) - Analyze keyword coverage using blocks
+- [Semantic Match](tailor-match.md) - Find blocks matching job requirements
+- [Resume Builds](resume-builds.md) - Pull blocks into resume editing sessions
+- [ATS Analysis](ats.md) - Analyze keyword coverage using blocks

@@ -2,11 +2,13 @@
 
 ## Overview
 
-The Jobs API provides CRUD operations for managing job postings. Job descriptions are stored and analyzed to extract keywords and requirements for resume tailoring.
+The Jobs API provides CRUD operations for managing user-created job postings. These are job descriptions that users manually save for tailoring purposes. Job descriptions are parsed to extract keywords and requirements for resume matching.
 
 **Base Path:** `/api/jobs`
 
 **Authentication:** All endpoints require authentication.
+
+> **Note:** This API is for user-created job postings. For browsing scraped job listings from LinkedIn, see [Job Listings API](job-listings.md).
 
 ---
 
@@ -16,7 +18,7 @@ The Jobs API provides CRUD operations for managing job postings. Job description
 
 Create a new job posting for the authenticated user.
 
-```
+```http
 POST /api/jobs
 ```
 
@@ -65,7 +67,7 @@ curl -X POST http://localhost:8000/api/jobs \
 
 Retrieve a specific job posting by ID.
 
-```
+```http
 GET /api/jobs/{job_id}
 ```
 
@@ -122,7 +124,7 @@ curl http://localhost:8000/api/jobs/770e8400-e29b-41d4-a716-446655440000 \
 
 Retrieve all job postings for the authenticated user.
 
-```
+```http
 GET /api/jobs
 ```
 
@@ -154,17 +156,6 @@ curl "http://localhost:8000/api/jobs?skip=0&limit=20" \
     "parsed_content": {...},
     "created_at": "2026-02-18T10:30:00.000000",
     "updated_at": "2026-02-18T10:30:00.000000"
-  },
-  {
-    "id": "770e8400-e29b-41d4-a716-446655440001",
-    "title": "Backend Developer",
-    "company": "StartupXYZ",
-    "raw_content": "...",
-    "url": null,
-    "owner_id": "660e8400-e29b-41d4-a716-446655440001",
-    "parsed_content": {...},
-    "created_at": "2026-02-17T15:00:00.000000",
-    "updated_at": "2026-02-17T15:00:00.000000"
   }
 ]
 ```
@@ -175,7 +166,7 @@ curl "http://localhost:8000/api/jobs?skip=0&limit=20" \
 
 Update an existing job posting.
 
-```
+```http
 PUT /api/jobs/{job_id}
 ```
 
@@ -208,19 +199,7 @@ curl -X PUT http://localhost:8000/api/jobs/770e8400-e29b-41d4-a716-446655440000 
 
 **Response (200 OK):**
 
-```json
-{
-  "id": "770e8400-e29b-41d4-a716-446655440000",
-  "title": "Staff Software Engineer",
-  "company": "TechCorp Inc.",
-  "raw_content": "Updated job description...",
-  "url": "https://techcorp.com/careers/senior-swe",
-  "owner_id": "660e8400-e29b-41d4-a716-446655440001",
-  "parsed_content": {...},
-  "created_at": "2026-02-18T10:30:00.000000",
-  "updated_at": "2026-02-18T11:00:00.000000"
-}
-```
+Returns the updated job.
 
 **Error Responses:**
 
@@ -235,7 +214,7 @@ curl -X PUT http://localhost:8000/api/jobs/770e8400-e29b-41d4-a716-446655440000 
 
 Delete a job posting.
 
-```
+```http
 DELETE /api/jobs/{job_id}
 ```
 
@@ -352,6 +331,7 @@ When a job is processed, the `parsed_content` field contains extracted informati
 
 ## Related Endpoints
 
-- [Tailor](180226_tailor-match.md) - Match resumes to jobs and generate tailored versions
-- [Semantic Match](180226_tailor-match.md) - Find matching content blocks for a job
-- [ATS Analysis](180226_ats.md) - Analyze keyword coverage against job requirements
+- [Tailor](tailor-match.md) - Match resumes to jobs and generate tailored versions
+- [Semantic Match](tailor-match.md) - Find matching content blocks for a job
+- [ATS Analysis](ats.md) - Analyze keyword coverage against job requirements
+- [Job Listings](job-listings.md) - Browse scraped job listings

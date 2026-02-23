@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Resumes API provides CRUD operations for managing user resumes. Each resume belongs to a specific user and contains raw content that can be parsed and used for tailoring.
+The Resumes API provides CRUD operations for managing user resumes. Resumes store raw content that can be parsed and tailored for specific job applications.
 
 **Base Path:** `/api/resumes`
 
@@ -16,16 +16,16 @@ The Resumes API provides CRUD operations for managing user resumes. Each resume 
 
 Create a new resume for the authenticated user.
 
-```
+```http
 POST /api/resumes
 ```
 
 **Request Body:**
 
-| Field | Type | Required | Constraints |
+| Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `title` | string | Yes | 1-255 characters |
-| `raw_content` | string | Yes | Resume text content |
+| `title` | string | Yes | Resume title |
+| `raw_content` | string | Yes | Resume content text |
 
 **Example Request:**
 
@@ -34,8 +34,8 @@ curl -X POST http://localhost:8000/api/resumes \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "Software Engineer Resume",
-    "raw_content": "John Doe\nSoftware Engineer\n\nExperience:\n- Senior Developer at TechCorp (2022-Present)\n  - Led team of 5 engineers\n  - Implemented microservices architecture\n\nSkills:\n- Python, JavaScript, Go\n- AWS, Docker, Kubernetes"
+    "title": "Senior Software Engineer Resume",
+    "raw_content": "John Doe\nSenior Software Engineer\n\nExperience:\n- Led development of microservices architecture..."
   }'
 ```
 
@@ -44,8 +44,8 @@ curl -X POST http://localhost:8000/api/resumes \
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
-  "title": "Software Engineer Resume",
-  "raw_content": "John Doe\nSoftware Engineer\n\nExperience:\n...",
+  "title": "Senior Software Engineer Resume",
+  "raw_content": "John Doe\nSenior Software Engineer...",
   "owner_id": "660e8400-e29b-41d4-a716-446655440001",
   "parsed_content": null,
   "created_at": "2026-02-18T10:30:00.000000",
@@ -59,7 +59,7 @@ curl -X POST http://localhost:8000/api/resumes \
 
 Retrieve a specific resume by ID.
 
-```
+```http
 GET /api/resumes/{resume_id}
 ```
 
@@ -81,14 +81,12 @@ curl http://localhost:8000/api/resumes/550e8400-e29b-41d4-a716-446655440000 \
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
-  "title": "Software Engineer Resume",
-  "raw_content": "John Doe\nSoftware Engineer\n...",
+  "title": "Senior Software Engineer Resume",
+  "raw_content": "John Doe\nSenior Software Engineer...",
   "owner_id": "660e8400-e29b-41d4-a716-446655440001",
   "parsed_content": {
-    "contact": {
-      "name": "John Doe",
-      "title": "Software Engineer"
-    },
+    "name": "John Doe",
+    "title": "Senior Software Engineer",
     "experience": [...],
     "skills": [...]
   },
@@ -110,7 +108,7 @@ curl http://localhost:8000/api/resumes/550e8400-e29b-41d4-a716-446655440000 \
 
 Retrieve all resumes for the authenticated user.
 
-```
+```http
 GET /api/resumes
 ```
 
@@ -134,21 +132,12 @@ curl "http://localhost:8000/api/resumes?skip=0&limit=20" \
 [
   {
     "id": "550e8400-e29b-41d4-a716-446655440000",
-    "title": "Software Engineer Resume",
+    "title": "Senior Software Engineer Resume",
     "raw_content": "...",
     "owner_id": "660e8400-e29b-41d4-a716-446655440001",
     "parsed_content": {...},
     "created_at": "2026-02-18T10:30:00.000000",
     "updated_at": "2026-02-18T10:30:00.000000"
-  },
-  {
-    "id": "550e8400-e29b-41d4-a716-446655440002",
-    "title": "Data Science Resume",
-    "raw_content": "...",
-    "owner_id": "660e8400-e29b-41d4-a716-446655440001",
-    "parsed_content": {...},
-    "created_at": "2026-02-17T15:00:00.000000",
-    "updated_at": "2026-02-17T15:00:00.000000"
   }
 ]
 ```
@@ -159,7 +148,7 @@ curl "http://localhost:8000/api/resumes?skip=0&limit=20" \
 
 Update an existing resume.
 
-```
+```http
 PUT /api/resumes/{resume_id}
 ```
 
@@ -171,10 +160,10 @@ PUT /api/resumes/{resume_id}
 
 **Request Body:**
 
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `title` | string | No | 1-255 characters |
-| `raw_content` | string | No | Resume text content |
+| Field | Type | Required |
+|-------|------|----------|
+| `title` | string | No |
+| `raw_content` | string | No |
 
 **Example Request:**
 
@@ -183,24 +172,14 @@ curl -X PUT http://localhost:8000/api/resumes/550e8400-e29b-41d4-a716-4466554400
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "Senior Software Engineer Resume",
-    "raw_content": "John Doe\nSenior Software Engineer\n..."
+    "title": "Staff Software Engineer Resume",
+    "raw_content": "Updated resume content..."
   }'
 ```
 
 **Response (200 OK):**
 
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "title": "Senior Software Engineer Resume",
-  "raw_content": "John Doe\nSenior Software Engineer\n...",
-  "owner_id": "660e8400-e29b-41d4-a716-446655440001",
-  "parsed_content": {...},
-  "created_at": "2026-02-18T10:30:00.000000",
-  "updated_at": "2026-02-18T11:00:00.000000"
-}
-```
+Returns the updated resume.
 
 **Error Responses:**
 
@@ -215,7 +194,7 @@ curl -X PUT http://localhost:8000/api/resumes/550e8400-e29b-41d4-a716-4466554400
 
 Delete a resume.
 
-```
+```http
 DELETE /api/resumes/{resume_id}
 ```
 
@@ -251,7 +230,7 @@ No response body.
 
 ```typescript
 {
-  title: string;       // 1-255 characters, required
+  title: string;       // Resume title, required
   raw_content: string; // Resume text content, required
 }
 ```
@@ -260,7 +239,7 @@ No response body.
 
 ```typescript
 {
-  title?: string;       // 1-255 characters, optional
+  title?: string;       // Resume title, optional
   raw_content?: string; // Resume text content, optional
 }
 ```
@@ -281,52 +260,44 @@ No response body.
 
 ## Parsed Content Structure
 
-When a resume is processed, the `parsed_content` field contains a structured representation:
+When a resume is processed, the `parsed_content` field contains extracted information:
 
 ```json
 {
+  "name": "John Doe",
+  "title": "Senior Software Engineer",
   "contact": {
-    "name": "John Doe",
-    "title": "Software Engineer",
     "email": "john@example.com",
-    "phone": "+1-555-123-4567",
+    "phone": "+1-555-0123",
     "location": "San Francisco, CA"
   },
   "summary": "Experienced software engineer with 8+ years...",
   "experience": [
     {
       "company": "TechCorp",
-      "title": "Senior Developer",
+      "title": "Senior Software Engineer",
       "start_date": "2022-01",
       "end_date": "present",
-      "highlights": [
-        "Led team of 5 engineers",
-        "Implemented microservices architecture"
+      "bullets": [
+        "Led migration to microservices",
+        "Mentored junior developers"
       ]
     }
   ],
-  "education": [
-    {
-      "institution": "State University",
-      "degree": "BS Computer Science",
-      "graduation_date": "2016"
-    }
-  ],
-  "skills": ["Python", "JavaScript", "Go", "AWS", "Docker", "Kubernetes"],
-  "certifications": [],
-  "projects": []
+  "education": [...],
+  "skills": ["Python", "AWS", "Kubernetes"]
 }
 ```
 
 ## Usage Notes
 
-- Resumes are automatically parsed when created or updated
-- The `parsed_content` is used by the tailoring system to match against job requirements
-- Raw content should be plain text (extracted from PDF/DOCX via the upload endpoint)
-- Each user can have multiple resumes for different roles or versions
+- Resumes are automatically parsed when created/updated to extract structured content
+- The parsed content is used by the tailoring system for matching
+- Raw content is preserved for export and editing
+- Each user can have multiple resumes for different purposes
 
 ## Related Endpoints
 
-- [Upload](180226_upload-export.md) - Extract text from PDF/DOCX files
-- [Tailor](180226_tailor-match.md) - Tailor resumes to job descriptions
-- [Blocks](180226_blocks.md) - Manage individual content blocks from resumes
+- [Tailor](tailor-match.md) - Match resumes to jobs and generate tailored versions
+- [Upload](upload-export.md) - Extract resume text from PDF/DOCX files
+- [Blocks](blocks.md) - Import resume content as reusable blocks
