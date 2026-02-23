@@ -24,15 +24,7 @@ depends_on: str | Sequence[str] | None = None
 
 def table_exists(table_name: str) -> bool:
     """Check if a table exists in the database."""
-    conn = op.get_bind()
-    result = conn.execute(
-        sa.text(
-            "SELECT EXISTS (SELECT 1 FROM information_schema.tables "
-            "WHERE table_schema = 'public' AND table_name = :table_name)"
-        ),
-        {"table_name": table_name}
-    )
-    return result.scalar()
+    return sa.inspect(op.get_bind()).has_table(table_name)
 
 
 def upgrade() -> None:
