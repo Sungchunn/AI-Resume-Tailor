@@ -38,9 +38,13 @@ class JobListing(Base):
     # Core job fields
     job_title = Column(String(500), nullable=False)
     company_name = Column(String(255), nullable=False)
-    company_url = Column(String(2000), nullable=True)
     company_logo = Column(String(2000), nullable=True)
-    location = Column(String(500), nullable=True)
+    company_website = Column(String(2000), nullable=True)
+    company_description = Column(Text, nullable=True)
+    company_linkedin_url = Column(String(2000), nullable=True)
+    company_address_locality = Column(String(255), nullable=True)  # Company HQ city
+    company_address_country = Column(String(100), nullable=True)  # Company HQ country
+    location = Column(String(500), nullable=True)  # Job location
     city = Column(String(255), nullable=True)
     state = Column(String(255), nullable=True)
     country = Column(String(255), nullable=True)
@@ -52,8 +56,10 @@ class JobListing(Base):
     job_description_html = Column(Text, nullable=True)  # HTML formatted description
     job_url = Column(String(2000), nullable=False)
     job_url_direct = Column(String(2000), nullable=True)
+    apply_url = Column(String(2000), nullable=True)  # Direct application link
     job_type = Column(JSONB, nullable=True)  # e.g. ["Full-time", "Contract"]
     emails = Column(JSONB, nullable=True)  # e.g. ["careers@company.com"]
+    benefits = Column(JSONB, nullable=True)  # e.g. ["Health insurance", "401k"]
     easy_apply = Column(Boolean, default=False, nullable=False)
     applicants_count = Column(String(50), nullable=True)  # e.g. "25", "100+", "Over 200"
 
