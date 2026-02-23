@@ -49,6 +49,7 @@ class JobListing(Base):
     job_function = Column(String(255), nullable=True)  # Engineering, Design, etc.
     industry = Column(String(255), nullable=True)
     job_description = Column(Text, nullable=False)
+    job_description_html = Column(Text, nullable=True)  # HTML formatted description
     job_url = Column(String(2000), nullable=False)
     job_url_direct = Column(String(2000), nullable=True)
     job_type = Column(JSONB, nullable=True)  # e.g. ["Full-time", "Contract"]

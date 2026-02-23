@@ -405,6 +405,7 @@ export interface JobListingResponse {
   job_function: string | null;
   industry: string | null;
   job_description: string;
+  job_description_html: string | null;
   job_url: string;
   salary_min: number | null;
   salary_max: number | null;

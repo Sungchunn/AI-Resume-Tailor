@@ -60,6 +60,7 @@ class JobListingBase(BaseModel):
     job_function: str | None = Field(None, max_length=255)
     industry: str | None = Field(None, max_length=255)
     job_description: str = Field(..., min_length=1)
+    job_description_html: str | None = None  # HTML formatted description
     job_url: str = Field(..., min_length=1, max_length=2000)
     job_url_direct: str | None = Field(None, max_length=2000)
     job_type: list[str] | None = None
@@ -103,6 +104,7 @@ class JobListingUpdate(BaseModel):
     job_function: str | None = Field(None, max_length=255)
     industry: str | None = Field(None, max_length=255)
     job_description: str | None = Field(None, min_length=1)
+    job_description_html: str | None = None
     job_url: str | None = Field(None, min_length=1, max_length=2000)
     job_url_direct: str | None = Field(None, max_length=2000)
     job_type: list[str] | None = None
@@ -386,6 +388,7 @@ class WebhookJobListing(BaseModel):
     job_function: str | None = None
     industry: str | None = None
     job_description: str = Field(..., min_length=1)
+    job_description_html: str | None = None
     job_url: str = Field(..., min_length=1, max_length=2000)
     job_url_direct: str | None = None
     job_type: list[str] | None = None

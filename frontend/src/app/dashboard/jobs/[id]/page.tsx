@@ -227,11 +227,18 @@ export default function JobDetailPage() {
       {/* Job description */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Job Description</h2>
-        <div className="prose prose-gray max-w-none">
-          <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-            {listing.job_description}
+        {listing.job_description_html ? (
+          <div
+            className="prose prose-gray max-w-none prose-li:marker:text-gray-500 prose-ul:my-2 prose-li:my-0.5 prose-p:my-2 prose-headings:mt-4 prose-headings:mb-2"
+            dangerouslySetInnerHTML={{ __html: listing.job_description_html }}
+          />
+        ) : (
+          <div className="prose prose-gray max-w-none">
+            <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+              {listing.job_description}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {listing.applied_at && (
