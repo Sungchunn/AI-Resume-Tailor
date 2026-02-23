@@ -4,10 +4,26 @@ import { useState } from "react";
 import { useAdhocScrape } from "@/lib/api/hooks";
 import type { AdHocScrapeResponse } from "@/lib/api/types";
 
+const EXAMPLE_URLS = [
+  {
+    label: "Software Engineers in San Francisco",
+    url: "https://www.linkedin.com/jobs/search/?keywords=software%20engineer&location=San%20Francisco",
+  },
+  {
+    label: "Remote Data Science Jobs (US)",
+    url: "https://www.linkedin.com/jobs/search/?keywords=data%20scientist&f_WT=2&location=United%20States",
+  },
+  {
+    label: "Product Manager (New York)",
+    url: "https://www.linkedin.com/jobs/search/?keywords=product%20manager&location=New%20York",
+  },
+];
+
 export default function AdminScraperPage() {
   const [url, setUrl] = useState("");
   const [count, setCount] = useState(100);
   const [result, setResult] = useState<AdHocScrapeResponse | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   const { mutate: triggerScrape, isPending } = useAdhocScrape();
 
@@ -39,66 +55,270 @@ export default function AdminScraperPage() {
     );
   };
 
+  const handleExampleClick = (exampleUrl: string) => {
+    setUrl(exampleUrl);
+  };
+
   const isValidUrl = url.toLowerCase().includes("linkedin.com/jobs");
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Ad-Hoc Scraper</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Ad-Hoc Job Scraper</h1>
         <p className="mt-1 text-gray-600">
-          Paste a LinkedIn job search URL to scrape jobs immediately.
+          Import jobs from any LinkedIn search directly into the database.
         </p>
       </div>
 
+      {/* How It Works - Collapsible */}
+      <div className="card">
+        <button
+          type="button"
+          onClick={() => setShowHelp(!showHelp)}
+          className="w-full flex items-center justify-between text-left"
+        >
+          <div className="flex items-center gap-2">
+            <svg
+              className="h-5 w-5 text-primary-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"
+              />
+            </svg>
+            <span className="font-medium text-gray-900">How to use this tool</span>
+          </div>
+          <svg
+            className={`h-5 w-5 text-gray-500 transition-transform ${showHelp ? "rotate-180" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+
+        {showHelp && (
+          <div className="mt-4 space-y-4">
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-sm">
+                  1
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Search on LinkedIn</p>
+                  <p className="text-sm text-gray-600">
+                    Go to{" "}
+                    <a
+                      href="https://linkedin.com/jobs"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary-600 hover:underline"
+                    >
+                      linkedin.com/jobs
+                    </a>{" "}
+                    and search with your desired filters (keywords, location, remote, etc.)
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-sm">
+                  2
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Copy the URL</p>
+                  <p className="text-sm text-gray-600">
+                    Copy the full URL from your browser&apos;s address bar after applying your
+                    search filters.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-sm">
+                  3
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Paste & Scrape</p>
+                  <p className="text-sm text-gray-600">
+                    Paste the URL below, set how many jobs to fetch, and click Start Scraping.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+              <div className="flex gap-2">
+                <svg
+                  className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
+                  />
+                </svg>
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium">What happens to the jobs?</p>
+                  <p className="mt-1">
+                    Jobs are automatically deduplicated. If a job already exists in the database,
+                    it will be updated with fresh data. New jobs are created and made available to
+                    all users.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Main Form */}
       <div className="card">
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* URL Input */}
           <div>
-            <label
-              htmlFor="url"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="url" className="block text-sm font-medium text-gray-700">
               LinkedIn Job Search URL
             </label>
-            <input
-              type="url"
-              id="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://www.linkedin.com/jobs/search/?keywords=engineer..."
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
-              required
-            />
+            <div className="mt-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg
+                  className="h-5 w-5 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"
+                  />
+                </svg>
+              </div>
+              <input
+                type="url"
+                id="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://www.linkedin.com/jobs/search/?keywords=..."
+                className="block w-full pl-10 pr-3 py-2.5 rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                required
+              />
+            </div>
+
+            {/* Validation feedback */}
             {url && !isValidUrl && (
-              <p className="mt-1 text-sm text-red-600">
-                URL must be a LinkedIn jobs search URL
-              </p>
+              <div className="mt-2 flex items-center gap-1.5 text-red-600">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <span className="text-sm">URL must be a LinkedIn jobs search URL (contains &quot;linkedin.com/jobs&quot;)</span>
+              </div>
             )}
+            {url && isValidUrl && (
+              <div className="mt-2 flex items-center gap-1.5 text-green-600">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-sm">Valid LinkedIn jobs URL</span>
+              </div>
+            )}
+
+            {/* Example URLs */}
+            <div className="mt-3">
+              <p className="text-xs text-gray-500 mb-2">Try an example:</p>
+              <div className="flex flex-wrap gap-2">
+                {EXAMPLE_URLS.map((example) => (
+                  <button
+                    key={example.label}
+                    type="button"
+                    onClick={() => handleExampleClick(example.url)}
+                    className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                  >
+                    {example.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
+          {/* Count Input */}
           <div>
-            <label
-              htmlFor="count"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Max Jobs to Scrape
+            <label htmlFor="count" className="block text-sm font-medium text-gray-700">
+              Number of Jobs to Scrape
             </label>
-            <input
-              type="number"
-              id="count"
-              value={count}
-              onChange={(e) => setCount(Math.min(500, Math.max(1, parseInt(e.target.value) || 1)))}
-              min={1}
-              max={500}
-              className="mt-1 block w-full max-w-xs rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
-            />
-            <p className="mt-1 text-xs text-gray-500">Between 1 and 500</p>
+            <div className="mt-1 flex items-center gap-4">
+              <input
+                type="range"
+                id="count-slider"
+                value={count}
+                onChange={(e) => setCount(parseInt(e.target.value))}
+                min={25}
+                max={500}
+                step={25}
+                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+              />
+              <input
+                type="number"
+                id="count"
+                value={count}
+                onChange={(e) =>
+                  setCount(Math.min(500, Math.max(1, parseInt(e.target.value) || 1)))
+                }
+                min={1}
+                max={500}
+                className="w-20 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-center"
+              />
+            </div>
+            <p className="mt-1.5 text-xs text-gray-500">
+              Higher counts take longer. Recommended: 50-100 for quick imports, up to 500 for comprehensive scrapes.
+            </p>
           </div>
 
-          <div>
+          {/* Warning for large scrapes */}
+          {count > 200 && (
+            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <div className="flex gap-2">
+                <svg
+                  className="h-5 w-5 text-amber-600 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                  />
+                </svg>
+                <p className="text-sm text-amber-800">
+                  <span className="font-medium">Large scrape:</span> Scraping {count} jobs may take several minutes.
+                  Please keep this page open until complete.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <div className="flex items-center gap-4">
             <button
               type="submit"
               disabled={isPending || !url || !isValidUrl}
-              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isPending ? (
                 <>
@@ -121,7 +341,7 @@ export default function AdminScraperPage() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  Scraping...
+                  Scraping in progress...
                 </>
               ) : (
                 <>
@@ -135,34 +355,62 @@ export default function AdminScraperPage() {
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"
+                      d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
                     />
                   </svg>
                   Start Scraping
                 </>
               )}
             </button>
+
+            {isPending && (
+              <p className="text-sm text-gray-500">
+                This may take a few minutes. Please don&apos;t close this page.
+              </p>
+            )}
           </div>
         </form>
       </div>
 
+      {/* Results */}
       {result && (
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Results</h2>
+          <div className="flex items-center gap-2 mb-4">
+            {result.status === "success" ? (
+              <svg className="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            ) : result.status === "partial" ? (
+              <svg className="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+            ) : (
+              <svg className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            )}
+            <h2 className="text-lg font-semibold text-gray-900">
+              {result.status === "success"
+                ? "Scraping Complete"
+                : result.status === "partial"
+                ? "Completed with Warnings"
+                : "Scraping Failed"}
+            </h2>
+          </div>
 
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div
-              className={`p-4 rounded-lg ${
+              className={`p-4 rounded-lg border ${
                 result.status === "success"
-                  ? "bg-green-50"
+                  ? "bg-green-50 border-green-200"
                   : result.status === "partial"
-                  ? "bg-yellow-50"
-                  : "bg-red-50"
+                  ? "bg-yellow-50 border-yellow-200"
+                  : "bg-red-50 border-red-200"
               }`}
             >
               <p className="text-sm font-medium text-gray-600">Status</p>
               <p
-                className={`text-xl font-bold ${
+                className={`text-2xl font-bold ${
                   result.status === "success"
                     ? "text-green-600"
                     : result.status === "partial"
@@ -174,43 +422,67 @@ export default function AdminScraperPage() {
               </p>
             </div>
 
-            <div className="p-4 rounded-lg bg-blue-50">
+            <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
               <p className="text-sm font-medium text-gray-600">Jobs Found</p>
-              <p className="text-xl font-bold text-blue-600">{result.jobs_found}</p>
+              <p className="text-2xl font-bold text-blue-600">{result.jobs_found}</p>
             </div>
 
-            <div className="p-4 rounded-lg bg-green-50">
-              <p className="text-sm font-medium text-gray-600">Jobs Created</p>
-              <p className="text-xl font-bold text-green-600">{result.jobs_created}</p>
+            <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200">
+              <p className="text-sm font-medium text-gray-600">New Jobs Created</p>
+              <p className="text-2xl font-bold text-emerald-600">{result.jobs_created}</p>
             </div>
 
-            <div className="p-4 rounded-lg bg-purple-50">
-              <p className="text-sm font-medium text-gray-600">Jobs Updated</p>
-              <p className="text-xl font-bold text-purple-600">{result.jobs_updated}</p>
+            <div className="p-4 rounded-lg bg-purple-50 border border-purple-200">
+              <p className="text-sm font-medium text-gray-600">Existing Jobs Updated</p>
+              <p className="text-2xl font-bold text-purple-600">{result.jobs_updated}</p>
             </div>
           </div>
 
           {result.duration_seconds && (
-            <p className="mt-4 text-sm text-gray-500">
+            <p className="mt-4 text-sm text-gray-500 flex items-center gap-1.5">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               Completed in {result.duration_seconds.toFixed(1)} seconds
             </p>
           )}
 
           {result.errors > 0 && (
-            <div className="mt-4">
-              <p className="text-sm font-medium text-red-600">
-                {result.errors} error(s) occurred
-              </p>
-              {result.error_details.length > 0 && (
-                <details className="mt-2">
-                  <summary className="text-sm text-gray-500 cursor-pointer hover:text-gray-700">
-                    View error details
-                  </summary>
-                  <pre className="mt-2 p-3 bg-gray-100 rounded text-xs overflow-auto max-h-48">
-                    {JSON.stringify(result.error_details, null, 2)}
-                  </pre>
-                </details>
-              )}
+            <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
+              <div className="flex items-start gap-2">
+                <svg className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-800">
+                    {result.errors} error{result.errors > 1 ? "s" : ""} occurred during scraping
+                  </p>
+                  {result.error_details.length > 0 && (
+                    <details className="mt-2">
+                      <summary className="text-sm text-red-700 cursor-pointer hover:text-red-900">
+                        View error details
+                      </summary>
+                      <pre className="mt-2 p-3 bg-white rounded text-xs overflow-auto max-h-48 border border-red-100">
+                        {JSON.stringify(result.error_details, null, 2)}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Success message with next steps */}
+          {result.status === "success" && result.jobs_created > 0 && (
+            <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+              <div className="flex items-center gap-2">
+                <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-sm text-green-800">
+                  <span className="font-medium">{result.jobs_created} new jobs</span> are now available for users to browse and match against.
+                </p>
+              </div>
             </div>
           )}
         </div>
