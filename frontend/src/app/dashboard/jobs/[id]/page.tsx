@@ -11,6 +11,7 @@ import {
 } from "@/lib/api/hooks";
 import {
   BookmarkIcon,
+  BriefcaseIcon,
   BuildingIcon,
   CheckIcon,
   ChevronDownIcon,
@@ -99,14 +100,37 @@ export default function JobDetailPage() {
     );
   }
 
-  if (error || !listing) {
+  // Handle actual errors (network issues, server errors)
+  if (error && !error.message?.includes("not found") && !error.message?.includes("404")) {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
           <p className="font-medium">Error loading job</p>
-          <p className="text-sm">{error?.message || "Job not found"}</p>
+          <p className="text-sm">{error.message}</p>
           <Link href="/dashboard/jobs" className="text-red-600 hover:underline text-sm mt-2 block">
             Back to jobs
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle job not found (no data)
+  if (!listing) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-gray-50 rounded-lg p-8 text-center">
+          <BriefcaseIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-1">Job not found</h3>
+          <p className="text-gray-600 mb-4">
+            This job listing may have been removed or is no longer available.
+          </p>
+          <Link
+            href="/dashboard/jobs"
+            className="btn-primary inline-flex items-center gap-2"
+          >
+            <ChevronLeftIcon className="h-4 w-4" />
+            Browse Jobs
           </Link>
         </div>
       </div>
