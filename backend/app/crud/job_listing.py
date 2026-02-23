@@ -25,6 +25,12 @@ from app.schemas.job_listing import (
     SortOrder,
     WebhookJobListing,
 )
+from app.utils.apify_helpers import (
+    convert_employment_type,
+    detect_remote,
+    extract_company_address,
+    parse_job_date,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -372,37 +378,13 @@ class JobListingRepository:
         existing = await self.get_by_external_id(db, external_job_id=external_id)
         now = datetime.now(timezone.utc)
 
-        # Parse date fields that might be strings
-        date_posted = None
-        if job_data.postedAt:
-            if isinstance(job_data.postedAt, str):
-                try:
-                    # Handle date-only format like "2026-02-20"
-                    if "T" not in job_data.postedAt:
-                        date_posted = datetime.strptime(job_data.postedAt, "%Y-%m-%d")
-                    else:
-                        date_posted = datetime.fromisoformat(job_data.postedAt.replace("Z", "+00:00"))
-                except ValueError:
-                    logger.warning(f"Could not parse postedAt: {job_data.postedAt}")
-            else:
-                date_posted = job_data.postedAt
-
-        # Determine if remote from employmentType or location
-        is_remote = False
-        if job_data.location and "remote" in job_data.location.lower():
-            is_remote = True
-
-        # Convert employmentType to job_type list if present
-        job_type = None
-        if job_data.employmentType:
-            job_type = [job_data.employmentType]
-
-        # Extract company address fields from nested object
-        company_address_locality = None
-        company_address_country = None
-        if job_data.companyAddress:
-            company_address_locality = job_data.companyAddress.get("addressLocality")
-            company_address_country = job_data.companyAddress.get("addressCountry")
+        # Use helper functions for data transformation
+        date_posted = parse_job_date(job_data.postedAt)
+        is_remote = detect_remote(job_data.location)
+        job_type = convert_employment_type(job_data.employmentType)
+        company_address_locality, company_address_country = extract_company_address(
+            job_data.companyAddress
+        )
 
         # Build the update/create data
         data = {
@@ -519,39 +501,13 @@ class JobListingRepository:
 
             for job_data in batch:
                 try:
-                    # Parse date fields
-                    date_posted = None
-                    if job_data.postedAt:
-                        if isinstance(job_data.postedAt, str):
-                            try:
-                                # Handle date-only format like "2026-02-20"
-                                if "T" not in job_data.postedAt:
-                                    date_posted = datetime.strptime(job_data.postedAt, "%Y-%m-%d")
-                                else:
-                                    date_posted = datetime.fromisoformat(
-                                        job_data.postedAt.replace("Z", "+00:00")
-                                    )
-                            except ValueError:
-                                pass
-                        else:
-                            date_posted = job_data.postedAt
-
-                    # Determine if remote from location
-                    is_remote = False
-                    if job_data.location and "remote" in job_data.location.lower():
-                        is_remote = True
-
-                    # Convert employmentType to job_type list
-                    job_type = None
-                    if job_data.employmentType:
-                        job_type = [job_data.employmentType]
-
-                    # Extract company address fields from nested object
-                    company_address_locality = None
-                    company_address_country = None
-                    if job_data.companyAddress:
-                        company_address_locality = job_data.companyAddress.get("addressLocality")
-                        company_address_country = job_data.companyAddress.get("addressCountry")
+                    # Use helper functions for data transformation
+                    date_posted = parse_job_date(job_data.postedAt)
+                    is_remote = detect_remote(job_data.location)
+                    job_type = convert_employment_type(job_data.employmentType)
+                    company_address_locality, company_address_country = extract_company_address(
+                        job_data.companyAddress
+                    )
 
                     values_list.append(
                         {
