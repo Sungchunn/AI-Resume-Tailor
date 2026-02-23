@@ -9,7 +9,10 @@ Requires admin authentication - user must be logged in and have
 the is_admin flag set to True in the database.
 """
 
+import logging
 from datetime import datetime, timedelta, timezone
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
@@ -339,20 +342,25 @@ async def trigger_adhoc_scrape(
         final_status = "partial"
 
     # Create audit record for this ad-hoc scrape
-    await scraper_run_repository.create_adhoc(
-        db,
-        status=final_status,
-        started_at=started_at,
-        completed_at=completed_at,
-        duration_seconds=duration,
-        jobs_found=result_meta.get("jobs_found", 0),
-        jobs_created=jobs_created,
-        jobs_updated=jobs_updated,
-        errors=len(all_errors),
-        error_details=all_errors if all_errors else None,
-        triggered_by=f"admin:{admin_user.id}",
-        config_snapshot={"url": request.url, "count": request.count},
-    )
+    # Wrap in try/except to prevent audit record failure from rolling back job listings
+    try:
+        await scraper_run_repository.create_adhoc(
+            db,
+            status=final_status,
+            started_at=started_at,
+            completed_at=completed_at,
+            duration_seconds=duration,
+            jobs_found=result_meta.get("jobs_found", 0),
+            jobs_created=jobs_created,
+            jobs_updated=jobs_updated,
+            errors=len(all_errors),
+            error_details=all_errors if all_errors else None,
+            triggered_by=f"admin:{admin_user.id}",
+            config_snapshot={"url": request.url, "count": request.count},
+        )
+    except Exception as e:
+        logger.error(f"Failed to create scraper audit record: {e}")
+        # Don't fail the entire operation if audit record fails
 
     await db.commit()
 

@@ -441,6 +441,7 @@ export interface JobListingListResponse {
 export interface JobListingFilters {
   location?: string;
   region?: string;
+  country?: string;
   seniority?: string;
   job_function?: string;
   industry?: string;
@@ -459,6 +460,18 @@ export interface JobListingFilters {
   sort_order?: SortOrder;
   limit?: number;
   offset?: number;
+}
+
+export interface FilterOption {
+  value: string;
+  label: string;
+  count: number;
+}
+
+export interface JobListingFilterOptionsResponse {
+  countries: FilterOption[];
+  regions: FilterOption[];
+  seniorities: FilterOption[];
 }
 
 export interface SaveJobRequest {

@@ -17,6 +17,8 @@ from app.schemas.job_listing import (
     JobListingResponse,
     JobListingListResponse,
     JobListingFilters,
+    JobListingFilterOptionsResponse,
+    FilterOption,
     SaveJobRequest,
     HideJobRequest,
     ApplyJobRequest,
@@ -67,12 +69,34 @@ def _build_listing_response(
     return JobListingResponse(**response_data)
 
 
+@router.get("/filter-options", response_model=JobListingFilterOptionsResponse)
+async def get_filter_options(
+    db: AsyncSession = Depends(get_db_session),
+    _current_user_id: int = Depends(get_current_user_id),
+) -> JobListingFilterOptionsResponse:
+    """
+    Get available filter options based on existing job data.
+
+    Returns distinct countries, regions, and seniority levels
+    with counts for each value.
+    """
+    options = await job_listing_repository.get_filter_options(db, active_only=True)
+
+    return JobListingFilterOptionsResponse(
+        countries=[FilterOption(**c) for c in options["countries"]],
+        regions=[FilterOption(**r) for r in options["regions"]],
+        seniorities=[FilterOption(**s) for s in options["seniorities"]],
+    )
+
+
 @router.get("", response_model=JobListingListResponse)
 async def list_job_listings(
     # Location filters
     location: Annotated[str | None, Query(description="Location filter (comma-separated)")] = None,
     # Region filter
     region: Annotated[str | None, Query(description="Region filter (comma-separated)")] = None,
+    # Country filter
+    country: Annotated[str | None, Query(description="Country filter (comma-separated)")] = None,
     # Seniority filters
     seniority: Annotated[str | None, Query(description="Seniority levels (comma-separated)")] = None,
     # Category filters
@@ -116,6 +140,7 @@ async def list_job_listings(
     filters = JobListingFilters(
         location=location,
         region=region,
+        country=country,
         seniority=seniority,
         job_function=job_function,
         industry=industry,

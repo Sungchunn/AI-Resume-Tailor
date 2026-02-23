@@ -53,6 +53,7 @@ import type {
   JobInteractionActionResponse,
   AdHocScrapeRequest,
   AdHocScrapeResponse,
+  JobListingFilterOptionsResponse,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -530,9 +531,15 @@ export const jobListingApi = {
     const searchParams = new URLSearchParams();
 
     if (filters.location) searchParams.append("location", filters.location);
+    if (filters.region) searchParams.append("region", filters.region);
+    if (filters.country) searchParams.append("country", filters.country);
     if (filters.seniority) searchParams.append("seniority", filters.seniority);
     if (filters.job_function) searchParams.append("job_function", filters.job_function);
     if (filters.industry) searchParams.append("industry", filters.industry);
+    if (filters.is_remote !== undefined) searchParams.append("is_remote", String(filters.is_remote));
+    if (filters.easy_apply !== undefined) searchParams.append("easy_apply", String(filters.easy_apply));
+    if (filters.applicants_max !== undefined) searchParams.append("applicants_max", String(filters.applicants_max));
+    if (filters.applicants_include_na !== undefined) searchParams.append("applicants_include_na", String(filters.applicants_include_na));
     if (filters.salary_min !== undefined) searchParams.append("salary_min", String(filters.salary_min));
     if (filters.salary_max !== undefined) searchParams.append("salary_max", String(filters.salary_max));
     if (filters.date_posted_after) searchParams.append("date_posted_after", filters.date_posted_after);
@@ -548,6 +555,9 @@ export const jobListingApi = {
     const query = searchParams.toString();
     return fetchApi(`/api/job-listings${query ? `?${query}` : ""}`);
   },
+
+  getFilterOptions: (): Promise<JobListingFilterOptionsResponse> =>
+    fetchApi("/api/job-listings/filter-options"),
 
   search: (q: string, limit = 20, offset = 0): Promise<JobListingListResponse> =>
     fetchApi(`/api/job-listings/search?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`),

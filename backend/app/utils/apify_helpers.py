@@ -96,3 +96,189 @@ def convert_employment_type(employment_type: str | None) -> list[str] | None:
     if employment_type:
         return [employment_type]
     return None
+
+
+def parse_location(
+    location: str | None,
+    company_address: dict[str, Any] | None = None,
+) -> tuple[str | None, str | None, str | None]:
+    """
+    Parse location string to extract city, state, and country.
+
+    Handles formats like:
+    - "Pune, Maharashtra, India"
+    - "San Francisco, CA"
+    - "London, United Kingdom"
+    - "Remote"
+
+    Also uses company address as fallback for country.
+
+    Args:
+        location: Location string from job listing
+        company_address: Optional company address object with addressCountry
+
+    Returns:
+        Tuple of (city, state, country)
+    """
+    if not location:
+        # Try to get country from company address
+        if company_address:
+            country_code = company_address.get("addressCountry")
+            country = _country_code_to_name(country_code)
+            return None, None, country
+        return None, None, None
+
+    # Handle remote-only locations
+    if location.strip().lower() == "remote":
+        return None, None, None
+
+    # Split by comma and strip whitespace
+    parts = [p.strip() for p in location.split(",")]
+
+    city = None
+    state = None
+    country = None
+
+    if len(parts) == 1:
+        # Single value - could be city or country
+        # Check if it's a known country
+        if _is_known_country(parts[0]):
+            country = parts[0]
+        else:
+            city = parts[0]
+    elif len(parts) == 2:
+        # Could be "City, Country" or "City, State"
+        city = parts[0]
+        if _is_known_country(parts[1]):
+            country = parts[1]
+        else:
+            state = parts[1]
+    elif len(parts) >= 3:
+        # "City, State, Country" format
+        city = parts[0]
+        state = parts[1]
+        country = parts[-1]  # Last part is typically country
+
+    # Fallback to company address country if we couldn't parse one
+    if not country and company_address:
+        country_code = company_address.get("addressCountry")
+        country = _country_code_to_name(country_code)
+
+    return city, state, country
+
+
+# Common country codes to full names
+_COUNTRY_CODE_MAP = {
+    "IN": "India",
+    "US": "United States",
+    "USA": "United States",
+    "UK": "United Kingdom",
+    "GB": "United Kingdom",
+    "CA": "Canada",
+    "AU": "Australia",
+    "SG": "Singapore",
+    "MY": "Malaysia",
+    "TH": "Thailand",
+    "DE": "Germany",
+    "FR": "France",
+    "NL": "Netherlands",
+    "JP": "Japan",
+    "CN": "China",
+    "HK": "Hong Kong",
+    "TW": "Taiwan",
+    "KR": "South Korea",
+    "PH": "Philippines",
+    "ID": "Indonesia",
+    "VN": "Vietnam",
+    "AE": "United Arab Emirates",
+    "IL": "Israel",
+    "IE": "Ireland",
+    "CH": "Switzerland",
+    "SE": "Sweden",
+    "NO": "Norway",
+    "DK": "Denmark",
+    "FI": "Finland",
+    "PL": "Poland",
+    "ES": "Spain",
+    "IT": "Italy",
+    "PT": "Portugal",
+    "BR": "Brazil",
+    "MX": "Mexico",
+    "AR": "Argentina",
+    "CL": "Chile",
+    "CO": "Colombia",
+    "NZ": "New Zealand",
+}
+
+# Known country names for detection
+_KNOWN_COUNTRIES = {
+    "india",
+    "united states",
+    "usa",
+    "united kingdom",
+    "uk",
+    "canada",
+    "australia",
+    "singapore",
+    "malaysia",
+    "thailand",
+    "germany",
+    "france",
+    "netherlands",
+    "japan",
+    "china",
+    "hong kong",
+    "taiwan",
+    "south korea",
+    "philippines",
+    "indonesia",
+    "vietnam",
+    "united arab emirates",
+    "uae",
+    "israel",
+    "ireland",
+    "switzerland",
+    "sweden",
+    "norway",
+    "denmark",
+    "finland",
+    "poland",
+    "spain",
+    "italy",
+    "portugal",
+    "brazil",
+    "mexico",
+    "argentina",
+    "chile",
+    "colombia",
+    "new zealand",
+    "belgium",
+    "austria",
+    "czech republic",
+    "romania",
+    "hungary",
+    "greece",
+    "turkey",
+    "russia",
+    "ukraine",
+    "egypt",
+    "south africa",
+    "nigeria",
+    "kenya",
+    "pakistan",
+    "bangladesh",
+    "sri lanka",
+    "nepal",
+}
+
+
+def _country_code_to_name(code: str | None) -> str | None:
+    """Convert a country code to its full name."""
+    if not code:
+        return None
+    return _COUNTRY_CODE_MAP.get(code.upper(), code)
+
+
+def _is_known_country(text: str) -> bool:
+    """Check if the text is a known country name."""
+    return text.lower() in _KNOWN_COUNTRIES

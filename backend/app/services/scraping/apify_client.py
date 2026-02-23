@@ -58,15 +58,20 @@ class ApifyClient:
         started_at = datetime.now(timezone.utc)
 
         # Build the actor input payload
-        # The LinkedIn Jobs Scraper expects urls as array of objects with url key
+        # Use "count" parameter as expected by the Apify LinkedIn scraper actor
         actor_input = {
+            "count": config.count,
+            "scrapeCompany": True,
+            "splitByLocation": False,
             "urls": [config.search_url],
-            "maxItems": config.count,
-            "proxyConfiguration": {"useApifyProxy": True},
         }
 
         # Build the API URL for sync run with dataset items
-        url = f"{APIFY_BASE_URL}/acts/{self.actor_id}/run-sync-get-dataset-items"
+        # Add timeout parameter to limit actor run time on Apify's side
+        api_url = (
+            f"{APIFY_BASE_URL}/acts/{self.actor_id}/run-sync-get-dataset-items"
+            f"?timeout={self.timeout_seconds}"
+        )
 
         headers = {
             "Content-Type": "application/json",
@@ -77,19 +82,21 @@ class ApifyClient:
         error_details: list[dict[str, Any]] = []
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
+            # HTTP timeout should be slightly longer than Apify timeout to receive the response
+            http_timeout = self.timeout_seconds + 30
+            async with httpx.AsyncClient(timeout=http_timeout) as client:
                 logger.info(
                     f"Running APIFY actor for {config.region.value} "
-                    f"(geo_id={config.geo_id}, max_items={config.count})"
+                    f"(geo_id={config.geo_id}, count={config.count}, timeout={self.timeout_seconds}s)"
                 )
 
                 response = await client.post(
-                    url,
+                    api_url,
                     json=actor_input,
                     headers=headers,
                 )
 
-                if response.status_code != 200 and response.status_code != 201:
+                if response.status_code not in (200, 201):
                     error_msg = f"APIFY API error: {response.status_code} - {response.text}"
                     logger.error(error_msg)
                     raise ApifyClientError(error_msg)
@@ -210,16 +217,21 @@ class ApifyClient:
         started_at = datetime.now(timezone.utc)
 
         # Build the actor input payload for ad-hoc scraping
-        # Use maxItems for consistency with run_actor() method
+        # Use "count" parameter as expected by the Apify LinkedIn scraper actor
         actor_input = {
-            "maxItems": count,
+            "count": count,
             "scrapeCompany": True,
             "splitByLocation": False,
             "urls": [url],
         }
 
         # Build the API URL for sync run with dataset items
-        api_url = f"{APIFY_BASE_URL}/acts/{self.actor_id}/run-sync-get-dataset-items"
+        # Add timeout parameter to limit actor run time on Apify's side
+        # This ensures the actor stops after the specified time even if maxItems isn't reached
+        api_url = (
+            f"{APIFY_BASE_URL}/acts/{self.actor_id}/run-sync-get-dataset-items"
+            f"?timeout={self.timeout_seconds}"
+        )
 
         headers = {
             "Content-Type": "application/json",
@@ -230,8 +242,13 @@ class ApifyClient:
         error_details: list[dict[str, Any]] = []
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
-                logger.info(f"Running ad-hoc APIFY scrape: url={url}, count={count}")
+            # HTTP timeout should be slightly longer than Apify timeout to receive the response
+            http_timeout = self.timeout_seconds + 30
+            async with httpx.AsyncClient(timeout=http_timeout) as client:
+                logger.info(
+                    f"Running ad-hoc APIFY scrape: url={url}, count={count}, "
+                    f"apify_timeout={self.timeout_seconds}s, http_timeout={http_timeout}s"
+                )
 
                 response = await client.post(
                     api_url,

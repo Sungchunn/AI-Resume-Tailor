@@ -1,28 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import type { JobListingFilters as Filters, JobListingSortBy, SortOrder } from "@/lib/api/types";
+import { useState, useEffect } from "react";
+import type { JobListingFilters as Filters, JobListingSortBy, FilterOption } from "@/lib/api/types";
 import { ChevronDownIcon } from "@/components/icons";
+import { jobListingApi } from "@/lib/api/client";
 
 interface JobListingFiltersProps {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
 }
 
-const SENIORITY_OPTIONS = [
-  { value: "entry", label: "Entry Level" },
-  { value: "mid", label: "Mid Level" },
-  { value: "senior", label: "Senior" },
-  { value: "lead", label: "Lead" },
-  { value: "executive", label: "Executive" },
-];
-
-const REGION_OPTIONS = [
-  { value: "thailand", label: "Thailand" },
-  { value: "malaysia", label: "Malaysia" },
-  { value: "singapore", label: "Singapore" },
-  { value: "europe", label: "Europe" },
-  { value: "apac", label: "APAC" },
+// Fallback options used while loading
+const FALLBACK_SENIORITY_OPTIONS = [
+  { value: "entry level", label: "Entry Level", count: 0 },
+  { value: "mid-senior level", label: "Mid-Senior Level", count: 0 },
+  { value: "associate", label: "Associate", count: 0 },
 ];
 
 const APPLICANT_PRESETS = [
@@ -42,6 +34,27 @@ const SORT_OPTIONS: { value: JobListingSortBy; label: string }[] = [
 
 export function JobListingFilters({ filters, onFiltersChange }: JobListingFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [filterOptions, setFilterOptions] = useState<{
+    countries: FilterOption[];
+    regions: FilterOption[];
+    seniorities: FilterOption[];
+  } | null>(null);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
+
+  // Load filter options on mount
+  useEffect(() => {
+    const loadFilterOptions = async () => {
+      try {
+        const options = await jobListingApi.getFilterOptions();
+        setFilterOptions(options);
+      } catch (error) {
+        console.error("Failed to load filter options:", error);
+      } finally {
+        setIsLoadingOptions(false);
+      }
+    };
+    loadFilterOptions();
+  }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onFiltersChange({ ...filters, search: e.target.value || undefined, offset: 0 });
@@ -64,6 +77,23 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
     onFiltersChange({
       ...filters,
       seniority: newSeniorities.length > 0 ? newSeniorities.join(",") : undefined,
+      offset: 0,
+    });
+  };
+
+  const handleCountryChange = (value: string) => {
+    const currentCountries = filters.country?.split(",") || [];
+    let newCountries: string[];
+
+    if (currentCountries.includes(value)) {
+      newCountries = currentCountries.filter((c) => c !== value);
+    } else {
+      newCountries = [...currentCountries, value];
+    }
+
+    onFiltersChange({
+      ...filters,
+      country: newCountries.length > 0 ? newCountries.join(",") : undefined,
       offset: 0,
     });
   };
@@ -165,10 +195,18 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
   };
 
   const selectedSeniorities = filters.seniority?.split(",") || [];
+  const selectedCountries = filters.country?.split(",") || [];
   const selectedRegions = filters.region?.split(",") || [];
+
+  // Use dynamic options or fallback
+  const seniorityOptions = filterOptions?.seniorities || FALLBACK_SENIORITY_OPTIONS;
+  const countryOptions = filterOptions?.countries || [];
+  const regionOptions = filterOptions?.regions || [];
+
   const hasActiveFilters =
     filters.search ||
     filters.location ||
+    filters.country ||
     filters.region ||
     filters.seniority ||
     filters.is_remote ||
@@ -219,51 +257,91 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
             />
           </div>
 
-          {/* Seniority */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Seniority
-            </label>
-            <div className="space-y-2">
-              {SENIORITY_OPTIONS.map((option) => (
-                <label
-                  key={option.value}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedSeniorities.includes(option.value)}
-                    onChange={() => handleSeniorityChange(option.value)}
-                    className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                  />
-                  <span className="text-sm text-gray-600">{option.label}</span>
-                </label>
-              ))}
+          {/* Country */}
+          {countryOptions.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Country
+              </label>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {countryOptions.map((option) => (
+                  <label
+                    key={option.value}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCountries.includes(option.value)}
+                      onChange={() => handleCountryChange(option.value)}
+                      className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-gray-600">
+                      {option.label}
+                      <span className="text-gray-400 ml-1">({option.count})</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Region */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Region
-            </label>
-            <div className="space-y-2">
-              {REGION_OPTIONS.map((option) => (
-                <label
-                  key={option.value}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedRegions.includes(option.value)}
-                    onChange={() => handleRegionChange(option.value)}
-                    className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                  />
-                  <span className="text-sm text-gray-600">{option.label}</span>
-                </label>
-              ))}
+          {regionOptions.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Region
+              </label>
+              <div className="space-y-2">
+                {regionOptions.map((option) => (
+                  <label
+                    key={option.value}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedRegions.includes(option.value)}
+                      onChange={() => handleRegionChange(option.value)}
+                      className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-gray-600">
+                      {option.label}
+                      <span className="text-gray-400 ml-1">({option.count})</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Seniority */}
+          {seniorityOptions.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Seniority
+              </label>
+              <div className="space-y-2">
+                {seniorityOptions.map((option) => (
+                  <label
+                    key={option.value}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedSeniorities.includes(option.value)}
+                      onChange={() => handleSeniorityChange(option.value)}
+                      className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-gray-600">
+                      {option.label}
+                      {option.count > 0 && (
+                        <span className="text-gray-400 ml-1">({option.count})</span>
+                      )}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Remote & Easy Apply Toggles */}
           <div className="space-y-2">

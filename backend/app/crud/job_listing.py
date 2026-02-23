@@ -30,6 +30,7 @@ from app.utils.apify_helpers import (
     detect_remote,
     extract_company_address,
     parse_job_date,
+    parse_location,
 )
 
 logger = logging.getLogger(__name__)
@@ -160,6 +161,14 @@ class JobListingRepository:
                 JobListing.region.ilike(f"%{r}%") for r in regions
             ]
             conditions.append(or_(*region_conditions))
+
+        # Country filter (multi-select)
+        if filters.country:
+            countries = [c.strip() for c in filters.country.split(",")]
+            country_conditions = [
+                JobListing.country.ilike(f"%{c}%") for c in countries
+            ]
+            conditions.append(or_(*country_conditions))
 
         # Remote filter
         if filters.is_remote is not None:
@@ -385,6 +394,11 @@ class JobListingRepository:
         company_address_locality, company_address_country = extract_company_address(
             job_data.companyAddress
         )
+        # Parse location to extract city, state, country
+        city, state, country = parse_location(
+            job_data.location,
+            job_data.companyAddress,
+        )
 
         # Build the update/create data
         data = {
@@ -398,9 +412,9 @@ class JobListingRepository:
             "company_address_locality": company_address_locality,
             "company_address_country": company_address_country,
             "location": job_data.location,
-            "city": None,  # Not provided by this actor
-            "state": None,
-            "country": None,
+            "city": city,
+            "state": state,
+            "country": country,
             "is_remote": is_remote,
             "seniority": job_data.seniorityLevel,
             "job_function": job_data.jobFunction,
@@ -508,22 +522,32 @@ class JobListingRepository:
                     company_address_locality, company_address_country = extract_company_address(
                         job_data.companyAddress
                     )
+                    # Parse location to extract city, state, country
+                    city, state, country = parse_location(
+                        job_data.location,
+                        job_data.companyAddress,
+                    )
+
+                    # Handle empty strings - convert to None for optional fields
+                    apply_url = job_data.applyUrl if job_data.applyUrl else None
+                    company_logo = job_data.companyLogo if job_data.companyLogo else None
+                    company_website = job_data.companyWebsite if job_data.companyWebsite else None
 
                     values_list.append(
                         {
                             "external_job_id": job_data.id,
                             "job_title": job_data.title,
                             "company_name": job_data.companyName,
-                            "company_logo": job_data.companyLogo,
-                            "company_website": job_data.companyWebsite,
+                            "company_logo": company_logo,
+                            "company_website": company_website,
                             "company_description": job_data.companyDescription,
                             "company_linkedin_url": job_data.companyLinkedinUrl,
                             "company_address_locality": company_address_locality,
                             "company_address_country": company_address_country,
                             "location": job_data.location,
-                            "city": None,
-                            "state": None,
-                            "country": None,
+                            "city": city,
+                            "state": state,
+                            "country": country,
                             "is_remote": is_remote,
                             "seniority": job_data.seniorityLevel,
                             "job_function": job_data.jobFunction,
@@ -531,13 +555,13 @@ class JobListingRepository:
                             "job_description": job_data.descriptionText,
                             "job_description_html": job_data.descriptionHtml,
                             "job_url": job_data.link,
-                            "job_url_direct": job_data.applyUrl if job_data.applyUrl else None,
-                            "apply_url": job_data.applyUrl,
+                            "job_url_direct": apply_url,
+                            "apply_url": apply_url,
                             "job_type": job_type,
                             "emails": None,
-                            "benefits": job_data.benefits,
-                            "easy_apply": not bool(job_data.applyUrl),
-                            "applicants_count": job_data.applicantsCount,
+                            "benefits": job_data.benefits if job_data.benefits else None,
+                            "easy_apply": not bool(apply_url),
+                            "applicants_count": job_data.applicantsCount if job_data.applicantsCount else None,
                             "salary_min": None,
                             "salary_max": None,
                             "salary_currency": "USD",
@@ -551,6 +575,7 @@ class JobListingRepository:
                         }
                     )
                 except Exception as e:
+                    logger.error(f"Parse error for job {getattr(job_data, 'id', 'unknown')}: {e}")
                     errors.append(
                         {
                             "job_id": getattr(job_data, "id", "unknown"),
@@ -577,17 +602,20 @@ class JobListingRepository:
                 set_=update_cols,
             )
 
-            # Execute and get result
+            # Execute within a savepoint to isolate batch failures
+            # This prevents a single batch failure from aborting the entire transaction
             try:
-                result = await db.execute(stmt)
-                # Note: PostgreSQL doesn't easily distinguish created vs updated
-                # in batch upserts, so we track this separately
-                affected = result.rowcount
-                # Approximate: assume new jobs > existing for first run
-                # For more accuracy, would need to query existing IDs first
-                created_count += affected
+                async with db.begin_nested():
+                    result = await db.execute(stmt)
+                    # Note: PostgreSQL doesn't easily distinguish created vs updated
+                    # in batch upserts, so we track this separately
+                    affected = result.rowcount
+                    # Approximate: assume new jobs > existing for first run
+                    # For more accuracy, would need to query existing IDs first
+                    created_count += affected
+                    logger.info(f"Batch {i // batch_size + 1}: upserted {affected} jobs")
             except Exception as e:
-                logger.error(f"Batch upsert error: {e}")
+                logger.error(f"Batch upsert error at index {i}: {e}")
                 errors.append(
                     {
                         "batch_start": i,
@@ -596,6 +624,8 @@ class JobListingRepository:
                         "message": str(e),
                     }
                 )
+                # Savepoint rollback is automatic on exception within begin_nested()
+                # Transaction continues with next batch
 
         await db.flush()
         return created_count, updated_count, errors
@@ -614,6 +644,68 @@ class JobListingRepository:
             query = query.where(JobListing.is_active == True)
         result = await db.execute(query)
         return {region or "unknown": count for region, count in result.all()}
+
+    async def get_filter_options(
+        self,
+        db: AsyncSession,
+        *,
+        active_only: bool = True,
+    ) -> dict[str, list[dict[str, str | int]]]:
+        """
+        Get available filter options based on existing data.
+
+        Returns distinct values with counts for countries, regions,
+        and seniority levels.
+        """
+        base_condition = JobListing.is_active == True if active_only else True
+
+        # Get countries with counts
+        country_query = (
+            select(JobListing.country, func.count(JobListing.id).label("count"))
+            .where(base_condition, JobListing.country.isnot(None))
+            .group_by(JobListing.country)
+            .order_by(func.count(JobListing.id).desc())
+        )
+        country_result = await db.execute(country_query)
+        countries = [
+            {"value": country, "label": country, "count": count}
+            for country, count in country_result.all()
+            if country
+        ]
+
+        # Get regions with counts
+        region_query = (
+            select(JobListing.region, func.count(JobListing.id).label("count"))
+            .where(base_condition, JobListing.region.isnot(None))
+            .group_by(JobListing.region)
+            .order_by(func.count(JobListing.id).desc())
+        )
+        region_result = await db.execute(region_query)
+        regions = [
+            {"value": region, "label": region, "count": count}
+            for region, count in region_result.all()
+            if region
+        ]
+
+        # Get seniority levels with counts
+        seniority_query = (
+            select(JobListing.seniority, func.count(JobListing.id).label("count"))
+            .where(base_condition, JobListing.seniority.isnot(None))
+            .group_by(JobListing.seniority)
+            .order_by(func.count(JobListing.id).desc())
+        )
+        seniority_result = await db.execute(seniority_query)
+        seniorities = [
+            {"value": seniority, "label": seniority, "count": count}
+            for seniority, count in seniority_result.all()
+            if seniority
+        ]
+
+        return {
+            "countries": countries,
+            "regions": regions,
+            "seniorities": seniorities,
+        }
 
     async def delete_expired(
         self,

@@ -176,6 +176,9 @@ class JobListingFilters(BaseModel):
     # Region filter (comma-separated for multi-select)
     region: str | None = None
 
+    # Country filter (comma-separated for multi-select)
+    country: str | None = None
+
     # Seniority filters (comma-separated for multi-select)
     seniority: str | None = None
     seniorities: list[str] | None = None
@@ -465,3 +468,24 @@ class PDFPreviewResponse(BaseModel):
     content_hash: str
     cached: bool
     expires_at: datetime
+
+
+# ============================================================================
+# Filter Options Schemas
+# ============================================================================
+
+
+class FilterOption(BaseModel):
+    """A single filter option with value, label, and count."""
+
+    value: str
+    label: str
+    count: int
+
+
+class JobListingFilterOptionsResponse(BaseModel):
+    """Available filter options based on existing job data."""
+
+    countries: list[FilterOption]
+    regions: list[FilterOption]
+    seniorities: list[FilterOption]
