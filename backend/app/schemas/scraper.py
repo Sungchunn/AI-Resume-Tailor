@@ -9,7 +9,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ScraperRegion(str, Enum):
@@ -78,6 +78,33 @@ class ScraperStatsResponse(BaseModel):
     listings_by_status: dict[str, int]
     last_24h_created: int
     last_7d_created: int
+
+
+class AdHocScrapeRequest(BaseModel):
+    """Request for ad-hoc LinkedIn scraping via admin UI."""
+
+    url: str = Field(..., min_length=1, description="LinkedIn job search URL")
+    count: int = Field(default=100, ge=1, le=500, description="Max jobs to scrape")
+
+    @field_validator("url")
+    @classmethod
+    def validate_linkedin_url(cls, v: str) -> str:
+        """Validate that the URL is a LinkedIn jobs URL."""
+        if "linkedin.com/jobs" not in v.lower():
+            raise ValueError("URL must be a LinkedIn jobs search URL")
+        return v
+
+
+class AdHocScrapeResponse(BaseModel):
+    """Response from ad-hoc scraping operation."""
+
+    status: str = Field(..., description="success, partial, error, timeout")
+    jobs_found: int = Field(default=0, ge=0)
+    jobs_created: int = Field(default=0, ge=0)
+    jobs_updated: int = Field(default=0, ge=0)
+    errors: int = Field(default=0, ge=0)
+    error_details: list[dict[str, Any]] = Field(default_factory=list)
+    duration_seconds: float | None = None
 
 
 # Hardcoded scraper configurations using exact user URLs

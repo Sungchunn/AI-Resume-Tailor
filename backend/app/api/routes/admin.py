@@ -17,13 +17,17 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db_session, require_admin
+from app.crud.job_listing import job_listing_repository
 from app.crud.scraper_run import scraper_run_repository
 from app.models.job_listing import JobListing
 from app.schemas.scraper import (
+    AdHocScrapeRequest,
+    AdHocScrapeResponse,
     ScraperBatchResult,
     ScraperStatsResponse,
     ScraperStatusResponse,
 )
+from app.services.scraping.apify_client import get_apify_client
 from app.services.scraping.scheduler import get_scheduler_service
 
 router = APIRouter(dependencies=[Depends(require_admin)])
@@ -281,4 +285,56 @@ async def get_scraper_health(
         success_rate=stats["success_rate"],
         avg_duration_seconds=stats["avg_duration_seconds"],
         total_jobs_created=stats["total_jobs_created"],
+    )
+
+
+@router.post("/scraper/adhoc", response_model=AdHocScrapeResponse)
+async def trigger_adhoc_scrape(
+    request: AdHocScrapeRequest,
+    db: AsyncSession = Depends(get_db_session),
+) -> AdHocScrapeResponse:
+    """
+    Trigger an ad-hoc scrape with a custom LinkedIn URL.
+
+    This endpoint allows admins to scrape jobs from any LinkedIn
+    job search URL with custom parameters.
+
+    Note: This is a long-running operation that may take several
+    minutes depending on the count parameter.
+    """
+    apify_client = get_apify_client()
+
+    # Run the ad-hoc scrape
+    jobs, result_meta = await apify_client.run_adhoc_scrape(
+        url=request.url,
+        count=request.count,
+    )
+
+    jobs_created = 0
+    jobs_updated = 0
+    upsert_errors: list[dict] = []
+
+    # Upsert jobs to database
+    if jobs:
+        created_count, updated_count, errors = await job_listing_repository.batch_upsert_from_apify(
+            db,
+            jobs_data=jobs,
+            source_platform="linkedin",
+        )
+        jobs_created = created_count
+        jobs_updated = updated_count
+        upsert_errors = errors
+        await db.commit()
+
+    # Combine error details
+    all_errors = result_meta.get("error_details", []) + upsert_errors
+
+    return AdHocScrapeResponse(
+        status=result_meta.get("status", "error"),
+        jobs_found=result_meta.get("jobs_found", 0),
+        jobs_created=jobs_created,
+        jobs_updated=jobs_updated,
+        errors=len(all_errors),
+        error_details=all_errors,
+        duration_seconds=result_meta.get("duration_seconds"),
     )

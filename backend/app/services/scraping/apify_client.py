@@ -192,6 +192,139 @@ class ApifyClient:
             return [], result
 
 
+    async def run_adhoc_scrape(
+        self,
+        url: str,
+        count: int = 100,
+    ) -> tuple[list[ApifyJobListing], dict[str, Any]]:
+        """
+        Run an ad-hoc LinkedIn scraper with custom URL and parameters.
+
+        Args:
+            url: LinkedIn job search URL
+            count: Maximum number of jobs to scrape
+
+        Returns:
+            Tuple of (parsed job listings, result metadata dict)
+        """
+        from datetime import datetime, timezone
+
+        started_at = datetime.now(timezone.utc)
+
+        # Build the actor input payload for ad-hoc scraping
+        actor_input = {
+            "count": count,
+            "scrapeCompany": True,
+            "splitByLocation": False,
+            "urls": [url],
+        }
+
+        # Build the API URL for sync run with dataset items
+        api_url = f"{APIFY_BASE_URL}/acts/{self.actor_id}/run-sync-get-dataset-items"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_token}",
+        }
+
+        jobs: list[ApifyJobListing] = []
+        error_details: list[dict[str, Any]] = []
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
+                logger.info(f"Running ad-hoc APIFY scrape: url={url}, count={count}")
+
+                response = await client.post(
+                    api_url,
+                    json=actor_input,
+                    headers=headers,
+                )
+
+                if response.status_code not in (200, 201):
+                    error_msg = f"APIFY API error: {response.status_code} - {response.text}"
+                    logger.error(error_msg)
+                    completed_at = datetime.now(timezone.utc)
+                    return [], {
+                        "status": "error",
+                        "jobs_found": 0,
+                        "errors": 1,
+                        "error_details": [{"error": "api_error", "message": error_msg}],
+                        "duration_seconds": (completed_at - started_at).total_seconds(),
+                    }
+
+                data = response.json()
+
+                # Parse each job item
+                for item in data:
+                    try:
+                        # Ad-hoc scrapes don't have a region
+                        item["region"] = "adhoc"
+                        job = ApifyJobListing.model_validate(item)
+                        jobs.append(job)
+                    except Exception as e:
+                        error_details.append(
+                            {
+                                "item_id": item.get("id", "unknown"),
+                                "error": str(e),
+                            }
+                        )
+                        logger.warning(
+                            f"Failed to parse job item: {e}, item_id={item.get('id', 'unknown')}"
+                        )
+
+                completed_at = datetime.now(timezone.utc)
+                duration = (completed_at - started_at).total_seconds()
+
+                logger.info(
+                    f"Ad-hoc APIFY scrape completed: "
+                    f"{len(jobs)} jobs found, {len(error_details)} parse errors"
+                )
+
+                return jobs, {
+                    "status": "success" if not error_details else "partial",
+                    "jobs_found": len(jobs),
+                    "errors": len(error_details),
+                    "error_details": error_details,
+                    "duration_seconds": duration,
+                }
+
+        except httpx.TimeoutException as e:
+            completed_at = datetime.now(timezone.utc)
+            duration = (completed_at - started_at).total_seconds()
+            logger.error(f"Ad-hoc APIFY scrape timeout: {e}")
+            return [], {
+                "status": "timeout",
+                "jobs_found": 0,
+                "errors": 1,
+                "error_details": [{"error": "timeout", "message": str(e)}],
+                "duration_seconds": duration,
+            }
+
+        except httpx.HTTPError as e:
+            completed_at = datetime.now(timezone.utc)
+            duration = (completed_at - started_at).total_seconds()
+            logger.error(f"Ad-hoc APIFY HTTP error: {e}")
+            return [], {
+                "status": "error",
+                "jobs_found": 0,
+                "errors": 1,
+                "error_details": [{"error": "http_error", "message": str(e)}],
+                "duration_seconds": duration,
+            }
+
+        except Exception as e:
+            completed_at = datetime.now(timezone.utc)
+            duration = (completed_at - started_at).total_seconds()
+            logger.error(f"Ad-hoc APIFY unexpected error: {e}")
+            return [], {
+                "status": "error",
+                "jobs_found": 0,
+                "errors": 1,
+                "error_details": [{"error": "unexpected", "message": str(e)}],
+                "duration_seconds": duration,
+            }
+
+
 @lru_cache
 def get_apify_client() -> ApifyClient:
     """Get a singleton APIFY client instance."""
