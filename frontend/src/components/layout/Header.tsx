@@ -1,23 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function Header() {
-  const pathname = usePathname();
   const { user, isAuthenticated, logout } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  const navigation = isAuthenticated
-    ? [
-        { name: "Dashboard", href: "/dashboard" },
-        { name: "Library", href: "/dashboard/library" },
-        { name: "Tailor", href: "/dashboard/tailor" },
-      ]
-    : [{ name: "Home", href: "/" }];
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -32,36 +22,17 @@ export function Header() {
 
   return (
     <header className="bg-white border-b border-gray-200">
-      <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <nav className="pl-10 pr-6">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
-            <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-primary-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">RT</span>
+            <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary-600 flex items-center justify-center">
+                <span className="text-white font-bold text-base">RT</span>
               </div>
-              <span className="font-semibold text-gray-900">
+              <span className="text-lg font-semibold text-gray-900">
                 Resume Tailor
               </span>
             </Link>
-          </div>
-
-          <div className="hidden md:flex md:items-center md:gap-x-6">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`text-sm font-medium transition-colors ${
-                    isActive
-                      ? "text-primary-600"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              );
-            })}
           </div>
 
           <div className="flex items-center gap-4">
