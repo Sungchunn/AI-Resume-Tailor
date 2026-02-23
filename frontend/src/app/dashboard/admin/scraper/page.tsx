@@ -6,20 +6,7 @@ import type { AdHocScrapeResponse } from "@/lib/api/types";
 import ScheduleSettings from "./components/ScheduleSettings";
 import PresetList from "./components/PresetList";
 
-const EXAMPLE_URLS = [
-  {
-    label: "Software Engineers in San Francisco",
-    url: "https://www.linkedin.com/jobs/search/?keywords=software%20engineer&location=San%20Francisco",
-  },
-  {
-    label: "Remote Data Science Jobs (US)",
-    url: "https://www.linkedin.com/jobs/search/?keywords=data%20scientist&f_WT=2&location=United%20States",
-  },
-  {
-    label: "Product Manager (New York)",
-    url: "https://www.linkedin.com/jobs/search/?keywords=product%20manager&location=New%20York",
-  },
-];
+const JOB_COUNT_PRESETS = [25, 50, 100, 200, 500];
 
 export default function AdminScraperPage() {
   const [url, setUrl] = useState("");
@@ -64,10 +51,6 @@ export default function AdminScraperPage() {
         },
       }
     );
-  };
-
-  const handleExampleClick = (exampleUrl: string) => {
-    setUrl(exampleUrl);
   };
 
   const isValidUrl = url.toLowerCase().includes("linkedin.com/jobs");
@@ -233,52 +216,28 @@ export default function AdminScraperPage() {
                 <span className="text-sm">Valid LinkedIn jobs URL</span>
               </div>
             )}
-
-            {/* Example URLs */}
-            <div className="mt-3">
-              <p className="text-xs text-gray-500 mb-2">Try an example:</p>
-              <div className="flex flex-wrap gap-2">
-                {EXAMPLE_URLS.map((example) => (
-                  <button
-                    key={example.label}
-                    type="button"
-                    onClick={() => handleExampleClick(example.url)}
-                    className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-                  >
-                    {example.label}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* Count Input */}
           <div>
-            <label htmlFor="count" className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700">
               Number of Jobs to Scrape
             </label>
-            <div className="mt-1 flex items-center gap-4">
-              <input
-                type="range"
-                id="count-slider"
-                value={count}
-                onChange={(e) => setCount(parseInt(e.target.value))}
-                min={25}
-                max={500}
-                step={25}
-                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
-              />
-              <input
-                type="number"
-                id="count"
-                value={count}
-                onChange={(e) =>
-                  setCount(Math.min(500, Math.max(1, parseInt(e.target.value) || 1)))
-                }
-                min={1}
-                max={500}
-                className="w-20 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-center"
-              />
+            <div className="mt-2 flex flex-wrap gap-2">
+              {JOB_COUNT_PRESETS.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setCount(preset)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    count === preset
+                      ? "bg-primary-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {preset}
+                </button>
+              ))}
             </div>
           </div>
 

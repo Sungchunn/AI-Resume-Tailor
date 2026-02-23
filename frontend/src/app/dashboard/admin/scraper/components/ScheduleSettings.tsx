@@ -14,10 +14,14 @@ const DAYS_OF_WEEK = [
   { value: 6, label: "Sunday" },
 ];
 
-const HOURS = Array.from({ length: 24 }, (_, i) => ({
-  value: i,
-  label: `${i.toString().padStart(2, "0")}:00`,
-}));
+const COMMON_HOURS = [
+  { value: 0, label: "12:00 AM" },
+  { value: 2, label: "2:00 AM" },
+  { value: 6, label: "6:00 AM" },
+  { value: 9, label: "9:00 AM" },
+  { value: 12, label: "12:00 PM" },
+  { value: 18, label: "6:00 PM" },
+];
 
 export default function ScheduleSettings() {
   const { data: settings, isLoading } = useScheduleSettings();
@@ -61,18 +65,6 @@ export default function ScheduleSettings() {
     );
   }
 
-  const formatNextRun = (dateStr: string | null) => {
-    if (!dateStr) return "Not scheduled";
-    const date = new Date(dateStr);
-    return date.toLocaleString();
-  };
-
-  const formatLastRun = (dateStr: string | null) => {
-    if (!dateStr) return "Never";
-    const date = new Date(dateStr);
-    return date.toLocaleString();
-  };
-
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-6">
@@ -84,38 +76,25 @@ export default function ScheduleSettings() {
         </div>
 
         {/* Global Toggle */}
-        <button
-          type="button"
-          onClick={() => toggleSchedule()}
-          disabled={isToggling}
-          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-            settings?.is_enabled ? "bg-primary-600" : "bg-gray-200"
-          } ${isToggling ? "opacity-50" : ""}`}
-        >
-          <span className="sr-only">Toggle schedule</span>
-          <span
-            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-              settings?.is_enabled ? "translate-x-5" : "translate-x-0"
-            }`}
-          />
-        </button>
-      </div>
-
-      {/* Status Bar */}
-      <div className="mb-6 p-3 rounded-lg bg-gray-50 border border-gray-200">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase">Next Run</p>
-            <p className="text-sm font-medium text-gray-900">
-              {settings?.is_enabled ? formatNextRun(settings?.next_run_at) : "Schedule disabled"}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase">Last Run</p>
-            <p className="text-sm font-medium text-gray-900">
-              {formatLastRun(settings?.last_run_at)}
-            </p>
-          </div>
+        <div className="flex items-center gap-3">
+          <span className={`text-sm font-medium ${settings?.is_enabled ? "text-green-600" : "text-gray-500"}`}>
+            {settings?.is_enabled ? "Enabled" : "Disabled"}
+          </span>
+          <button
+            type="button"
+            onClick={() => toggleSchedule()}
+            disabled={isToggling}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+              settings?.is_enabled ? "bg-primary-600" : "bg-gray-200"
+            } ${isToggling ? "opacity-50" : ""}`}
+          >
+            <span className="sr-only">Toggle schedule</span>
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                settings?.is_enabled ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
         </div>
       </div>
 
@@ -175,24 +154,25 @@ export default function ScheduleSettings() {
 
         {/* Hour */}
         <div>
-          <label htmlFor="scheduleHour" className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Time (UTC)
           </label>
-          <select
-            id="scheduleHour"
-            value={scheduleHour}
-            onChange={(e) => setScheduleHour(parseInt(e.target.value))}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
-          >
-            {HOURS.map((hour) => (
-              <option key={hour.value} value={hour.value}>
+          <div className="flex flex-wrap gap-2">
+            {COMMON_HOURS.map((hour) => (
+              <button
+                key={hour.value}
+                type="button"
+                onClick={() => setScheduleHour(hour.value)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  scheduleHour === hour.value
+                    ? "bg-primary-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
                 {hour.label}
-              </option>
+              </button>
             ))}
-          </select>
-          <p className="mt-1 text-xs text-gray-500">
-            All times are in UTC. Current UTC time: {new Date().toISOString().slice(11, 16)}
-          </p>
+          </div>
         </div>
 
         {/* Save Button */}
