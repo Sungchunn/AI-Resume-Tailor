@@ -6,7 +6,7 @@ scraper job that fetches LinkedIn job listings, as well as job
 cleanup operations.
 
 Requires admin authentication - user must be logged in and have
-their email in the ADMIN_EMAILS configuration.
+the is_admin flag set to True in the database.
 """
 
 from datetime import datetime, timedelta, timezone

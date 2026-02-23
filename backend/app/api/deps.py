@@ -126,10 +126,9 @@ async def require_admin(
 ) -> User:
     """
     Require the current user to be an admin.
-    Checks if the user's email is in the admin_emails list.
+    Checks the is_admin boolean field on the user model.
     """
-    settings = get_settings()
-    if current_user.email not in settings.admin_emails:
+    if not current_user.is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",

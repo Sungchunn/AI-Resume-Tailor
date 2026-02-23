@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     n8n_webhook_api_key: str = ""
 
     # Admin Authentication
+    # DEPRECATED: admin_emails is only used for migration seeding (20260223_0002).
+    # Remove this setting after migration has run in all environments.
     admin_emails: list[str] = []
 
     # Rate Limiting
