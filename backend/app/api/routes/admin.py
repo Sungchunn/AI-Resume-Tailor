@@ -1,8 +1,9 @@
 """
-Admin API endpoints for scraper management.
+Admin API endpoints for scraper and job management.
 
 Provides endpoints for monitoring and controlling the background
-scraper job that fetches LinkedIn job listings.
+scraper job that fetches LinkedIn job listings, as well as job
+cleanup operations.
 
 Requires admin authentication - user must be logged in and have
 their email in the ADMIN_EMAILS configuration.
@@ -60,6 +61,15 @@ class ScraperHealthResponse(BaseModel):
     success_rate: float
     avg_duration_seconds: float
     total_jobs_created: int
+
+
+class CleanupResponse(BaseModel):
+    """Response for job cleanup endpoint."""
+
+    status: str
+    deleted_count: int
+    duration_seconds: float | None = None
+    error: str | None = None
 
 
 @router.get("/scraper/status", response_model=ScraperStatusResponse)
@@ -123,6 +133,36 @@ async def trigger_scraper() -> ScraperBatchResult:
         )
 
     return result
+
+
+@router.post("/jobs/cleanup", response_model=CleanupResponse)
+async def trigger_cleanup() -> CleanupResponse:
+    """
+    Manually trigger job cleanup.
+
+    This endpoint deletes job listings older than the configured
+    retention period (default: 21 days). Uses `created_at` timestamp
+    to determine job age.
+
+    Uses distributed locking to prevent duplicate runs if another
+    instance is already running cleanup.
+    """
+    scheduler = get_scheduler_service()
+    result = await scheduler.trigger_cleanup_now()
+
+    # Check if job was skipped due to lock
+    if result.get("status") == "skipped":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cleanup is already running on another instance",
+        )
+
+    return CleanupResponse(
+        status=result.get("status", "unknown"),
+        deleted_count=result.get("deleted_count", 0),
+        duration_seconds=result.get("duration_seconds"),
+        error=result.get("error"),
+    )
 
 
 @router.get("/scraper/stats", response_model=ScraperStatsResponse)

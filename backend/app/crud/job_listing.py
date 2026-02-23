@@ -8,9 +8,9 @@ full-text search, and user interaction tracking.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import Integer, and_, cast, func, or_, select, update
+from sqlalchemy import Integer, and_, cast, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -54,6 +54,7 @@ class JobListingRepository:
             job_function=obj_in.job_function,
             industry=obj_in.industry,
             job_description=obj_in.job_description,
+            job_description_html=obj_in.job_description_html,
             job_url=obj_in.job_url,
             job_url_direct=obj_in.job_url_direct,
             job_type=obj_in.job_type,
@@ -406,6 +407,7 @@ class JobListingRepository:
             "job_function": job_data.jobFunction,
             "industry": job_data.industries,
             "job_description": job_data.descriptionText,
+            "job_description_html": job_data.descriptionHtml,
             "job_url": job_data.link,
             "job_url_direct": job_data.applyUrl if job_data.applyUrl else None,
             "job_type": job_type,
@@ -541,6 +543,7 @@ class JobListingRepository:
                             "job_function": job_data.jobFunction,
                             "industry": job_data.industries,
                             "job_description": job_data.descriptionText,
+                            "job_description_html": job_data.descriptionHtml,
                             "job_url": job_data.link,
                             "job_url_direct": job_data.applyUrl if job_data.applyUrl else None,
                             "job_type": job_type,
@@ -623,6 +626,40 @@ class JobListingRepository:
             query = query.where(JobListing.is_active == True)
         result = await db.execute(query)
         return {region or "unknown": count for region, count in result.all()}
+
+    async def delete_expired(
+        self,
+        db: AsyncSession,
+        *,
+        retention_days: int,
+    ) -> int:
+        """
+        Delete job listings older than the specified retention period.
+
+        Uses hard delete based on created_at timestamp.
+
+        Args:
+            db: Database session
+            retention_days: Number of days to retain jobs
+
+        Returns:
+            Number of jobs deleted
+        """
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
+
+        result = await db.execute(
+            delete(JobListing).where(JobListing.created_at < cutoff_date)
+        )
+        await db.flush()
+
+        deleted_count = result.rowcount
+        if deleted_count > 0:
+            logger.info(
+                f"Deleted {deleted_count} expired job listings "
+                f"(older than {retention_days} days)"
+            )
+
+        return deleted_count
 
 
 class UserJobInteractionRepository:

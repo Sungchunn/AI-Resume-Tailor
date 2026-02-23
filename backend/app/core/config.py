@@ -66,6 +66,10 @@ class Settings(BaseSettings):
     scraper_retry_attempts: int = 2  # Retry attempts for transient failures
     scraper_retry_delay: int = 60  # Seconds between retries
 
+    # Job Retention
+    job_retention_days: int = 21  # Delete jobs older than this many days
+    job_cleanup_enabled: bool = True  # Enable automatic job cleanup
+
     @field_validator("jwt_secret_key")
     @classmethod
     def validate_jwt_secret(cls, v: str, info) -> str:

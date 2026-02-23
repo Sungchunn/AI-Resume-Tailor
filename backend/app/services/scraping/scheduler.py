@@ -1,8 +1,9 @@
 """
-Background job scheduler for automated scraper runs.
+Background job scheduler for automated scraper runs and job cleanup.
 
 Uses APScheduler to schedule daily LinkedIn job scraping across
-multiple regions using the APIFY client.
+multiple regions using the APIFY client, and automatic cleanup
+of expired job listings.
 
 Features:
 - Persistent audit trail via ScraperRun model
@@ -10,6 +11,7 @@ Features:
 - Batch database upserts for performance
 - Configurable concurrent region processing
 - Retry logic for transient failures
+- Automatic cleanup of expired job listings
 """
 
 import asyncio
@@ -40,6 +42,9 @@ logger = logging.getLogger(__name__)
 # Distributed lock configuration
 SCRAPER_LOCK_KEY = "scraper:distributed_lock"
 SCRAPER_LOCK_TTL = 1800  # 30 minutes - max expected run time
+
+CLEANUP_LOCK_KEY = "cleanup:distributed_lock"
+CLEANUP_LOCK_TTL = 300  # 5 minutes - cleanup is typically fast
 
 
 class RetryableError(Exception):
@@ -80,40 +85,69 @@ class SchedulerService:
         self._retry_attempts = getattr(settings, "scraper_retry_attempts", 2)
         self._retry_delay_seconds = getattr(settings, "scraper_retry_delay", 60)
 
+        # Job retention settings
+        self._job_retention_days = getattr(settings, "job_retention_days", 21)
+        self._job_cleanup_enabled = getattr(settings, "job_cleanup_enabled", True)
+
     def start(self) -> None:
         """
-        Register daily scraper job at configured time and start scheduler.
+        Register scheduled jobs and start scheduler.
 
-        The job runs at the hour/minute specified in settings (UTC).
+        Jobs registered:
+        - Daily scraper job at configured hour/minute (UTC)
+        - Daily cleanup job at 3:00 AM UTC (1 hour offset from scraper)
         """
-        if not self.settings.scraper_enabled:
-            logger.info("Scraper is disabled via settings, scheduler not started")
+        # Check if any jobs are enabled
+        if not self.settings.scraper_enabled and not self._job_cleanup_enabled:
+            logger.info("All scheduled jobs disabled, scheduler not started")
             return
 
-        # Register the daily scraper job
-        trigger = CronTrigger(
-            hour=self.settings.scraper_schedule_hour,
-            minute=self.settings.scraper_schedule_minute,
-            timezone="UTC",
-        )
+        # Register the daily scraper job if enabled
+        if self.settings.scraper_enabled:
+            scraper_trigger = CronTrigger(
+                hour=self.settings.scraper_schedule_hour,
+                minute=self.settings.scraper_schedule_minute,
+                timezone="UTC",
+            )
 
-        self.scheduler.add_job(
-            self._run_scraper_job_with_lock,
-            trigger=trigger,
-            id="daily_linkedin_scraper",
-            name="Daily LinkedIn Job Scraper",
-            replace_existing=True,
-        )
+            self.scheduler.add_job(
+                self._run_scraper_job_with_lock,
+                trigger=scraper_trigger,
+                id="daily_linkedin_scraper",
+                name="Daily LinkedIn Job Scraper",
+                replace_existing=True,
+            )
+            logger.info(
+                f"Scraper job registered at "
+                f"{self.settings.scraper_schedule_hour:02d}:{self.settings.scraper_schedule_minute:02d} UTC"
+            )
+
+        # Register the daily cleanup job if enabled
+        if self._job_cleanup_enabled:
+            # Run cleanup at 3:00 AM UTC (offset from scraper to avoid overlap)
+            cleanup_trigger = CronTrigger(
+                hour=3,
+                minute=0,
+                timezone="UTC",
+            )
+
+            self.scheduler.add_job(
+                self._run_cleanup_job_with_lock,
+                trigger=cleanup_trigger,
+                id="daily_job_cleanup",
+                name="Daily Job Cleanup",
+                replace_existing=True,
+            )
+            logger.info(
+                f"Cleanup job registered at 03:00 UTC "
+                f"(retention: {self._job_retention_days} days)"
+            )
 
         self.scheduler.start()
         self._is_running = True
 
         next_run = self.get_next_run_time()
-        logger.info(
-            f"Scheduler started. Daily scraper job registered at "
-            f"{self.settings.scraper_schedule_hour:02d}:{self.settings.scraper_schedule_minute:02d} UTC. "
-            f"Next run: {next_run}"
-        )
+        logger.info(f"Scheduler started. Next scraper run: {next_run}")
 
     def stop(self) -> None:
         """Graceful shutdown of the scheduler."""
@@ -516,6 +550,92 @@ class SchedulerService:
             except Exception as e:
                 logger.error(f"Failed to persist scraper run: {e}")
                 await db.rollback()
+
+
+    async def _run_cleanup_job_with_lock(self) -> dict[str, Any]:
+        """
+        Execute cleanup job with distributed locking.
+
+        Prevents multiple instances from running cleanup simultaneously.
+        """
+        lock_id = str(uuid.uuid4())
+
+        # Try to acquire distributed lock
+        try:
+            result = await self._cache.redis.set(
+                CLEANUP_LOCK_KEY,
+                lock_id,
+                nx=True,
+                ex=CLEANUP_LOCK_TTL,
+            )
+            if result is None:
+                logger.warning("Cleanup job skipped - another instance is running")
+                return {"status": "skipped", "deleted_count": 0}
+        except Exception as e:
+            logger.error(f"Failed to acquire cleanup lock: {e}")
+            # Fail open - allow cleanup to run if Redis is down
+
+        try:
+            return await self._run_cleanup_job()
+        finally:
+            # Release lock
+            try:
+                current = await self._cache.redis.get(CLEANUP_LOCK_KEY)
+                if current == lock_id:
+                    await self._cache.redis.delete(CLEANUP_LOCK_KEY)
+            except Exception as e:
+                logger.warning(f"Failed to release cleanup lock: {e}")
+
+    async def _run_cleanup_job(self) -> dict[str, Any]:
+        """
+        Delete job listings older than the configured retention period.
+
+        Returns:
+            Dict containing status and number of deleted jobs.
+        """
+        started_at = datetime.now(timezone.utc)
+        logger.info(
+            f"Starting job cleanup (retention: {self._job_retention_days} days)"
+        )
+
+        deleted_count = 0
+
+        async with AsyncSessionLocal() as db:
+            try:
+                deleted_count = await job_listing_repository.delete_expired(
+                    db, retention_days=self._job_retention_days
+                )
+                await db.commit()
+            except Exception as e:
+                logger.error(f"Job cleanup failed: {e}")
+                await db.rollback()
+                return {
+                    "status": "error",
+                    "deleted_count": 0,
+                    "error": str(e),
+                }
+
+        duration = (datetime.now(timezone.utc) - started_at).total_seconds()
+        logger.info(
+            f"Job cleanup completed: deleted {deleted_count} jobs "
+            f"in {duration:.2f}s"
+        )
+
+        return {
+            "status": "success",
+            "deleted_count": deleted_count,
+            "duration_seconds": duration,
+        }
+
+    async def trigger_cleanup_now(self) -> dict[str, Any]:
+        """
+        Manual trigger for job cleanup.
+
+        Returns:
+            Dict containing cleanup results.
+        """
+        logger.info("Manual cleanup trigger initiated")
+        return await self._run_cleanup_job_with_lock()
 
 
 # Module-level singleton instance
