@@ -22,19 +22,21 @@ export function Header() {
 
   return (
     <header className="bg-white border-b border-gray-200">
-      <nav className="pl-10 pr-6">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center">
-            <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-primary-600 flex items-center justify-center">
-                <span className="text-white font-bold text-base">RT</span>
-              </div>
-              <span className="text-lg font-semibold text-gray-900">
-                Resume Tailor
-              </span>
-            </Link>
-          </div>
+      <div className="flex h-16 items-center">
+        {/* Logo section - matches sidebar width */}
+        <div className="w-64 flex items-center px-4">
+          <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary-600 flex items-center justify-center">
+              <span className="text-white font-bold text-base">RT</span>
+            </div>
+            <span className="text-lg font-semibold text-gray-900">
+              Resume Tailor
+            </span>
+          </Link>
+        </div>
 
+        {/* Content header - aligns with main content */}
+        <div className="flex-1 flex items-center justify-end px-8">
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
               <div className="relative" ref={menuRef}>
@@ -95,7 +97,7 @@ export function Header() {
             )}
           </div>
         </div>
-      </nav>
+      </div>
     </header>
   );
 }
