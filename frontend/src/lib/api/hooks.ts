@@ -34,6 +34,9 @@ import type {
   WorkshopStatus,
   JobListingFilters,
   AdHocScrapeRequest,
+  ScraperPresetCreate,
+  ScraperPresetUpdate,
+  ScheduleSettingsUpdate,
 } from "./types";
 
 // Query Keys
@@ -91,6 +94,15 @@ export const queryKeys = {
     applied: () => [...queryKeys.jobListings.all, "applied"] as const,
     search: (query: string) =>
       [...queryKeys.jobListings.all, "search", query] as const,
+  },
+  scraperPresets: {
+    all: ["scraperPresets"] as const,
+    list: () => [...queryKeys.scraperPresets.all, "list"] as const,
+    detail: (id: number) =>
+      [...queryKeys.scraperPresets.all, "detail", id] as const,
+  },
+  scheduleSettings: {
+    all: ["scheduleSettings"] as const,
   },
 };
 
@@ -700,6 +712,99 @@ export function useAdhocScrape() {
     onSuccess: () => {
       // Invalidate job listings to show newly scraped jobs
       queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.all });
+    },
+  });
+}
+
+// Scraper Preset Hooks
+export function useScraperPresets() {
+  return useQuery({
+    queryKey: queryKeys.scraperPresets.list(),
+    queryFn: () => adminApi.listPresets(),
+  });
+}
+
+export function useScraperPreset(id: number) {
+  return useQuery({
+    queryKey: queryKeys.scraperPresets.detail(id),
+    queryFn: () => adminApi.getPreset(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateScraperPreset() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: ScraperPresetCreate) => adminApi.createPreset(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.scraperPresets.all });
+    },
+  });
+}
+
+export function useUpdateScraperPreset() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: ScraperPresetUpdate }) =>
+      adminApi.updatePreset(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.scraperPresets.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.scraperPresets.all });
+    },
+  });
+}
+
+export function useDeleteScraperPreset() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => adminApi.deletePreset(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.scraperPresets.all });
+    },
+  });
+}
+
+export function useToggleScraperPreset() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => adminApi.togglePreset(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.scraperPresets.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.scraperPresets.all });
+    },
+  });
+}
+
+// Schedule Settings Hooks
+export function useScheduleSettings() {
+  return useQuery({
+    queryKey: queryKeys.scheduleSettings.all,
+    queryFn: () => adminApi.getScheduleSettings(),
+  });
+}
+
+export function useUpdateScheduleSettings() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: ScheduleSettingsUpdate) => adminApi.updateScheduleSettings(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.scheduleSettings.all });
+    },
+  });
+}
+
+export function useToggleSchedule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => adminApi.toggleSchedule(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.scheduleSettings.all });
     },
   });
 }

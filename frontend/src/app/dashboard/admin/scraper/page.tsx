@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useAdhocScrape } from "@/lib/api/hooks";
 import type { AdHocScrapeResponse } from "@/lib/api/types";
+import ScheduleSettings from "./components/ScheduleSettings";
+import PresetList from "./components/PresetList";
 
 const EXAMPLE_URLS = [
   {
@@ -74,18 +76,34 @@ export default function AdminScraperPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Ad-Hoc Job Scraper</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Job Scraper</h1>
         <p className="mt-1 text-gray-600">
-          Import jobs from any LinkedIn search directly into the database.
+          Configure scheduled scraping or run ad-hoc imports from LinkedIn.
         </p>
       </div>
 
-      {/* How It Works - Collapsible */}
+      {/* Schedule Settings */}
+      <ScheduleSettings />
+
+      {/* Saved Presets */}
+      <PresetList />
+
+      {/* Ad-Hoc Scraper Section */}
       <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Ad-Hoc Scraper</h2>
+            <p className="text-sm text-gray-600">
+              Run a one-time import from any LinkedIn job search URL.
+            </p>
+          </div>
+        </div>
+
+        {/* How It Works - Collapsible */}
         <button
           type="button"
           onClick={() => setShowHelp(!showHelp)}
-          className="w-full flex items-center justify-between text-left"
+          className="w-full flex items-center justify-between text-left p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors mb-4"
         >
           <div className="flex items-center gap-2">
             <svg
@@ -101,7 +119,7 @@ export default function AdminScraperPage() {
                 d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"
               />
             </svg>
-            <span className="font-medium text-gray-900">How to use this tool</span>
+            <span className="text-sm font-medium text-gray-700">How to use this tool</span>
           </div>
           <svg
             className={`h-5 w-5 text-gray-500 transition-transform ${showHelp ? "rotate-180" : ""}`}
@@ -115,7 +133,7 @@ export default function AdminScraperPage() {
         </button>
 
         {showHelp && (
-          <div className="mt-4 space-y-4">
+          <div className="mb-6 space-y-4">
             <div className="grid gap-4 md:grid-cols-3">
               <div className="flex gap-3">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-sm">
@@ -133,7 +151,7 @@ export default function AdminScraperPage() {
                     >
                       linkedin.com/jobs
                     </a>{" "}
-                    and search with your desired filters (keywords, location, remote, etc.)
+                    and search with your desired filters.
                   </p>
                 </div>
               </div>
@@ -145,8 +163,7 @@ export default function AdminScraperPage() {
                 <div>
                   <p className="font-medium text-gray-900">Copy the URL</p>
                   <p className="text-sm text-gray-600">
-                    Copy the full URL from your browser&apos;s address bar after applying your
-                    search filters.
+                    Copy the full URL from your browser&apos;s address bar.
                   </p>
                 </div>
               </div>
@@ -158,44 +175,15 @@ export default function AdminScraperPage() {
                 <div>
                   <p className="font-medium text-gray-900">Paste & Scrape</p>
                   <p className="text-sm text-gray-600">
-                    Paste the URL below, set how many jobs to fetch, and click Start Scraping.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-              <div className="flex gap-2">
-                <svg
-                  className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
-                  />
-                </svg>
-                <div className="text-sm text-blue-800">
-                  <p className="font-medium">What happens to the jobs?</p>
-                  <p className="mt-1">
-                    Jobs are automatically deduplicated. If a job already exists in the database,
-                    it will be updated with fresh data. New jobs are created and made available to
-                    all users.
+                    Paste the URL below and click Start Scraping.
                   </p>
                 </div>
               </div>
             </div>
           </div>
         )}
-      </div>
 
-      {/* Main Form */}
-      <div className="card">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* URL Input */}
           <div>
             <label htmlFor="url" className="block text-sm font-medium text-gray-700">
@@ -234,7 +222,7 @@ export default function AdminScraperPage() {
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                 </svg>
-                <span className="text-sm">URL must be a LinkedIn jobs search URL (contains &quot;linkedin.com/jobs&quot;)</span>
+                <span className="text-sm">URL must contain &quot;linkedin.com/jobs&quot;</span>
               </div>
             )}
             {url && isValidUrl && (
@@ -292,9 +280,6 @@ export default function AdminScraperPage() {
                 className="w-20 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-center"
               />
             </div>
-            <p className="mt-1.5 text-xs text-gray-500">
-              Higher counts take longer. Recommended: 50-100 for quick imports, up to 500 for comprehensive scrapes.
-            </p>
           </div>
 
           {/* Warning for large scrapes */}
@@ -316,7 +301,6 @@ export default function AdminScraperPage() {
                 </svg>
                 <p className="text-sm text-amber-800">
                   <span className="font-medium">Large scrape:</span> Scraping {count} jobs may take several minutes.
-                  Please keep this page open until complete.
                 </p>
               </div>
             </div>

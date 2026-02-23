@@ -54,6 +54,12 @@ import type {
   AdHocScrapeRequest,
   AdHocScrapeResponse,
   JobListingFilterOptionsResponse,
+  ScraperPresetCreate,
+  ScraperPresetUpdate,
+  ScraperPresetResponse,
+  ScraperPresetListResponse,
+  ScheduleSettingsUpdate,
+  ScheduleSettingsResponse,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -596,5 +602,49 @@ export const adminApi = {
     fetchApi("/api/admin/scraper/adhoc", {
       method: "POST",
       body: JSON.stringify(data),
+    }),
+
+  // Scraper Presets
+  listPresets: (): Promise<ScraperPresetListResponse> =>
+    fetchApi("/api/admin/scraper/presets"),
+
+  getPreset: (id: number): Promise<ScraperPresetResponse> =>
+    fetchApi(`/api/admin/scraper/presets/${id}`),
+
+  createPreset: (data: ScraperPresetCreate): Promise<ScraperPresetResponse> =>
+    fetchApi("/api/admin/scraper/presets", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updatePreset: (id: number, data: ScraperPresetUpdate): Promise<ScraperPresetResponse> =>
+    fetchApi(`/api/admin/scraper/presets/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  deletePreset: (id: number): Promise<void> =>
+    fetchApi(`/api/admin/scraper/presets/${id}`, {
+      method: "DELETE",
+    }),
+
+  togglePreset: (id: number): Promise<ScraperPresetResponse> =>
+    fetchApi(`/api/admin/scraper/presets/${id}/toggle`, {
+      method: "POST",
+    }),
+
+  // Schedule Settings
+  getScheduleSettings: (): Promise<ScheduleSettingsResponse> =>
+    fetchApi("/api/admin/scraper/schedule"),
+
+  updateScheduleSettings: (data: ScheduleSettingsUpdate): Promise<ScheduleSettingsResponse> =>
+    fetchApi("/api/admin/scraper/schedule", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  toggleSchedule: (): Promise<ScheduleSettingsResponse> =>
+    fetchApi("/api/admin/scraper/schedule/toggle", {
+      method: "POST",
     }),
 };

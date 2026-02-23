@@ -551,3 +551,61 @@ export interface AdHocScrapeResponse {
   error_details: Array<Record<string, unknown>>;
   duration_seconds: number | null;
 }
+
+// ============================================================================
+// Scraper Preset Types
+// ============================================================================
+
+export interface ScraperPresetCreate {
+  name: string;
+  url: string;
+  count?: number;
+  is_active?: boolean;
+}
+
+export interface ScraperPresetUpdate {
+  name?: string;
+  url?: string;
+  count?: number;
+  is_active?: boolean;
+}
+
+export interface ScraperPresetResponse {
+  id: number;
+  name: string;
+  url: string;
+  count: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface ScraperPresetListResponse {
+  presets: ScraperPresetResponse[];
+  total: number;
+}
+
+// ============================================================================
+// Schedule Settings Types
+// ============================================================================
+
+export type ScheduleType = "daily" | "weekly";
+
+export interface ScheduleSettingsUpdate {
+  is_enabled?: boolean;
+  schedule_type?: ScheduleType;
+  schedule_hour?: number;
+  schedule_minute?: number;
+  schedule_day_of_week?: number | null;
+}
+
+export interface ScheduleSettingsResponse {
+  is_enabled: boolean;
+  schedule_type: ScheduleType;
+  schedule_hour: number;
+  schedule_minute: number;
+  schedule_day_of_week: number | null;
+  last_run_at: string | null;
+  next_run_at: string | null;
+  updated_at: string | null;
+}
