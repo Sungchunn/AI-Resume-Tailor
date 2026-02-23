@@ -316,12 +316,15 @@ async def trigger_adhoc_scrape(
         count=request.count,
     )
 
+    logger.info(f"Ad-hoc scrape returned {len(jobs)} jobs, status={result_meta.get('status')}")
+
     jobs_created = 0
     jobs_updated = 0
     upsert_errors: list[dict] = []
 
     # Upsert jobs to database
     if jobs:
+        logger.info(f"Starting database upsert for {len(jobs)} jobs")
         created_count, updated_count, errors = await job_listing_repository.batch_upsert_from_apify(
             db,
             jobs_data=jobs,
@@ -330,6 +333,9 @@ async def trigger_adhoc_scrape(
         jobs_created = created_count
         jobs_updated = updated_count
         upsert_errors = errors
+        logger.info(f"Database upsert complete: {jobs_created} created, {jobs_updated} updated, {len(upsert_errors)} errors")
+    else:
+        logger.warning("No jobs returned from scraper, skipping database upsert")
 
     # Combine error details
     all_errors = result_meta.get("error_details", []) + upsert_errors
@@ -362,7 +368,9 @@ async def trigger_adhoc_scrape(
         logger.error(f"Failed to create scraper audit record: {e}")
         # Don't fail the entire operation if audit record fails
 
+    logger.info(f"Committing transaction: {jobs_created} jobs created, {jobs_updated} updated")
     await db.commit()
+    logger.info("Transaction committed successfully")
 
     return AdHocScrapeResponse(
         status=final_status,

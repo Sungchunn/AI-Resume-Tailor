@@ -508,6 +508,8 @@ class JobListingRepository:
         errors: list[dict] = []
         now = datetime.now(timezone.utc)
 
+        logger.info(f"Starting batch upsert of {len(jobs_data)} jobs from {source_platform}")
+
         # Process in batches
         for i in range(0, len(jobs_data), batch_size):
             batch = jobs_data[i : i + batch_size]
@@ -585,17 +587,21 @@ class JobListingRepository:
                     )
 
             if not values_list:
+                logger.warning(f"Batch {i // batch_size + 1}: all jobs failed parsing, skipping")
                 continue
+
+            logger.info(f"Batch {i // batch_size + 1}: prepared {len(values_list)} jobs for upsert")
 
             # Build upsert statement
             stmt = insert(JobListing).values(values_list)
 
             # ON CONFLICT DO UPDATE - update all fields except id and created_at
-            update_cols = {
-                col.name: col
-                for col in stmt.excluded
-                if col.name not in ("id", "external_job_id", "created_at")
-            }
+            # Use explicit column list from the values to ensure compatibility
+            excluded_from_update = {"id", "external_job_id", "created_at"}
+            update_cols = {}
+            for key in values_list[0].keys():
+                if key not in excluded_from_update:
+                    update_cols[key] = stmt.excluded[key]
 
             stmt = stmt.on_conflict_do_update(
                 index_elements=["external_job_id"],
@@ -613,9 +619,9 @@ class JobListingRepository:
                     # Approximate: assume new jobs > existing for first run
                     # For more accuracy, would need to query existing IDs first
                     created_count += affected
-                    logger.info(f"Batch {i // batch_size + 1}: upserted {affected} jobs")
+                    logger.info(f"Batch {i // batch_size + 1}: upserted {affected} jobs successfully")
             except Exception as e:
-                logger.error(f"Batch upsert error at index {i}: {e}")
+                logger.error(f"Batch upsert error at index {i}: {e}", exc_info=True)
                 errors.append(
                     {
                         "batch_start": i,
@@ -628,6 +634,7 @@ class JobListingRepository:
                 # Transaction continues with next batch
 
         await db.flush()
+        logger.info(f"Batch upsert complete: {created_count} affected, {len(errors)} errors")
         return created_count, updated_count, errors
 
     async def count_by_region(

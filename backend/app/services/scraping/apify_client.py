@@ -102,6 +102,7 @@ class ApifyClient:
                     raise ApifyClientError(error_msg)
 
                 data = response.json()
+                logger.info(f"Received {len(data)} items from APIFY API for region {config.region.value}")
 
                 # Parse each job item
                 for item in data:
@@ -269,6 +270,7 @@ class ApifyClient:
                     }
 
                 data = response.json()
+                logger.info(f"Received {len(data)} items from APIFY API for ad-hoc scrape")
 
                 # Parse each job item
                 for item in data:
