@@ -24,6 +24,15 @@ export default function AdminScraperPage() {
   const [count, setCount] = useState(100);
   const [result, setResult] = useState<AdHocScrapeResponse | null>(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const copyErrorDetails = () => {
+    if (result?.error_details) {
+      navigator.clipboard.writeText(JSON.stringify(result.error_details, null, 2));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   const { mutate: triggerScrape, isPending } = useAdhocScrape();
 
@@ -462,9 +471,32 @@ export default function AdminScraperPage() {
                       <summary className="text-sm text-red-700 cursor-pointer hover:text-red-900">
                         View error details
                       </summary>
-                      <pre className="mt-2 p-3 bg-white rounded text-xs overflow-auto max-h-48 border border-red-100">
-                        {JSON.stringify(result.error_details, null, 2)}
-                      </pre>
+                      <div className="mt-2 relative">
+                        <button
+                          type="button"
+                          onClick={copyErrorDetails}
+                          className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                        >
+                          {copied ? (
+                            <>
+                              <svg className="h-3.5 w-3.5 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                              </svg>
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                              </svg>
+                              Copy
+                            </>
+                          )}
+                        </button>
+                        <pre className="p-3 pr-16 bg-white rounded text-xs overflow-auto max-h-48 border border-red-100">
+                          {JSON.stringify(result.error_details, null, 2)}
+                        </pre>
+                      </div>
                     </details>
                   )}
                 </div>
