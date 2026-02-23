@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useCreateScraperPreset, useUpdateScraperPreset } from "@/lib/api/hooks";
 import type { ScraperPresetResponse } from "@/lib/api/types";
 
-const JOB_COUNT_PRESETS = [25, 50, 100, 200, 500];
+const JOB_COUNT_PRESETS = [100, 200, 400, 500];
 
 interface PresetFormProps {
   preset?: ScraperPresetResponse | null;
@@ -65,9 +65,9 @@ export default function PresetForm({ preset, onClose }: PresetFormProps) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-        {/* Backdrop */}
+        {/* Backdrop - semi-transparent to show page behind */}
         <div
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
           onClick={onClose}
         />
 
@@ -134,21 +134,30 @@ export default function PresetForm({ preset, onClose }: PresetFormProps) {
                       <label className="block text-sm font-medium text-gray-700">
                         Max Jobs per Run
                       </label>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {JOB_COUNT_PRESETS.map((preset) => (
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {JOB_COUNT_PRESETS.map((presetValue) => (
                           <button
-                            key={preset}
+                            key={presetValue}
                             type="button"
-                            onClick={() => setCount(preset)}
+                            onClick={() => setCount(presetValue)}
                             className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                              count === preset
+                              count === presetValue
                                 ? "bg-primary-600 text-white"
                                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                             }`}
                           >
-                            {preset}
+                            {presetValue}
                           </button>
                         ))}
+                        <span className="text-gray-400 text-sm">or</span>
+                        <input
+                          type="number"
+                          value={count}
+                          onChange={(e) => setCount(Math.max(100, parseInt(e.target.value) || 100))}
+                          min={100}
+                          max={1000}
+                          className="w-20 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-center"
+                        />
                       </div>
                     </div>
 

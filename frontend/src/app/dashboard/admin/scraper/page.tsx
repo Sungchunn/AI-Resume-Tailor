@@ -6,7 +6,7 @@ import type { AdHocScrapeResponse } from "@/lib/api/types";
 import ScheduleSettings from "./components/ScheduleSettings";
 import PresetList from "./components/PresetList";
 
-const JOB_COUNT_PRESETS = [25, 50, 100, 200, 500];
+const JOB_COUNT_PRESETS = [100, 200, 400, 500];
 
 export default function AdminScraperPage() {
   const [url, setUrl] = useState("");
@@ -61,9 +61,97 @@ export default function AdminScraperPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Job Scraper</h1>
         <p className="mt-1 text-gray-600">
-          Configure scheduled scraping or run ad-hoc imports from LinkedIn.
+          Import jobs from LinkedIn using scheduled presets or one-time scrapes.
         </p>
       </div>
+
+      {/* How It Works - Collapsible */}
+      <button
+        type="button"
+        onClick={() => setShowHelp(!showHelp)}
+        className="w-full flex items-center justify-between text-left p-4 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <svg
+            className="h-5 w-5 text-primary-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"
+            />
+          </svg>
+          <span className="text-sm font-medium text-gray-700">How this page works</span>
+        </div>
+        <svg
+          className={`h-5 w-5 text-gray-500 transition-transform ${showHelp ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+
+      {showHelp && (
+        <div className="p-4 rounded-lg bg-gray-50 border border-gray-200 space-y-4">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-sm">
+                1
+              </div>
+              <div>
+                <p className="font-medium text-gray-900">Schedule Settings</p>
+                <p className="text-sm text-gray-600">
+                  Enable automatic scraping and choose how often to run (daily or weekly at a specific time).
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-sm">
+                2
+              </div>
+              <div>
+                <p className="font-medium text-gray-900">Saved Presets</p>
+                <p className="text-sm text-gray-600">
+                  Save LinkedIn job search URLs as presets. Active presets run automatically on schedule.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-sm">
+                3
+              </div>
+              <div>
+                <p className="font-medium text-gray-900">Ad-Hoc Scraper</p>
+                <p className="text-sm text-gray-600">
+                  Run a one-time scrape by pasting any LinkedIn job search URL directly.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-gray-500 pt-2 border-t border-gray-200">
+            To get a LinkedIn URL: Go to{" "}
+            <a
+              href="https://linkedin.com/jobs"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary-600 hover:underline"
+            >
+              linkedin.com/jobs
+            </a>
+            , search with your filters, then copy the URL from your browser.
+          </p>
+        </div>
+      )}
 
       {/* Schedule Settings */}
       <ScheduleSettings />
@@ -81,90 +169,6 @@ export default function AdminScraperPage() {
             </p>
           </div>
         </div>
-
-        {/* How It Works - Collapsible */}
-        <button
-          type="button"
-          onClick={() => setShowHelp(!showHelp)}
-          className="w-full flex items-center justify-between text-left p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors mb-4"
-        >
-          <div className="flex items-center gap-2">
-            <svg
-              className="h-5 w-5 text-primary-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"
-              />
-            </svg>
-            <span className="text-sm font-medium text-gray-700">How to use this tool</span>
-          </div>
-          <svg
-            className={`h-5 w-5 text-gray-500 transition-transform ${showHelp ? "rotate-180" : ""}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-          </svg>
-        </button>
-
-        {showHelp && (
-          <div className="mb-6 space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-sm">
-                  1
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Search on LinkedIn</p>
-                  <p className="text-sm text-gray-600">
-                    Go to{" "}
-                    <a
-                      href="https://linkedin.com/jobs"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary-600 hover:underline"
-                    >
-                      linkedin.com/jobs
-                    </a>{" "}
-                    and search with your desired filters.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-sm">
-                  2
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Copy the URL</p>
-                  <p className="text-sm text-gray-600">
-                    Copy the full URL from your browser&apos;s address bar.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-sm">
-                  3
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Paste & Scrape</p>
-                  <p className="text-sm text-gray-600">
-                    Paste the URL below and click Start Scraping.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* URL Input */}
@@ -223,7 +227,7 @@ export default function AdminScraperPage() {
             <label className="block text-sm font-medium text-gray-700">
               Number of Jobs to Scrape
             </label>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               {JOB_COUNT_PRESETS.map((preset) => (
                 <button
                   key={preset}
@@ -238,6 +242,15 @@ export default function AdminScraperPage() {
                   {preset}
                 </button>
               ))}
+              <span className="text-gray-400 text-sm">or</span>
+              <input
+                type="number"
+                value={count}
+                onChange={(e) => setCount(Math.max(100, parseInt(e.target.value) || 100))}
+                min={100}
+                max={1000}
+                className="w-20 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-center"
+              />
             </div>
           </div>
 
