@@ -79,6 +79,23 @@ Examples:
 - Reference `/docs/planning/` for current phase objectives
 - Do not assume context from previous sessions - verify by reading docs
 
+### 5. Database Queries
+
+**NEVER use `SELECT *` in database queries.**
+
+- Always explicitly specify the columns being selected
+- This prevents API breaking changes when new columns are added to tables
+- Explicit column selection improves query performance and clarity
+- Makes code more maintainable and self-documenting
+
+```python
+# WRONG - Do not do this
+SELECT * FROM users WHERE id = :id
+
+# CORRECT - Always specify columns
+SELECT id, email, name, created_at FROM users WHERE id = :id
+```
+
 ---
 
 ## Development Workflow
