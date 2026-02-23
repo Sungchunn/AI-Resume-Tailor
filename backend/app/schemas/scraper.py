@@ -121,6 +121,119 @@ class AdHocScrapeResponse(BaseModel):
     duration_seconds: float | None = None
 
 
+# ============================================================================
+# Scraper Preset Schemas
+# ============================================================================
+
+
+class ScraperPresetCreate(BaseModel):
+    """Request to create a new scraper preset."""
+
+    name: str = Field(..., min_length=1, max_length=100, description="Name for the preset")
+    url: str = Field(..., min_length=1, description="LinkedIn job search URL")
+    count: int = Field(default=100, ge=1, le=500, description="Max jobs to scrape")
+    is_active: bool = Field(default=True, description="Whether the preset is active")
+
+    @field_validator("url")
+    @classmethod
+    def validate_linkedin_url(cls, v: str) -> str:
+        """Validate that the URL is a legitimate LinkedIn jobs URL."""
+        parsed = urlparse(v)
+
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError("URL must use http or https scheme")
+
+        domain = parsed.netloc.lower()
+        if domain not in ("linkedin.com", "www.linkedin.com"):
+            raise ValueError("URL must be from linkedin.com domain")
+
+        if not parsed.path.lower().startswith("/jobs"):
+            raise ValueError("URL must be a LinkedIn jobs URL")
+
+        return v
+
+
+class ScraperPresetUpdate(BaseModel):
+    """Request to update a scraper preset."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    url: str | None = Field(default=None, min_length=1)
+    count: int | None = Field(default=None, ge=1, le=500)
+    is_active: bool | None = None
+
+    @field_validator("url")
+    @classmethod
+    def validate_linkedin_url(cls, v: str | None) -> str | None:
+        """Validate that the URL is a legitimate LinkedIn jobs URL."""
+        if v is None:
+            return v
+
+        parsed = urlparse(v)
+
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError("URL must use http or https scheme")
+
+        domain = parsed.netloc.lower()
+        if domain not in ("linkedin.com", "www.linkedin.com"):
+            raise ValueError("URL must be from linkedin.com domain")
+
+        if not parsed.path.lower().startswith("/jobs"):
+            raise ValueError("URL must be a LinkedIn jobs URL")
+
+        return v
+
+
+class ScraperPresetResponse(BaseModel):
+    """Response containing a scraper preset."""
+
+    id: int
+    name: str
+    url: str
+    count: int
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime | None
+
+    model_config = {"from_attributes": True}
+
+
+class ScraperPresetListResponse(BaseModel):
+    """Response containing a list of scraper presets."""
+
+    presets: list[ScraperPresetResponse]
+    total: int
+
+
+# ============================================================================
+# Schedule Settings Schemas
+# ============================================================================
+
+
+class ScheduleSettingsUpdate(BaseModel):
+    """Request to update schedule settings."""
+
+    is_enabled: bool | None = None
+    schedule_type: str | None = Field(default=None, pattern="^(daily|weekly)$")
+    schedule_hour: int | None = Field(default=None, ge=0, le=23)
+    schedule_minute: int | None = Field(default=None, ge=0, le=59)
+    schedule_day_of_week: int | None = Field(default=None, ge=0, le=6)
+
+
+class ScheduleSettingsResponse(BaseModel):
+    """Response containing schedule settings."""
+
+    is_enabled: bool
+    schedule_type: str
+    schedule_hour: int
+    schedule_minute: int
+    schedule_day_of_week: int | None
+    last_run_at: datetime | None
+    next_run_at: datetime | None
+    updated_at: datetime | None
+
+    model_config = {"from_attributes": True}
+
+
 # Hardcoded scraper configurations using exact user URLs
 # TODO: Re-enable all regions after testing
 SCRAPER_CONFIGS = [

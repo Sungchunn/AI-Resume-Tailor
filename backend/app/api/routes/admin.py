@@ -23,6 +23,8 @@ from app.api.deps import get_db_session, require_admin
 from app.models.user import User
 from app.crud.job_listing import job_listing_repository
 from app.crud.scraper_run import scraper_run_repository
+from app.crud.scraper_preset import scraper_preset_repository
+from app.crud.schedule_settings import schedule_settings_repository
 from app.models.job_listing import JobListing
 from app.schemas.scraper import (
     AdHocScrapeRequest,
@@ -30,6 +32,12 @@ from app.schemas.scraper import (
     ScraperBatchResult,
     ScraperStatsResponse,
     ScraperStatusResponse,
+    ScraperPresetCreate,
+    ScraperPresetUpdate,
+    ScraperPresetResponse,
+    ScraperPresetListResponse,
+    ScheduleSettingsUpdate,
+    ScheduleSettingsResponse,
 )
 from app.services.scraping.apify_client import get_apify_client
 from app.services.scraping.scheduler import get_scheduler_service
@@ -381,3 +389,208 @@ async def trigger_adhoc_scrape(
         error_details=all_errors,
         duration_seconds=duration,
     )
+
+
+# ============================================================================
+# Scraper Preset Endpoints
+# ============================================================================
+
+
+@router.post("/scraper/presets", response_model=ScraperPresetResponse)
+async def create_preset(
+    request: ScraperPresetCreate,
+    db: AsyncSession = Depends(get_db_session),
+) -> ScraperPresetResponse:
+    """
+    Create a new scraper preset.
+
+    Presets allow saving LinkedIn job search URLs for scheduled scraping.
+    """
+    preset = await scraper_preset_repository.create(
+        db,
+        name=request.name,
+        url=request.url,
+        count=request.count,
+        is_active=request.is_active,
+    )
+    await db.commit()
+    return ScraperPresetResponse.model_validate(preset)
+
+
+@router.get("/scraper/presets", response_model=ScraperPresetListResponse)
+async def list_presets(
+    db: AsyncSession = Depends(get_db_session),
+) -> ScraperPresetListResponse:
+    """
+    List all scraper presets.
+
+    Returns all presets ordered by name, including both active and inactive.
+    """
+    presets = await scraper_preset_repository.list_all(db)
+    return ScraperPresetListResponse(
+        presets=[ScraperPresetResponse.model_validate(p) for p in presets],
+        total=len(presets),
+    )
+
+
+@router.get("/scraper/presets/{preset_id}", response_model=ScraperPresetResponse)
+async def get_preset(
+    preset_id: int,
+    db: AsyncSession = Depends(get_db_session),
+) -> ScraperPresetResponse:
+    """
+    Get a single scraper preset by ID.
+    """
+    preset = await scraper_preset_repository.get(db, preset_id)
+    if not preset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Preset not found",
+        )
+    return ScraperPresetResponse.model_validate(preset)
+
+
+@router.patch("/scraper/presets/{preset_id}", response_model=ScraperPresetResponse)
+async def update_preset(
+    preset_id: int,
+    request: ScraperPresetUpdate,
+    db: AsyncSession = Depends(get_db_session),
+) -> ScraperPresetResponse:
+    """
+    Update a scraper preset.
+
+    Only provided fields will be updated.
+    """
+    preset = await scraper_preset_repository.update(
+        db,
+        preset_id=preset_id,
+        name=request.name,
+        url=request.url,
+        count=request.count,
+        is_active=request.is_active,
+    )
+    if not preset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Preset not found",
+        )
+    await db.commit()
+    return ScraperPresetResponse.model_validate(preset)
+
+
+@router.delete("/scraper/presets/{preset_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_preset(
+    preset_id: int,
+    db: AsyncSession = Depends(get_db_session),
+) -> None:
+    """
+    Delete a scraper preset.
+    """
+    deleted = await scraper_preset_repository.delete(db, preset_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Preset not found",
+        )
+    await db.commit()
+
+
+@router.post("/scraper/presets/{preset_id}/toggle", response_model=ScraperPresetResponse)
+async def toggle_preset(
+    preset_id: int,
+    db: AsyncSession = Depends(get_db_session),
+) -> ScraperPresetResponse:
+    """
+    Toggle the active status of a preset.
+
+    Active presets will be included in scheduled scraper runs.
+    """
+    preset = await scraper_preset_repository.toggle_active(db, preset_id)
+    if not preset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Preset not found",
+        )
+    await db.commit()
+    return ScraperPresetResponse.model_validate(preset)
+
+
+# ============================================================================
+# Schedule Settings Endpoints
+# ============================================================================
+
+
+@router.get("/scraper/schedule", response_model=ScheduleSettingsResponse)
+async def get_schedule_settings(
+    db: AsyncSession = Depends(get_db_session),
+) -> ScheduleSettingsResponse:
+    """
+    Get the global schedule settings.
+
+    Returns the current schedule configuration for automated scraper runs.
+    """
+    settings = await schedule_settings_repository.get(db)
+    return ScheduleSettingsResponse.model_validate(settings)
+
+
+@router.patch("/scraper/schedule", response_model=ScheduleSettingsResponse)
+async def update_schedule_settings(
+    request: ScheduleSettingsUpdate,
+    db: AsyncSession = Depends(get_db_session),
+) -> ScheduleSettingsResponse:
+    """
+    Update the global schedule settings.
+
+    When settings are changed, the scheduler will be reconfigured
+    to use the new schedule.
+    """
+    settings = await schedule_settings_repository.update(
+        db,
+        is_enabled=request.is_enabled,
+        schedule_type=request.schedule_type,
+        schedule_hour=request.schedule_hour,
+        schedule_minute=request.schedule_minute,
+        schedule_day_of_week=request.schedule_day_of_week,
+    )
+    await db.commit()
+
+    # Reconfigure the scheduler with new settings
+    scheduler = get_scheduler_service()
+    await scheduler.reconfigure_from_db()
+
+    # Update next_run_at based on new schedule
+    next_run = scheduler.get_next_run_time()
+    if next_run:
+        await schedule_settings_repository.update_next_run(db, next_run)
+        await db.commit()
+        # Refresh to get updated next_run_at
+        settings = await schedule_settings_repository.get(db)
+
+    return ScheduleSettingsResponse.model_validate(settings)
+
+
+@router.post("/scraper/schedule/toggle", response_model=ScheduleSettingsResponse)
+async def toggle_schedule(
+    db: AsyncSession = Depends(get_db_session),
+) -> ScheduleSettingsResponse:
+    """
+    Toggle the global schedule enabled status.
+
+    When enabled, the scheduler will run all active presets according
+    to the configured schedule.
+    """
+    settings = await schedule_settings_repository.toggle_enabled(db)
+    await db.commit()
+
+    # Reconfigure the scheduler
+    scheduler = get_scheduler_service()
+    await scheduler.reconfigure_from_db()
+
+    # Update next_run_at based on new state
+    next_run = scheduler.get_next_run_time()
+    await schedule_settings_repository.update_next_run(db, next_run)
+    await db.commit()
+    # Refresh to get updated next_run_at
+    settings = await schedule_settings_repository.get(db)
+
+    return ScheduleSettingsResponse.model_validate(settings)

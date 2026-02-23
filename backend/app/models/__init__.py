@@ -8,6 +8,8 @@ from app.models.experience_block import ExperienceBlock
 from app.models.resume_build import ResumeBuild
 from app.models.audit_log import AuditLog
 from app.models.scraper_run import ScraperRun
+from app.models.scraper_preset import ScraperPreset
+from app.models.scraper_schedule_settings import ScraperScheduleSettings
 
 # Backward compatibility alias
 Workshop = ResumeBuild
@@ -24,4 +26,6 @@ __all__ = [
     "Workshop",  # Backward compatibility
     "AuditLog",
     "ScraperRun",
+    "ScraperPreset",
+    "ScraperScheduleSettings",
 ]

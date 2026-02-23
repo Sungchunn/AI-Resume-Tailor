@@ -27,6 +27,8 @@ from apscheduler.triggers.cron import CronTrigger
 from app.core.config import Settings, get_settings
 from app.crud.job_listing import job_listing_repository
 from app.crud.scraper_run import scraper_run_repository
+from app.crud.scraper_preset import scraper_preset_repository
+from app.crud.schedule_settings import schedule_settings_repository
 from app.db.session import AsyncSessionLocal
 from app.schemas.scraper import (
     SCRAPER_CONFIGS,
@@ -214,10 +216,69 @@ class SchedulerService:
         if not self._is_running:
             return None
 
+        job = self.scheduler.get_job("preset_linkedin_scraper")
+        if job and job.next_run_time:
+            return job.next_run_time
+
+        # Fall back to legacy job name
         job = self.scheduler.get_job("daily_linkedin_scraper")
         if job and job.next_run_time:
             return job.next_run_time
         return None
+
+    async def reconfigure_from_db(self) -> None:
+        """
+        Reconfigure the scheduler based on database settings.
+
+        Called when schedule settings are updated via API.
+        Removes existing scraper job and adds new one with updated schedule.
+        """
+        async with AsyncSessionLocal() as db:
+            settings = await schedule_settings_repository.get(db)
+
+            # Remove existing scraper job if present
+            existing_job = self.scheduler.get_job("preset_linkedin_scraper")
+            if existing_job:
+                self.scheduler.remove_job("preset_linkedin_scraper")
+                logger.info("Removed existing scraper job for reconfiguration")
+
+            # Also remove legacy job if present
+            legacy_job = self.scheduler.get_job("daily_linkedin_scraper")
+            if legacy_job:
+                self.scheduler.remove_job("daily_linkedin_scraper")
+                logger.info("Removed legacy scraper job")
+
+            if not settings.is_enabled:
+                logger.info("Scraper schedule disabled, no job registered")
+                return
+
+            # Create new trigger based on schedule type
+            if settings.schedule_type == "weekly" and settings.schedule_day_of_week is not None:
+                trigger = CronTrigger(
+                    day_of_week=settings.schedule_day_of_week,
+                    hour=settings.schedule_hour,
+                    minute=settings.schedule_minute,
+                    timezone="UTC",
+                )
+            else:
+                trigger = CronTrigger(
+                    hour=settings.schedule_hour,
+                    minute=settings.schedule_minute,
+                    timezone="UTC",
+                )
+
+            self.scheduler.add_job(
+                self._run_preset_scraper_job_with_lock,
+                trigger=trigger,
+                id="preset_linkedin_scraper",
+                name="Preset LinkedIn Job Scraper",
+                replace_existing=True,
+            )
+
+            logger.info(
+                f"Scraper job reconfigured: {settings.schedule_type} at "
+                f"{settings.schedule_hour:02d}:{settings.schedule_minute:02d} UTC"
+            )
 
     async def _acquire_lock(self, lock_id: str) -> bool:
         """
@@ -551,6 +612,315 @@ class SchedulerService:
                 logger.error(f"Failed to persist scraper run: {e}")
                 await db.rollback()
 
+    # =========================================================================
+    # Preset-based Scraper Methods (DB-driven)
+    # =========================================================================
+
+    async def _run_preset_scraper_job_with_lock(
+        self,
+        run_type: str = "scheduled",
+        triggered_by: str | None = None,
+    ) -> ScraperBatchResult:
+        """
+        Execute preset-based scraper job with distributed locking.
+
+        Reads active presets from database and processes each one.
+        """
+        lock_id = str(uuid.uuid4())
+
+        # Try to acquire distributed lock
+        if not await self._acquire_lock(lock_id):
+            logger.warning("Preset scraper job skipped - another instance is running")
+            return ScraperBatchResult(
+                status="skipped",
+                total_jobs_found=0,
+                total_jobs_created=0,
+                total_jobs_updated=0,
+                total_errors=0,
+                region_results=[],
+                started_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(timezone.utc),
+                duration_seconds=0,
+            )
+
+        try:
+            return await self._run_preset_scraper_job(
+                run_type=run_type,
+                triggered_by=triggered_by,
+            )
+        finally:
+            await self._release_lock(lock_id)
+
+    async def _run_preset_scraper_job(
+        self,
+        run_type: str = "scheduled",
+        triggered_by: str | None = None,
+    ) -> ScraperBatchResult:
+        """
+        Execute the preset-based scraper job for all active presets.
+
+        This reads presets from the database and processes each one
+        using the ad-hoc scrape mechanism.
+        """
+        started_at = datetime.now(timezone.utc)
+        batch_id = str(uuid.uuid4())[:8]
+        logger.info(f"Starting preset scraper job (batch_id={batch_id}, type={run_type})")
+
+        apify_client = get_apify_client()
+
+        # Get active presets from database
+        async with AsyncSessionLocal() as db:
+            presets = await scraper_preset_repository.list_active(db)
+
+        if not presets:
+            logger.info("No active presets found, skipping scraper job")
+            return ScraperBatchResult(
+                status="success",
+                total_jobs_found=0,
+                total_jobs_created=0,
+                total_jobs_updated=0,
+                total_errors=0,
+                region_results=[],
+                started_at=started_at,
+                completed_at=datetime.now(timezone.utc),
+                duration_seconds=0,
+            )
+
+        logger.info(f"Processing {len(presets)} active presets")
+
+        # Use semaphore to control concurrent scrapes
+        semaphore = asyncio.Semaphore(self._max_concurrent_regions)
+
+        async def process_preset(preset) -> tuple[list, dict]:
+            """Process a single preset with semaphore control."""
+            async with semaphore:
+                return await self._process_preset_with_retry(apify_client, preset)
+
+        # Process all presets with controlled concurrency
+        tasks = [process_preset(preset) for preset in presets]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Aggregate results
+        all_jobs = []
+        preset_results: list[dict] = []
+        total_jobs_found = 0
+        total_errors = 0
+
+        for i, result in enumerate(results):
+            preset = presets[i]
+            if isinstance(result, Exception):
+                logger.error(f"Preset '{preset.name}' failed: {result}")
+                total_errors += 1
+                preset_results.append({
+                    "preset_id": preset.id,
+                    "preset_name": preset.name,
+                    "status": "error",
+                    "jobs_found": 0,
+                    "errors": 1,
+                    "error_details": [{"error": "exception", "message": str(result)}],
+                })
+            else:
+                jobs, result_meta = result
+                all_jobs.extend(jobs)
+                total_jobs_found += result_meta.get("jobs_found", 0)
+                total_errors += result_meta.get("errors", 0)
+                preset_results.append({
+                    "preset_id": preset.id,
+                    "preset_name": preset.name,
+                    "status": result_meta.get("status", "error"),
+                    "jobs_found": result_meta.get("jobs_found", 0),
+                    "errors": result_meta.get("errors", 0),
+                    "error_details": result_meta.get("error_details", []),
+                })
+
+        # Batch upsert all jobs to database
+        total_created = 0
+        total_updated = 0
+        db_errors: list[dict] = []
+
+        if all_jobs:
+            total_created, total_updated, db_errors = await self._batch_upsert_jobs(all_jobs)
+            total_errors += len(db_errors)
+
+        # Determine overall status
+        completed_at = datetime.now(timezone.utc)
+        duration = (completed_at - started_at).total_seconds()
+
+        successful_presets = sum(1 for r in preset_results if r["status"] == "success")
+        if successful_presets == len(preset_results):
+            status = "success"
+        elif successful_presets > 0:
+            status = "partial"
+        else:
+            status = "error"
+
+        # Create batch result (using region_results for preset results)
+        batch_result = ScraperBatchResult(
+            status=status,
+            total_jobs_found=total_jobs_found,
+            total_jobs_created=total_created,
+            total_jobs_updated=total_updated,
+            total_errors=total_errors,
+            region_results=[],  # Not using regions for preset-based scraping
+            started_at=started_at,
+            completed_at=completed_at,
+            duration_seconds=duration,
+        )
+
+        # Persist run to database for audit trail
+        await self._persist_preset_run(
+            batch_result=batch_result,
+            preset_results=preset_results,
+            triggered_by=triggered_by,
+            batch_id=batch_id,
+        )
+
+        # Update schedule settings with last run time
+        async with AsyncSessionLocal() as db:
+            try:
+                next_run = self.get_next_run_time()
+                await schedule_settings_repository.update_last_run(
+                    db,
+                    last_run_at=completed_at,
+                    next_run_at=next_run,
+                )
+                await db.commit()
+            except Exception as e:
+                logger.error(f"Failed to update schedule settings: {e}")
+
+        logger.info(
+            f"Preset scraper job completed (batch_id={batch_id}): status={status}, "
+            f"presets={len(presets)}, found={total_jobs_found}, created={total_created}, "
+            f"updated={total_updated}, errors={total_errors}, "
+            f"duration={duration:.2f}s"
+        )
+
+        return batch_result
+
+    async def _process_preset_with_retry(
+        self,
+        apify_client,
+        preset,
+    ) -> tuple[list, dict]:
+        """
+        Process a preset with automatic retry for transient failures.
+        """
+        last_error = None
+
+        for attempt in range(self._retry_attempts + 1):
+            try:
+                logger.info(
+                    f"Processing preset '{preset.name}' "
+                    f"(attempt {attempt + 1}/{self._retry_attempts + 1})"
+                )
+
+                # Use ad-hoc scrape method
+                jobs, result_meta = await apify_client.run_adhoc_scrape(
+                    url=preset.url,
+                    count=preset.count,
+                )
+
+                # Check if result indicates a retryable condition
+                if result_meta.get("status") == "timeout":
+                    raise RetryableError("APIFY actor timeout")
+
+                return jobs, result_meta
+
+            except (httpx.TimeoutException, httpx.NetworkError, RetryableError) as e:
+                last_error = e
+                logger.warning(
+                    f"Retryable error for preset '{preset.name}' "
+                    f"(attempt {attempt + 1}): {e}"
+                )
+
+                if attempt < self._retry_attempts:
+                    await asyncio.sleep(self._retry_delay_seconds)
+                    continue
+
+            except (ApifyClientError, httpx.HTTPStatusError) as e:
+                # Non-retryable errors
+                logger.error(f"Non-retryable error for preset '{preset.name}': {e}")
+                return [], {
+                    "status": "error",
+                    "jobs_found": 0,
+                    "errors": 1,
+                    "error_details": [{"error": "non_retryable", "message": str(e)}],
+                }
+
+            except Exception as e:
+                logger.error(f"Unexpected error for preset '{preset.name}': {e}")
+                return [], {
+                    "status": "error",
+                    "jobs_found": 0,
+                    "errors": 1,
+                    "error_details": [{"error": "unexpected", "message": str(e)}],
+                }
+
+        # All retries exhausted
+        return [], {
+            "status": "error",
+            "jobs_found": 0,
+            "errors": 1,
+            "error_details": [{
+                "error": "max_retries_exceeded",
+                "message": str(last_error),
+                "attempts": self._retry_attempts + 1,
+            }],
+        }
+
+    async def _persist_preset_run(
+        self,
+        batch_result: ScraperBatchResult,
+        preset_results: list[dict],
+        triggered_by: str | None,
+        batch_id: str,
+    ) -> None:
+        """
+        Persist preset-based scraper run to database for audit trail.
+        """
+        async with AsyncSessionLocal() as db:
+            try:
+                # Snapshot preset config for audit
+                config_snapshot = {
+                    "batch_id": batch_id,
+                    "preset_results": preset_results,
+                }
+
+                await scraper_run_repository.create_adhoc(
+                    db,
+                    status=batch_result.status,
+                    started_at=batch_result.started_at,
+                    completed_at=batch_result.completed_at,
+                    duration_seconds=batch_result.duration_seconds,
+                    jobs_found=batch_result.total_jobs_found,
+                    jobs_created=batch_result.total_jobs_created,
+                    jobs_updated=batch_result.total_jobs_updated,
+                    errors=batch_result.total_errors,
+                    error_details=None,  # Errors are in preset_results
+                    triggered_by=triggered_by or "scheduler",
+                    config_snapshot=config_snapshot,
+                )
+                await db.commit()
+                logger.debug(f"Persisted preset scraper run (batch_id={batch_id})")
+            except Exception as e:
+                logger.error(f"Failed to persist preset scraper run: {e}")
+                await db.rollback()
+
+    async def trigger_preset_scraper_now(self, triggered_by: str = "manual") -> ScraperBatchResult:
+        """
+        Manual trigger for preset-based scraping.
+
+        Args:
+            triggered_by: Identifier for who triggered the run
+
+        Returns:
+            ScraperBatchResult with aggregated results from all presets.
+        """
+        logger.info(f"Manual preset scraper trigger initiated by: {triggered_by}")
+        return await self._run_preset_scraper_job_with_lock(
+            run_type="manual",
+            triggered_by=triggered_by,
+        )
 
     async def _run_cleanup_job_with_lock(self) -> dict[str, Any]:
         """
