@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   useJobListing,
@@ -14,12 +13,10 @@ import {
   BriefcaseIcon,
   BuildingIcon,
   CheckIcon,
-  ChevronDownIcon,
   ChevronLeftIcon,
   CurrencyIcon,
   ExternalLinkIcon,
   EyeSlashIcon,
-  GiftIcon,
   GlobeIcon,
   LinkedInIcon,
   MapPinIcon,
@@ -27,9 +24,7 @@ import {
 
 export default function JobDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const jobId = parseInt(params.id as string, 10);
-  const [benefitsExpanded, setBenefitsExpanded] = useState(false);
 
   const { data: listing, isLoading, error } = useJobListing(jobId);
   const saveMutation = useSaveJobListing();
@@ -347,38 +342,6 @@ export default function JobDetailPage() {
               </span>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Benefits Section (Collapsible) */}
-      {listing.benefits && listing.benefits.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <button
-            onClick={() => setBenefitsExpanded(!benefitsExpanded)}
-            className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
-            aria-expanded={benefitsExpanded}
-            aria-controls="benefits-list"
-          >
-            <div className="flex items-center gap-2">
-              <GiftIcon className="h-5 w-5 text-purple-500" />
-              <h2 className="text-lg font-semibold text-gray-900">Benefits</h2>
-              <span className="text-sm text-gray-500">({listing.benefits.length})</span>
-            </div>
-            <ChevronDownIcon className={`h-5 w-5 text-gray-500 transition-transform ${benefitsExpanded ? "rotate-180" : ""}`} />
-          </button>
-
-          {benefitsExpanded && (
-            <div id="benefits-list" className="px-4 pb-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {listing.benefits.map((benefit, index) => (
-                  <div key={index} className="flex items-start gap-2 text-sm text-gray-700">
-                    <CheckIcon className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                    <span>{benefit}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 

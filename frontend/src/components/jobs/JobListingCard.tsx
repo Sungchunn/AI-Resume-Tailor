@@ -72,11 +72,23 @@ export function JobListingCard({ listing }: JobListingCardProps) {
       className="block bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all p-4"
     >
       <div className="flex justify-between items-start">
-        <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-gray-900 truncate">
-            {listing.job_title}
-          </h3>
-          <p className="text-sm text-gray-600 mt-1">{listing.company_name}</p>
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          {/* Company Logo */}
+          {listing.company_logo && (
+            <img
+              src={listing.company_logo}
+              alt={listing.company_name ? `${listing.company_name} logo` : 'Company logo'}
+              className="w-10 h-10 rounded-lg object-contain border border-gray-100 shrink-0"
+              loading="lazy"
+              onError={(e) => { e.currentTarget.style.display = 'none' }}
+            />
+          )}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-semibold text-gray-900 truncate">
+              {listing.job_title}
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">{listing.company_name}</p>
+          </div>
         </div>
 
         {/* Action buttons */}
