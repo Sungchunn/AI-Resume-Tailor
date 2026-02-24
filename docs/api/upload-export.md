@@ -16,7 +16,7 @@ The Upload and Export APIs handle document processing for resumes. Upload allows
 
 ### Extract Document
 
-Extract text content from uploaded PDF or DOCX files.
+Extract text content from uploaded PDF or DOCX files, convert to HTML for rich text editing, and optionally store the original file.
 
 ```http
 POST /api/upload/extract
@@ -30,6 +30,12 @@ POST /api/upload/extract
 |-------|------|----------|-------------|
 | `file` | file | Yes | PDF or DOCX file |
 
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `store_file` | boolean | true | Whether to store the original file in object storage |
+
 **Constraints:**
 
 - Maximum file size: 10MB (configurable)
@@ -38,7 +44,13 @@ POST /api/upload/extract
 **Example Request:**
 
 ```bash
+# Upload and store original file (default)
 curl -X POST http://localhost:8000/api/upload/extract \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@resume.pdf"
+
+# Upload without storing original file
+curl -X POST "http://localhost:8000/api/upload/extract?store_file=false" \
   -H "Authorization: Bearer <token>" \
   -F "file=@resume.pdf"
 ```
@@ -48,10 +60,13 @@ curl -X POST http://localhost:8000/api/upload/extract \
 ```json
 {
   "raw_content": "John Doe\nSenior Software Engineer\n\nExperience:\n- Led development of microservices...\n\nSkills:\n- Python, AWS, Kubernetes...",
+  "html_content": "<h1>John Doe</h1><p>Senior Software Engineer</p><h2>Experience</h2><ul><li>Led development of microservices...</li></ul><h2>Skills</h2><ul><li>Python, AWS, Kubernetes...</li></ul>",
   "source_filename": "resume.pdf",
   "file_type": "pdf",
   "page_count": 2,
   "word_count": 450,
+  "file_key": "users/123/resumes/a1b2c3d4_resume.pdf",
+  "file_size_bytes": 245760,
   "warnings": []
 }
 ```
@@ -61,13 +76,15 @@ curl -X POST http://localhost:8000/api/upload/extract \
 ```json
 {
   "raw_content": "John Doe\nSenior Software Engineer...",
+  "html_content": "<h1>John Doe</h1><p>Senior Software Engineer...</p>",
   "source_filename": "resume.pdf",
   "file_type": "pdf",
   "page_count": 3,
   "word_count": 520,
+  "file_key": "users/123/resumes/e5f6g7h8_resume.pdf",
+  "file_size_bytes": 512000,
   "warnings": [
-    "Page 2 contains a scanned image that may not be fully readable",
-    "Some formatting may have been lost during extraction"
+    "Page 2 contained no extractable text"
   ]
 }
 ```
@@ -76,8 +93,8 @@ curl -X POST http://localhost:8000/api/upload/extract \
 
 | Status | Condition |
 |--------|-----------|
-| 413 | File size exceeds maximum limit |
-| 415 | File type not supported |
+| 400 | Invalid file type or empty file |
+| 400 | File size exceeds maximum limit |
 | 422 | File could not be processed |
 
 ---
@@ -88,11 +105,14 @@ curl -X POST http://localhost:8000/api/upload/extract \
 
 ```typescript
 {
-  raw_content: string;         // Extracted text content
+  raw_content: string;         // Extracted plain text content
+  html_content: string;        // TipTap-compatible HTML for rich editing
   source_filename: string;     // Original filename
-  file_type: string;           // "pdf" or "docx"
-  page_count: number;          // Number of pages
+  file_type: "pdf" | "docx";   // Document type
+  page_count: number | null;   // Number of pages (PDF only)
   word_count: number;          // Approximate word count
+  file_key: string | null;     // Object storage key (null if not stored)
+  file_size_bytes: number | null;  // Original file size in bytes
   warnings: string[];          // Processing warnings
 }
 ```
