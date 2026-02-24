@@ -27,18 +27,23 @@ GET /api/job-listings/filter-options
 ```json
 {
   "countries": [
-    {"value": "Thailand", "count": 150},
-    {"value": "Singapore", "count": 200},
-    {"value": "Malaysia", "count": 75}
+    {"value": "Thailand", "label": "Thailand", "count": 150},
+    {"value": "Singapore", "label": "Singapore", "count": 200},
+    {"value": "Malaysia", "label": "Malaysia", "count": 75}
   ],
   "regions": [
-    {"value": "Bangkok", "count": 120},
-    {"value": "Central Singapore", "count": 180}
+    {"value": "Bangkok", "label": "Bangkok", "count": 120},
+    {"value": "Central Singapore", "label": "Central Singapore", "count": 180}
   ],
   "seniorities": [
-    {"value": "Entry level", "count": 100},
-    {"value": "Mid-Senior level", "count": 250},
-    {"value": "Associate", "count": 75}
+    {"value": "Entry level", "label": "Entry level", "count": 100},
+    {"value": "Mid-Senior level", "label": "Mid-Senior level", "count": 250},
+    {"value": "Associate", "label": "Associate", "count": 75}
+  ],
+  "cities": [
+    {"value": "Singapore", "label": "Singapore", "count": 200},
+    {"value": "Bangkok", "label": "Bangkok", "count": 150},
+    {"value": "Kuala Lumpur", "label": "Kuala Lumpur", "count": 75}
   ]
 }
 ```
@@ -56,10 +61,12 @@ GET /api/job-listings
 **Query Parameters:**
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `location` | string | - | Location filter (comma-separated) |
+| --------- | ---- | ------- | ----------- |
+| `location` | string | - | Location filter (comma-separated) - **deprecated**, use `city` instead |
 | `region` | string | - | Region filter (comma-separated) |
 | `country` | string | - | Country filter (comma-separated) |
+| `city` | string | - | City filter (comma-separated, exact match) |
+| `company_name` | string | - | Company name text search |
 | `seniority` | string | - | Seniority levels (comma-separated) |
 | `job_function` | string | - | Job function filter |
 | `industry` | string | - | Industry filter |
@@ -82,6 +89,11 @@ GET /api/job-listings
 **Example Request:**
 
 ```bash
+# Filter by city and company
+curl "http://localhost:8000/api/job-listings?city=Singapore,Bangkok&company_name=Google&limit=20" \
+  -H "Authorization: Bearer <token>"
+
+# Filter by country and seniority
 curl "http://localhost:8000/api/job-listings?country=Singapore&seniority=Entry%20level,Associate&is_remote=true&limit=20" \
   -H "Authorization: Bearer <token>"
 ```
@@ -135,7 +147,7 @@ GET /api/job-listings/search
 **Query Parameters:**
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
+| --------- | ---- | -------- | ----------- |
 | `q` | string | Yes | Search query (min 1 character) |
 | `limit` | integer | No | Results per page (1-100, default 20) |
 | `offset` | integer | No | Pagination offset (default 0) |
@@ -164,7 +176,7 @@ GET /api/job-listings/saved
 **Query Parameters:**
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
+| --------- | ---- | ------- | ----------- |
 | `limit` | integer | 50 | Results per page (1-100) |
 | `offset` | integer | 0 | Pagination offset |
 
@@ -188,7 +200,7 @@ GET /api/job-listings/applied
 **Query Parameters:**
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
+| --------- | ---- | ------- | ----------- |
 | `limit` | integer | 50 | Results per page (1-100) |
 | `offset` | integer | 0 | Pagination offset |
 
@@ -212,7 +224,7 @@ GET /api/job-listings/{listing_id}
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ---- | ----------- |
 | `listing_id` | integer | Job listing identifier |
 
 **Example Request:**
@@ -254,7 +266,7 @@ curl "http://localhost:8000/api/job-listings/12345" \
 **Error Responses:**
 
 | Status | Condition |
-|--------|-----------|
+| ------ | --------- |
 | 404 | Job listing not found |
 
 ---
@@ -270,13 +282,13 @@ POST /api/job-listings/{listing_id}/save
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ---- | ----------- |
 | `listing_id` | integer | Job listing identifier |
 
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ----- | ---- | -------- | ----------- |
 | `save` | boolean | Yes | `true` to save, `false` to unsave |
 
 **Example Request:**
@@ -317,13 +329,13 @@ POST /api/job-listings/{listing_id}/hide
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ---- | ----------- |
 | `listing_id` | integer | Job listing identifier |
 
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ----- | ---- | -------- | ----------- |
 | `hide` | boolean | Yes | `true` to hide, `false` to unhide |
 
 **Example Request:**
@@ -364,13 +376,13 @@ POST /api/job-listings/{listing_id}/applied
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ---- | ----------- |
 | `listing_id` | integer | Job listing identifier |
 
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ----- | ---- | -------- | ----------- |
 | `applied` | boolean | Yes | `true` to mark applied, `false` to unmark |
 
 **Example Request:**
@@ -448,7 +460,19 @@ curl -X POST "http://localhost:8000/api/job-listings/12345/applied" \
 ```typescript
 {
   value: string;
+  label: string;
   count: number;
+}
+```
+
+### JobListingFilterOptionsResponse
+
+```typescript
+{
+  countries: FilterOption[];
+  regions: FilterOption[];
+  seniorities: FilterOption[];
+  cities: FilterOption[];
 }
 ```
 
@@ -477,7 +501,7 @@ curl -X POST "http://localhost:8000/api/job-listings/12345/applied" \
 ## Sort Options
 
 | Value | Description |
-|-------|-------------|
+| ----- | ----------- |
 | `date_posted` | Sort by posting date |
 | `relevance` | Sort by relevance to search query |
 | `salary` | Sort by salary (requires salary data) |
