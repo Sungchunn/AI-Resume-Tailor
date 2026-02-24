@@ -14,6 +14,43 @@ import {
 } from "@/lib/editor/suggestionExtension";
 import type { Suggestion } from "@/lib/api/types";
 
+/**
+ * Sanitize HTML content to ensure it's valid for TipTap.
+ * Removes potentially problematic elements and ensures proper structure.
+ */
+function sanitizeHtmlContent(html: string | undefined | null): string {
+  if (!html || typeof html !== "string") {
+    return "<p></p>";
+  }
+
+  // Trim whitespace
+  let sanitized = html.trim();
+
+  // If empty or just whitespace, return minimal valid content
+  if (!sanitized) {
+    return "<p></p>";
+  }
+
+  // Remove control characters (except tab, newline, carriage return)
+  // These can come from PDF extraction and break TipTap
+  // eslint-disable-next-line no-control-regex
+  sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+
+  // Remove null bytes that might be in the content
+  sanitized = sanitized.replace(/\0/g, "");
+
+  // Remove invalid XML characters that can break parsing
+  // eslint-disable-next-line no-control-regex
+  sanitized = sanitized.replace(/[\uFFFE\uFFFF]/g, "");
+
+  // If content doesn't start with a block element, wrap in paragraph
+  if (!sanitized.match(/^<(p|h[1-6]|ul|ol|blockquote|pre|div|table)/i)) {
+    sanitized = `<p>${sanitized}</p>`;
+  }
+
+  return sanitized;
+}
+
 interface ResumeEditorProps {
   content: string;
   onChange?: (html: string) => void;
@@ -114,10 +151,15 @@ export function ResumeEditor({
     [handleSuggestionClick]
   );
 
+  // Sanitize content to prevent TipTap initialization errors
+  const sanitizedContent = useMemo(() => sanitizeHtmlContent(content), [content]);
+
   const editor = useEditor({
     extensions,
-    content,
+    content: sanitizedContent,
     editable,
+    // Disable immediate rendering to avoid SSR/concurrent mode issues with React 19
+    immediatelyRender: false,
     editorProps: {
       attributes: {
         class:
@@ -180,10 +222,10 @@ export function ResumeEditor({
 
   // Update content when prop changes (but only if different from current)
   useEffect(() => {
-    if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content);
+    if (editor && sanitizedContent !== editor.getHTML()) {
+      editor.commands.setContent(sanitizedContent);
     }
-  }, [content, editor]);
+  }, [sanitizedContent, editor]);
 
   // Update editable state
   useEffect(() => {
@@ -330,6 +372,8 @@ export function useResumeEditor(
     []
   );
 
+  const sanitizedContent = useMemo(() => sanitizeHtmlContent(content), [content]);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -345,7 +389,8 @@ export function useResumeEditor(
         onSuggestionClick: handleSuggestionClick,
       }),
     ],
-    content,
+    content: sanitizedContent,
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       onChange?.(editor.getHTML());
     },
