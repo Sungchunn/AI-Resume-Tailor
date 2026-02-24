@@ -439,9 +439,11 @@ export interface JobListingListResponse {
 }
 
 export interface JobListingFilters {
-  location?: string;
+  location?: string;  // Deprecated - use city filter instead
   region?: string;
   country?: string;
+  city?: string;
+  company_name?: string;
   seniority?: string;
   job_function?: string;
   industry?: string;
@@ -472,6 +474,7 @@ export interface JobListingFilterOptionsResponse {
   countries: FilterOption[];
   regions: FilterOption[];
   seniorities: FilterOption[];
+  cities: FilterOption[];
 }
 
 export interface SaveJobRequest {

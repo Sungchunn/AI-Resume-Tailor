@@ -539,6 +539,8 @@ export const jobListingApi = {
     if (filters.location) searchParams.append("location", filters.location);
     if (filters.region) searchParams.append("region", filters.region);
     if (filters.country) searchParams.append("country", filters.country);
+    if (filters.city) searchParams.append("city", filters.city);
+    if (filters.company_name) searchParams.append("company_name", filters.company_name);
     if (filters.seniority) searchParams.append("seniority", filters.seniority);
     if (filters.job_function) searchParams.append("job_function", filters.job_function);
     if (filters.industry) searchParams.append("industry", filters.industry);

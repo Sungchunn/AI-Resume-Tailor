@@ -107,17 +107,22 @@ async def get_filter_options(
         countries=[FilterOption(**c) for c in options["countries"]],
         regions=[FilterOption(**r) for r in options["regions"]],
         seniorities=[FilterOption(**s) for s in options["seniorities"]],
+        cities=[FilterOption(**c) for c in options["cities"]],
     )
 
 
 @router.get("", response_model=JobListingListResponse)
 async def list_job_listings(
     # Location filters
-    location: Annotated[str | None, Query(description="Location filter (comma-separated)")] = None,
+    location: Annotated[str | None, Query(description="Location filter (comma-separated, deprecated)")] = None,
     # Region filter
     region: Annotated[str | None, Query(description="Region filter (comma-separated)")] = None,
     # Country filter
     country: Annotated[str | None, Query(description="Country filter (comma-separated)")] = None,
+    # City filter
+    city: Annotated[str | None, Query(description="City filter (comma-separated)")] = None,
+    # Company name filter
+    company_name: Annotated[str | None, Query(description="Company name filter")] = None,
     # Seniority filters
     seniority: Annotated[str | None, Query(description="Seniority levels (comma-separated)")] = None,
     # Category filters
@@ -162,6 +167,8 @@ async def list_job_listings(
         location=location,
         region=region,
         country=country,
+        city=city,
+        company_name=company_name,
         seniority=seniority,
         job_function=job_function,
         industry=industry,

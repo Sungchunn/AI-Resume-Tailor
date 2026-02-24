@@ -38,6 +38,7 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
     countries: FilterOption[];
     regions: FilterOption[];
     seniorities: FilterOption[];
+    cities: FilterOption[];
   } | null>(null);
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
 
@@ -60,8 +61,25 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
     onFiltersChange({ ...filters, search: e.target.value || undefined, offset: 0 });
   };
 
-  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFiltersChange({ ...filters, location: e.target.value || undefined, offset: 0 });
+  const handleCompanyNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onFiltersChange({ ...filters, company_name: e.target.value || undefined, offset: 0 });
+  };
+
+  const handleCityChange = (value: string) => {
+    const currentCities = filters.city?.split(",") || [];
+    let newCities: string[];
+
+    if (currentCities.includes(value)) {
+      newCities = currentCities.filter((c) => c !== value);
+    } else {
+      newCities = [...currentCities, value];
+    }
+
+    onFiltersChange({
+      ...filters,
+      city: newCities.length > 0 ? newCities.join(",") : undefined,
+      offset: 0,
+    });
   };
 
   const handleSeniorityChange = (value: string) => {
@@ -197,15 +215,18 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
   const selectedSeniorities = filters.seniority?.split(",") || [];
   const selectedCountries = filters.country?.split(",") || [];
   const selectedRegions = filters.region?.split(",") || [];
+  const selectedCities = filters.city?.split(",") || [];
 
   // Use dynamic options or fallback
   const seniorityOptions = filterOptions?.seniorities || FALLBACK_SENIORITY_OPTIONS;
   const countryOptions = filterOptions?.countries || [];
   const regionOptions = filterOptions?.regions || [];
+  const cityOptions = filterOptions?.cities || [];
 
   const hasActiveFilters =
     filters.search ||
-    filters.location ||
+    filters.company_name ||
+    filters.city ||
     filters.country ||
     filters.region ||
     filters.seniority ||
@@ -243,19 +264,47 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
 
       {isExpanded && (
         <div className="space-y-4">
-          {/* Location */}
+          {/* Company Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Location
+              Company
             </label>
             <input
               type="text"
-              value={filters.location || ""}
-              onChange={handleLocationChange}
-              placeholder="e.g., San Francisco, CA"
+              value={filters.company_name || ""}
+              onChange={handleCompanyNameChange}
+              placeholder="e.g., Google, Microsoft"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
+
+          {/* City */}
+          {cityOptions.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                City
+              </label>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {cityOptions.map((option) => (
+                  <label
+                    key={option.value}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCities.includes(option.value)}
+                      onChange={() => handleCityChange(option.value)}
+                      className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-gray-600">
+                      {option.label}
+                      <span className="text-gray-400 ml-1">({option.count})</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Country */}
           {countryOptions.length > 0 && (

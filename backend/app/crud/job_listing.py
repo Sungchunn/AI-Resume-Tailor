@@ -29,6 +29,7 @@ from app.utils.apify_helpers import (
     convert_employment_type,
     detect_remote,
     extract_company_address,
+    normalize_url,
     parse_job_date,
     parse_location,
 )
@@ -170,6 +171,12 @@ class JobListingRepository:
             ]
             conditions.append(or_(*country_conditions))
 
+        # City filter (multi-select, exact match on normalized data)
+        if filters.city:
+            cities = [c.strip().lower() for c in filters.city.split(",")]
+            city_conditions = [func.lower(JobListing.city) == c for c in cities]
+            conditions.append(or_(*city_conditions))
+
         # Remote filter
         if filters.is_remote is not None:
             conditions.append(JobListing.is_remote == filters.is_remote)
@@ -234,6 +241,12 @@ class JobListingRepository:
                     JobListing.job_description.ilike(f"%{search_term}%"),
                     JobListing.company_name.ilike(f"%{search_term}%"),
                 )
+            )
+
+        # Company name filter (dedicated filter separate from full-text search)
+        if filters.company_name:
+            conditions.append(
+                JobListing.company_name.ilike(f"%{filters.company_name.strip()}%")
             )
 
         # User interaction filters (requires user_id)
@@ -405,10 +418,10 @@ class JobListingRepository:
             "external_job_id": external_id,
             "job_title": job_data.title,
             "company_name": job_data.companyName,
-            "company_logo": job_data.companyLogo,
-            "company_website": job_data.companyWebsite,
+            "company_logo": normalize_url(job_data.companyLogo),
+            "company_website": normalize_url(job_data.companyWebsite),
             "company_description": job_data.companyDescription,
-            "company_linkedin_url": job_data.companyLinkedinUrl,
+            "company_linkedin_url": normalize_url(job_data.companyLinkedinUrl),
             "company_address_locality": company_address_locality,
             "company_address_country": company_address_country,
             "location": job_data.location,
@@ -422,8 +435,8 @@ class JobListingRepository:
             "job_description": job_data.descriptionText,
             "job_description_html": job_data.descriptionHtml,
             "job_url": job_data.link,
-            "job_url_direct": job_data.applyUrl if job_data.applyUrl else None,
-            "apply_url": job_data.applyUrl,
+            "job_url_direct": normalize_url(job_data.applyUrl),
+            "apply_url": normalize_url(job_data.applyUrl),
             "job_type": job_type,
             "emails": None,  # Not provided by this actor
             "benefits": job_data.benefits,
@@ -530,10 +543,11 @@ class JobListingRepository:
                         job_data.companyAddress,
                     )
 
-                    # Handle empty strings - convert to None for optional fields
-                    apply_url = job_data.applyUrl if job_data.applyUrl else None
-                    company_logo = job_data.companyLogo if job_data.companyLogo else None
-                    company_website = job_data.companyWebsite if job_data.companyWebsite else None
+                    # Handle empty strings and normalize URLs
+                    apply_url = normalize_url(job_data.applyUrl)
+                    company_logo = normalize_url(job_data.companyLogo)
+                    company_website = normalize_url(job_data.companyWebsite)
+                    company_linkedin_url = normalize_url(job_data.companyLinkedinUrl)
 
                     values_list.append(
                         {
@@ -543,7 +557,7 @@ class JobListingRepository:
                             "company_logo": company_logo,
                             "company_website": company_website,
                             "company_description": job_data.companyDescription,
-                            "company_linkedin_url": job_data.companyLinkedinUrl,
+                            "company_linkedin_url": company_linkedin_url,
                             "company_address_locality": company_address_locality,
                             "company_address_country": company_address_country,
                             "location": job_data.location,
@@ -708,10 +722,26 @@ class JobListingRepository:
             if seniority
         ]
 
+        # Get cities with counts (limit to top 50)
+        city_query = (
+            select(JobListing.city, func.count(JobListing.id).label("count"))
+            .where(base_condition, JobListing.city.isnot(None), JobListing.city != "")
+            .group_by(JobListing.city)
+            .order_by(func.count(JobListing.id).desc())
+            .limit(50)
+        )
+        city_result = await db.execute(city_query)
+        cities = [
+            {"value": city, "label": city, "count": count}
+            for city, count in city_result.all()
+            if city
+        ]
+
         return {
             "countries": countries,
             "regions": regions,
             "seniorities": seniorities,
+            "cities": cities,
         }
 
     async def delete_expired(

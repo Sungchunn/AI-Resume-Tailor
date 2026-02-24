@@ -282,3 +282,36 @@ def _country_code_to_name(code: str | None) -> str | None:
 def _is_known_country(text: str) -> bool:
     """Check if the text is a known country name."""
     return text.lower() in _KNOWN_COUNTRIES
+
+
+def normalize_url(url: str | None) -> str | None:
+    """
+    Normalize a URL to ensure it has a valid protocol.
+
+    Handles common issues like:
+    - Missing protocol: "www.example.com" -> "https://www.example.com"
+    - Empty strings -> None
+
+    Args:
+        url: URL string that may be missing protocol
+
+    Returns:
+        Normalized URL with https:// prefix, or None if empty/invalid
+    """
+    if not url:
+        return None
+
+    url = url.strip()
+    if not url:
+        return None
+
+    # Already has a valid protocol
+    if url.startswith(("http://", "https://")):
+        return url
+
+    # Add https:// for URLs starting with www. or domain-like patterns
+    if url.startswith("www.") or "." in url:
+        return f"https://{url}"
+
+    # Doesn't look like a valid URL
+    return None

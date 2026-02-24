@@ -179,6 +179,12 @@ class JobListingFilters(BaseModel):
     # Country filter (comma-separated for multi-select)
     country: str | None = None
 
+    # City filter (comma-separated for multi-select)
+    city: str | None = None
+
+    # Company name text search
+    company_name: str | None = None
+
     # Seniority filters (comma-separated for multi-select)
     seniority: str | None = None
     seniorities: list[str] | None = None
@@ -489,3 +495,4 @@ class JobListingFilterOptionsResponse(BaseModel):
     countries: list[FilterOption]
     regions: list[FilterOption]
     seniorities: list[FilterOption]
+    cities: list[FilterOption] = []
