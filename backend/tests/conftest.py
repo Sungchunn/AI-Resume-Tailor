@@ -1,12 +1,20 @@
+import os
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
+from sqlalchemy import event
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.types import JSON
+
+# Disable rate limiting for tests
+os.environ["RATE_LIMIT_ENABLED"] = "false"
 
 from app.main import app
-from app.db.session import Base, get_db
-from app.api.deps import get_current_user_id
+from app.db.session import Base
+from app.api.deps import get_current_user_id, get_db_session
+from app.models.user import User
 
 # Use SQLite for testing
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -16,6 +24,31 @@ engine = create_async_engine(
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
+
+
+# Compile PostgreSQL JSONB as JSON for SQLite compatibility
+@event.listens_for(engine.sync_engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    """Enable foreign keys for SQLite."""
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
+
+# Override PostgreSQL types for SQLite compatibility
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.dialects.postgresql import ARRAY
+
+
+@compiles(JSONB, "sqlite")
+def compile_jsonb_sqlite(type_, compiler, **kw):
+    return "JSON"
+
+
+@compiles(ARRAY, "sqlite")
+def compile_array_sqlite(type_, compiler, **kw):
+    # SQLite doesn't support arrays, use JSON instead
+    return "JSON"
 
 TestingSessionLocal = async_sessionmaker(
     engine,
@@ -33,6 +66,17 @@ async def db_session():
         await conn.run_sync(Base.metadata.create_all)
 
     async with TestingSessionLocal() as session:
+        # Create a test user with id=1 to satisfy foreign key constraints
+        test_user = User(
+            id=1,
+            email="test@example.com",
+            hashed_password="hashedpassword123",
+            full_name="Test User",
+            is_active=True,
+            is_admin=False,
+        )
+        session.add(test_user)
+        await session.commit()
         yield session
 
     async with engine.begin() as conn:
@@ -54,7 +98,7 @@ async def client(db_session: AsyncSession):
     async def override_get_current_user_id():
         return 1
 
-    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_db_session] = override_get_db
     app.dependency_overrides[get_current_user_id] = override_get_current_user_id
 
     async with AsyncClient(

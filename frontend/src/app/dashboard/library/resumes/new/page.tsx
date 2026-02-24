@@ -5,29 +5,9 @@ import { useRouter } from "next/navigation";
 import { useCreateResume } from "@/lib/api";
 import { FileUploadZone } from "@/components/upload";
 import { ResumeEditor } from "@/components/editor";
+import { generateTitleFromFilename } from "@/lib/utils/filename";
 import type { DocumentExtractionResponse, ResumeCreate } from "@/lib/api/types";
 import Link from "next/link";
-
-/**
- * Generates a human-readable title from a filename.
- * e.g., "John_Resume_2024.pdf" → "John Resume 2024"
- */
-function generateTitleFromFilename(filename: string): string {
-  // Remove file extension
-  const nameWithoutExt = filename.replace(/\.(pdf|docx)$/i, "");
-
-  // Replace underscores and hyphens with spaces
-  const withSpaces = nameWithoutExt.replace(/[_-]/g, " ");
-
-  // Remove multiple consecutive spaces
-  const cleaned = withSpaces.replace(/\s+/g, " ").trim();
-
-  // Capitalize first letter of each word (title case)
-  return cleaned
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
-}
 
 type InputMode = "upload" | "editor";
 
