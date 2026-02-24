@@ -44,6 +44,10 @@ class RateLimitConfig:
     export_requests_per_minute: int = 5
     export_requests_per_hour: int = 30
 
+    # Upload endpoint limits (more permissive than export)
+    upload_requests_per_minute: int = 10
+    upload_requests_per_hour: int = 100
+
     # Admin scraper endpoint limits (restrictive due to external API costs)
     admin_scraper_requests_per_minute: int = 5
     admin_scraper_requests_per_hour: int = 20
@@ -84,7 +88,7 @@ class RateLimiter:
 
         Args:
             identifier: User ID or IP address
-            endpoint_category: Category for limit lookup (default, ai, auth, export)
+            endpoint_category: Category for limit lookup (default, ai, auth, export, upload)
 
         Returns:
             Tuple of (is_limited, rate_limit_info)
@@ -175,6 +179,10 @@ class RateLimiter:
                 self.config.export_requests_per_minute,
                 self.config.export_requests_per_hour,
             ),
+            "upload": (
+                self.config.upload_requests_per_minute,
+                self.config.upload_requests_per_hour,
+            ),
             "admin_scraper": (
                 self.config.admin_scraper_requests_per_minute,
                 self.config.admin_scraper_requests_per_hour,
@@ -204,8 +212,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         "/api/v1/auth/refresh": "auth",
         # Export endpoints
         "/api/v1/export": "export",
-        # Upload endpoints (use restricted category)
-        "/api/upload": "export",
+        # Upload endpoints (dedicated category for file uploads)
+        "/api/upload": "upload",
+        "/api/v1/upload": "upload",
         # Admin scraper endpoints (expensive external API calls)
         "/api/v1/admin/scraper/adhoc": "admin_scraper",
         "/api/v1/admin/scraper/trigger": "admin_scraper",
