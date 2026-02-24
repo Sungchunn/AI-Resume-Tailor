@@ -31,6 +31,10 @@ google-genai = "^1.0.0"
 # Document generation
 python-docx = "^1.1.0"
 reportlab = "^4.2.0"
+mammoth = "^1.8.0"  # DOCX to HTML conversion
+weasyprint = "^63.0"  # HTML to PDF conversion
+# Object Storage
+minio = "^7.2.0"
 email-validator = "^2.3.0"
 # Document ingestion
 pdfplumber = "^0.11.0"

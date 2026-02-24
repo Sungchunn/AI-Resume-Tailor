@@ -54,6 +54,13 @@ class Settings(BaseSettings):
     # Document Upload
     max_upload_size_mb: int = 10
 
+    # MinIO / S3 Object Storage
+    minio_endpoint: str = "localhost:9000"
+    minio_access_key: str = "minioadmin"
+    minio_secret_key: str = "minioadmin"
+    minio_bucket: str = "resumes"
+    minio_secure: bool = False  # Use HTTPS if True
+
     # APIFY Integration
     apify_api_token: str = ""
     apify_actor_id: str = "hKByXkMQaC5Qt9UMN"
