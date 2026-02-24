@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import {
   Panel,
   Group,
@@ -9,14 +9,17 @@ import {
 import { StyleControlsPanel, DEFAULT_STYLE } from "./StyleControlsPanel";
 import { SectionReorderPanel } from "./SectionReorderPanel";
 import { SuggestionsPanel } from "./SuggestionsPanel";
+import { ATSKeywordsPanel } from "./ATSKeywordsPanel";
 import { ContentEditor } from "./ContentEditor";
 import type {
   TailoredContent,
   Suggestion,
   ResumeStyle,
+  KeywordImportance,
 } from "@/lib/api/types";
 
 type LeftPanelTab = "style" | "sections";
+type RightPanelTab = "suggestions" | "ats";
 
 interface EditorLayoutProps {
   content: TailoredContent;
@@ -24,6 +27,7 @@ interface EditorLayoutProps {
   styleSettings: ResumeStyle;
   sectionOrder: string[];
   matchScore: number;
+  jobDescription?: string;
   onContentChange: (content: TailoredContent) => void;
   onStyleChange: (style: ResumeStyle) => void;
   onSectionOrderChange: (order: string[]) => void;
@@ -48,6 +52,7 @@ export function EditorLayout({
   styleSettings,
   sectionOrder,
   matchScore,
+  jobDescription,
   onContentChange,
   onStyleChange,
   onSectionOrderChange,
@@ -58,6 +63,7 @@ export function EditorLayout({
   hasChanges,
 }: EditorLayoutProps) {
   const [leftTab, setLeftTab] = useState<LeftPanelTab>("style");
+  const [rightTab, setRightTab] = useState<RightPanelTab>("suggestions");
   const [activeSection, setActiveSection] = useState<string | undefined>();
   const [localSuggestions, setLocalSuggestions] = useState(suggestions);
 
@@ -65,6 +71,43 @@ export function EditorLayout({
   useEffect(() => {
     setLocalSuggestions(suggestions);
   }, [suggestions]);
+
+  // Build resume content text from TailoredContent for ATS analysis
+  const resumeContentText = useMemo(() => {
+    const parts: string[] = [];
+
+    if (content.summary) {
+      parts.push(content.summary);
+    }
+
+    if (content.experience) {
+      content.experience.forEach((exp) => {
+        parts.push(`${exp.title} at ${exp.company}`);
+        parts.push(exp.bullets.join(" "));
+      });
+    }
+
+    if (content.skills) {
+      parts.push(content.skills.join(", "));
+    }
+
+    if (content.highlights) {
+      parts.push(content.highlights.join(" "));
+    }
+
+    return parts.join(" ");
+  }, [content]);
+
+  // Handle keyword click from ATS panel
+  const handleKeywordClick = useCallback(
+    (keyword: string, importance: KeywordImportance) => {
+      // For now, just log - in the future this could add the keyword to the editor
+      console.log(`Clicked keyword: ${keyword} (${importance})`);
+      // Could potentially scroll to where the keyword should be added
+      // or create a suggestion to add it
+    },
+    []
+  );
 
   const handleAcceptAll = useCallback(() => {
     localSuggestions.forEach((suggestion) => {
@@ -222,17 +265,57 @@ export function EditorLayout({
 
           <Separator className="w-1 bg-gray-200 hover:bg-primary-300 transition-colors cursor-col-resize" />
 
-          {/* Right Panel - Suggestions */}
+          {/* Right Panel - Suggestions/ATS Keywords */}
           <Panel defaultSize={25} minSize={20} maxSize={35}>
-            <div className="h-full bg-gray-50 border-l border-gray-200">
-              <SuggestionsPanel
-                suggestions={localSuggestions}
-                content={content}
-                onAccept={handleAccept}
-                onReject={handleReject}
-                onAcceptAll={handleAcceptAll}
-                onRejectAll={handleRejectAll}
-              />
+            <div className="h-full flex flex-col bg-gray-50 border-l border-gray-200">
+              {/* Tab Switcher */}
+              <div className="flex-shrink-0 flex border-b border-gray-200">
+                <button
+                  onClick={() => setRightTab("suggestions")}
+                  className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                    rightTab === "suggestions"
+                      ? "text-primary-600 border-b-2 border-primary-600 bg-white"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Suggestions
+                  {localSuggestions.length > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">
+                      {localSuggestions.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setRightTab("ats")}
+                  className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                    rightTab === "ats"
+                      ? "text-primary-600 border-b-2 border-primary-600 bg-white"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  ATS Keywords
+                </button>
+              </div>
+
+              {/* Panel Content */}
+              <div className="flex-1 overflow-hidden">
+                {rightTab === "suggestions" ? (
+                  <SuggestionsPanel
+                    suggestions={localSuggestions}
+                    content={content}
+                    onAccept={handleAccept}
+                    onReject={handleReject}
+                    onAcceptAll={handleAcceptAll}
+                    onRejectAll={handleRejectAll}
+                  />
+                ) : (
+                  <ATSKeywordsPanel
+                    jobDescription={jobDescription || ""}
+                    resumeContent={resumeContentText}
+                    onKeywordClick={handleKeywordClick}
+                  />
+                )}
+              </div>
             </div>
           </Panel>
         </Group>

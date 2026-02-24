@@ -153,6 +153,84 @@ curl -X POST http://localhost:8000/v1/ats/keywords \
 
 ---
 
+### Analyze Keywords (Detailed)
+
+Perform detailed keyword analysis with importance levels and grouping.
+
+```http
+POST /v1/ats/keywords/detailed
+```
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `job_description` | string | Yes | Job description to match against (min 50 chars) |
+| `resume_content` | string | No | Resume text content to analyze |
+| `resume_block_ids` | number[] | No | Block IDs to use for resume content |
+
+**Example Request:**
+
+```bash
+curl -X POST http://localhost:8000/v1/ats/keywords/detailed \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "job_description": "Looking for a Senior Engineer with Python, AWS, Kubernetes, and team leadership experience. Required: 5+ years Python, AWS certification. Preferred: Kubernetes experience, CI/CD pipelines. Nice to have: Go, Terraform.",
+    "resume_content": "John Doe\nSenior Software Engineer\n\nPython developer with AWS experience..."
+  }'
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "coverage_score": 0.65,
+  "required_coverage": 0.75,
+  "preferred_coverage": 0.50,
+  "required_matched": ["Python", "AWS", "Senior"],
+  "required_missing": ["Kubernetes"],
+  "preferred_matched": ["CI/CD"],
+  "preferred_missing": ["team leadership"],
+  "nice_to_have_matched": [],
+  "nice_to_have_missing": ["Go", "Terraform"],
+  "missing_available_in_vault": ["Kubernetes", "team leadership"],
+  "missing_not_in_vault": ["Go", "Terraform"],
+  "all_keywords": [
+    {
+      "keyword": "Python",
+      "importance": "required",
+      "found_in_resume": true,
+      "found_in_vault": true,
+      "frequency_in_job": 2,
+      "context": "...Required: 5+ years Python, AWS..."
+    },
+    {
+      "keyword": "Kubernetes",
+      "importance": "required",
+      "found_in_resume": false,
+      "found_in_vault": true,
+      "frequency_in_job": 1,
+      "context": "...Preferred: Kubernetes experience..."
+    }
+  ],
+  "suggestions": [
+    "Add 'Kubernetes' (required) from your TechCorp experience",
+    "Add 'team leadership' (preferred) from your vault"
+  ],
+  "warnings": [
+    "Only 75% of required keywords found. This may significantly reduce your chances."
+  ]
+}
+```
+
+**Notes:**
+- If neither `resume_content` nor `resume_block_ids` is provided, all vault blocks are used
+- Keywords are categorized by importance: `required`, `preferred`, `nice_to_have`
+- Missing keywords are checked against the user's vault for availability
+
+---
+
 ### Get ATS Tips
 
 Get general ATS optimization tips and best practices.
@@ -279,6 +357,58 @@ curl http://localhost:8000/v1/ats/tips \
   keyword: string;
   found_in_vault: boolean;
   suggestion: string;
+}
+```
+
+### ATSKeywordDetailedRequest
+
+```typescript
+{
+  job_description: string;        // Job description (min 50 chars)
+  resume_content?: string;        // Resume text content to analyze
+  resume_block_ids?: number[];    // Block IDs to use for resume
+}
+```
+
+### ATSKeywordDetailedResponse
+
+```typescript
+{
+  coverage_score: number;                // 0-1 overall coverage
+  required_coverage: number;             // 0-1 required keywords coverage
+  preferred_coverage: number;            // 0-1 preferred keywords coverage
+
+  // Grouped by importance
+  required_matched: string[];
+  required_missing: string[];
+  preferred_matched: string[];
+  preferred_missing: string[];
+  nice_to_have_matched: string[];
+  nice_to_have_missing: string[];
+
+  // Vault availability
+  missing_available_in_vault: string[];  // Can be added from vault
+  missing_not_in_vault: string[];        // User lacks this experience
+
+  // Full keyword details
+  all_keywords: KeywordDetail[];
+
+  // Suggestions and warnings
+  suggestions: string[];
+  warnings: string[];
+}
+```
+
+### KeywordDetail
+
+```typescript
+{
+  keyword: string;
+  importance: "required" | "preferred" | "nice_to_have";
+  found_in_resume: boolean;
+  found_in_vault: boolean;
+  frequency_in_job: number;       // Times appearing in job description
+  context: string | null;         // Sample context from job description
 }
 ```
 

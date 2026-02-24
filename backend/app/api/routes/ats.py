@@ -4,6 +4,7 @@ ATS Analysis API Routes
 Provides endpoints for ATS (Applicant Tracking System) compatibility analysis.
 """
 
+from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,10 @@ from app.services.job.ats_analyzer import get_ats_analyzer
 from app.core.protocols import ATSReportData
 
 router = APIRouter()
+
+
+# Importance level type
+KeywordImportanceLevel = Literal["required", "preferred", "nice_to_have"]
 
 
 class ATSStructureRequest(BaseModel):
@@ -72,6 +77,88 @@ class ATSTipsResponse(BaseModel):
     """Response for ATS optimization tips."""
 
     tips: list[str] = Field(..., description="General ATS optimization tips")
+
+
+class KeywordDetailResponse(BaseModel):
+    """Detailed information about a single keyword."""
+
+    keyword: str = Field(..., description="The keyword/phrase")
+    importance: KeywordImportanceLevel = Field(
+        ..., description="Importance level: required, preferred, or nice_to_have"
+    )
+    found_in_resume: bool = Field(..., description="Whether keyword is in resume")
+    found_in_vault: bool = Field(..., description="Whether keyword is in vault")
+    frequency_in_job: int = Field(
+        ..., description="How many times keyword appears in job description"
+    )
+    context: str | None = Field(
+        None, description="Sample context from job description"
+    )
+
+
+class ATSKeywordDetailedRequest(BaseModel):
+    """Request for detailed ATS keyword analysis."""
+
+    job_description: str = Field(
+        ..., min_length=50, description="Job description to analyze against"
+    )
+    resume_content: str | None = Field(
+        None, description="Resume text content to analyze (uses vault blocks if not provided)"
+    )
+    resume_block_ids: list[int] | None = Field(
+        None, description="Block IDs to use for resume (uses all if not provided)"
+    )
+
+
+class ATSKeywordDetailedResponse(BaseModel):
+    """Detailed response for ATS keyword analysis with importance grouping."""
+
+    coverage_score: float = Field(
+        ..., ge=0, le=1, description="Overall keyword coverage 0-1"
+    )
+    required_coverage: float = Field(
+        ..., ge=0, le=1, description="Coverage of required keywords 0-1"
+    )
+    preferred_coverage: float = Field(
+        ..., ge=0, le=1, description="Coverage of preferred keywords 0-1"
+    )
+
+    # Grouped by importance
+    required_matched: list[str] = Field(
+        ..., description="Required keywords found in resume"
+    )
+    required_missing: list[str] = Field(
+        ..., description="Required keywords missing from resume"
+    )
+    preferred_matched: list[str] = Field(
+        ..., description="Preferred keywords found in resume"
+    )
+    preferred_missing: list[str] = Field(
+        ..., description="Preferred keywords missing from resume"
+    )
+    nice_to_have_matched: list[str] = Field(
+        ..., description="Nice-to-have keywords found in resume"
+    )
+    nice_to_have_missing: list[str] = Field(
+        ..., description="Nice-to-have keywords missing from resume"
+    )
+
+    # Vault availability
+    missing_available_in_vault: list[str] = Field(
+        ..., description="Missing keywords that exist in user's vault"
+    )
+    missing_not_in_vault: list[str] = Field(
+        ..., description="Missing keywords not found in vault"
+    )
+
+    # Full keyword details
+    all_keywords: list[KeywordDetailResponse] = Field(
+        ..., description="Detailed info for all extracted keywords"
+    )
+
+    # Suggestions and warnings
+    suggestions: list[str] = Field(..., description="Actionable suggestions")
+    warnings: list[str] = Field(..., description="Important warnings")
 
 
 @router.post("/structure", response_model=ATSStructureResponse)
@@ -153,6 +240,86 @@ async def analyze_keywords(
         missing_from_vault=result["missing_from_vault"],
         warnings=result["warnings"],
         suggestions=result["suggestions"],
+    )
+
+
+@router.post("/keywords/detailed", response_model=ATSKeywordDetailedResponse)
+async def analyze_keywords_detailed(
+    request: ATSKeywordDetailedRequest,
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Perform detailed keyword analysis with importance levels.
+
+    This endpoint provides comprehensive keyword analysis including:
+    - Keywords grouped by importance (required, preferred, nice-to-have)
+    - Coverage percentages for each importance level
+    - Vault availability for missing keywords
+    - Actionable suggestions prioritized by importance
+
+    Use this for the ATS Keywords Panel in the resume editor.
+    """
+    analyzer = get_ats_analyzer()
+    block_repo = BlockRepository(db)
+
+    # Get all vault blocks
+    vault_blocks = await block_repo.list(user_id=user_id, limit=500)
+
+    # Determine resume content source
+    if request.resume_content:
+        # Use provided resume content directly
+        resume_blocks = [{"content": request.resume_content, "id": 0}]
+    elif request.resume_block_ids:
+        # Use specified block IDs
+        resume_blocks = [
+            block for block in vault_blocks
+            if block["id"] in request.resume_block_ids
+        ]
+    else:
+        # Use all vault blocks as resume
+        resume_blocks = vault_blocks
+
+    if not resume_blocks:
+        raise HTTPException(
+            status_code=400,
+            detail="No resume content found for analysis. Provide resume_content or create vault blocks.",
+        )
+
+    result = await analyzer.analyze_keywords_detailed(
+        resume_blocks=resume_blocks,
+        job_description=request.job_description,
+        vault_blocks=vault_blocks,
+    )
+
+    # Convert KeywordDetail dataclasses to response models
+    all_keywords = [
+        KeywordDetailResponse(
+            keyword=kw.keyword,
+            importance=kw.importance,
+            found_in_resume=kw.found_in_resume,
+            found_in_vault=kw.found_in_vault,
+            frequency_in_job=kw.frequency_in_job,
+            context=kw.context,
+        )
+        for kw in result.all_keywords
+    ]
+
+    return ATSKeywordDetailedResponse(
+        coverage_score=result.coverage_score,
+        required_coverage=result.required_coverage,
+        preferred_coverage=result.preferred_coverage,
+        required_matched=result.required_matched,
+        required_missing=result.required_missing,
+        preferred_matched=result.preferred_matched,
+        preferred_missing=result.preferred_missing,
+        nice_to_have_matched=result.nice_to_have_matched,
+        nice_to_have_missing=result.nice_to_have_missing,
+        missing_available_in_vault=result.missing_available_in_vault,
+        missing_not_in_vault=result.missing_not_in_vault,
+        all_keywords=all_keywords,
+        suggestions=result.suggestions,
+        warnings=result.warnings,
     )
 
 

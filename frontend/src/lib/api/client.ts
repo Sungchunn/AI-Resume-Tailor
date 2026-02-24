@@ -60,6 +60,10 @@ import type {
   ScraperPresetListResponse,
   ScheduleSettingsUpdate,
   ScheduleSettingsResponse,
+  ATSKeywordDetailedRequest,
+  ATSKeywordDetailedResponse,
+  ResumeExportRequest,
+  ExportTemplatesResponse,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -223,6 +227,29 @@ export const resumeApi = {
     fetchApi(`/api/resumes/${id}`, {
       method: "DELETE",
     }),
+
+  // Export functions
+  getExportTemplates: (): Promise<ExportTemplatesResponse> =>
+    fetchApi("/api/resumes/export/templates"),
+
+  export: async (id: number, data: ResumeExportRequest): Promise<Blob> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/resumes/${id}/export`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${tokenManager.getAccessToken()}`,
+        },
+        body: JSON.stringify(data),
+      }
+    );
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "Export failed" }));
+      throw new Error(error.detail || `HTTP ${response.status}`);
+    }
+    return response.blob();
+  },
 };
 
 // Job API
@@ -649,4 +676,17 @@ export const adminApi = {
     fetchApi("/api/admin/scraper/schedule/toggle", {
       method: "POST",
     }),
+};
+
+// ATS Analysis API
+export const atsApi = {
+  analyzeKeywordsDetailed: (
+    data: ATSKeywordDetailedRequest
+  ): Promise<ATSKeywordDetailedResponse> =>
+    fetchApi("/api/v1/ats/keywords/detailed", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  getTips: (): Promise<{ tips: string[] }> => fetchApi("/api/v1/ats/tips"),
 };

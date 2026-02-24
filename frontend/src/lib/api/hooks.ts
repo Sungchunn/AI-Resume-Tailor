@@ -9,6 +9,7 @@ import {
   workshopApi,
   uploadApi,
   adminApi,
+  atsApi,
 } from "./client";
 import type {
   ResumeCreate,
@@ -37,6 +38,7 @@ import type {
   ScraperPresetCreate,
   ScraperPresetUpdate,
   ScheduleSettingsUpdate,
+  ATSKeywordDetailedRequest,
 } from "./types";
 
 // Query Keys
@@ -154,6 +156,25 @@ export function useDeleteResume() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.resumes.all });
     },
+  });
+}
+
+export function useExportTemplates() {
+  return useQuery({
+    queryKey: [...queryKeys.resumes.all, "exportTemplates"] as const,
+    queryFn: () => resumeApi.getExportTemplates(),
+  });
+}
+
+export function useExportResume() {
+  return useMutation({
+    mutationFn: ({
+      resumeId,
+      data,
+    }: {
+      resumeId: number;
+      data: import("./types").ResumeExportRequest;
+    }) => resumeApi.export(resumeId, data),
   });
 }
 
@@ -806,5 +827,21 @@ export function useToggleSchedule() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.scheduleSettings.all });
     },
+  });
+}
+
+// ATS Analysis Hooks
+export function useATSKeywordAnalysis() {
+  return useMutation({
+    mutationFn: (data: ATSKeywordDetailedRequest) =>
+      atsApi.analyzeKeywordsDetailed(data),
+  });
+}
+
+export function useATSTips() {
+  return useQuery({
+    queryKey: ["ats", "tips"],
+    queryFn: () => atsApi.getTips(),
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour
   });
 }
