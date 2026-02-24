@@ -1,9 +1,10 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { useResume, useDeleteResume } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import ExportDialog from "@/components/export/ExportDialog";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -15,6 +16,7 @@ export default function ResumeDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { data: resume, isLoading, error } = useResume(resumeId);
   const deleteResume = useDeleteResume();
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this resume?")) {
@@ -100,6 +102,25 @@ export default function ResumeDetailPage({ params }: PageProps) {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowExportDialog(true)}
+              className="btn-secondary inline-flex items-center gap-1.5"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+                />
+              </svg>
+              Export
+            </button>
             <Link
               href={`/dashboard/library/resumes/${resumeId}/edit`}
               className="btn-primary"
@@ -137,6 +158,15 @@ export default function ResumeDetailPage({ params }: PageProps) {
           </>
         )}
       </div>
+
+      {/* Export Dialog */}
+      {showExportDialog && (
+        <ExportDialog
+          resumeId={resumeId}
+          resumeTitle={resume.title}
+          onClose={() => setShowExportDialog(false)}
+        />
+      )}
     </div>
   );
 }

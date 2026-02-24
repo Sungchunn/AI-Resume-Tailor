@@ -66,6 +66,12 @@ from app.schemas.resume_build import (
     WritebackProposal,
     ExportRequest,
 )
+from app.schemas.export import (
+    HTMLExportRequest,
+    ResumeExportRequest,
+    ExportTemplateInfo,
+    ExportTemplatesResponse,
+)
 
 # Backward compatibility aliases
 WorkshopBase = ResumeBuildBase
@@ -153,6 +159,11 @@ __all__ = [
     "WritebackRequest",
     "WritebackProposal",
     "ExportRequest",
+    # Export schemas
+    "HTMLExportRequest",
+    "ResumeExportRequest",
+    "ExportTemplateInfo",
+    "ExportTemplatesResponse",
     # Backward compatibility aliases
     "WorkshopBase",
     "WorkshopCreate",

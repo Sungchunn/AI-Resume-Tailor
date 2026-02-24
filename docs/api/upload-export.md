@@ -121,13 +121,13 @@ curl -X POST "http://localhost:8000/api/upload/extract?store_file=false" \
 
 # Export API
 
-**Base Path:** `/api/export`
+**Base Paths:** `/api/export`, `/api/resumes`
 
 **Authentication:** All endpoints require authentication.
 
 ## Endpoints
 
-### Export Tailored Resume
+### Export Tailored Resume (Legacy)
 
 Export a tailored resume to a downloadable file.
 
@@ -181,6 +181,151 @@ Content-Disposition: attachment; filename="tailored_resume.pdf"
 |--------|-----------|
 | 404 | Tailored resume not found |
 | 422 | Export format not supported |
+
+---
+
+### Get Export Templates
+
+Get available style templates for resume export.
+
+```http
+GET /api/resumes/export/templates
+```
+
+**Example Request:**
+
+```bash
+curl http://localhost:8000/api/resumes/export/templates \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "templates": [
+    {
+      "name": "classic",
+      "description": "Traditional professional resume style with serif-inspired formatting, section dividers, and a timeless appearance."
+    },
+    {
+      "name": "modern",
+      "description": "Contemporary design with clean lines, accent colors, and modern typography suitable for tech and creative industries."
+    },
+    {
+      "name": "minimal",
+      "description": "Ultra-clean design with minimal styling, focusing on content readability and ATS compatibility."
+    }
+  ]
+}
+```
+
+---
+
+### Export Resume with Styling
+
+Export a resume to PDF or DOCX with custom styling options.
+
+```http
+POST /api/resumes/{resume_id}/export
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `resume_id` | integer | Resume identifier |
+
+**Request Body:**
+
+```json
+{
+  "format": "pdf",
+  "template": "classic",
+  "font_family": "Arial",
+  "font_size": 11,
+  "margin_top": 0.75,
+  "margin_bottom": 0.75,
+  "margin_left": 0.75,
+  "margin_right": 0.75
+}
+```
+
+**Request Fields:**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `format` | string | Yes | - | `pdf` or `docx` |
+| `template` | string | No | `classic` | Style template: `classic`, `modern`, `minimal` |
+| `font_family` | string | No | `Arial` | Font family name |
+| `font_size` | integer | No | 11 | Base font size (8-16 pt) |
+| `margin_top` | float | No | 0.75 | Top margin in inches (0.25-2.0) |
+| `margin_bottom` | float | No | 0.75 | Bottom margin in inches (0.25-2.0) |
+| `margin_left` | float | No | 0.75 | Left margin in inches (0.25-2.0) |
+| `margin_right` | float | No | 0.75 | Right margin in inches (0.25-2.0) |
+
+**Example Request:**
+
+```bash
+# Export with modern template
+curl -X POST http://localhost:8000/api/resumes/123/export \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"format": "pdf", "template": "modern", "font_size": 12}' \
+  --output resume.pdf
+
+# Export as DOCX with custom margins
+curl -X POST http://localhost:8000/api/resumes/123/export \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"format": "docx", "template": "minimal", "margin_top": 0.5, "margin_bottom": 0.5}' \
+  --output resume.docx
+```
+
+**Response:**
+
+Binary file with appropriate headers:
+
+```
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="My_Resume.pdf"
+```
+
+**Error Responses:**
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Resume has no content to export |
+| 403 | Not authorized to access this resume |
+| 404 | Resume not found |
+
+---
+
+## Style Templates
+
+### Classic
+
+Traditional professional style ideal for conservative industries:
+- Serif-inspired typography
+- Section dividers with borders
+- Black and gray color scheme
+- Standard resume formatting
+
+### Modern
+
+Contemporary design for tech and creative roles:
+- Sans-serif typography
+- Blue accent colors
+- Clean section headers
+- Subtle background highlights for blockquotes
+
+### Minimal
+
+Ultra-clean ATS-optimized design:
+- System font stack
+- Minimal decorative elements
+- High content density
+- Maximum readability
 
 ---
 

@@ -8,6 +8,12 @@ from app.services.export.document_extractor import (
     extract_text_from_pdf,
     extract_text_from_docx,
 )
+from app.services.export.html_to_document import (
+    HTMLToDocumentService,
+    get_html_export_service,
+    StyleTemplate,
+    ExportOptions,
+)
 
 __all__ = [
     "ExportService",
@@ -17,4 +23,8 @@ __all__ = [
     "extract_text",
     "extract_text_from_pdf",
     "extract_text_from_docx",
+    "HTMLToDocumentService",
+    "get_html_export_service",
+    "StyleTemplate",
+    "ExportOptions",
 ]
