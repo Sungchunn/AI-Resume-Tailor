@@ -38,17 +38,29 @@ export interface ResumeBase {
   raw_content: string;
 }
 
-export interface ResumeCreate extends ResumeBase {}
+export interface ResumeCreate extends ResumeBase {
+  html_content?: string;
+  original_file_key?: string;
+  original_filename?: string;
+  file_type?: "pdf" | "docx";
+  file_size_bytes?: number;
+}
 
 export interface ResumeUpdate {
   title?: string;
   raw_content?: string;
+  html_content?: string;
 }
 
 export interface ResumeResponse extends ResumeBase {
   id: number;
   owner_id: number;
   parsed_content?: Record<string, unknown> | null;
+  html_content?: string | null;
+  original_file_key?: string | null;
+  original_filename?: string | null;
+  file_type?: "pdf" | "docx" | null;
+  file_size_bytes?: number | null;
   created_at: string;
   updated_at?: string | null;
 }
@@ -375,8 +387,11 @@ export interface ExportRequest {
 // Upload Types
 export interface DocumentExtractionResponse {
   raw_content: string;
+  html_content: string;
   source_filename: string;
   file_type: "pdf" | "docx";
+  file_key: string | null;
+  file_size_bytes: number | null;
   page_count: number | null;
   word_count: number;
   warnings: string[];
@@ -611,4 +626,82 @@ export interface ScheduleSettingsResponse {
   last_run_at: string | null;
   next_run_at: string | null;
   updated_at: string | null;
+}
+
+// ============================================================================
+// HTML Export Types
+// ============================================================================
+
+export type ExportStyleTemplate = "classic" | "modern" | "minimal";
+export type ExportFormat = "pdf" | "docx";
+
+export interface ResumeExportRequest {
+  format: ExportFormat;
+  template?: ExportStyleTemplate;
+  font_family?: string;
+  font_size?: number;
+  margin_top?: number;
+  margin_bottom?: number;
+  margin_left?: number;
+  margin_right?: number;
+}
+
+export interface HTMLExportRequest extends ResumeExportRequest {
+  html_content: string;
+}
+
+export interface ExportTemplateInfo {
+  name: string;
+  description: string;
+  preview_image?: string | null;
+}
+
+export interface ExportTemplatesResponse {
+  templates: ExportTemplateInfo[];
+}
+
+// ============================================================================
+// ATS Analysis Types
+// ============================================================================
+
+export type KeywordImportance = "required" | "preferred" | "nice_to_have";
+
+export interface KeywordDetail {
+  keyword: string;
+  importance: KeywordImportance;
+  found_in_resume: boolean;
+  found_in_vault: boolean;
+  frequency_in_job: number;
+  context: string | null;
+}
+
+export interface ATSKeywordDetailedRequest {
+  job_description: string;
+  resume_content?: string | null;
+  resume_block_ids?: number[] | null;
+}
+
+export interface ATSKeywordDetailedResponse {
+  coverage_score: number;
+  required_coverage: number;
+  preferred_coverage: number;
+
+  // Grouped by importance
+  required_matched: string[];
+  required_missing: string[];
+  preferred_matched: string[];
+  preferred_missing: string[];
+  nice_to_have_matched: string[];
+  nice_to_have_missing: string[];
+
+  // Vault availability
+  missing_available_in_vault: string[];
+  missing_not_in_vault: string[];
+
+  // Full keyword details
+  all_keywords: KeywordDetail[];
+
+  // Suggestions and warnings
+  suggestions: string[];
+  warnings: string[];
 }

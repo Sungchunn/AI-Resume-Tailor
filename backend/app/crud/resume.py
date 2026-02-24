@@ -10,6 +10,11 @@ class ResumeCRUD:
         db_obj = Resume(
             title=obj_in.title,
             raw_content=obj_in.raw_content,
+            html_content=obj_in.html_content,
+            original_file_key=obj_in.original_file_key,
+            original_filename=obj_in.original_filename,
+            file_type=obj_in.file_type,
+            file_size_bytes=obj_in.file_size_bytes,
             owner_id=owner_id,
         )
         db.add(db_obj)
