@@ -14,7 +14,7 @@ export function Header() {
 
         {/* Center section - Logo */}
         <div className="flex items-center justify-center">
-          <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-3">
+          <Link href={isAuthenticated ? "/dashboard/jobs" : "/"} className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-primary-600 flex items-center justify-center">
               <span className="text-white font-bold text-base">RT</span>
             </div>

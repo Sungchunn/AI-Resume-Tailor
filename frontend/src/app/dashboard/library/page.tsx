@@ -17,12 +17,6 @@ import type { BlockType } from "@/lib/api/types";
 
 type TabType = "resumes" | "jobs" | "vault";
 
-const tabs: { id: TabType; label: string }[] = [
-  { id: "resumes", label: "Resumes" },
-  { id: "jobs", label: "Jobs" },
-  { id: "vault", label: "Vault" },
-];
-
 const blockTypeOptions: { value: BlockType; label: string }[] = [
   { value: "achievement", label: "Achievement" },
   { value: "responsibility", label: "Responsibility" },
@@ -35,6 +29,17 @@ const blockTypeOptions: { value: BlockType; label: string }[] = [
 export default function LibraryPage() {
   const [activeTab, setActiveTab] = useState<TabType>("resumes");
 
+  // Fetch counts for stats
+  const { data: resumes } = useResumes();
+  const { data: jobs } = useJobs();
+  const { data: blocksData } = useBlocks({});
+
+  const tabs: { id: TabType; label: string; count: number }[] = [
+    { id: "resumes", label: "Resumes", count: resumes?.length ?? 0 },
+    { id: "jobs", label: "Jobs", count: jobs?.length ?? 0 },
+    { id: "vault", label: "Vault", count: blocksData?.total ?? 0 },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
@@ -44,20 +49,29 @@ export default function LibraryPage() {
         </p>
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation with Counts */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
                 activeTab === tab.id
                   ? "border-primary-500 text-primary-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
               {tab.label}
+              <span
+                className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                  activeTab === tab.id
+                    ? "bg-primary-100 text-primary-700"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {tab.count}
+              </span>
             </button>
           ))}
         </nav>

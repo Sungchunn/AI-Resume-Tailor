@@ -68,3 +68,91 @@
     @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
   }
 }
+
+/* TipTap Editor Styles */
+.ProseMirror {
+  @apply outline-none;
+}
+
+.ProseMirror > * + * {
+  margin-top: 0.75em;
+}
+
+.ProseMirror h1 {
+  @apply text-2xl font-bold text-gray-900 mt-6 mb-3;
+}
+
+.ProseMirror h2 {
+  @apply text-xl font-semibold text-gray-900 mt-5 mb-2;
+}
+
+.ProseMirror h3 {
+  @apply text-lg font-semibold text-gray-800 mt-4 mb-2;
+}
+
+.ProseMirror p {
+  @apply text-gray-700 leading-relaxed;
+}
+
+.ProseMirror ul {
+  @apply list-disc pl-6 my-3;
+}
+
+.ProseMirror ol {
+  @apply list-decimal pl-6 my-3;
+}
+
+.ProseMirror li {
+  @apply text-gray-700 my-1;
+}
+
+.ProseMirror li > p {
+  @apply my-0;
+}
+
+.ProseMirror blockquote {
+  @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4;
+}
+
+.ProseMirror hr {
+  @apply border-t border-gray-300 my-6;
+}
+
+.ProseMirror strong {
+  @apply font-semibold;
+}
+
+.ProseMirror em {
+  @apply italic;
+}
+
+.ProseMirror u {
+  @apply underline;
+}
+
+.ProseMirror s {
+  @apply line-through;
+}
+
+.ProseMirror mark {
+  @apply bg-yellow-200 px-0.5 rounded;
+}
+
+/* AI Suggestion Highlights */
+.ProseMirror mark[data-color="red"] {
+  @apply bg-red-200;
+}
+
+.ProseMirror mark[data-color="yellow"] {
+  @apply bg-yellow-200;
+}
+
+.ProseMirror mark[data-color="blue"] {
+  @apply bg-blue-200;
+}
+
+/* Placeholder text */
+.ProseMirror p.is-editor-empty:first-child::before {
+  @apply text-gray-400 float-left h-0 pointer-events-none;
+  content: attr(data-placeholder);
+}

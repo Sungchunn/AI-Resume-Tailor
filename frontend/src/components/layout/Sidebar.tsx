@@ -6,26 +6,20 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   BriefcaseIcon,
-  DashboardIcon,
   LibraryIcon,
   SparklesIcon,
 } from "@/components/icons";
 
 const sidebarNavigation = [
   {
-    name: "Dashboard",
-    href: "/dashboard",
-    icon: DashboardIcon,
+    name: "Jobs",
+    href: "/dashboard/jobs",
+    icon: BriefcaseIcon,
   },
   {
     name: "Library",
     href: "/dashboard/library",
     icon: LibraryIcon,
-  },
-  {
-    name: "Jobs",
-    href: "/dashboard/jobs",
-    icon: BriefcaseIcon,
   },
   {
     name: "Tailor",
@@ -84,7 +78,7 @@ export function Sidebar() {
         {/* Logo section */}
         <div className={`pt-5 pb-4 ${isCollapsed ? "px-3" : "px-4"}`}>
           <Link
-            href="/dashboard"
+            href="/dashboard/jobs"
             className={`flex items-center gap-2.5 ${isCollapsed ? "justify-center" : ""}`}
           >
             <div className="h-8 w-8 shrink-0 rounded-lg bg-linear-to-b from-primary-500 to-primary-600 flex items-center justify-center shadow-sm">
@@ -120,8 +114,7 @@ export function Sidebar() {
           <div className="space-y-0.5">
             {sidebarNavigation.map((item) => {
               const isActive =
-                pathname === item.href ||
-                (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                pathname === item.href || pathname.startsWith(item.href + "/");
               const Icon = item.icon;
 
               return (
