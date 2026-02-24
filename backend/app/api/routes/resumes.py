@@ -178,16 +178,23 @@ async def export_resume(
 
     # Generate the export
     if export_in.format == "pdf":
-        content = await export_service.export_pdf(
-            html_content=html_content,
-            template=export_in.template,
-            font_family=export_in.font_family,
-            font_size=export_in.font_size,
-            margin_top=export_in.margin_top,
-            margin_bottom=export_in.margin_bottom,
-            margin_left=export_in.margin_left,
-            margin_right=export_in.margin_right,
-        )
+        try:
+            content = await export_service.export_pdf(
+                html_content=html_content,
+                template=export_in.template,
+                font_family=export_in.font_family,
+                font_size=export_in.font_size,
+                margin_top=export_in.margin_top,
+                margin_bottom=export_in.margin_bottom,
+                margin_left=export_in.margin_left,
+                margin_right=export_in.margin_right,
+            )
+        except RuntimeError as e:
+            # WeasyPrint not available
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e),
+            )
         media_type = "application/pdf"
         extension = "pdf"
     else:  # docx
