@@ -1,9 +1,11 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { useWorkshop } from "./WorkshopContext";
 import type { WorkshopTab } from "./WorkshopContext";
 import { AIRewritePanel, EditorPanel } from "./panels";
 import { StylePanel } from "./panels/style/StylePanel";
+import { useReducedMotion } from "./hooks/useReducedMotion";
 
 const TABS: { key: WorkshopTab; label: string }[] = [
   { key: "ai-rewrite", label: "AI Rewrite" },
@@ -11,8 +13,16 @@ const TABS: { key: WorkshopTab; label: string }[] = [
   { key: "style", label: "Style" },
 ];
 
+// Animation variants for tab transitions
+const tabContentVariants = {
+  initial: { opacity: 0, x: 8 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -8 },
+};
+
 export function WorkshopControlPanel() {
   const { state, dispatch } = useWorkshop();
+  const prefersReducedMotion = useReducedMotion();
 
   const renderTabContent = () => {
     switch (state.activeTab) {
@@ -30,10 +40,13 @@ export function WorkshopControlPanel() {
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Tab List */}
-      <div className="flex border-b px-2">
+      <div className="flex border-b px-2" role="tablist">
         {TABS.map((tab) => (
           <button
             key={tab.key}
+            role="tab"
+            aria-selected={state.activeTab === tab.key}
+            aria-controls={`tabpanel-${tab.key}`}
             onClick={() => dispatch({ type: "SET_ACTIVE_TAB", payload: tab.key })}
             className={`flex-1 py-3 text-sm font-medium transition-colors outline-none ${
               state.activeTab === tab.key
@@ -52,8 +65,30 @@ export function WorkshopControlPanel() {
         ))}
       </div>
 
-      {/* Tab Content */}
-      <div className="flex-1 overflow-hidden">{renderTabContent()}</div>
+      {/* Tab Content with Animations */}
+      <div
+        className="flex-1 overflow-hidden relative"
+        role="tabpanel"
+        id={`tabpanel-${state.activeTab}`}
+      >
+        {prefersReducedMotion ? (
+          renderTabContent()
+        ) : (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={state.activeTab}
+              variants={tabContentVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="h-full"
+            >
+              {renderTabContent()}
+            </motion.div>
+          </AnimatePresence>
+        )}
+      </div>
     </div>
   );
 }
