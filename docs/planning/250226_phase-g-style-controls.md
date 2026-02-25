@@ -1,7 +1,7 @@
 # Phase G: Style Controls Panel
 
 **Created**: February 25, 2026
-**Status**: Ready for Implementation
+**Status**: Implemented
 **Dependencies**: Phase D (Three-Tab Control Panel)
 **Priority**: P1
 **Next Phase**: Phase H (Real-Time Score Updates)
@@ -806,17 +806,17 @@ test("auto-fit toggle shows status", async () => {
 
 ## Acceptance Criteria
 
-- [ ] Template grid shows 4 presets with mini previews
-- [ ] Clicking template applies its style immediately
-- [ ] Active template has visual indicator (blue border)
-- [ ] Auto-fit toggle enables progressive reduction
-- [ ] Auto-fit shows status badge (Fitting/Fitted/At minimum)
-- [ ] Auto-fit shows list of adjustments made
-- [ ] Style controls locked when auto-fit enabled
-- [ ] Progressive reduction follows correct order
-- [ ] All minimums respected
-- [ ] Algorithm terminates within 20 iterations
-- [ ] Preview updates in real-time
+- [x] Template grid shows 4 presets with mini previews
+- [x] Clicking template applies its style immediately
+- [x] Active template has visual indicator (blue border)
+- [x] Auto-fit toggle enables progressive reduction
+- [x] Auto-fit shows status badge (Fitting/Fitted/At minimum)
+- [x] Auto-fit shows list of adjustments made
+- [x] Style controls locked when auto-fit enabled
+- [x] Progressive reduction follows correct order
+- [x] All minimums respected
+- [x] Algorithm terminates within 20 iterations
+- [x] Preview updates in real-time
 
 ---
 

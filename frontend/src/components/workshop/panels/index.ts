@@ -11,3 +11,6 @@ export { SectionItem } from "./SectionItem";
 export { SectionActions } from "./SectionActions";
 export { AddSectionMenu } from "./AddSectionMenu";
 export * from "./sections";
+
+// Phase G - Style Controls Panel
+export * from "./style";

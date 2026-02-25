@@ -7,6 +7,7 @@ interface StyleControlsPanelProps {
   style: ResumeStyle;
   onChange: (style: ResumeStyle) => void;
   onReset: () => void;
+  disabled?: boolean;
 }
 
 const FONT_OPTIONS = [
@@ -35,6 +36,7 @@ export function StyleControlsPanel({
   style,
   onChange,
   onReset,
+  disabled = false,
 }: StyleControlsPanelProps) {
   const [expanded, setExpanded] = useState({
     typography: true,
@@ -54,12 +56,18 @@ export function StyleControlsPanel({
   };
 
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-4">
+    <div className={`h-full overflow-y-auto p-4 space-y-4 ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
+      {disabled && (
+        <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded mb-2">
+          Styles locked while Auto-Fit is enabled
+        </div>
+      )}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-gray-900">Style Settings</h3>
         <button
           onClick={onReset}
-          className="text-xs text-gray-500 hover:text-gray-700"
+          disabled={disabled}
+          className="text-xs text-gray-500 hover:text-gray-700 disabled:cursor-not-allowed"
         >
           Reset to Default
         </button>

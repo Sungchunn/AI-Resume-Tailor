@@ -1,35 +1,9 @@
 "use client";
 
-import { useCallback } from "react";
 import { useWorkshop } from "./WorkshopContext";
 import type { WorkshopTab } from "./WorkshopContext";
 import { AIRewritePanel, EditorPanel } from "./panels";
-import { StyleControlsPanel, DEFAULT_STYLE } from "@/components/editor/StyleControlsPanel";
-import type { ResumeStyle } from "@/lib/api/types";
-
-// Style Tab - wraps StyleControlsPanel with context adapters
-function StyleTab() {
-  const { state, dispatch } = useWorkshop();
-
-  const handleStyleChange = useCallback(
-    (style: ResumeStyle) => {
-      dispatch({ type: "SET_STYLE", payload: style });
-    },
-    [dispatch]
-  );
-
-  const handleReset = useCallback(() => {
-    dispatch({ type: "SET_STYLE", payload: DEFAULT_STYLE });
-  }, [dispatch]);
-
-  return (
-    <StyleControlsPanel
-      style={state.styleSettings}
-      onChange={handleStyleChange}
-      onReset={handleReset}
-    />
-  );
-}
+import { StylePanel } from "./panels/style/StylePanel";
 
 const TABS: { key: WorkshopTab; label: string }[] = [
   { key: "ai-rewrite", label: "AI Rewrite" },
@@ -47,7 +21,7 @@ export function WorkshopControlPanel() {
       case "editor":
         return <EditorPanel />;
       case "style":
-        return <StyleTab />;
+        return <StylePanel />;
       default:
         return null;
     }
