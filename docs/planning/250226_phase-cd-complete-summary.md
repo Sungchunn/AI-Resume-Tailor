@@ -100,15 +100,20 @@ The current integration uses existing panels as-is. Future phases can enhance th
 - Per-section action buttons (edit, AI enhance, delete)
 - Collapsible accordion pattern
 
-### Phase G: Style Controls Panel Enhancements
-- Template presets (Classic, Modern, Minimal)
-- "Auto Fit to One Page" toggle with smart font/spacing adjustment
+### Phase G: Style Controls Panel Enhancements (Updated per Evaluation)
+- **Template presets with visual thumbnails** (Classic, Modern, Minimal) - Elevated Priority
+- **Progressive Auto Fit to One Page** (fonts → spacing → line height reduction order)
 - Live preview reflection improvements
 
 ### Phase H: Real-Time Score Updates
 - Debounced score recalculation on content change
 - Visual indicator during recalculation
 - Score history/improvement tracking
+
+### Phase J: Polish (Updated per Evaluation)
+- **Undo/Redo history stack** - critical standard editor feature
+- **Keyboard shortcuts** with help overlay
+- **Visual regression tests** for PDF export vs preview
 
 ---
 

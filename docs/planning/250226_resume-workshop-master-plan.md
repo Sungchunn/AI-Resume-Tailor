@@ -76,18 +76,55 @@ This document serves as the **master index** for upgrading the Resume Tailor app
 
 ## Phase Index
 
-| Phase | Name | Priority | Dependencies | Est. Complexity |
-| ----- | ---- | -------- | ------------ | --------------- |
-| **A** | [PDF Preview Component](#phase-a-pdf-preview-component) | P0 | None | High |
-| **B** | [Workshop Page Layout](#phase-b-workshop-page-layout) | P0 | Phase A | Medium |
-| **C** | [Match Score Dashboard](#phase-c-match-score-dashboard) | P0 | None | Medium |
-| **D** | [Three-Tab Control Panel](#phase-d-three-tab-control-panel) | P0 | Phase B | Low |
-| **E** | [AI Rewrite Panel](#phase-e-ai-rewrite-panel) | P1 | Phase D | Medium |
-| **F** | [Section-Based Editor](#phase-f-section-based-editor) | P1 | Phase D | High |
-| **G** | [Style Controls Panel](#phase-g-style-controls-panel) | P1 | Phase D | Low |
-| **H** | [Real-Time Score Updates](#phase-h-real-time-score-updates) | P2 | Phase C | Medium |
-| **I** | [Step Wizard Flow](#phase-i-step-wizard-flow) | P2 | All above | Medium |
-| **J** | [Polish and Animations](#phase-j-polish-and-animations) | P3 | All above | Low |
+| Phase | Name | Priority | Dependencies | Est. Complexity | Notes |
+| ----- | ---- | -------- | ------------ | --------------- | ----- |
+| **A** | [PDF Preview Component](#phase-a-pdf-preview-component) | P0 | None | High | +Progressive auto-fit |
+| **B** | [Workshop Page Layout](#phase-b-workshop-page-layout) | P0 | Phase A | Medium | |
+| **C** | [Match Score Dashboard](#phase-c-match-score-dashboard) | P0 | None | Medium | |
+| **D** | [Three-Tab Control Panel](#phase-d-three-tab-control-panel) | P0 | Phase B | Low | |
+| **E** | [AI Rewrite Panel](#phase-e-ai-rewrite-panel) | P1 | Phase D | Medium | |
+| **F** | [Section-Based Editor](#phase-f-section-based-editor) | P1 | Phase D | High | |
+| **G** | [Style Controls Panel](#phase-g-style-controls-panel) | P1 | Phase D | Medium | +Template thumbnails ↑ |
+| **H** | [Real-Time Score Updates](#phase-h-real-time-score-updates) | P2 | Phase C | Medium | |
+| **I** | [Step Wizard Flow](#phase-i-step-wizard-flow) | P2 | All above | Medium | |
+| **J** | [Polish and Animations](#phase-j-polish-and-animations) | P3 | All above | Medium | +Undo/redo, shortcuts |
+
+---
+
+## Evaluation Updates Summary
+
+Based on external recommendation evaluation (`250226_resume-editor-recommendation-evaluation.md`), the following enhancements were cherry-picked and added to the plan:
+
+### Added to Phase A (PDF Preview)
+
+- **Progressive auto-fit algorithm** replacing uniform scaling
+- **Visual regression tests** for PDF export vs preview comparison
+
+### Added to Phase G (Style Controls) - Priority Elevated
+
+- **Template preset thumbnails** for visual comparison
+- **Progressive auto-fit** integrated with Style Controls
+
+### Added to Phase J (Polish)
+
+- **Undo/Redo history stack** - standard editor expectation
+- **Detailed keyboard shortcuts** with help overlay
+- **Visual regression test suite**
+
+### Added to Testing Strategy
+
+- **PDF export visual comparison tests** (critical for WYSIWYG)
+- **Auto-fit convergence tests** (prevents infinite loops)
+- **Cross-browser TipTap/editor tests**
+
+### Rejected from Recommendation
+
+| Suggestion | Reason |
+| ---------- | ------ |
+| New `ResumeDocument` schema | Our `TailoredContentSchema` is more type-safe |
+| Raw `contentEditable` over TipTap | Loses AI suggestion highlighting, more bugs |
+| New `/api/resume-documents/*` endpoints | Duplicates existing `/api/tailored/*` |
+| Polymorphic `items: list[dict]` | Less type-safe than structured schemas |
 
 ---
 
@@ -391,14 +428,14 @@ frontend/src/components/workshop/panels/
 - Font size controls (Name, Headers, Subheaders, Body)
 - Spacing controls (Section, Entry, Line)
 - Margin controls
-- "Auto Fit to One Page" toggle
-- Template presets (Classic, Modern, Minimal)
+- "Auto Fit to One Page" toggle with **progressive reduction algorithm**
+- **Template presets with visual thumbnails** (Classic, Modern, Minimal) - **Elevated Priority**
 
 ### Phase G Technical Approach
 
 1. Leverage existing `StyleControlsPanel.tsx`
-2. Add template preset selector
-3. Add auto-fit logic
+2. Add template preset selector **with preview thumbnails**
+3. **Implement progressive auto-fit algorithm** (fonts → entry spacing → section spacing → line height)
 4. Connect to preview for live updates
 
 ### Phase G Files
@@ -409,7 +446,8 @@ frontend/src/components/workshop/panels/
 ├── FontControls.tsx           # Font family, sizes
 ├── SpacingControls.tsx        # Line, section, entry
 ├── MarginControls.tsx         # Page margins
-├── TemplateSelector.tsx       # Preset templates
+├── TemplateSelector.tsx       # Preset templates with thumbnails
+├── TemplateThumbnail.tsx      # Individual template preview
 └── AutoFitToggle.tsx          # Fit to one page
 ```
 
@@ -418,13 +456,46 @@ frontend/src/components/workshop/panels/
 - `StyleControlsPanel.tsx` - **Already implemented**, refactor/extend
 - Export templates - Style presets reference
 
+### Phase G Progressive Auto-Fit Algorithm
+
+**Order of reduction** (preserves readability):
+
+1. Reduce body font size (most impact on density)
+2. Reduce entry spacing (space between experience items)
+3. Reduce section spacing (space between sections)
+4. Reduce line height (last resort - affects readability most)
+
+**Minimums**:
+
+- Body: 8pt
+- Heading: 12pt
+- Subheading: 9pt
+- Line height: 1.1
+- Section spacing: 8px
+- Entry spacing: 4px
+
+**Safety**: Maximum 20 iterations to prevent infinite loops.
+
+### Phase G Template Presets
+
+| Template | Font | Body Size | Line Height | Spacing | Use Case |
+| -------- | ---- | --------- | ----------- | ------- | -------- |
+| Classic | Times New Roman | 11pt | 1.4 | Standard | Traditional industries |
+| Modern | Inter/Helvetica | 10pt | 1.3 | Compact | Tech/startup |
+| Minimal | Arial | 10pt | 1.2 | Tight | Fitting more content |
+
+Each preset shows a **mini thumbnail preview** so users can visually compare before selecting.
+
 ### Phase G Acceptance Criteria
 
 - [ ] Font controls update preview live
 - [ ] Spacing controls work
 - [ ] Margin controls work
 - [ ] Templates apply preset styles
-- [ ] Auto-fit adjusts appropriately
+- [ ] **Template thumbnails show visual preview**
+- [ ] Auto-fit uses **progressive reduction** (not uniform scaling)
+- [ ] Auto-fit respects all minimums
+- [ ] Auto-fit terminates within iteration limit
 
 ---
 
@@ -509,7 +580,7 @@ frontend/src/components/workshop/wizard/
 
 ## Phase J: Polish and Animations
 
-**Goal**: Add micro-interactions and polish for production-ready UX.
+**Goal**: Add micro-interactions, undo/redo history, keyboard shortcuts, and polish for production-ready UX.
 
 ### Phase J Requirements
 
@@ -518,14 +589,18 @@ frontend/src/components/workshop/wizard/
 - Suggestion accept/reject animations
 - Section collapse animations
 - Loading skeletons
-- Keyboard shortcuts
+- **Undo/Redo history stack** (critical standard editor feature)
+- **Comprehensive keyboard shortcuts**
+- **Keyboard shortcut help overlay**
+- **Visual regression tests for PDF export**
 
 ### Phase J Technical Approach
 
 1. Add Framer Motion animations
 2. Create loading skeleton components
-3. Implement keyboard shortcut system
-4. Add haptic feedback (where supported)
+3. **Implement undo/redo with history stack**
+4. Implement keyboard shortcut system
+5. Add haptic feedback (where supported)
 
 ### Phase J Files
 
@@ -539,16 +614,66 @@ frontend/src/components/workshop/
 │   ├── PreviewSkeleton.tsx
 │   ├── ScoreSkeleton.tsx
 │   └── PanelSkeleton.tsx
-└── useKeyboardShortcuts.ts
+├── KeyboardShortcutHelp.tsx    # Shortcut help overlay (?)
+└── hooks/
+    ├── useKeyboardShortcuts.ts
+    └── useUndoRedo.ts           # History stack management
 ```
+
+### Phase J Undo/Redo System
+
+**History Stack Interface:**
+
+```typescript
+interface EditorHistory {
+  past: WorkshopState[];    // States we can undo to
+  present: WorkshopState;   // Current state
+  future: WorkshopState[];  // States we can redo to
+}
+
+// New action types
+| { type: "UNDO" }
+| { type: "REDO" }
+| { type: "CLEAR_HISTORY" }
+```
+
+**Implementation Notes:**
+
+- Store snapshots of content/style state (not full WorkshopState)
+- Limit history to ~50 entries to prevent memory bloat
+- Clear future stack on new changes
+- Skip UI-only changes (activeSection, activeTab) from history
+
+### Phase J Keyboard Shortcuts
+
+| Shortcut | Action | Context |
+| -------- | ------ | ------- |
+| `Cmd/Ctrl + S` | Save | Global |
+| `Cmd/Ctrl + Z` | Undo | Global |
+| `Cmd/Ctrl + Shift + Z` | Redo | Global |
+| `Cmd/Ctrl + Y` | Redo (Windows) | Global |
+| `Cmd/Ctrl + E` | Export | Global |
+| `Cmd/Ctrl + P` | Print/Export PDF | Global |
+| `Tab` | Next section | Editor tab |
+| `Shift + Tab` | Previous section | Editor tab |
+| `Escape` | Close modal/deselect | Global |
+| `1` / `2` / `3` | Switch tabs | Global |
+| `?` | Show shortcuts help | Global |
+
+**Help Overlay:**
+Press `?` to show a modal listing all available shortcuts.
 
 ### Phase J Acceptance Criteria
 
 - [ ] Tab transitions smooth
 - [ ] Score animates on change
 - [ ] Suggestions animate on accept/reject
-- [ ] Keyboard shortcuts functional
+- [ ] **Undo/redo works correctly**
+- [ ] **Undo/redo history limited to prevent memory issues**
+- [ ] **Keyboard shortcuts functional**
+- [ ] **Keyboard shortcut help overlay accessible via `?`**
 - [ ] Loading states polished
+- [ ] **Visual regression tests pass for PDF export**
 
 ---
 
@@ -579,21 +704,40 @@ frontend/src/
 │   ├── panels/
 │   │   ├── AIRewritePanel.tsx           # Phase E
 │   │   ├── EditorPanel.tsx              # Phase F
-│   │   └── StylePanel.tsx               # Phase G
+│   │   ├── StylePanel.tsx               # Phase G
+│   │   ├── TemplateSelector.tsx         # Phase G
+│   │   └── TemplateThumbnail.tsx        # Phase G
 │   │
 │   ├── wizard/
 │   │   ├── WorkshopWizard.tsx           # Phase I
 │   │   └── steps/                       # Phase I
 │   │
-│   └── animations/                      # Phase J
+│   ├── animations/                      # Phase J
+│   │   ├── FadeTransition.tsx
+│   │   ├── SlideTransition.tsx
+│   │   └── ScaleTransition.tsx
+│   │
+│   ├── skeletons/                       # Phase J
+│   │   ├── PreviewSkeleton.tsx
+│   │   ├── ScoreSkeleton.tsx
+│   │   └── PanelSkeleton.tsx
+│   │
+│   └── KeyboardShortcutHelp.tsx         # Phase J
 │
 ├── hooks/
 │   ├── usePreviewPagination.ts          # Phase A
 │   ├── useScoreCalculation.ts           # Phase H
-│   └── useKeyboardShortcuts.ts          # Phase J
+│   ├── useKeyboardShortcuts.ts          # Phase J
+│   └── useUndoRedo.ts                   # Phase J - History stack
 │
-└── lib/api/
-    └── workshop.ts                      # Workshop-specific API hooks
+├── lib/api/
+│   └── workshop.ts                      # Workshop-specific API hooks
+│
+└── tests/
+    └── visual-regression/               # Phase J
+        ├── preview-export.spec.ts       # PDF vs preview comparison
+        └── utils/
+            └── pdf-compare.ts           # Comparison utilities
 ```
 
 ---
@@ -642,18 +786,58 @@ Most backend functionality already exists. Minor additions needed:
 - Each component tested in isolation
 - Hook logic tested with React Testing Library
 - Score calculation logic tested
+- **Auto-fit algorithm convergence tests** (terminates within limits)
+- **Auto-fit reduction order tests** (fonts → spacing → line height)
+- **Undo/redo history stack tests** (correct state management)
 
 ### Integration Tests
 
 - Full workshop flow from job selection to export
 - API integration with mock server
 - State management across tabs
+- **Keyboard shortcut integration tests**
 
 ### E2E Tests with Playwright
 
 - Complete user journey
 - Mobile responsiveness
 - Keyboard navigation
+- **Undo/redo user flow**
+
+### Visual Regression Tests (Critical)
+
+**PDF Export vs Preview Comparison:**
+
+The #1 thing to get right - any mismatch means "what you see is NOT what you get" in the export.
+
+| Test | Description |
+| ---- | ----------- |
+| Font rendering | Same fonts render identically in preview and export |
+| Spacing | Section/line spacing matches between preview and PDF |
+| Page breaks | Content breaks at same points in preview and export |
+| Margins | Margin settings produce identical results |
+| Long content | Multi-page documents paginate identically |
+| Style changes | All style settings (font size, spacing) reflect correctly |
+
+**Implementation:**
+
+```typescript
+// tests/visual-regression/preview-export.spec.ts
+test("preview matches PDF export", async ({ page }) => {
+  await page.goto("/dashboard/workshop/test-resume-id");
+  const previewScreenshot = await page.locator(".resume-preview").screenshot();
+  const pdfBuffer = await exportResumePdf(page);
+  const pdfImage = await renderPdfToImage(pdfBuffer, { page: 1 });
+  const diff = await comparePdfToScreenshot(previewScreenshot, pdfImage);
+  expect(diff.percentage).toBeLessThan(0.5); // <0.5% difference
+});
+```
+
+### Cross-Browser Tests
+
+- TipTap editor behavior consistency across Chrome, Firefox, Safari
+- Font rendering differences
+- contentEditable quirks (if any raw usage)
 
 ---
 

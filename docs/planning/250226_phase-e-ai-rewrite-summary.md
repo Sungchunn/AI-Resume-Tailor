@@ -82,3 +82,14 @@ frontend/src/components/workshop/panels/
 **Dependencies to install:**
 - `@dnd-kit/core` - For drag-drop reordering
 - `@dnd-kit/sortable` - Sortable utilities
+
+---
+
+## Evaluation Notes
+
+Per `250226_resume-editor-recommendation-evaluation.md`, the AI Rewrite Panel correctly uses TipTap for rich text editing (not raw `contentEditable`) to support:
+- AI suggestion highlighting with accept/reject
+- Keyword highlighting for ATS visualization
+- Cross-browser consistency
+
+This was validated as the correct approach over the external recommendation's suggestion to use raw `contentEditable`.

@@ -119,7 +119,11 @@ export type WorkshopAction =
   | { type: "SAVE_START" }
   | { type: "SAVE_SUCCESS"; payload: TailoredResumeFullResponse }
   | { type: "SAVE_ERROR"; payload: string }
-  | { type: "RESET_CHANGES" };
+  | { type: "RESET_CHANGES" }
+  // Undo/Redo actions (Phase J)
+  | { type: "UNDO" }
+  | { type: "REDO" }
+  | { type: "CLEAR_HISTORY" };
 
 export interface WorkshopContextValue {
   state: WorkshopState;
@@ -132,6 +136,12 @@ export interface WorkshopContextValue {
   updateContent: (content: Partial<TailoredContent>) => void;
   updateStyle: (style: Partial<ResumeStyle>) => void;
   runATSAnalysis: () => Promise<void>;
+
+  // Undo/Redo (Phase J)
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 // Default values

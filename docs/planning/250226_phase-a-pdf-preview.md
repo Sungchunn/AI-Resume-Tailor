@@ -564,30 +564,123 @@ export function computePreviewStyles(style: ResumeStyle): ComputedPreviewStyle {
   };
 }
 
+// Minimum values for auto-fit
+const FIT_MINIMUMS = {
+  bodyFontSize: 8,
+  headingFontSize: 12,
+  subheadingFontSize: 9,
+  lineHeight: 1.1,
+  sectionSpacing: 8,
+  entrySpacing: 4,
+} as const;
+
+// Maximum iterations to prevent infinite loops
+const MAX_FIT_ITERATIONS = 20;
+
+/**
+ * Progressive auto-fit algorithm: reduces styles in priority order
+ * to fit content to one page while maintaining readability.
+ *
+ * Order of reduction:
+ * 1. Body font size (most impact on density)
+ * 2. Entry spacing (space between items)
+ * 3. Section spacing (space between sections)
+ * 4. Line height (last resort - affects readability most)
+ *
+ * Each step reduces by ~5% until content fits or minimums reached.
+ */
 export function calculateFitToPageStyles(
   style: ResumeStyle,
-  currentHeight: number
+  currentHeight: number,
+  measureFn?: (styles: ComputedPreviewStyle) => number
 ): ComputedPreviewStyle {
   const targetHeight =
     PAGE_DIMENSIONS.HEIGHT -
     (style.margin_top ?? 0.75) * PAGE_DIMENSIONS.DPI -
     (style.margin_bottom ?? 0.75) * PAGE_DIMENSIONS.DPI;
 
-  // Calculate scale factor needed to fit content
-  const scaleFactor = Math.min(1, targetHeight / currentHeight);
+  // If already fits, return unchanged
+  if (currentHeight <= targetHeight) {
+    return computePreviewStyles(style);
+  }
 
-  // Apply scale to font sizes (minimum 8pt)
-  const scaledBodySize = Math.max(8, Math.floor((style.font_size_body ?? 11) * scaleFactor));
-  const scaledHeadingSize = Math.max(12, Math.floor((style.font_size_heading ?? 18) * scaleFactor));
-  const scaledSubheadingSize = Math.max(9, Math.floor((style.font_size_subheading ?? 12) * scaleFactor));
+  // Working values
+  let bodyFontSize = style.font_size_body ?? 11;
+  let headingFontSize = style.font_size_heading ?? 18;
+  let subheadingFontSize = style.font_size_subheading ?? 12;
+  let sectionSpacing = style.section_spacing ?? 16;
+  let entrySpacing = style.entry_spacing ?? 8;
+  let lineHeight = style.line_spacing ?? 1.4;
+
+  // Reduction step (5%)
+  const REDUCTION_FACTOR = 0.95;
+
+  let height = currentHeight;
+  let iterations = 0;
+  let phase = 0; // 0: fonts, 1: entry spacing, 2: section spacing, 3: line height
+
+  while (height > targetHeight && iterations < MAX_FIT_ITERATIONS) {
+    iterations++;
+
+    switch (phase) {
+      case 0: // Reduce body font size first
+        if (bodyFontSize > FIT_MINIMUMS.bodyFontSize) {
+          bodyFontSize = Math.max(FIT_MINIMUMS.bodyFontSize, bodyFontSize * REDUCTION_FACTOR);
+          // Scale heading/subheading proportionally
+          headingFontSize = Math.max(FIT_MINIMUMS.headingFontSize, headingFontSize * REDUCTION_FACTOR);
+          subheadingFontSize = Math.max(FIT_MINIMUMS.subheadingFontSize, subheadingFontSize * REDUCTION_FACTOR);
+        } else {
+          phase = 1; // Move to next phase
+        }
+        break;
+
+      case 1: // Reduce entry spacing
+        if (entrySpacing > FIT_MINIMUMS.entrySpacing) {
+          entrySpacing = Math.max(FIT_MINIMUMS.entrySpacing, entrySpacing * REDUCTION_FACTOR);
+        } else {
+          phase = 2;
+        }
+        break;
+
+      case 2: // Reduce section spacing
+        if (sectionSpacing > FIT_MINIMUMS.sectionSpacing) {
+          sectionSpacing = Math.max(FIT_MINIMUMS.sectionSpacing, sectionSpacing * REDUCTION_FACTOR);
+        } else {
+          phase = 3;
+        }
+        break;
+
+      case 3: // Reduce line height (last resort)
+        if (lineHeight > FIT_MINIMUMS.lineHeight) {
+          lineHeight = Math.max(FIT_MINIMUMS.lineHeight, lineHeight * REDUCTION_FACTOR);
+        } else {
+          break; // All minimums reached, exit loop
+        }
+        break;
+    }
+
+    // Estimate new height (simple ratio-based estimation)
+    // In production, use measureFn for accurate DOM measurement
+    const fontRatio = bodyFontSize / (style.font_size_body ?? 11);
+    const spacingRatio = (sectionSpacing + entrySpacing) / ((style.section_spacing ?? 16) + (style.entry_spacing ?? 8));
+    const lineRatio = lineHeight / (style.line_spacing ?? 1.4);
+    height = currentHeight * fontRatio * Math.sqrt(spacingRatio) * lineRatio;
+
+    // If all phases exhausted, exit
+    if (phase > 3) break;
+  }
 
   return {
-    ...computePreviewStyles(style),
-    bodyFontSize: `${scaledBodySize}pt`,
-    headingFontSize: `${scaledHeadingSize}pt`,
-    subheadingFontSize: `${scaledSubheadingSize}pt`,
-    lineHeight: Math.max(1.1, (style.line_spacing ?? 1.4) * scaleFactor),
-    sectionGap: `${Math.max(8, (style.section_spacing ?? 16) * scaleFactor)}px`,
+    fontFamily: style.font_family ?? "Arial, sans-serif",
+    bodyFontSize: `${Math.round(bodyFontSize)}pt`,
+    headingFontSize: `${Math.round(headingFontSize)}pt`,
+    subheadingFontSize: `${Math.round(subheadingFontSize)}pt`,
+    lineHeight,
+    sectionGap: `${Math.round(sectionSpacing)}px`,
+    paddingTop: `${(style.margin_top ?? 0.75) * PAGE_DIMENSIONS.DPI}px`,
+    paddingBottom: `${(style.margin_bottom ?? 0.75) * PAGE_DIMENSIONS.DPI}px`,
+    paddingLeft: `${(style.margin_left ?? 0.75) * PAGE_DIMENSIONS.DPI}px`,
+    paddingRight: `${(style.margin_right ?? 0.75) * PAGE_DIMENSIONS.DPI}px`,
   };
 }
 ```
@@ -621,7 +714,7 @@ export function PreviewPagination({
         <ChevronLeftIcon className="w-4 h-4" />
       </button>
 
-      <span className="text-sm text-gray-600 min-w-[60px] text-center">
+      <span className="text-sm text-gray-600 min-w-15 text-center">
         {currentPage} / {totalPages}
       </span>
 
@@ -643,7 +736,7 @@ export function PreviewPagination({
 ## Edge Cases to Handle
 
 | Edge Case | Solution |
-|-----------|----------|
+| --------- | -------- |
 | Content overflow (>2 pages) | Show warning, offer "Fit to One Page" toggle |
 | Empty sections | Gracefully hide sections with no content |
 | Long bullet points | Wrap text properly, avoid mid-word breaks |
@@ -681,7 +774,9 @@ export function PreviewPagination({
 ### Unit Tests
 
 - `computePreviewStyles()` returns correct CSS values
-- `calculateFitToPageStyles()` scales correctly
+- `calculateFitToPageStyles()` progressive reduction works correctly
+- `calculateFitToPageStyles()` respects all minimums
+- `calculateFitToPageStyles()` terminates within MAX_FIT_ITERATIONS
 - `usePageBreaks` calculates pagination correctly
 
 ### Component Tests
@@ -690,8 +785,61 @@ export function PreviewPagination({
 - `PreviewPagination` navigates correctly
 - Section highlighting works on click/hover
 
-### Visual Regression
+### Visual Regression (Critical)
 
-- Compare preview output with actual PDF export
-- Test with various content lengths
-- Test with different style combinations
+**PDF Export vs Preview Comparison:**
+
+The HTML/CSS preview must match the PDF export exactly. Any mismatch breaks "what you see is what you get."
+
+| Test | Description |
+| ---- | ----------- |
+| Font rendering | Same fonts render identically in preview and export |
+| Spacing | Section/line spacing matches between preview and PDF |
+| Page breaks | Content breaks at same points in preview and export |
+| Margins | Margin settings produce identical results |
+| Long content | Multi-page documents paginate identically |
+
+**Implementation:**
+
+```typescript
+// tests/visual-regression/preview-export.spec.ts
+import { test, expect } from "@playwright/test";
+import { comparePdfToScreenshot } from "./utils/pdf-compare";
+
+test("preview matches PDF export", async ({ page }) => {
+  // 1. Navigate to workshop with test resume
+  await page.goto("/dashboard/workshop/test-resume-id");
+
+  // 2. Take screenshot of preview
+  const previewScreenshot = await page.locator(".resume-preview").screenshot();
+
+  // 3. Export to PDF
+  const pdfBuffer = await exportResumePdf(page);
+
+  // 4. Render PDF first page to image
+  const pdfImage = await renderPdfToImage(pdfBuffer, { page: 1 });
+
+  // 5. Compare with tolerance for anti-aliasing
+  const diff = await comparePdfToScreenshot(previewScreenshot, pdfImage);
+  expect(diff.percentage).toBeLessThan(0.5); // <0.5% difference
+});
+```
+
+### Auto-Fit Convergence Tests
+
+```typescript
+// tests/unit/auto-fit.spec.ts
+test("auto-fit terminates within iteration limit", () => {
+  const extremeContent = generateLongResume(50); // 50 experience items
+  const styles = calculateFitToPageStyles(defaultStyle, 5000); // 5x page height
+
+  // Should not throw or hang
+  expect(styles.bodyFontSize).toBe(`${FIT_MINIMUMS.bodyFontSize}pt`);
+});
+
+test("auto-fit reduces in correct order", () => {
+  // Track which properties are reduced first
+  const reductionOrder = trackReductionOrder(defaultStyle, 1500);
+  expect(reductionOrder).toEqual(["bodyFontSize", "entrySpacing", "sectionSpacing", "lineHeight"]);
+});
+```
