@@ -14,6 +14,8 @@ export {
   CheckIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronUpIcon,
   CurrencyIcon,
   ExternalLinkIcon,
   EyeSlashIcon,
