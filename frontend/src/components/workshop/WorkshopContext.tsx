@@ -76,6 +76,12 @@ export interface WorkshopContextValue {
   updateStyle: (style: Partial<ResumeStyle>) => void;
   runATSAnalysis: () => Promise<void>;
   generateAISuggestions: (prompt: string, focusSections?: string[]) => Promise<void>;
+
+  // Undo/Redo
+  canUndo: boolean;
+  canRedo: boolean;
+  undo: () => void;
+  redo: () => void;
 }
 
 // Default values

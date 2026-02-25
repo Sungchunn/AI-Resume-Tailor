@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useReducer, type ReactNode } from "react";
+import { useEffect, useCallback, useReducer, useRef, type ReactNode } from "react";
 import {
   WorkshopContext,
   workshopReducer,
@@ -8,10 +8,27 @@ import {
   DEFAULT_STYLE,
   DEFAULT_SECTION_ORDER,
   type WorkshopContextValue,
+  type WorkshopState,
 } from "./WorkshopContext";
 import type { TailoredContent, ResumeStyle, Suggestion, TailoredResumeFullResponse } from "@/lib/api/types";
 import { useTailoredResume, useUpdateTailoredResume, useATSKeywordAnalysis } from "@/lib/api/hooks";
 import { useScoreCalculation } from "./hooks/useScoreCalculation";
+import { useUndoRedo, HISTORY_LIMIT } from "./hooks/useUndoRedo";
+
+// State subset that is tracked for undo/redo
+interface UndoableState {
+  content: TailoredContent;
+  styleSettings: ResumeStyle;
+  sectionOrder: string[];
+}
+
+function getUndoableState(state: WorkshopState): UndoableState {
+  return {
+    content: state.content,
+    styleSettings: state.styleSettings,
+    sectionOrder: state.sectionOrder,
+  };
+}
 
 interface WorkshopProviderProps {
   tailoredId: number;
@@ -90,6 +107,80 @@ export function WorkshopProvider({ tailoredId, children }: WorkshopProviderProps
       dispatch({ type: "SET_SCORE_LAST_UPDATED", payload: scoreLastUpdated });
     }
   }, [scoreLastUpdated, state.scoreLastUpdated]);
+
+  // Undo/Redo history management
+  const undoRedoInitialState: UndoableState = {
+    content: initialState.content,
+    styleSettings: initialState.styleSettings,
+    sectionOrder: initialState.sectionOrder,
+  };
+
+  const {
+    canUndo,
+    canRedo,
+    pushState: pushHistoryState,
+    undo: undoHistory,
+    redo: redoHistory,
+  } = useUndoRedo<UndoableState>(undoRedoInitialState);
+
+  // Track if we're currently applying an undo/redo to prevent pushing to history
+  const isApplyingHistoryRef = useRef(false);
+
+  // Push state to history when content, style, or section order changes
+  // Debounced to avoid excessive history entries
+  const lastPushedStateRef = useRef<string>("");
+  useEffect(() => {
+    if (state.isLoading || isApplyingHistoryRef.current) return;
+
+    const currentState = getUndoableState(state);
+    const stateHash = JSON.stringify(currentState);
+
+    // Only push if state actually changed
+    if (stateHash !== lastPushedStateRef.current) {
+      const timer = setTimeout(() => {
+        lastPushedStateRef.current = stateHash;
+        pushHistoryState(currentState, "Edit");
+      }, 500); // Debounce
+
+      return () => clearTimeout(timer);
+    }
+  }, [state.content, state.styleSettings, state.sectionOrder, state.isLoading, pushHistoryState]);
+
+  // Initialize history when data loads
+  useEffect(() => {
+    if (tailoredResume && !state.isLoading) {
+      const initialUndoableState = getUndoableState(state);
+      lastPushedStateRef.current = JSON.stringify(initialUndoableState);
+    }
+  }, [tailoredResume, state.isLoading]);
+
+  const undo = useCallback(() => {
+    const previousState = undoHistory();
+    if (previousState) {
+      isApplyingHistoryRef.current = true;
+      dispatch({ type: "SET_CONTENT", payload: previousState.content });
+      dispatch({ type: "SET_STYLE", payload: previousState.styleSettings });
+      dispatch({ type: "SET_SECTION_ORDER", payload: previousState.sectionOrder });
+      // Reset flag after a short delay to allow state to settle
+      setTimeout(() => {
+        isApplyingHistoryRef.current = false;
+      }, 100);
+    }
+  }, [undoHistory]);
+
+  const redo = useCallback(() => {
+    const nextState = redoHistory();
+    if (nextState) {
+      isApplyingHistoryRef.current = true;
+      dispatch({ type: "SET_CONTENT", payload: nextState.content });
+      dispatch({ type: "SET_STYLE", payload: nextState.styleSettings });
+      dispatch({ type: "SET_SECTION_ORDER", payload: nextState.sectionOrder });
+      // Reset flag after a short delay to allow state to settle
+      setTimeout(() => {
+        isApplyingHistoryRef.current = false;
+      }, 100);
+    }
+  }, [redoHistory]);
 
   // Save handler
   const save = useCallback(async () => {
@@ -186,6 +277,11 @@ export function WorkshopProvider({ tailoredId, children }: WorkshopProviderProps
     updateStyle,
     runATSAnalysis,
     generateAISuggestions,
+    // Undo/Redo
+    canUndo,
+    canRedo,
+    undo,
+    redo,
   };
 
   return (
