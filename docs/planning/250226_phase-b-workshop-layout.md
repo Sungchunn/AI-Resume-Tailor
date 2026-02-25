@@ -585,7 +585,7 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
   return (
     <header
       className={cn(
-        "flex-shrink-0 border-b bg-white flex items-center justify-between px-4",
+        "shrink-0 border-b bg-white flex items-center justify-between px-4",
         compact ? "h-12" : "h-14"
       )}
     >
