@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { TechStackLogos } from "@/components/ui/TechStackLogos";
 
 export default function LandingPage() {
   return (
@@ -32,6 +33,9 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* Tech Stack Section */}
+        <TechStackLogos className="py-12 bg-gray-50" />
 
         {/* Features Section */}
         <section className="py-20">
