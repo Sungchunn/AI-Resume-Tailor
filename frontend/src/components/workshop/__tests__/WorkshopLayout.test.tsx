@@ -85,6 +85,10 @@ const createMockContextValue = (overrides: Partial<WorkshopState> = {}): Worksho
     error: null,
     fitToOnePage: false,
     atsAnalysis: null,
+    matchScore: 0,
+    previousMatchScore: null,
+    scoreLastUpdated: null,
+    isScoreUpdating: false,
     ...overrides,
   };
 

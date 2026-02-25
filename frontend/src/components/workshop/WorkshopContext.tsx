@@ -34,6 +34,12 @@ export interface WorkshopState {
 
   // ATS analysis
   atsAnalysis: ATSKeywordDetailedResponse | null;
+
+  // Real-time score tracking
+  matchScore: number;
+  previousMatchScore: number | null;
+  scoreLastUpdated: Date | null;
+  isScoreUpdating: boolean;
 }
 
 export type WorkshopAction =
@@ -53,7 +59,10 @@ export type WorkshopAction =
   | { type: "SAVE_START" }
   | { type: "SAVE_SUCCESS"; payload: TailoredResumeFullResponse }
   | { type: "SAVE_ERROR"; payload: string }
-  | { type: "RESET_CHANGES" };
+  | { type: "RESET_CHANGES" }
+  | { type: "SET_MATCH_SCORE"; payload: { score: number; previous?: number | null } }
+  | { type: "SET_SCORE_UPDATING"; payload: boolean }
+  | { type: "SET_SCORE_LAST_UPDATED"; payload: Date | null };
 
 export interface WorkshopContextValue {
   state: WorkshopState;
@@ -106,6 +115,11 @@ export const initialState: WorkshopState = {
   error: null,
   fitToOnePage: false,
   atsAnalysis: null,
+  // Real-time score tracking
+  matchScore: 0,
+  previousMatchScore: null,
+  scoreLastUpdated: null,
+  isScoreUpdating: false,
 };
 
 // Helper function to apply suggestion to content
@@ -155,6 +169,10 @@ export function workshopReducer(
         suggestions: action.payload.suggestions ?? [],
         isLoading: false,
         hasChanges: false,
+        matchScore: action.payload.match_score ?? 0,
+        previousMatchScore: null,
+        scoreLastUpdated: null,
+        isScoreUpdating: false,
       };
 
     case "SET_JOB_DESCRIPTION":
@@ -234,6 +252,19 @@ export function workshopReducer(
           state.tailoredResume?.section_order ?? DEFAULT_SECTION_ORDER,
         hasChanges: false,
       };
+
+    case "SET_MATCH_SCORE":
+      return {
+        ...state,
+        matchScore: action.payload.score,
+        previousMatchScore: action.payload.previous ?? state.previousMatchScore,
+      };
+
+    case "SET_SCORE_UPDATING":
+      return { ...state, isScoreUpdating: action.payload };
+
+    case "SET_SCORE_LAST_UPDATED":
+      return { ...state, scoreLastUpdated: action.payload };
 
     default:
       return state;

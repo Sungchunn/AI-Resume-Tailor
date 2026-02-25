@@ -11,6 +11,7 @@ import {
 } from "./WorkshopContext";
 import type { TailoredContent, ResumeStyle, Suggestion, TailoredResumeFullResponse } from "@/lib/api/types";
 import { useTailoredResume, useUpdateTailoredResume, useATSKeywordAnalysis } from "@/lib/api/hooks";
+import { useScoreCalculation } from "./hooks/useScoreCalculation";
 
 interface WorkshopProviderProps {
   tailoredId: number;
@@ -52,6 +53,43 @@ export function WorkshopProvider({ tailoredId, children }: WorkshopProviderProps
       });
     }
   }, [error]);
+
+  // Real-time score calculation
+  const {
+    score: calculatedScore,
+    previousScore: calculatedPreviousScore,
+    isUpdating: isScoreUpdating,
+    lastUpdated: scoreLastUpdated,
+  } = useScoreCalculation({
+    content: state.content,
+    resumeId: state.tailoredResume?.resume_id ?? 0,
+    jobId: state.tailoredResume?.job_id ?? null,
+    enabled: !!state.tailoredResume?.job_id && !state.isLoading,
+  });
+
+  // Sync calculated score to state
+  useEffect(() => {
+    if (calculatedScore !== state.matchScore || calculatedPreviousScore !== state.previousMatchScore) {
+      dispatch({
+        type: "SET_MATCH_SCORE",
+        payload: { score: calculatedScore, previous: calculatedPreviousScore },
+      });
+    }
+  }, [calculatedScore, calculatedPreviousScore, state.matchScore, state.previousMatchScore]);
+
+  // Sync score updating state
+  useEffect(() => {
+    if (isScoreUpdating !== state.isScoreUpdating) {
+      dispatch({ type: "SET_SCORE_UPDATING", payload: isScoreUpdating });
+    }
+  }, [isScoreUpdating, state.isScoreUpdating]);
+
+  // Sync score last updated
+  useEffect(() => {
+    if (scoreLastUpdated !== state.scoreLastUpdated) {
+      dispatch({ type: "SET_SCORE_LAST_UPDATED", payload: scoreLastUpdated });
+    }
+  }, [scoreLastUpdated, state.scoreLastUpdated]);
 
   // Save handler
   const save = useCallback(async () => {

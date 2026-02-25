@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronLeftIcon } from "@/components/icons";
 import { useWorkshop } from "./WorkshopContext";
 import { MatchScoreBadge } from "./MatchScoreBadge";
+import { ScoreDisplay } from "./ScoreDisplay";
 import ExportDialog from "@/components/export/ExportDialog";
 
 interface WorkshopHeaderProps {
@@ -18,7 +19,7 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
   const title = state.tailoredResume?.tailored_content
     ? `Tailored Resume #${state.tailoredId}`
     : "Resume Workshop";
-  const matchScore = state.tailoredResume?.match_score ?? 0;
+  const hasJobId = !!state.tailoredResume?.job_id;
 
   const headerHeight = compact ? "h-12" : "h-14";
   const titleClasses = compact
@@ -40,7 +41,21 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
 
         <h1 className={`font-semibold truncate ${titleClasses}`}>{title}</h1>
 
-        <MatchScoreBadge score={matchScore} size={compact ? "sm" : "md"} />
+        {/* Real-time Score Display - only show when there's a job associated */}
+        {hasJobId ? (
+          compact ? (
+            <MatchScoreBadge score={state.matchScore} size="sm" />
+          ) : (
+            <ScoreDisplay
+              score={state.matchScore}
+              previousScore={state.previousMatchScore}
+              isUpdating={state.isScoreUpdating}
+              lastUpdated={state.scoreLastUpdated}
+            />
+          )
+        ) : (
+          <span className="text-xs text-gray-400">No job linked</span>
+        )}
       </div>
 
       {/* Right: Status and Actions */}

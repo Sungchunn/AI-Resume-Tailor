@@ -1,0 +1,1 @@
+export { useScoreCalculation } from "./useScoreCalculation";

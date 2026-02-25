@@ -30,6 +30,29 @@ vi.mock("../MatchScoreBadge", () => ({
   ),
 }));
 
+// Mock ScoreDisplay
+vi.mock("../ScoreDisplay", () => ({
+  ScoreDisplay: ({ score, previousScore, isUpdating, lastUpdated }: {
+    score: number;
+    previousScore?: number | null;
+    isUpdating: boolean;
+    lastUpdated?: Date | null;
+  }) => (
+    <div
+      data-testid="score-display"
+      data-score={score}
+      data-previous-score={previousScore}
+      data-is-updating={isUpdating}
+    >
+      {score}%
+      {previousScore !== null && previousScore !== undefined && (
+        <span data-testid="score-delta">from {previousScore}%</span>
+      )}
+      {isUpdating && <span data-testid="score-updating">Updating...</span>}
+    </div>
+  ),
+}));
+
 // Mock ExportDialog
 vi.mock("@/components/export/ExportDialog", () => ({
   default: ({ resumeId, resumeTitle, onClose }: { resumeId: number; resumeTitle: string; onClose: () => void }) => (
@@ -80,6 +103,10 @@ const createMockContextValue = (overrides: Partial<WorkshopState> = {}): Worksho
     error: null,
     fitToOnePage: false,
     atsAnalysis: null,
+    matchScore: 85,
+    previousMatchScore: null,
+    scoreLastUpdated: null,
+    isScoreUpdating: false,
     ...overrides,
   };
 
@@ -148,7 +175,7 @@ describe("WorkshopHeader", () => {
       expect(screen.getByText("Resume Workshop")).toBeInTheDocument();
     });
 
-    it("renders match score badge", () => {
+    it("renders score display in non-compact mode when job is linked", () => {
       const contextValue = createMockContextValue();
 
       render(
@@ -157,8 +184,21 @@ describe("WorkshopHeader", () => {
         </WorkshopWrapper>
       );
 
-      const badge = screen.getByTestId("match-score-badge");
-      expect(badge).toHaveAttribute("data-score", "85");
+      const scoreDisplay = screen.getByTestId("score-display");
+      expect(scoreDisplay).toHaveAttribute("data-score", "85");
+    });
+
+    it("shows 'No job linked' when no job is associated", () => {
+      const resumeWithoutJob = { ...mockTailoredResume, job_id: null };
+      const contextValue = createMockContextValue({ tailoredResume: resumeWithoutJob });
+
+      render(
+        <WorkshopWrapper contextValue={contextValue}>
+          <WorkshopHeader />
+        </WorkshopWrapper>
+      );
+
+      expect(screen.getByText("No job linked")).toBeInTheDocument();
     });
 
     it("renders save and export buttons", () => {
@@ -176,7 +216,7 @@ describe("WorkshopHeader", () => {
   });
 
   describe("Compact mode", () => {
-    it("renders with compact styles when compact prop is true", () => {
+    it("renders match score badge in compact mode when job is linked", () => {
       const contextValue = createMockContextValue();
 
       render(
@@ -189,7 +229,7 @@ describe("WorkshopHeader", () => {
       expect(badge).toHaveAttribute("data-size", "sm");
     });
 
-    it("renders with normal styles when compact is false", () => {
+    it("renders ScoreDisplay in non-compact mode when job is linked", () => {
       const contextValue = createMockContextValue();
 
       render(
@@ -198,8 +238,9 @@ describe("WorkshopHeader", () => {
         </WorkshopWrapper>
       );
 
-      const badge = screen.getByTestId("match-score-badge");
-      expect(badge).toHaveAttribute("data-size", "md");
+      // Non-compact mode with job_id uses ScoreDisplay
+      const scoreDisplay = screen.getByTestId("score-display");
+      expect(scoreDisplay).toBeInTheDocument();
     });
   });
 
@@ -364,13 +405,9 @@ describe("WorkshopHeader", () => {
   });
 
   describe("Match score display", () => {
-    it("displays zero score when match_score is 0", () => {
-      const resumeWithZeroScore = {
-        ...mockTailoredResume,
-        match_score: 0,
-      };
+    it("displays zero score when matchScore state is 0", () => {
       const contextValue = createMockContextValue({
-        tailoredResume: resumeWithZeroScore,
+        matchScore: 0,
       });
 
       render(
@@ -379,12 +416,15 @@ describe("WorkshopHeader", () => {
         </WorkshopWrapper>
       );
 
-      const badge = screen.getByTestId("match-score-badge");
-      expect(badge).toHaveAttribute("data-score", "0");
+      const scoreDisplay = screen.getByTestId("score-display");
+      expect(scoreDisplay).toHaveAttribute("data-score", "0");
     });
 
-    it("displays default zero score when tailoredResume is null", () => {
-      const contextValue = createMockContextValue({ tailoredResume: null });
+    it("shows 'No job linked' when tailoredResume has no job_id", () => {
+      const resumeWithoutJob = { ...mockTailoredResume, job_id: null };
+      const contextValue = createMockContextValue({
+        tailoredResume: resumeWithoutJob,
+      });
 
       render(
         <WorkshopWrapper contextValue={contextValue}>
@@ -392,8 +432,41 @@ describe("WorkshopHeader", () => {
         </WorkshopWrapper>
       );
 
-      const badge = screen.getByTestId("match-score-badge");
-      expect(badge).toHaveAttribute("data-score", "0");
+      expect(screen.getByText("No job linked")).toBeInTheDocument();
+      expect(screen.queryByTestId("score-display")).not.toBeInTheDocument();
+    });
+
+    it("displays score from state, not from tailoredResume", () => {
+      const contextValue = createMockContextValue({
+        matchScore: 92,
+        previousMatchScore: 85,
+      });
+
+      render(
+        <WorkshopWrapper contextValue={contextValue}>
+          <WorkshopHeader />
+        </WorkshopWrapper>
+      );
+
+      const scoreDisplay = screen.getByTestId("score-display");
+      expect(scoreDisplay).toHaveAttribute("data-score", "92");
+      expect(scoreDisplay).toHaveAttribute("data-previous-score", "85");
+    });
+
+    it("shows updating indicator when score is recalculating", () => {
+      const contextValue = createMockContextValue({
+        isScoreUpdating: true,
+      });
+
+      render(
+        <WorkshopWrapper contextValue={contextValue}>
+          <WorkshopHeader />
+        </WorkshopWrapper>
+      );
+
+      const scoreDisplay = screen.getByTestId("score-display");
+      expect(scoreDisplay).toHaveAttribute("data-is-updating", "true");
+      expect(screen.getByTestId("score-updating")).toBeInTheDocument();
     });
   });
 });

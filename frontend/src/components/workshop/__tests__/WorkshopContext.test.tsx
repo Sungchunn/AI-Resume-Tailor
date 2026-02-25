@@ -91,7 +91,7 @@ describe("workshopReducer", () => {
 
       const state = workshopReducer(initialState, {
         type: "INIT_DATA",
-        payload: resumeWithoutStyle as TailoredResumeFullResponse,
+        payload: resumeWithoutStyle as unknown as TailoredResumeFullResponse,
       });
 
       expect(state.styleSettings).toEqual(DEFAULT_STYLE);
@@ -105,7 +105,7 @@ describe("workshopReducer", () => {
 
       const state = workshopReducer(initialState, {
         type: "INIT_DATA",
-        payload: resumeWithoutOrder as TailoredResumeFullResponse,
+        payload: resumeWithoutOrder as unknown as TailoredResumeFullResponse,
       });
 
       expect(state.sectionOrder).toEqual(DEFAULT_SECTION_ORDER);
