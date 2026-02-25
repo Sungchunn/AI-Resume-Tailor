@@ -66,7 +66,7 @@ export interface WorkshopContextValue {
   updateContent: (content: Partial<TailoredContent>) => void;
   updateStyle: (style: Partial<ResumeStyle>) => void;
   runATSAnalysis: () => Promise<void>;
-  generateAISuggestions: (prompt: string) => Promise<void>;
+  generateAISuggestions: (prompt: string, focusSections?: string[]) => Promise<void>;
 }
 
 // Default values

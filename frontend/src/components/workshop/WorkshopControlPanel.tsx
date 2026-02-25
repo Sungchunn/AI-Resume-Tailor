@@ -3,43 +3,13 @@
 import { useCallback } from "react";
 import { useWorkshop } from "./WorkshopContext";
 import type { WorkshopTab } from "./WorkshopContext";
-import { AIRewritePanel } from "./panels/AIRewritePanel";
-import { ContentEditor } from "@/components/editor/ContentEditor";
+import { AIRewritePanel, EditorPanel } from "./panels";
 import { StyleControlsPanel, DEFAULT_STYLE } from "@/components/editor/StyleControlsPanel";
-import type { TailoredContent, ResumeStyle } from "@/lib/api/types";
-
-// Editor Tab - wraps ContentEditor with context adapters
-function EditorTab() {
-  const { state, updateContent, dispatch } = useWorkshop();
-
-  const handleContentChange = useCallback(
-    (content: TailoredContent) => {
-      dispatch({ type: "SET_CONTENT", payload: content });
-    },
-    [dispatch]
-  );
-
-  const handleSectionFocus = useCallback(
-    (section: string) => {
-      dispatch({ type: "SET_ACTIVE_SECTION", payload: section });
-    },
-    [dispatch]
-  );
-
-  return (
-    <ContentEditor
-      content={state.content}
-      sectionOrder={state.sectionOrder}
-      onChange={handleContentChange}
-      activeSection={state.activeSection}
-      onSectionFocus={handleSectionFocus}
-    />
-  );
-}
+import type { ResumeStyle } from "@/lib/api/types";
 
 // Style Tab - wraps StyleControlsPanel with context adapters
 function StyleTab() {
-  const { state, updateStyle, dispatch } = useWorkshop();
+  const { state, dispatch } = useWorkshop();
 
   const handleStyleChange = useCallback(
     (style: ResumeStyle) => {
@@ -75,7 +45,7 @@ export function WorkshopControlPanel() {
       case "ai-rewrite":
         return <AIRewritePanel />;
       case "editor":
-        return <EditorTab />;
+        return <EditorPanel />;
       case "style":
         return <StyleTab />;
       default:

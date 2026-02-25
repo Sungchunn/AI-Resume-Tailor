@@ -118,8 +118,8 @@ export function WorkshopProvider({ tailoredId, children }: WorkshopProviderProps
   // Generate AI suggestions based on a custom prompt
   // TODO: Connect to backend AI endpoint when available
   const generateAISuggestions = useCallback(
-    async (prompt: string) => {
-      console.log("[AI Rewrite] Generating suggestions with prompt:", prompt);
+    async (prompt: string, focusSections?: string[]) => {
+      console.log("[AI Rewrite] Generating suggestions with prompt:", prompt, "focus:", focusSections);
 
       // For now, show a placeholder message since the backend endpoint
       // for custom AI prompts may not exist yet
