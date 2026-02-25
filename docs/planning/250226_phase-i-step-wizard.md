@@ -1,7 +1,7 @@
 # Phase I: Step-by-Step Wizard Flow
 
 **Created**: February 25, 2026
-**Status**: Ready for Implementation
+**Status**: Complete
 **Dependencies**: Phases A-H (core workshop components)
 **Priority**: P2
 **Next Phase**: Phase J (Polish and Animations)
@@ -1092,17 +1092,17 @@ test("remembers completion on refresh", async ({ page }) => {
 
 ## Acceptance Criteria
 
-- [ ] Wizard shows on first visit to workshop (with job)
-- [ ] Three steps display with correct content
-- [ ] Progress indicator shows current and completed steps
-- [ ] User can navigate back to previous steps
-- [ ] "Skip to Workshop" closes wizard at any point
-- [ ] Section selection in Step 2 updates projected score
-- [ ] Progress persists if user leaves mid-wizard
-- [ ] Completed flag prevents wizard from showing again
-- [ ] "Restart Guide" button available in workshop header
-- [ ] Mobile-responsive overlay layout
-- [ ] Keyboard accessible (Tab, Enter, Escape)
+- [x] Wizard shows on first visit to workshop (with job)
+- [x] Three steps display with correct content
+- [x] Progress indicator shows current and completed steps
+- [x] User can navigate back to previous steps
+- [x] "Skip to Workshop" closes wizard at any point
+- [x] Section selection in Step 2 updates projected score
+- [x] Progress persists if user leaves mid-wizard
+- [x] Completed flag prevents wizard from showing again
+- [x] "Restart Guide" button available in workshop header
+- [x] Mobile-responsive overlay layout
+- [x] Keyboard accessible (Tab, Enter, Escape)
 
 ---
 

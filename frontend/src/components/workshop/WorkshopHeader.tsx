@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronLeftIcon } from "@/components/icons";
 import { useWorkshop } from "./WorkshopContext";
+import { useWizardOptional } from "./wizard";
 import { MatchScoreBadge } from "./MatchScoreBadge";
 import { ScoreDisplay } from "./ScoreDisplay";
 import ExportDialog from "@/components/export/ExportDialog";
@@ -14,6 +15,7 @@ interface WorkshopHeaderProps {
 
 export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
   const { state, save } = useWorkshop();
+  const wizard = useWizardOptional();
   const [showExportDialog, setShowExportDialog] = useState(false);
 
   const title = state.tailoredResume?.tailored_content
@@ -64,6 +66,16 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
           <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
             Unsaved changes
           </span>
+        )}
+
+        {/* Restart Guide button - only show when wizard was previously completed and has job */}
+        {wizard?.state.hasCompletedBefore && hasJobId && !compact && (
+          <button
+            onClick={wizard.resetWizard}
+            className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+          >
+            Restart Guide
+          </button>
         )}
 
         <button
