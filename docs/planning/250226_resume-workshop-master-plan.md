@@ -82,7 +82,7 @@ This document serves as the **master index** for upgrading the Resume Tailor app
 | **B** | [Workshop Page Layout](#phase-b-workshop-page-layout) | P0 | Phase A | Medium | |
 | **C** | [Match Score Dashboard](#phase-c-match-score-dashboard) | P0 | None | Medium | |
 | **D** | [Three-Tab Control Panel](#phase-d-three-tab-control-panel) | P0 | Phase B | Low | |
-| **E** | [AI Rewrite Panel](#phase-e-ai-rewrite-panel) | P1 | Phase D | Medium | |
+| **E** | [AI Rewrite Panel](#phase-e-ai-rewrite-panel) | P1 | Phase D | Medium | **COMPLETE** |
 | **F** | [Section-Based Editor](#phase-f-section-based-editor) | P1 | Phase D | High | |
 | **G** | [Style Controls Panel](#phase-g-style-controls-panel) | P1 | Phase D | Medium | +Template thumbnails ↑ |
 | **H** | [Real-Time Score Updates](#phase-h-real-time-score-updates) | P2 | Phase C | Medium | |
@@ -359,11 +359,11 @@ frontend/src/components/workshop/panels/
 
 ### Phase E Acceptance Criteria
 
-- [ ] Suggestions display with accept/reject
-- [ ] Change summary shows at top
-- [ ] Bulk actions work
-- [ ] Impact levels color-coded
-- [ ] Free-form AI input sends requests
+- [x] Suggestions display with accept/reject
+- [x] Change summary shows at top
+- [x] Bulk actions work
+- [x] Impact levels color-coded
+- [x] Free-form AI input sends requests
 
 ---
 
