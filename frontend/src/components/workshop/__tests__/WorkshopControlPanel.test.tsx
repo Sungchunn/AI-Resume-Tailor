@@ -5,50 +5,23 @@ import { WorkshopContext, type WorkshopContextValue, type WorkshopState, DEFAULT
 import type { ReactNode } from "react";
 
 // Mock the panel components
-vi.mock("../panels/AIRewritePanel", () => ({
+vi.mock("../panels", () => ({
   AIRewritePanel: () => <div data-testid="ai-rewrite-panel">AI Rewrite Panel Content</div>,
+  EditorPanel: () => <div data-testid="editor-panel">Editor Panel Content</div>,
 }));
 
-vi.mock("@/components/editor/ContentEditor", () => ({
-  ContentEditor: ({ content, onChange, activeSection, onSectionFocus }: {
-    content: unknown;
-    onChange: (content: unknown) => void;
-    activeSection?: string;
-    onSectionFocus?: (section: string) => void;
-  }) => (
-    <div
-      data-testid="content-editor"
-      data-active-section={activeSection}
-      onClick={() => onSectionFocus?.("experience")}
-    >
-      Content Editor
+vi.mock("../panels/style/StylePanel", () => ({
+  StylePanel: () => (
+    <div data-testid="style-panel">
+      <button>Reset Style</button>
+      Style Panel Content
     </div>
   ),
 }));
 
-vi.mock("@/components/editor/StyleControlsPanel", () => ({
-  StyleControlsPanel: ({ style, onChange, onReset }: {
-    style: unknown;
-    onChange: (style: unknown) => void;
-    onReset: () => void;
-  }) => (
-    <div data-testid="style-controls-panel">
-      <button onClick={onReset}>Reset Style</button>
-      Style Controls Panel
-    </div>
-  ),
-  DEFAULT_STYLE: {
-    font_family: "Arial",
-    font_size_body: 11,
-    font_size_heading: 18,
-    font_size_subheading: 12,
-    margin_top: 0.75,
-    margin_bottom: 0.75,
-    margin_left: 0.75,
-    margin_right: 0.75,
-    line_spacing: 1.4,
-    section_spacing: 16,
-  },
+// Mock useReducedMotion hook
+vi.mock("../hooks/useReducedMotion", () => ({
+  useReducedMotion: () => true, // Disable animations for testing
 }));
 
 // Helper to create mock context value
@@ -91,6 +64,10 @@ const createMockContextValue = (overrides: Partial<WorkshopState> = {}): Worksho
     updateStyle: vi.fn(),
     runATSAnalysis: vi.fn(),
     generateAISuggestions: vi.fn(),
+    canUndo: false,
+    canRedo: false,
+    undo: vi.fn(),
+    redo: vi.fn(),
   };
 };
 
@@ -199,8 +176,8 @@ describe("WorkshopControlPanel", () => {
       );
 
       expect(screen.getByTestId("ai-rewrite-panel")).toBeInTheDocument();
-      expect(screen.queryByTestId("content-editor")).not.toBeInTheDocument();
-      expect(screen.queryByTestId("style-controls-panel")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("editor-panel")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("style-panel")).not.toBeInTheDocument();
     });
 
     it("renders Editor panel when editor tab is active", () => {
@@ -212,9 +189,9 @@ describe("WorkshopControlPanel", () => {
         </WorkshopWrapper>
       );
 
-      expect(screen.getByTestId("content-editor")).toBeInTheDocument();
+      expect(screen.getByTestId("editor-panel")).toBeInTheDocument();
       expect(screen.queryByTestId("ai-rewrite-panel")).not.toBeInTheDocument();
-      expect(screen.queryByTestId("style-controls-panel")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("style-panel")).not.toBeInTheDocument();
     });
 
     it("renders Style panel when style tab is active", () => {
@@ -226,9 +203,9 @@ describe("WorkshopControlPanel", () => {
         </WorkshopWrapper>
       );
 
-      expect(screen.getByTestId("style-controls-panel")).toBeInTheDocument();
+      expect(screen.getByTestId("style-panel")).toBeInTheDocument();
       expect(screen.queryByTestId("ai-rewrite-panel")).not.toBeInTheDocument();
-      expect(screen.queryByTestId("content-editor")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("editor-panel")).not.toBeInTheDocument();
     });
   });
 
@@ -286,7 +263,7 @@ describe("WorkshopControlPanel", () => {
   });
 
   describe("Editor tab integration", () => {
-    it("passes activeSection to ContentEditor", () => {
+    it("renders EditorPanel when editor tab is active", () => {
       const contextValue = createMockContextValue({
         activeTab: "editor",
         activeSection: "experience",
@@ -298,43 +275,12 @@ describe("WorkshopControlPanel", () => {
         </WorkshopWrapper>
       );
 
-      const editor = screen.getByTestId("content-editor");
-      expect(editor).toHaveAttribute("data-active-section", "experience");
-    });
-
-    it("dispatches SET_ACTIVE_SECTION on section focus", () => {
-      const contextValue = createMockContextValue({ activeTab: "editor" });
-
-      render(
-        <WorkshopWrapper contextValue={contextValue}>
-          <WorkshopControlPanel />
-        </WorkshopWrapper>
-      );
-
-      fireEvent.click(screen.getByTestId("content-editor"));
-
-      expect(contextValue.dispatch).toHaveBeenCalledWith({
-        type: "SET_ACTIVE_SECTION",
-        payload: "experience",
-      });
-    });
-
-    it("dispatches SET_CONTENT on content change", () => {
-      const contextValue = createMockContextValue({ activeTab: "editor" });
-
-      render(
-        <WorkshopWrapper contextValue={contextValue}>
-          <WorkshopControlPanel />
-        </WorkshopWrapper>
-      );
-
-      // Content editor is mocked, but we verify it receives the onChange callback
-      expect(screen.getByTestId("content-editor")).toBeInTheDocument();
+      expect(screen.getByTestId("editor-panel")).toBeInTheDocument();
     });
   });
 
   describe("Style tab integration", () => {
-    it("dispatches SET_STYLE to reset when reset is clicked", () => {
+    it("renders StylePanel when style tab is active", () => {
       const contextValue = createMockContextValue({ activeTab: "style" });
 
       render(
@@ -343,12 +289,7 @@ describe("WorkshopControlPanel", () => {
         </WorkshopWrapper>
       );
 
-      fireEvent.click(screen.getByText("Reset Style"));
-
-      expect(contextValue.dispatch).toHaveBeenCalledWith({
-        type: "SET_STYLE",
-        payload: expect.any(Object),
-      });
+      expect(screen.getByTestId("style-panel")).toBeInTheDocument();
     });
   });
 

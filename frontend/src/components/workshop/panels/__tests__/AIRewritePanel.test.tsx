@@ -218,6 +218,10 @@ const renderWithContext = (
     updateStyle: vi.fn(),
     runATSAnalysis: vi.fn().mockResolvedValue(undefined),
     generateAISuggestions: vi.fn().mockResolvedValue(undefined),
+    canUndo: false,
+    canRedo: false,
+    undo: vi.fn(),
+    redo: vi.fn(),
     ...contextOverrides,
   };
 

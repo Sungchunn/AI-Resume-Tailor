@@ -62,6 +62,10 @@ const createMockContextValue = (
     updateStyle: vi.fn(),
     runATSAnalysis: vi.fn(),
     generateAISuggestions: vi.fn(),
+    canUndo: false,
+    canRedo: false,
+    undo: vi.fn(),
+    redo: vi.fn(),
   };
 };
 
