@@ -537,6 +537,7 @@ export interface ResumeStyle {
   margin_right?: number;
   line_spacing?: number;
   section_spacing?: number;
+  entry_spacing?: number;
 }
 
 export interface PDFPreviewRequest {
