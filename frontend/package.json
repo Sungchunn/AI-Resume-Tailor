@@ -25,6 +25,7 @@
     "@tiptap/react": "^3.20.0",
     "@tiptap/starter-kit": "^3.20.0",
     "autoprefixer": "^10.4.24",
+    "framer-motion": "^12.34.3",
     "next": "15.1.0",
     "openapi-fetch": "^0.17.0",
     "postcss": "^8.5.6",
