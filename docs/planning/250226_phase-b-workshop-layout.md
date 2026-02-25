@@ -601,7 +601,7 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
         <h1
           className={cn(
             "font-semibold truncate",
-            compact ? "text-sm max-w-[150px]" : "text-lg max-w-xs"
+            compact ? "text-sm max-w-37.5" : "text-lg max-w-xs"
           )}
         >
           {title}
@@ -855,7 +855,7 @@ useEffect(() => {
 ## Edge Cases to Handle
 
 | Edge Case | Solution |
-|-----------|----------|
+| --------- | -------- |
 | Concurrent edits | Compare `updated_at` on save, warn if stale |
 | Network errors | Show retry button on save failure |
 | Large resumes | Virtual scrolling for long experience lists |
