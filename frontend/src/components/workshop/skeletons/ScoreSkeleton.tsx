@@ -1,0 +1,41 @@
+"use client";
+
+import type { ScoreSkeletonProps } from "./types";
+
+const sizeClasses = {
+  sm: { container: "h-2", number: "w-12 h-4" },
+  md: { container: "h-3", number: "w-16 h-6" },
+  lg: { container: "h-4", number: "w-20 h-8" },
+};
+
+/**
+ * Skeleton loading state for the score gauge component.
+ */
+export function ScoreSkeleton({
+  size = "md",
+  className = "",
+  animate = true,
+}: ScoreSkeletonProps) {
+  const classes = sizeClasses[size];
+  const animateClass = animate ? "animate-pulse" : "";
+
+  return (
+    <div className={`space-y-2 ${className} ${animateClass}`}>
+      {/* Score number */}
+      <div className="flex items-baseline gap-2">
+        <div className={`${classes.number} bg-gray-200 rounded`} />
+        <div className="w-8 h-4 bg-gray-200 rounded" />
+      </div>
+
+      {/* Progress bar */}
+      <div
+        className={`w-full bg-gray-200 rounded-full overflow-hidden ${classes.container}`}
+      >
+        <div className="h-full w-2/3 bg-gray-300 rounded-full" />
+      </div>
+
+      {/* Label */}
+      <div className="w-24 h-4 bg-gray-200 rounded" />
+    </div>
+  );
+}
