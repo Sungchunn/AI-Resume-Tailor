@@ -61,7 +61,7 @@ export function AutoFitToggle({
 
       {/* Show reductions when fitted */}
       {enabled && status.state === "fitted" && reductions.length > 0 && (
-        <div className="text-xs text-gray-500 bg-green-50 border border-green-100 rounded-md p-2">
+        <div className="text-xs text-muted-foreground bg-green-50 border border-green-100 rounded-md p-2">
           <span className="font-medium text-green-700">Adjustments made:</span>
           <ul className="mt-1 space-y-0.5 text-green-600">
             {reductions.map((r, idx) => (

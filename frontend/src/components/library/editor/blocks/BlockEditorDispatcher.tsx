@@ -166,7 +166,7 @@ export function BlockEditorDispatcher({ block }: BlockEditorDispatcherProps) {
       // Type-safe exhaustive check
       const _exhaustiveCheck: never = block;
       return (
-        <div className="text-sm text-gray-500 italic">
+        <div className="text-sm text-muted-foreground italic">
           No editor available for this block type
         </div>
       );

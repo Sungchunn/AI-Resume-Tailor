@@ -59,8 +59,8 @@ export function ContactEditor({ content, onChange }: ContactEditorProps) {
       </div>
 
       {/* Links Section */}
-      <div className="pt-2 border-t border-gray-100">
-        <p className="text-xs font-medium text-gray-500 mb-3">Professional Links</p>
+      <div className="pt-2 border-t border-border">
+        <p className="text-xs font-medium text-muted-foreground mb-3">Professional Links</p>
         <div className="grid grid-cols-1 gap-4">
           <FormInput
             label="LinkedIn"
