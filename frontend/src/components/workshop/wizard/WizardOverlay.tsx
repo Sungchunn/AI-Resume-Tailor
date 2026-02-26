@@ -63,7 +63,7 @@ export function WizardOverlay({ title, onSkip, children }: WizardOverlayProps) {
 
   return (
     <div
-      className="fixed inset-0 bg-gray-900/50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-foreground/50 flex items-center justify-center z-50"
       role="dialog"
       aria-modal="true"
       aria-labelledby="wizard-title"
@@ -72,16 +72,16 @@ export function WizardOverlay({ title, onSkip, children }: WizardOverlayProps) {
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col mx-4 outline-none"
+        className="bg-card rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col mx-4 outline-none"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 id="wizard-title" className="text-lg font-semibold text-gray-900">
+          <h2 id="wizard-title" className="text-lg font-semibold text-foreground">
             {title}
           </h2>
           <button
             onClick={onSkip}
-            className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
+            className="text-sm text-muted-foreground hover:text-foreground/80 flex items-center gap-1 transition-colors"
           >
             Skip to Workshop
             <ArrowRightIcon className="w-4 h-4" />

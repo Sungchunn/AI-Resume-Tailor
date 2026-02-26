@@ -153,7 +153,7 @@ export function ReviewStep({
                 ? "bg-green-50 border-green-200"
                 : finalScore >= 60
                   ? "bg-yellow-50 border-yellow-200"
-                  : "bg-muted border-gray-200"
+                  : "bg-muted border-border"
             }`}
           >
             <div className="flex items-center justify-between">
@@ -201,7 +201,7 @@ export function ReviewStep({
         <div className="flex items-center gap-3">
           <button
             onClick={onOpenWorkshop}
-            className="px-4 py-2 border border-gray-300 text-foreground/80 font-medium rounded-lg hover:bg-muted transition-colors"
+            className="px-4 py-2 border border-input text-foreground/80 font-medium rounded-lg hover:bg-muted transition-colors"
           >
             Open Workshop
           </button>
