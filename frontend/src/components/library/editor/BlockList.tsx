@@ -151,11 +151,11 @@ export function BlockList({
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <span className="text-sm font-medium text-foreground/80">
+      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border">
+        <span className="text-sm font-medium text-foreground/80 truncate shrink-0">
           Sections ({blocks.length})
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {blocks.length > 0 && (
             <button
               onClick={handleToggleAll}
@@ -249,11 +249,11 @@ function EmptyState({
   onAdd: (type: ResumeBlockType) => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-        <Plus className="w-8 h-8 text-muted-foreground/60" />
+    <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+        <Plus className="w-6 h-6 text-muted-foreground/60" />
       </div>
-      <p className="text-sm text-muted-foreground mb-4 max-w-xs">{message}</p>
+      <p className="text-sm text-muted-foreground mb-4 text-center">{message}</p>
       <BlockTypeMenu
         existingTypes={[]}
         onAdd={onAdd}

@@ -27,12 +27,12 @@ export function AutoFitToggle({
   return (
     <div className="space-y-2">
       {/* Toggle Row */}
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <label className="text-sm font-medium text-foreground/80">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <label className="text-sm font-medium text-foreground/80 truncate block">
             Fit to One Page
           </label>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">
             Automatically adjust styles to fit content
           </p>
         </div>

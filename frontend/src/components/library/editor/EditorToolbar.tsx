@@ -185,14 +185,14 @@ function StyleTab({
 
       {/* Preset Selector */}
       <div className="space-y-2">
-        <p className="text-xs text-muted-foreground">Choose a preset style:</p>
+        <p className="text-xs text-muted-foreground truncate">Choose a preset style:</p>
         <div className="grid grid-cols-2 gap-2">
           {presets.map((preset) => (
             <button
               key={preset.name}
               onClick={() => onApplyPreset(preset.name)}
               disabled={fitToOnePage}
-              className={`p-2.5 rounded-lg border-2 transition-all text-left ${
+              className={`p-2.5 rounded-lg border-2 transition-all text-left min-w-0 ${
                 activePreset?.name === preset.name
                   ? "border-primary bg-primary/10"
                   : fitToOnePage
@@ -200,10 +200,10 @@ function StyleTab({
                     : "border-border hover:border-input hover:bg-accent"
               }`}
             >
-              <span className="block text-sm font-medium text-foreground">
+              <span className="block text-sm font-medium text-foreground truncate">
                 {preset.label}
               </span>
-              <span className="block text-[11px] text-muted-foreground mt-0.5">
+              <span className="block text-[11px] text-muted-foreground mt-0.5 truncate">
                 {preset.description}
               </span>
             </button>

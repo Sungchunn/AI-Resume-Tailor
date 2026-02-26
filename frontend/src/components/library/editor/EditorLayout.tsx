@@ -109,8 +109,8 @@ export function EditorLayout({ resumeId, title }: EditorLayoutProps) {
           {/* Left Panel: Editor */}
           {!isPreviewFullscreen && (
             <>
-              <Panel defaultSize={45} minSize={30} maxSize={60}>
-                <div className="h-full flex flex-col bg-card border-r border-border">
+              <Panel defaultSize={45} minSize={25} maxSize={60}>
+                <div className="h-full flex flex-col bg-card border-r border-border min-w-[320px]">
                   {/* Toolbar */}
                   <EditorToolbar
                     isPreviewFullscreen={isPreviewFullscreen}
