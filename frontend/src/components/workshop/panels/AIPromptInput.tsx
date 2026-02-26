@@ -41,10 +41,10 @@ export function AIPromptInput({
   );
 
   return (
-    <div className="border-t border-gray-200 bg-gray-50 p-4 space-y-3">
+    <div className="border-t border-border bg-muted p-4 space-y-3">
       {/* Quick Prompts */}
       <div className="space-y-2">
-        <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Quick Actions
         </div>
         <div className="flex flex-wrap gap-2">
@@ -53,7 +53,7 @@ export function AIPromptInput({
               key={item.label}
               onClick={() => handleQuickPrompt(item.prompt)}
               disabled={isLoading}
-              className="px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 text-xs font-medium rounded-full border border-border bg-card text-foreground/80 hover:bg-accent hover:border-input disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {item.label}
             </button>
@@ -63,7 +63,7 @@ export function AIPromptInput({
 
       {/* Free-form Input */}
       <form onSubmit={handleSubmit} className="space-y-2">
-        <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Custom Request
         </div>
         <div className="flex gap-2">
@@ -73,7 +73,7 @@ export function AIPromptInput({
             onChange={(e) => setPrompt(e.target.value)}
             placeholder={placeholder}
             disabled={isLoading}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="flex-1 px-3 py-2 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-muted disabled:cursor-not-allowed"
           />
           <button
             type="submit"
@@ -123,7 +123,7 @@ export function AIPromptInput({
             )}
           </button>
         </div>
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-muted-foreground/60">
           Describe how you want AI to improve your resume
         </p>
       </form>

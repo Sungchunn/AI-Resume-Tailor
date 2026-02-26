@@ -17,7 +17,7 @@ export function BulkActions({
 
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-xs text-gray-500">
+      <span className="text-xs text-muted-foreground">
         {suggestionCount} suggestion{suggestionCount !== 1 ? "s" : ""} pending
       </span>
       <div className="flex gap-2">

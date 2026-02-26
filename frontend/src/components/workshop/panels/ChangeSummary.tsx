@@ -66,10 +66,10 @@ export function ChangeSummary({
             </svg>
           </div>
           <div>
-            <div className="text-sm font-medium text-gray-900">
+            <div className="text-sm font-medium text-foreground">
               See What's Changed
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-muted-foreground">
               {acceptedCount > 0 && (
                 <span className="text-green-600">
                   {acceptedCount} applied
@@ -86,7 +86,7 @@ export function ChangeSummary({
           </div>
         </div>
         <ChevronDownIcon
-          className={`w-5 h-5 text-gray-400 transition-transform ${
+          className={`w-5 h-5 text-muted-foreground/60 transition-transform ${
             isExpanded ? "rotate-180" : ""
           }`}
         />
@@ -100,7 +100,7 @@ export function ChangeSummary({
           {/* Impact Breakdown */}
           {suggestions.length > 0 && (
             <div className="space-y-2">
-              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Pending Changes by Impact
               </div>
               <div className="flex gap-2">
@@ -117,7 +117,7 @@ export function ChangeSummary({
                   </span>
                 )}
                 {lowImpact.length > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-muted text-muted-foreground">
                     <span className="w-2 h-2 rounded-full bg-gray-400" />
                     {lowImpact.length} Low
                   </span>
@@ -129,17 +129,17 @@ export function ChangeSummary({
           {/* Section Breakdown */}
           {Object.keys(bySectionCount).length > 0 && (
             <div className="space-y-2">
-              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Sections Affected
               </div>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(bySectionCount).map(([section, count]) => (
                   <span
                     key={section}
-                    className="inline-flex items-center px-2 py-1 text-xs rounded bg-white border border-gray-200 text-gray-700"
+                    className="inline-flex items-center px-2 py-1 text-xs rounded bg-card border border-border text-foreground/80"
                   >
                     {SECTION_LABELS[section] || section}
-                    <span className="ml-1 text-gray-400">({count})</span>
+                    <span className="ml-1 text-muted-foreground/60">({count})</span>
                   </span>
                 ))}
               </div>

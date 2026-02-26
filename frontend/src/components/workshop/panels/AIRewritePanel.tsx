@@ -119,7 +119,7 @@ export function AIRewritePanel() {
     <div className="h-full flex flex-col overflow-hidden">
       {/* Score Summary */}
       {showScoreSummary && (
-        <div className="flex-shrink-0 p-4 border-b border-gray-200">
+        <div className="flex-shrink-0 p-4 border-b border-border">
           <ScoreSummary
             matchScore={tailored.match_score}
             skillMatches={tailored.skill_matches || []}
@@ -130,7 +130,7 @@ export function AIRewritePanel() {
       )}
 
       {/* Change Summary */}
-      <div className="flex-shrink-0 p-4 border-b border-gray-200">
+      <div className="flex-shrink-0 p-4 border-b border-border">
         <ChangeSummary
           suggestions={state.suggestions}
           acceptedCount={acceptedCount}
@@ -140,12 +140,12 @@ export function AIRewritePanel() {
 
       {/* Filter & Bulk Actions */}
       {state.suggestions.length > 0 && (
-        <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 space-y-2">
+        <div className="flex-shrink-0 px-4 py-3 border-b border-border space-y-2">
           {/* Filter */}
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+            className="w-full px-3 py-1.5 text-xs border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
           >
             <option value="all">All Suggestions ({state.suggestions.length})</option>
             <optgroup label="By Impact">
@@ -186,7 +186,7 @@ export function AIRewritePanel() {
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
               <svg
-                className="mx-auto h-12 w-12 text-gray-400"
+                className="mx-auto h-12 w-12 text-muted-foreground/60"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -198,10 +198,10 @@ export function AIRewritePanel() {
                   d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">
+              <h3 className="mt-2 text-sm font-medium text-foreground">
                 {acceptedCount > 0 ? "All suggestions applied!" : "No suggestions yet"}
               </h3>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {acceptedCount > 0
                   ? "Use the AI prompt below to generate more suggestions."
                   : "Use the AI prompt below to get started."}
@@ -214,10 +214,10 @@ export function AIRewritePanel() {
               <div key={section} className="space-y-3">
                 {/* Section Header */}
                 <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-semibold text-gray-700">
+                  <h4 className="text-sm font-semibold text-foreground/80">
                     {SECTION_LABELS[section] || section}
                   </h4>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-muted-foreground/60">
                     ({suggestions.length})
                   </span>
                 </div>
