@@ -205,6 +205,7 @@ export interface ResumeBlock<T extends ResumeBlockType = ResumeBlockType> {
   content: BlockContentMap[T];
   order: number;
   isCollapsed?: boolean;
+  isHidden?: boolean; // Controls visibility in preview/export
 }
 
 // Type-specific block interfaces for convenience
@@ -277,6 +278,7 @@ export type BlockEditorAction =
   | { type: "UPDATE_BLOCK"; payload: { id: string; content: BlockContent } }
   | { type: "SET_ACTIVE_BLOCK"; payload: string | null }
   | { type: "TOGGLE_COLLAPSE"; payload: { id: string } }
+  | { type: "TOGGLE_VISIBILITY"; payload: { id: string } }
   | { type: "SET_STYLE"; payload: Partial<BlockEditorStyle> }
   | { type: "SET_FIT_TO_ONE_PAGE"; payload: boolean }
   | { type: "SET_DIRTY"; payload: boolean }

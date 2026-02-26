@@ -108,6 +108,20 @@ export function blockEditorReducer(
       };
     }
 
+    case "TOGGLE_VISIBILITY": {
+      const { id } = action.payload;
+      const newBlocks = state.blocks.map((block) =>
+        block.id === id
+          ? ({ ...block, isHidden: !block.isHidden } as AnyResumeBlock)
+          : block
+      );
+      return {
+        ...state,
+        blocks: newBlocks,
+        isDirty: true,
+      };
+    }
+
     case "SET_STYLE":
       return {
         ...state,
@@ -187,6 +201,11 @@ export const blockEditorActions = {
 
   toggleCollapse: (id: string): BlockEditorAction => ({
     type: "TOGGLE_COLLAPSE",
+    payload: { id },
+  }),
+
+  toggleVisibility: (id: string): BlockEditorAction => ({
+    type: "TOGGLE_VISIBILITY",
     payload: { id },
   }),
 

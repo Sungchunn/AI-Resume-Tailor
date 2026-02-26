@@ -464,6 +464,8 @@ export interface JobListingFilters {
   region?: string;
   country?: string;
   city?: string;
+  exclude_city?: string;
+  exclude_country?: string;
   company_name?: string;
   seniority?: string;
   job_function?: string;

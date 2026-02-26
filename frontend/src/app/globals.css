@@ -163,69 +163,74 @@
     @apply bg-background text-foreground antialiased;
   }
 
-  /* Custom scrollbar styling - Light mode */
+  /* Custom scrollbar styling - minimal, auto-hide style */
   * {
     scrollbar-width: thin;
-    scrollbar-color: oklch(0.7 0 0) oklch(0.95 0 0);
+    scrollbar-color: oklch(0.6 0 0 / 40%) transparent;
   }
 
   *::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
 
   *::-webkit-scrollbar-track {
-    background: oklch(0.95 0 0);
-    border-radius: 4px;
+    background: transparent;
   }
 
   *::-webkit-scrollbar-thumb {
-    background-color: oklch(0.7 0 0);
-    border-radius: 4px;
+    background-color: oklch(0.5 0 0 / 30%);
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background-color: oklch(0.6 0 0);
+    background-color: oklch(0.5 0 0 / 60%);
   }
 
   *::-webkit-scrollbar-corner {
     background: transparent;
   }
+
+  /* Show scrollbar more prominently on hover */
+  *:hover::-webkit-scrollbar-thumb {
+    background-color: oklch(0.5 0 0 / 50%);
+  }
 }
 
 /* Dark mode scrollbar (manual class) */
 :root.dark * {
-  scrollbar-color: oklch(0.4 0 0) oklch(0.2 0 0);
-}
-
-:root.dark *::-webkit-scrollbar-track {
-  background: oklch(0.2 0 0);
+  scrollbar-color: oklch(0.6 0 0 / 40%) transparent;
 }
 
 :root.dark *::-webkit-scrollbar-thumb {
-  background-color: oklch(0.4 0 0);
+  background-color: oklch(0.6 0 0 / 30%);
 }
 
 :root.dark *::-webkit-scrollbar-thumb:hover {
-  background-color: oklch(0.5 0 0);
+  background-color: oklch(0.6 0 0 / 60%);
+}
+
+:root.dark *:hover::-webkit-scrollbar-thumb {
+  background-color: oklch(0.6 0 0 / 50%);
 }
 
 /* Dark mode scrollbar (system preference fallback) */
 @media (prefers-color-scheme: dark) {
   :root:not(.light):not(.dark) * {
-    scrollbar-color: oklch(0.4 0 0) oklch(0.2 0 0);
-  }
-
-  :root:not(.light):not(.dark) *::-webkit-scrollbar-track {
-    background: oklch(0.2 0 0);
+    scrollbar-color: oklch(0.6 0 0 / 40%) transparent;
   }
 
   :root:not(.light):not(.dark) *::-webkit-scrollbar-thumb {
-    background-color: oklch(0.4 0 0);
+    background-color: oklch(0.6 0 0 / 30%);
   }
 
   :root:not(.light):not(.dark) *::-webkit-scrollbar-thumb:hover {
-    background-color: oklch(0.5 0 0);
+    background-color: oklch(0.6 0 0 / 60%);
+  }
+
+  :root:not(.light):not(.dark) *:hover::-webkit-scrollbar-thumb {
+    background-color: oklch(0.6 0 0 / 50%);
   }
 }
 

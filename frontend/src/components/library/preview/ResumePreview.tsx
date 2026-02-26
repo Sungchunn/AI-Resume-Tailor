@@ -34,9 +34,12 @@ export function ResumePreview({
   // Compute CSS styles from BlockEditorStyle
   const computedStyles = useMemo(() => computePreviewStyles(style), [style]);
 
-  // Sort blocks by order
+  // Sort blocks by order and filter out hidden blocks
   const sortedBlocks = useMemo(
-    () => [...blocks].sort((a, b) => a.order - b.order),
+    () =>
+      [...blocks]
+        .filter((block) => !block.isHidden)
+        .sort((a, b) => a.order - b.order),
     [blocks]
   );
 
@@ -60,7 +63,7 @@ export function ResumePreview({
     return () => resizeObserver.disconnect();
   }, [externalScale]);
 
-  // Empty state
+  // Empty state - no blocks at all
   if (blocks.length === 0) {
     return (
       <div
@@ -80,6 +83,32 @@ export function ResumePreview({
           <div className="flex flex-col items-center justify-center h-64 text-muted-foreground/60">
             <p className="text-lg">No content yet</p>
             <p className="text-sm mt-1">Add sections to build your resume</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // All sections hidden state
+  if (sortedBlocks.length === 0) {
+    return (
+      <div
+        ref={containerRef}
+        className={`resume-preview-container flex flex-col items-center ${className ?? ""}`}
+      >
+        <div
+          className={`bg-card ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
+          style={{
+            width: PAGE_DIMENSIONS.WIDTH,
+            minHeight: PAGE_DIMENSIONS.HEIGHT,
+            transform: `scale(${scale})`,
+            transformOrigin: "top center",
+            padding: computedStyles.paddingTop,
+          }}
+        >
+          <div className="flex flex-col items-center justify-center h-64 text-muted-foreground/60">
+            <p className="text-lg">All sections hidden</p>
+            <p className="text-sm mt-1">Toggle visibility in the Sections tab</p>
           </div>
         </div>
       </div>
@@ -132,7 +161,10 @@ export function ResumePreviewStandalone({
   const computedStyles = useMemo(() => computePreviewStyles(style), [style]);
 
   const sortedBlocks = useMemo(
-    () => [...blocks].sort((a, b) => a.order - b.order),
+    () =>
+      [...blocks]
+        .filter((block) => !block.isHidden)
+        .sort((a, b) => a.order - b.order),
     [blocks]
   );
 

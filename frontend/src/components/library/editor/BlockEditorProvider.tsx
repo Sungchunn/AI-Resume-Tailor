@@ -216,6 +216,10 @@ export function BlockEditorProvider({
     dispatch(blockEditorActions.toggleCollapse(id));
   }, []);
 
+  const toggleBlockVisibility = useCallback((id: string) => {
+    dispatch(blockEditorActions.toggleVisibility(id));
+  }, []);
+
   // Style operations
   const updateStyle = useCallback((style: Partial<BlockEditorStyle>) => {
     dispatch(blockEditorActions.setStyle(style));
@@ -300,6 +304,7 @@ export function BlockEditorProvider({
       reorderBlocks,
       setActiveBlock,
       toggleBlockCollapse,
+      toggleBlockVisibility,
       updateStyle,
       applyStylePreset,
       setFitToOnePage,
@@ -323,6 +328,7 @@ export function BlockEditorProvider({
       reorderBlocks,
       setActiveBlock,
       toggleBlockCollapse,
+      toggleBlockVisibility,
       updateStyle,
       applyStylePreset,
       setFitToOnePage,

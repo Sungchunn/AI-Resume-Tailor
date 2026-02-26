@@ -177,6 +177,28 @@ class JobListingRepository:
             city_conditions = [func.lower(JobListing.city) == c for c in cities]
             conditions.append(or_(*city_conditions))
 
+        # Exclude city filter
+        if filters.exclude_city:
+            excluded_cities = [c.strip().lower() for c in filters.exclude_city.split(",")]
+            for excluded_city in excluded_cities:
+                conditions.append(
+                    or_(
+                        JobListing.city.is_(None),
+                        func.lower(JobListing.city) != excluded_city,
+                    )
+                )
+
+        # Exclude country filter
+        if filters.exclude_country:
+            excluded_countries = [c.strip() for c in filters.exclude_country.split(",")]
+            for excluded_country in excluded_countries:
+                conditions.append(
+                    or_(
+                        JobListing.country.is_(None),
+                        ~JobListing.country.ilike(f"%{excluded_country}%"),
+                    )
+                )
+
         # Remote filter
         if filters.is_remote is not None:
             conditions.append(JobListing.is_remote == filters.is_remote)

@@ -121,6 +121,9 @@ async def list_job_listings(
     country: Annotated[str | None, Query(description="Country filter (comma-separated)")] = None,
     # City filter
     city: Annotated[str | None, Query(description="City filter (comma-separated)")] = None,
+    # Exclusion filters
+    exclude_city: Annotated[str | None, Query(description="Cities to exclude (comma-separated)")] = None,
+    exclude_country: Annotated[str | None, Query(description="Countries to exclude (comma-separated)")] = None,
     # Company name filter
     company_name: Annotated[str | None, Query(description="Company name filter")] = None,
     # Seniority filters
@@ -168,6 +171,8 @@ async def list_job_listings(
         region=region,
         country=country,
         city=city,
+        exclude_city=exclude_city,
+        exclude_country=exclude_country,
         company_name=company_name,
         seniority=seniority,
         job_function=job_function,

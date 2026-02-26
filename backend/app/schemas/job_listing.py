@@ -182,6 +182,10 @@ class JobListingFilters(BaseModel):
     # City filter (comma-separated for multi-select)
     city: str | None = None
 
+    # Exclusion filters (comma-separated for multi-select)
+    exclude_city: str | None = None
+    exclude_country: str | None = None
+
     # Company name text search
     company_name: str | None = None
 

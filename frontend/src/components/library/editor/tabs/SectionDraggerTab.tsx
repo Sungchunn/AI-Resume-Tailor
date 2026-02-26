@@ -20,7 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import { GripVertical, Plus, Layers } from "lucide-react";
+import { GripVertical, Plus, Layers, Eye, EyeOff, Trash2 } from "lucide-react";
 import { useBlockEditor } from "../BlockEditorContext";
 import { BlockIcon } from "../BlockIcon";
 import { BlockTypeMenu } from "../BlockTypeMenu";
@@ -42,9 +42,13 @@ export function SectionDraggerTab() {
     addBlock,
     removeBlock,
     setActiveBlock,
+    toggleBlockVisibility,
   } = useBlockEditor();
 
   const { blocks, activeBlockId } = state;
+
+  // Count visible sections
+  const visibleCount = blocks.filter((b) => !b.isHidden).length;
 
   // Track which block is being dragged
   const [draggedBlock, setDraggedBlock] = useState<AnyResumeBlock | null>(null);
@@ -111,7 +115,10 @@ export function SectionDraggerTab() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
           <Layers className="w-4 h-4" />
-          Sections ({blocks.length})
+          <span>Sections</span>
+          <span className="text-muted-foreground font-normal">
+            ({visibleCount}/{blocks.length} visible)
+          </span>
         </h3>
         <BlockTypeMenu
           existingTypes={blocks.map((b) => b.type)}
@@ -141,6 +148,7 @@ export function SectionDraggerTab() {
                     isActive={activeBlockId === block.id}
                     onSelect={() => handleSelectBlock(block.id)}
                     onRemove={() => removeBlock(block.id)}
+                    onToggleVisibility={() => toggleBlockVisibility(block.id)}
                   />
                 ))}
               </div>
@@ -185,18 +193,20 @@ export function SectionDraggerTab() {
 }
 
 /**
- * Sortable section item
+ * Sortable section item with visibility toggle
  */
 function SortableSectionItem({
   block,
   isActive,
   onSelect,
   onRemove,
+  onToggleVisibility,
 }: {
   block: AnyResumeBlock;
   isActive: boolean;
   onSelect: () => void;
   onRemove: () => void;
+  onToggleVisibility: () => void;
 }) {
   const {
     attributes,
@@ -213,6 +223,7 @@ function SortableSectionItem({
   };
 
   const blockInfo = BLOCK_TYPE_INFO[block.type];
+  const isHidden = block.isHidden ?? false;
 
   return (
     <div
@@ -223,14 +234,18 @@ function SortableSectionItem({
           ? "opacity-50 border-primary/40 bg-primary/10"
           : isActive
             ? "border-primary/30 bg-primary/5"
-            : "border-border hover:border-input hover:bg-accent/50"
+            : isHidden
+              ? "border-border/50 bg-muted/30"
+              : "border-border hover:border-input hover:bg-accent/50"
       }`}
     >
       {/* Drag Handle */}
       <button
         {...attributes}
         {...listeners}
-        className="p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+        className={`p-1 cursor-grab active:cursor-grabbing ${
+          isHidden ? "text-muted-foreground/40" : "text-muted-foreground hover:text-foreground"
+        }`}
       >
         <GripVertical className="w-4 h-4" />
       </button>
@@ -240,10 +255,36 @@ function SortableSectionItem({
         onClick={onSelect}
         className="flex-1 flex items-center gap-2 text-left min-w-0"
       >
-        <BlockIcon iconName={blockInfo.icon} className="w-4 h-4 text-muted-foreground shrink-0" />
-        <span className="text-sm font-medium text-foreground truncate">
+        <BlockIcon
+          iconName={blockInfo.icon}
+          className={`w-4 h-4 shrink-0 ${isHidden ? "text-muted-foreground/40" : "text-muted-foreground"}`}
+        />
+        <span
+          className={`text-sm font-medium truncate ${
+            isHidden ? "text-muted-foreground/60 line-through" : "text-foreground"
+          }`}
+        >
           {blockInfo.label}
         </span>
+        {isHidden && (
+          <span className="text-xs text-muted-foreground/50">(hidden)</span>
+        )}
+      </button>
+
+      {/* Visibility Toggle */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleVisibility();
+        }}
+        className={`p-1.5 rounded transition-colors ${
+          isHidden
+            ? "text-muted-foreground/60 hover:text-foreground hover:bg-accent"
+            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+        }`}
+        title={isHidden ? "Show section" : "Hide section"}
+      >
+        {isHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
       </button>
 
       {/* Remove Button */}
@@ -252,10 +293,10 @@ function SortableSectionItem({
           e.stopPropagation();
           onRemove();
         }}
-        className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+        className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
         title="Remove section"
       >
-        <span className="text-xs">×</span>
+        <Trash2 className="w-4 h-4" />
       </button>
     </div>
   );

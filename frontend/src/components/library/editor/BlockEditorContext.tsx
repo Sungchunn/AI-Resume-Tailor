@@ -28,6 +28,7 @@ export interface BlockEditorContextValue {
   reorderBlocks: (activeId: string, overId: string) => void;
   setActiveBlock: (id: string | null) => void;
   toggleBlockCollapse: (id: string) => void;
+  toggleBlockVisibility: (id: string) => void;
 
   // Style operations
   updateStyle: (style: Partial<BlockEditorStyle>) => void;
