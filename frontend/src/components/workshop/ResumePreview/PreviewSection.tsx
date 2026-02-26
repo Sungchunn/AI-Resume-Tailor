@@ -25,7 +25,7 @@ export function PreviewSection({
   const activeStyles = isActive
     ? "ring-2 ring-blue-400 ring-offset-2 bg-blue-50/30"
     : "";
-  const hoverStyles = !isActive && onClick ? "hover:bg-gray-50/50 cursor-pointer" : "";
+  const hoverStyles = !isActive && onClick ? "hover:bg-accent/50 cursor-pointer" : "";
 
   const renderSectionContent = () => {
     switch (section) {
@@ -63,7 +63,7 @@ export function PreviewSection({
       style={{ marginBottom: style.sectionGap }}
     >
       <h2
-        className="font-semibold uppercase tracking-wide border-b border-gray-300 pb-1 mb-2"
+        className="font-semibold uppercase tracking-wide border-b border-input pb-1 mb-2"
         style={{ fontSize: style.subheadingFontSize }}
       >
         {SECTION_TITLES[section] ?? section}
@@ -113,14 +113,14 @@ function ExperienceSection({
               {exp.title}
             </span>
             <span
-              className="text-gray-600"
+              className="text-muted-foreground"
               style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
             >
               {exp.start_date} - {exp.end_date}
             </span>
           </div>
           <div
-            className="text-gray-700"
+            className="text-foreground/80"
             style={{ fontSize: style.bodyFontSize }}
           >
             {exp.company}
@@ -162,7 +162,7 @@ function SkillsSection({
       {skills.map((skill, idx) => (
         <span key={idx}>
           {highlightKeywords(skill, highlightedKeywords)}
-          {idx < skills.length - 1 && <span className="text-gray-400 ml-2">|</span>}
+          {idx < skills.length - 1 && <span className="text-muted-foreground/60 ml-2">|</span>}
         </span>
       ))}
     </div>

@@ -26,7 +26,7 @@ export function PreviewHeader({ contact, style }: PreviewHeaderProps) {
   ].filter(Boolean);
 
   return (
-    <div className="preview-header text-center mb-4 pb-2 border-b border-gray-200">
+    <div className="preview-header text-center mb-4 pb-2 border-b border-border">
       <h1
         className="font-bold tracking-tight"
         style={{ fontSize: style.headingFontSize }}
@@ -35,14 +35,14 @@ export function PreviewHeader({ contact, style }: PreviewHeaderProps) {
       </h1>
       {contactItems.length > 0 && (
         <div
-          className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-1 text-gray-600"
+          className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-1 text-muted-foreground"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
           {contactItems.map((item, idx) => (
             <span key={idx} className="flex items-center gap-1">
               {item}
               {idx < contactItems.length - 1 && (
-                <span className="text-gray-300 ml-2">|</span>
+                <span className="text-muted-foreground/60 ml-2">|</span>
               )}
             </span>
           ))}

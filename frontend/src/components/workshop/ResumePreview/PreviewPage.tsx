@@ -17,7 +17,7 @@ export function PreviewPage({
 
   return (
     <div
-      className="preview-page bg-white shadow-lg rounded-sm"
+      className="preview-page bg-card shadow-lg rounded-sm"
       style={{
         width: PAGE_DIMENSIONS.WIDTH,
         minHeight: PAGE_DIMENSIONS.HEIGHT,
