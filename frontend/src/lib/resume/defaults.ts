@@ -430,6 +430,7 @@ export function createEmptyState(): BlockEditorState {
     isDirty: false,
     isLoading: false,
     error: null,
+    fitToOnePage: false,
   };
 }
 
@@ -444,6 +445,7 @@ export function createInitialState(): BlockEditorState {
     isDirty: false,
     isLoading: false,
     error: null,
+    fitToOnePage: false,
   };
 }
 
@@ -503,6 +505,20 @@ export const STYLE_PRESETS = {
     lineSpacing: 1.1,
     sectionSpacing: 10,
     entrySpacing: 6,
+  } as BlockEditorStyle,
+
+  executive: {
+    fontFamily: "Georgia",
+    fontSizeBody: 11,
+    fontSizeHeading: 16,
+    fontSizeSubheading: 13,
+    marginTop: 0.75,
+    marginBottom: 0.75,
+    marginLeft: 0.75,
+    marginRight: 0.75,
+    lineSpacing: 1.3,
+    sectionSpacing: 16,
+    entrySpacing: 10,
   } as BlockEditorStyle,
 } as const;
 

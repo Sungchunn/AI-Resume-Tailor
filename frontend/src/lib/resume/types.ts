@@ -265,6 +265,7 @@ export interface BlockEditorState {
   isDirty: boolean;
   isLoading: boolean;
   error: string | null;
+  fitToOnePage: boolean;
 }
 
 // Block editor actions
@@ -277,6 +278,7 @@ export type BlockEditorAction =
   | { type: "SET_ACTIVE_BLOCK"; payload: string | null }
   | { type: "TOGGLE_COLLAPSE"; payload: { id: string } }
   | { type: "SET_STYLE"; payload: Partial<BlockEditorStyle> }
+  | { type: "SET_FIT_TO_ONE_PAGE"; payload: boolean }
   | { type: "SET_DIRTY"; payload: boolean }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null }

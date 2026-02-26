@@ -115,6 +115,12 @@ export function blockEditorReducer(
         isDirty: true,
       };
 
+    case "SET_FIT_TO_ONE_PAGE":
+      return {
+        ...state,
+        fitToOnePage: action.payload,
+      };
+
     case "SET_DIRTY":
       return {
         ...state,
@@ -187,6 +193,11 @@ export const blockEditorActions = {
   setStyle: (style: Partial<BlockEditorStyle>): BlockEditorAction => ({
     type: "SET_STYLE",
     payload: style,
+  }),
+
+  setFitToOnePage: (enabled: boolean): BlockEditorAction => ({
+    type: "SET_FIT_TO_ONE_PAGE",
+    payload: enabled,
   }),
 
   setDirty: (isDirty: boolean): BlockEditorAction => ({
