@@ -128,7 +128,7 @@ export function Header() {
   return (
     <header
       ref={containerRef}
-      className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/60 px-4 md:px-6"
+      className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 px-4 md:px-6"
     >
       <div className="container mx-auto flex h-20 max-w-screen-2xl items-center justify-between gap-4">
         {/* Left side - Logo and Navigation */}
@@ -139,7 +139,7 @@ export function Header() {
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+                className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors"
                 aria-expanded={mobileMenuOpen}
                 aria-label="Toggle menu"
               >
@@ -148,17 +148,17 @@ export function Header() {
 
               {/* Mobile menu dropdown */}
               {mobileMenuOpen && (
-                <div className="absolute top-full left-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg p-2">
+                <div className="absolute top-full left-0 mt-2 w-48 rounded-lg border border-border bg-popover shadow-lg p-2">
                   {visibleLinks.map((link, index) => (
                     <button
                       key={index}
                       type="button"
                       onClick={() => handleNavClick(link.href, link.protected || false)}
-                      className="flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                      className="flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-popover-foreground hover:bg-accent transition-colors text-left"
                     >
                       {link.label}
                       {link.protected && !isAuthenticated && (
-                        <span className="ml-auto text-xs text-gray-400">Sign up</span>
+                        <span className="ml-auto text-xs text-muted-foreground">Sign up</span>
                       )}
                     </button>
                   ))}
@@ -172,10 +172,10 @@ export function Header() {
             href={isAuthenticated ? "/dashboard/jobs" : "/"}
             className="flex items-center gap-3 hover:opacity-90 transition-opacity"
           >
-            <div className="h-9 w-9 rounded-lg bg-primary-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">RT</span>
+            <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">RT</span>
             </div>
-            <span className="hidden sm:inline-block text-lg font-semibold text-gray-900">
+            <span className="hidden sm:inline-block text-lg font-semibold text-foreground">
               Resume Tailor
             </span>
           </Link>
@@ -188,7 +188,7 @@ export function Header() {
                   key={index}
                   type="button"
                   onClick={() => handleNavClick(link.href, link.protected || false)}
-                  className="h-9 px-4 flex items-center justify-center rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                  className="h-9 px-4 flex items-center justify-center rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                 >
                   {link.label}
                 </button>
@@ -201,7 +201,7 @@ export function Header() {
         <div className="flex items-center gap-3">
           <Link
             href="/signup"
-            className="text-sm font-medium px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 shadow-sm transition-colors"
+            className="text-sm font-medium px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-colors"
           >
             Get Started
           </Link>
@@ -212,14 +212,14 @@ export function Header() {
                 logout();
                 router.push("/");
               }}
-              className="text-sm font-medium px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              className="text-sm font-medium px-4 py-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
             >
               Log out
             </button>
           ) : (
             <Link
               href="/login"
-              className="text-sm font-medium px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              className="text-sm font-medium px-4 py-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
             >
               Login
             </Link>
