@@ -137,10 +137,10 @@ export function EditorLayout({
       />
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        <Group orientation="horizontal">
+      <div className="flex-1 overflow-hidden h-full">
+        <Group orientation="horizontal" className="h-full">
           {/* Left Panel: Preview */}
-          <Panel defaultSize={isPreviewFullscreen ? 100 : 55} minSize={40}>
+          <Panel defaultSize={isPreviewFullscreen ? "100%" : "55%"} minSize="25%">
             <div className="h-full overflow-auto bg-muted p-4">
               {isPreviewFullscreen && (
                 <div className="mb-4 flex justify-end">
@@ -173,7 +173,7 @@ export function EditorLayout({
               {/* Resize Handle */}
               <Separator className="w-1.5 bg-muted hover:bg-primary/20 transition-colors cursor-col-resize" />
 
-              <Panel defaultSize={45} minSize={25} maxSize={60}>
+              <Panel defaultSize="45%" minSize="20%" maxSize="55%">
                 <ControlPanel jobId={jobId} jobListingId={jobListingId} />
               </Panel>
             </>
