@@ -18,7 +18,7 @@ export function WizardNavigation({
         {showBack && onBack && (
           <button
             onClick={onBack}
-            className="px-4 py-2 text-gray-600 font-medium hover:text-gray-900 transition-colors"
+            className="px-4 py-2 text-muted-foreground font-medium hover:text-foreground transition-colors"
           >
             {backLabel}
           </button>
@@ -29,7 +29,7 @@ export function WizardNavigation({
         {showSkip && onSkip && (
           <button
             onClick={onSkip}
-            className="px-4 py-2 text-gray-500 text-sm hover:text-gray-700 transition-colors"
+            className="px-4 py-2 text-muted-foreground text-sm hover:text-foreground/80 transition-colors"
           >
             Skip
           </button>

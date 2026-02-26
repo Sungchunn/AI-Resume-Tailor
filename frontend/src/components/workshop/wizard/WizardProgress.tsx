@@ -46,7 +46,7 @@ export function WizardProgress({
                       ? "bg-blue-600 text-white"
                       : isPast
                         ? "bg-blue-100 text-blue-600"
-                        : "bg-gray-200 text-gray-500"
+                        : "bg-muted text-muted-foreground"
                   }`}
                   aria-current={isCurrent ? "step" : undefined}
                 >
@@ -58,7 +58,7 @@ export function WizardProgress({
                 </div>
                 <span
                   className={`mt-2 text-xs font-medium ${
-                    isCurrent ? "text-blue-600" : "text-gray-500"
+                    isCurrent ? "text-blue-600" : "text-muted-foreground"
                   }`}
                 >
                   {config.label}
@@ -69,7 +69,7 @@ export function WizardProgress({
               {index < STEPS.length - 1 && (
                 <div
                   className={`w-16 h-0.5 mx-2 ${
-                    isPast || isCompleted ? "bg-blue-600" : "bg-gray-200"
+                    isPast || isCompleted ? "bg-blue-600" : "bg-muted"
                   }`}
                   aria-hidden="true"
                 />
