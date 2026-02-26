@@ -94,22 +94,22 @@ export default function ExportDialog({
         />
 
         {/* Modal */}
-        <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
-          <div className="bg-white px-4 pb-4 pt-5 sm:p-6">
+        <div className="relative transform overflow-hidden rounded-lg bg-card text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+          <div className="bg-card px-4 pb-4 pt-5 sm:p-6">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-foreground">
                   Export Resume
                 </h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Choose format and style options
                 </p>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="rounded-md bg-card text-muted-foreground/60 hover:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <span className="sr-only">Close</span>
                 <svg
@@ -130,7 +130,7 @@ export default function ExportDialog({
 
             {/* Format Selection */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground/80 mb-2">
                 Format
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -139,8 +139,8 @@ export default function ExportDialog({
                   onClick={() => setFormat("pdf")}
                   className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-colors ${
                     format === "pdf"
-                      ? "border-primary-500 bg-primary-50 text-primary-700"
-                      : "border-gray-200 hover:border-gray-300"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:border-input"
                   }`}
                 >
                   <svg
@@ -163,8 +163,8 @@ export default function ExportDialog({
                   onClick={() => setFormat("docx")}
                   className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-colors ${
                     format === "docx"
-                      ? "border-primary-500 bg-primary-50 text-primary-700"
-                      : "border-gray-200 hover:border-gray-300"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:border-input"
                   }`}
                 >
                   <svg
@@ -187,7 +187,7 @@ export default function ExportDialog({
 
             {/* Template Selection */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground/80 mb-2">
                 Style Template
               </label>
               <div className="space-y-2">
@@ -200,26 +200,26 @@ export default function ExportDialog({
                     }
                     className={`w-full flex items-start gap-3 px-4 py-3 rounded-lg border-2 text-left transition-colors ${
                       template === t.name
-                        ? "border-primary-500 bg-primary-50"
-                        : "border-gray-200 hover:border-gray-300"
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-input"
                     }`}
                   >
                     <div
                       className={`mt-0.5 h-4 w-4 rounded-full border-2 flex items-center justify-center ${
                         template === t.name
-                          ? "border-primary-500"
-                          : "border-gray-300"
+                          ? "border-primary"
+                          : "border-input"
                       }`}
                     >
                       {template === t.name && (
-                        <div className="h-2 w-2 rounded-full bg-primary-500" />
+                        <div className="h-2 w-2 rounded-full bg-primary" />
                       )}
                     </div>
                     <div>
-                      <span className="font-medium text-gray-900 capitalize">
+                      <span className="font-medium text-foreground capitalize">
                         {t.name}
                       </span>
-                      <p className="text-sm text-gray-500">{t.description}</p>
+                      <p className="text-sm text-muted-foreground">{t.description}</p>
                     </div>
                   </button>
                 ))}
@@ -230,7 +230,7 @@ export default function ExportDialog({
             <button
               type="button"
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-4"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
             >
               <svg
                 className={`h-4 w-4 transition-transform ${
@@ -252,16 +252,16 @@ export default function ExportDialog({
 
             {/* Advanced Options */}
             {showAdvanced && (
-              <div className="space-y-4 pb-4 border-t border-gray-200 pt-4">
+              <div className="space-y-4 pb-4 border-t border-border pt-4">
                 {/* Font Family */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground/80 mb-1">
                     Font
                   </label>
                   <select
                     value={fontFamily}
                     onChange={(e) => setFontFamily(e.target.value)}
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                    className="w-full rounded-md border-input shadow-sm focus:border-ring focus:ring-ring sm:text-sm"
                   >
                     {FONT_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -273,7 +273,7 @@ export default function ExportDialog({
 
                 {/* Font Size */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground/80 mb-1">
                     Font Size
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -284,8 +284,8 @@ export default function ExportDialog({
                         onClick={() => setFontSize(size)}
                         className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                           fontSize === size
-                            ? "bg-primary-600 text-white"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-foreground/80 hover:bg-accent"
                         }`}
                       >
                         {size}pt
@@ -296,13 +296,13 @@ export default function ExportDialog({
 
                 {/* Margins */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground/80 mb-1">
                     Margins
                   </label>
                   <select
                     value={margins}
                     onChange={(e) => setMargins(parseFloat(e.target.value))}
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                    className="w-full rounded-md border-input shadow-sm focus:border-ring focus:ring-ring sm:text-sm"
                   >
                     {MARGIN_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -316,12 +316,12 @@ export default function ExportDialog({
           </div>
 
           {/* Footer */}
-          <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+          <div className="bg-muted px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
             <button
               type="button"
               onClick={handleExport}
               disabled={isPending}
-              className="inline-flex w-full justify-center items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto"
+              className="inline-flex w-full justify-center items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto"
             >
               {isPending ? (
                 <>
@@ -369,7 +369,7 @@ export default function ExportDialog({
               type="button"
               onClick={onClose}
               disabled={isPending}
-              className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 sm:mt-0 sm:w-auto"
+              className="mt-3 inline-flex w-full justify-center rounded-md bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm ring-1 ring-inset ring-input hover:bg-accent disabled:opacity-50 sm:mt-0 sm:w-auto"
             >
               Cancel
             </button>
