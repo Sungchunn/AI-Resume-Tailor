@@ -64,8 +64,8 @@ function CoverageIndicator({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-gray-500 w-16">{label}</span>
-      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+      <span className="text-xs text-muted-foreground w-16">{label}</span>
+      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
         <div
           className={`h-full ${bgColor} transition-all duration-300`}
           style={{ width: `${percentage}%` }}
@@ -186,11 +186,11 @@ function KeywordSection({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-600">
+          <span className="text-xs text-muted-foreground">
             {matched.length}/{total} matched
           </span>
           <svg
-            className={`w-4 h-4 text-gray-500 transition-transform ${
+            className={`w-4 h-4 text-muted-foreground transition-transform ${
               isExpanded ? "rotate-180" : ""
             }`}
             fill="none"
@@ -208,10 +208,10 @@ function KeywordSection({
       </button>
 
       {isExpanded && (
-        <div className="p-3 bg-white space-y-2">
+        <div className="p-3 bg-card space-y-2">
           {matched.length > 0 && (
             <div>
-              <div className="text-xs text-gray-500 mb-1">Matched</div>
+              <div className="text-xs text-muted-foreground mb-1">Matched</div>
               <div className="flex flex-wrap gap-1">
                 {matched.map((kw) => (
                   <KeywordChip
@@ -228,7 +228,7 @@ function KeywordSection({
 
           {missing.length > 0 && (
             <div>
-              <div className="text-xs text-gray-500 mb-1">Missing</div>
+              <div className="text-xs text-muted-foreground mb-1">Missing</div>
               <div className="flex flex-wrap gap-1">
                 {missing.map((kw) => (
                   <KeywordChip
@@ -324,7 +324,7 @@ export function ATSKeywordsPanel({
             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
           />
         </svg>
-        <p className="mt-2 text-sm text-gray-500">Analyzing keywords...</p>
+        <p className="mt-2 text-sm text-muted-foreground">Analyzing keywords...</p>
       </div>
     );
   }
@@ -346,10 +346,10 @@ export function ATSKeywordsPanel({
             d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
           />
         </svg>
-        <p className="mt-2 text-sm text-gray-600">{error}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{error}</p>
         <button
           onClick={runAnalysis}
-          className="mt-3 text-sm text-primary-600 hover:text-primary-700"
+          className="mt-3 text-sm text-primary hover:text-primary"
         >
           Retry
         </button>
@@ -362,7 +362,7 @@ export function ATSKeywordsPanel({
     return (
       <div className="h-full flex flex-col items-center justify-center p-4 text-center">
         <svg
-          className="h-12 w-12 text-gray-400"
+          className="h-12 w-12 text-muted-foreground/60"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -374,10 +374,10 @@ export function ATSKeywordsPanel({
             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
           />
         </svg>
-        <h3 className="mt-2 text-sm font-medium text-gray-900">
+        <h3 className="mt-2 text-sm font-medium text-foreground">
           No Job Description
         </h3>
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-muted-foreground">
           Add a job description to see keyword analysis
         </p>
       </div>
@@ -390,7 +390,7 @@ export function ATSKeywordsPanel({
       <div className="h-full flex flex-col items-center justify-center p-4 text-center">
         <button
           onClick={runAnalysis}
-          className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 transition-colors"
+          className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
         >
           Analyze Keywords
         </button>
@@ -401,12 +401,12 @@ export function ATSKeywordsPanel({
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 p-4 border-b border-gray-200">
+      <div className="flex-shrink-0 p-4 border-b border-border">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-900">ATS Keywords</h3>
+          <h3 className="text-sm font-semibold text-foreground">ATS Keywords</h3>
           <button
             onClick={runAnalysis}
-            className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+            className="text-xs text-primary hover:text-primary font-medium"
           >
             Refresh
           </button>
@@ -479,17 +479,17 @@ export function ATSKeywordsPanel({
 
         {/* Suggestions */}
         {analysis.suggestions.length > 0 && (
-          <div className="mt-4 p-3 bg-primary-50 rounded-lg border border-primary-200">
-            <h4 className="text-sm font-medium text-primary-900 mb-2">
+          <div className="mt-4 p-3 bg-primary/10 rounded-lg border border-primary/20">
+            <h4 className="text-sm font-medium text-foreground mb-2">
               Suggestions
             </h4>
             <ul className="space-y-1">
               {analysis.suggestions.map((suggestion, idx) => (
                 <li
                   key={idx}
-                  className="text-xs text-primary-800 flex items-start gap-2"
+                  className="text-xs text-foreground/80 flex items-start gap-2"
                 >
-                  <span className="text-primary-600">•</span>
+                  <span className="text-primary">•</span>
                   {suggestion}
                 </li>
               ))}

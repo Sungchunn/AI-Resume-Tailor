@@ -128,17 +128,17 @@ export function ContentEditor({
           <div
             key={section}
             className={`mb-6 p-4 rounded-lg border-2 transition-colors ${
-              isActive ? "border-primary-300 bg-primary-50" : "border-transparent hover:border-gray-200"
+              isActive ? "border-primary/30 bg-primary/10" : "border-transparent hover:border-border"
             }`}
             onClick={() => onSectionFocus?.(section)}
           >
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">
+            <h2 className="text-lg font-semibold text-foreground mb-3">
               {SECTION_LABELS.summary}
             </h2>
             <textarea
               value={content.summary}
               onChange={(e) => handleSummaryChange(e.target.value)}
-              className="w-full min-h-[100px] p-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y"
+              className="w-full min-h-[100px] p-3 text-sm border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring resize-y"
               placeholder="Write your professional summary..."
             />
           </div>
@@ -149,17 +149,17 @@ export function ContentEditor({
           <div
             key={section}
             className={`mb-6 p-4 rounded-lg border-2 transition-colors ${
-              isActive ? "border-primary-300 bg-primary-50" : "border-transparent hover:border-gray-200"
+              isActive ? "border-primary/30 bg-primary/10" : "border-transparent hover:border-border"
             }`}
             onClick={() => onSectionFocus?.(section)}
           >
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">
+            <h2 className="text-lg font-semibold text-foreground mb-3">
               {SECTION_LABELS.highlights}
             </h2>
             <ul className="space-y-2">
               {content.highlights.map((highlight, i) => (
                 <li key={i} className="flex items-start gap-2">
-                  <span className="text-primary-500 mt-1">•</span>
+                  <span className="text-primary mt-1">•</span>
                   <input
                     type="text"
                     value={highlight}
@@ -168,7 +168,7 @@ export function ContentEditor({
                       newHighlights[i] = e.target.value;
                       handleHighlightsChange(newHighlights);
                     }}
-                    className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    className="flex-1 px-2 py-1 text-sm border border-input rounded focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                   <button
                     onClick={() => {
@@ -177,7 +177,7 @@ export function ContentEditor({
                       );
                       handleHighlightsChange(newHighlights);
                     }}
-                    className="text-red-500 hover:text-red-700"
+                    className="text-destructive hover:text-destructive"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -188,7 +188,7 @@ export function ContentEditor({
             </ul>
             <button
               onClick={() => handleHighlightsChange([...content.highlights, ""])}
-              className="mt-2 text-sm text-primary-600 hover:text-primary-700"
+              className="mt-2 text-sm text-primary hover:text-primary"
             >
               + Add Highlight
             </button>
@@ -200,18 +200,18 @@ export function ContentEditor({
           <div
             key={section}
             className={`mb-6 p-4 rounded-lg border-2 transition-colors ${
-              isActive ? "border-primary-300 bg-primary-50" : "border-transparent hover:border-gray-200"
+              isActive ? "border-primary/30 bg-primary/10" : "border-transparent hover:border-border"
             }`}
             onClick={() => onSectionFocus?.(section)}
           >
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">
+            <h2 className="text-lg font-semibold text-foreground mb-3">
               {SECTION_LABELS.experience}
             </h2>
             <div className="space-y-6">
               {content.experience.map((exp, expIndex) => (
                 <div
                   key={expIndex}
-                  className="border border-gray-200 rounded-lg p-4"
+                  className="border border-border rounded-lg p-4"
                 >
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <input
@@ -221,7 +221,7 @@ export function ContentEditor({
                         handleExperienceChange(expIndex, "title", e.target.value)
                       }
                       placeholder="Job Title"
-                      className="px-3 py-2 text-sm font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="px-3 py-2 text-sm font-medium border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
                     />
                     <input
                       type="text"
@@ -230,7 +230,7 @@ export function ContentEditor({
                         handleExperienceChange(expIndex, "company", e.target.value)
                       }
                       placeholder="Company"
-                      className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="px-3 py-2 text-sm border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
                     />
                     <input
                       type="text"
@@ -239,7 +239,7 @@ export function ContentEditor({
                         handleExperienceChange(expIndex, "location", e.target.value)
                       }
                       placeholder="Location"
-                      className="px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="px-3 py-2 text-sm text-muted-foreground border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
                     />
                     <div className="flex gap-2">
                       <input
@@ -249,7 +249,7 @@ export function ContentEditor({
                           handleExperienceChange(expIndex, "start_date", e.target.value)
                         }
                         placeholder="Start Date"
-                        className="flex-1 px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        className="flex-1 px-3 py-2 text-sm text-muted-foreground border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
                       />
                       <input
                         type="text"
@@ -258,28 +258,28 @@ export function ContentEditor({
                           handleExperienceChange(expIndex, "end_date", e.target.value)
                         }
                         placeholder="End Date"
-                        className="flex-1 px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        className="flex-1 px-3 py-2 text-sm text-muted-foreground border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
                       />
                     </div>
                   </div>
 
                   <div className="mt-3">
-                    <div className="text-xs text-gray-500 mb-2">Bullet Points</div>
+                    <div className="text-xs text-muted-foreground mb-2">Bullet Points</div>
                     <ul className="space-y-2">
                       {exp.bullets.map((bullet, bulletIndex) => (
                         <li key={bulletIndex} className="flex items-start gap-2">
-                          <span className="text-gray-400 mt-2">•</span>
+                          <span className="text-muted-foreground/60 mt-2">•</span>
                           <textarea
                             value={bullet}
                             onChange={(e) =>
                               handleBulletChange(expIndex, bulletIndex, e.target.value)
                             }
-                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none"
+                            className="flex-1 px-2 py-1 text-sm border border-input rounded focus:outline-none focus:ring-1 focus:ring-ring resize-none"
                             rows={2}
                           />
                           <button
                             onClick={() => removeBullet(expIndex, bulletIndex)}
-                            className="text-red-500 hover:text-red-700 mt-1"
+                            className="text-destructive hover:text-destructive mt-1"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -290,7 +290,7 @@ export function ContentEditor({
                     </ul>
                     <button
                       onClick={() => addBullet(expIndex)}
-                      className="mt-2 text-sm text-primary-600 hover:text-primary-700"
+                      className="mt-2 text-sm text-primary hover:text-primary"
                     >
                       + Add Bullet
                     </button>
@@ -306,23 +306,23 @@ export function ContentEditor({
           <div
             key={section}
             className={`mb-6 p-4 rounded-lg border-2 transition-colors ${
-              isActive ? "border-primary-300 bg-primary-50" : "border-transparent hover:border-gray-200"
+              isActive ? "border-primary/30 bg-primary/10" : "border-transparent hover:border-border"
             }`}
             onClick={() => onSectionFocus?.(section)}
           >
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">
+            <h2 className="text-lg font-semibold text-foreground mb-3">
               {SECTION_LABELS.skills}
             </h2>
             <div className="flex flex-wrap gap-2 mb-3">
               {content.skills.map((skill, i) => (
                 <span
                   key={i}
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-muted text-foreground/80 text-sm rounded-full"
                 >
                   {skill}
                   <button
                     onClick={() => removeSkill(i)}
-                    className="text-gray-500 hover:text-red-600"
+                    className="text-muted-foreground hover:text-destructive"
                   >
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -365,11 +365,11 @@ function SkillInput({ onAdd }: { onAdd: (skill: string) => void }) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="Add a skill..."
-        className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+        className="flex-1 px-3 py-1.5 text-sm border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
       />
       <button
         type="submit"
-        className="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-md"
+        className="px-3 py-1.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-md"
       >
         Add
       </button>
