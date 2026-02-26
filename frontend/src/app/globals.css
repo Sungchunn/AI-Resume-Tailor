@@ -1,19 +1,110 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-50: #f0f9ff;
-  --color-primary-100: #e0f2fe;
-  --color-primary-200: #bae6fd;
-  --color-primary-300: #7dd3fc;
-  --color-primary-400: #38bdf8;
-  --color-primary-500: #0ea5e9;
-  --color-primary-600: #0284c7;
-  --color-primary-700: #0369a1;
-  --color-primary-800: #075985;
-  --color-primary-900: #0c4a6e;
-  --color-primary-950: #082f49;
+  /* Light Theme Colors (Default) */
+  --color-background: oklch(1 0 0);
+  --color-foreground: oklch(0.141 0.005 285.823);
 
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.141 0.005 285.823);
+
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.141 0.005 285.823);
+
+  --color-primary: oklch(0.546 0.245 262.881);
+  --color-primary-foreground: oklch(0.985 0 0);
+
+  --color-secondary: oklch(0.967 0.001 286.375);
+  --color-secondary-foreground: oklch(0.21 0.006 285.885);
+
+  --color-muted: oklch(0.967 0.001 286.375);
+  --color-muted-foreground: oklch(0.552 0.016 285.938);
+
+  --color-accent: oklch(0.967 0.001 286.375);
+  --color-accent-foreground: oklch(0.21 0.006 285.885);
+
+  --color-destructive: oklch(0.577 0.245 27.325);
+
+  --color-border: oklch(0.92 0.004 286.32);
+  --color-input: oklch(0.92 0.004 286.32);
+  --color-ring: oklch(0.546 0.245 262.881);
+
+  /* Chart Colors */
+  --color-chart-1: oklch(0.646 0.222 41.116);
+  --color-chart-2: oklch(0.6 0.118 184.704);
+  --color-chart-3: oklch(0.398 0.07 227.392);
+  --color-chart-4: oklch(0.828 0.189 84.429);
+  --color-chart-5: oklch(0.769 0.188 70.08);
+
+  /* Sidebar Colors */
+  --color-sidebar: oklch(0.985 0 0);
+  --color-sidebar-foreground: oklch(0.141 0.005 285.823);
+  --color-sidebar-primary: oklch(0.546 0.245 262.881);
+  --color-sidebar-primary-foreground: oklch(0.985 0 0);
+  --color-sidebar-accent: oklch(0.967 0.001 286.375);
+  --color-sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+  --color-sidebar-border: oklch(0.92 0.004 286.32);
+  --color-sidebar-ring: oklch(0.546 0.245 262.881);
+
+  /* Typography */
   --font-sans: "Inter", system-ui, sans-serif;
+  --font-serif: "Lora", serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Spacing & Radius */
+  --radius: 0.65rem;
+  --radius-sm: calc(var(--radius) - 0.25rem);
+  --radius-lg: calc(var(--radius) + 0.25rem);
+  --radius-xl: calc(var(--radius) + 0.5rem);
+}
+
+/* Dark Theme (System Preference) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: oklch(0.141 0.005 285.823);
+    --color-foreground: oklch(0.985 0 0);
+
+    --color-card: oklch(0.21 0.006 285.885);
+    --color-card-foreground: oklch(0.985 0 0);
+
+    --color-popover: oklch(0.21 0.006 285.885);
+    --color-popover-foreground: oklch(0.985 0 0);
+
+    --color-primary: oklch(0.546 0.245 262.881);
+    --color-primary-foreground: oklch(0.379 0.146 265.522);
+
+    --color-secondary: oklch(0.274 0.006 286.033);
+    --color-secondary-foreground: oklch(0.985 0 0);
+
+    --color-muted: oklch(0.274 0.006 286.033);
+    --color-muted-foreground: oklch(0.705 0.015 286.067);
+
+    --color-accent: oklch(0.274 0.006 286.033);
+    --color-accent-foreground: oklch(0.985 0 0);
+
+    --color-destructive: oklch(0.704 0.191 22.216);
+
+    --color-border: oklch(1 0 0 / 10%);
+    --color-input: oklch(1 0 0 / 15%);
+    --color-ring: oklch(0.488 0.243 264.376);
+
+    /* Chart Colors */
+    --color-chart-1: oklch(0.488 0.243 264.376);
+    --color-chart-2: oklch(0.696 0.17 162.48);
+    --color-chart-3: oklch(0.769 0.188 70.08);
+    --color-chart-4: oklch(0.627 0.265 303.9);
+    --color-chart-5: oklch(0.645 0.246 16.439);
+
+    /* Sidebar Colors */
+    --color-sidebar: oklch(0.21 0.006 285.885);
+    --color-sidebar-foreground: oklch(0.985 0 0);
+    --color-sidebar-primary: oklch(0.546 0.245 262.881);
+    --color-sidebar-primary-foreground: oklch(0.379 0.146 265.522);
+    --color-sidebar-accent: oklch(0.274 0.006 286.033);
+    --color-sidebar-accent-foreground: oklch(0.985 0 0);
+    --color-sidebar-border: oklch(1 0 0 / 10%);
+    --color-sidebar-ring: oklch(0.488 0.243 264.376);
+  }
 }
 
 @layer base {
@@ -22,50 +113,57 @@
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-background text-foreground antialiased;
   }
 }
 
 @layer components {
   .btn {
     @apply inline-flex items-center justify-center px-4 py-2 font-medium rounded-lg transition-colors;
-    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-primary {
     @apply inline-flex items-center justify-center px-4 py-2 font-medium rounded-lg transition-colors;
-    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
-    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
   }
 
   .btn-secondary {
     @apply inline-flex items-center justify-center px-4 py-2 font-medium rounded-lg transition-colors;
-    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
-    @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-primary-500;
+    @apply bg-secondary text-secondary-foreground border border-border hover:bg-secondary/80;
   }
 
   .btn-ghost {
     @apply inline-flex items-center justify-center px-4 py-2 font-medium rounded-lg transition-colors;
-    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
-    @apply bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-500;
+    @apply bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-destructive {
+    @apply inline-flex items-center justify-center px-4 py-2 font-medium rounded-lg transition-colors;
+    @apply focus:outline-none focus:ring-2 focus:ring-destructive/50 focus:ring-offset-2 focus:ring-offset-background;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-destructive text-foreground hover:bg-destructive/90;
   }
 
   .input {
-    @apply block w-full rounded-lg border border-gray-300 px-4 py-2;
-    @apply text-gray-900 placeholder-gray-500;
-    @apply focus:border-primary-500 focus:ring-primary-500;
+    @apply block w-full rounded-lg border border-input bg-background px-4 py-2;
+    @apply text-foreground placeholder-muted-foreground;
+    @apply focus:border-ring focus:ring-1 focus:ring-ring;
   }
 
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply block text-sm font-medium text-foreground mb-1;
   }
 
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
+    @apply bg-card text-card-foreground rounded-xl shadow-sm border border-border p-6;
   }
 }
 
@@ -79,19 +177,19 @@
 }
 
 .ProseMirror h1 {
-  @apply text-2xl font-bold text-gray-900 mt-6 mb-3;
+  @apply text-2xl font-bold text-foreground mt-6 mb-3;
 }
 
 .ProseMirror h2 {
-  @apply text-xl font-semibold text-gray-900 mt-5 mb-2;
+  @apply text-xl font-semibold text-foreground mt-5 mb-2;
 }
 
 .ProseMirror h3 {
-  @apply text-lg font-semibold text-gray-800 mt-4 mb-2;
+  @apply text-lg font-semibold text-foreground/90 mt-4 mb-2;
 }
 
 .ProseMirror p {
-  @apply text-gray-700 leading-relaxed;
+  @apply text-foreground/80 leading-relaxed;
 }
 
 .ProseMirror ul {
@@ -103,7 +201,7 @@
 }
 
 .ProseMirror li {
-  @apply text-gray-700 my-1;
+  @apply text-foreground/80 my-1;
 }
 
 .ProseMirror li > p {
@@ -111,11 +209,11 @@
 }
 
 .ProseMirror blockquote {
-  @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4;
+  @apply border-l-4 border-border pl-4 italic text-muted-foreground my-4;
 }
 
 .ProseMirror hr {
-  @apply border-t border-gray-300 my-6;
+  @apply border-t border-border my-6;
 }
 
 .ProseMirror strong {
@@ -135,24 +233,24 @@
 }
 
 .ProseMirror mark {
-  @apply bg-yellow-200 px-0.5 rounded;
+  @apply bg-yellow-200/30 px-0.5 rounded;
 }
 
 /* AI Suggestion Highlights */
 .ProseMirror mark[data-color="red"] {
-  @apply bg-red-200;
+  @apply bg-red-400/30;
 }
 
 .ProseMirror mark[data-color="yellow"] {
-  @apply bg-yellow-200;
+  @apply bg-yellow-400/30;
 }
 
 .ProseMirror mark[data-color="blue"] {
-  @apply bg-blue-200;
+  @apply bg-blue-400/30;
 }
 
 /* Placeholder text */
 .ProseMirror p.is-editor-empty:first-child::before {
-  @apply text-gray-400 float-left h-0 pointer-events-none;
+  @apply text-muted-foreground float-left h-0 pointer-events-none;
   content: attr(data-placeholder);
 }
