@@ -376,6 +376,7 @@ Tasks:
 5. ✅ Show keyword coverage and ATS score
 
 **Implementation Notes:**
+
 - Added `blocksToText()` function in `transforms.ts` to convert resume blocks to plain text for ATS analysis
 - Updated page.tsx to handle both `?jobId=` (user-created job) and `?jobListingId=` (scraped listing) query params
 - Updated EditorLayout and ControlPanel to pass both job context types
