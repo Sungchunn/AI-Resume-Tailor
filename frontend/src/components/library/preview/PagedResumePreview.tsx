@@ -105,7 +105,7 @@ function PreviewPage({
 
       {/* Page content */}
       <div
-        className={`preview-page bg-card ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
+        className={`preview-page bg-white ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
         style={{
           width: PAGE_DIMENSIONS.WIDTH,
           minHeight: PAGE_DIMENSIONS.HEIGHT,
@@ -240,7 +240,7 @@ export function PagedResumePreview({
             </span>
           </div>
           <div
-            className={`bg-card ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
+            className={`bg-white ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
             style={{
               width: PAGE_DIMENSIONS.WIDTH,
               minHeight: PAGE_DIMENSIONS.HEIGHT,
@@ -273,7 +273,7 @@ export function PagedResumePreview({
             </span>
           </div>
           <div
-            className={`bg-card ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
+            className={`bg-white ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
             style={{
               width: PAGE_DIMENSIONS.WIDTH,
               minHeight: PAGE_DIMENSIONS.HEIGHT,

@@ -71,7 +71,7 @@ export function ResumePreview({
         className={`resume-preview-container flex flex-col items-center ${className ?? ""}`}
       >
         <div
-          className={`bg-card ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
+          className={`bg-white ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
           style={{
             width: PAGE_DIMENSIONS.WIDTH,
             minHeight: PAGE_DIMENSIONS.HEIGHT,
@@ -97,7 +97,7 @@ export function ResumePreview({
         className={`resume-preview-container flex flex-col items-center ${className ?? ""}`}
       >
         <div
-          className={`bg-card ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
+          className={`bg-white ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
           style={{
             width: PAGE_DIMENSIONS.WIDTH,
             minHeight: PAGE_DIMENSIONS.HEIGHT,
@@ -121,7 +121,7 @@ export function ResumePreview({
       className={`resume-preview-container flex flex-col items-center ${className ?? ""}`}
     >
       <div
-        className={`preview-page bg-card ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
+        className={`preview-page bg-white ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
         style={{
           width: PAGE_DIMENSIONS.WIDTH,
           minHeight: PAGE_DIMENSIONS.HEIGHT,
@@ -170,7 +170,7 @@ export function ResumePreviewStandalone({
 
   return (
     <div
-      className={`preview-page bg-card ${className ?? ""}`}
+      className={`preview-page bg-white ${className ?? ""}`}
       style={{
         width: PAGE_DIMENSIONS.WIDTH,
         minHeight: PAGE_DIMENSIONS.HEIGHT,
