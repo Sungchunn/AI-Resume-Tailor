@@ -13,7 +13,7 @@ export function LoadingSpinner({ size = "md", className = "" }: LoadingSpinnerPr
   return (
     <div className={`flex justify-center ${className}`}>
       <div
-        className={`animate-spin rounded-full border-b-2 border-primary-600 ${sizeClasses[size]}`}
+        className={`animate-spin rounded-full border-b-2 border-primary ${sizeClasses[size]}`}
       />
     </div>
   );
@@ -24,7 +24,7 @@ export function FullPageLoader() {
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
         <LoadingSpinner size="lg" />
-        <p className="mt-4 text-gray-600">Loading...</p>
+        <p className="mt-4 text-muted-foreground">Loading...</p>
       </div>
     </div>
   );

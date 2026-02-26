@@ -8,11 +8,11 @@ export function ErrorMessage({
   onRetry,
 }: ErrorMessageProps) {
   return (
-    <div className="card bg-red-50 border-red-200">
+    <div className="card bg-destructive/10 border-destructive/20">
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0">
           <svg
-            className="h-5 w-5 text-red-500"
+            className="h-5 w-5 text-destructive"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={1.5}
@@ -26,11 +26,11 @@ export function ErrorMessage({
           </svg>
         </div>
         <div className="flex-1">
-          <p className="text-red-700">{message}</p>
+          <p className="text-destructive">{message}</p>
           {onRetry && (
             <button
               onClick={onRetry}
-              className="mt-2 text-sm font-medium text-red-600 hover:text-red-800"
+              className="mt-2 text-sm font-medium text-destructive hover:text-destructive/80"
             >
               Try again
             </button>
