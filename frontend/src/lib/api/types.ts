@@ -50,12 +50,15 @@ export interface ResumeUpdate {
   title?: string;
   raw_content?: string;
   html_content?: string;
+  parsed_content?: Record<string, unknown> | null;
+  style?: ResumeStyle | null;
 }
 
 export interface ResumeResponse extends ResumeBase {
   id: number;
   owner_id: number;
   parsed_content?: Record<string, unknown> | null;
+  style?: ResumeStyle | null;
   html_content?: string | null;
   original_file_key?: string | null;
   original_filename?: string | null;
