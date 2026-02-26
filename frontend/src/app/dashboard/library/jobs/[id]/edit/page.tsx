@@ -66,7 +66,7 @@ export default function EditJobPage({ params }: PageProps) {
     return (
       <div className="max-w-3xl">
         <div className="card">
-          <p className="text-gray-600">Loading job description...</p>
+          <p className="text-muted-foreground">Loading job description...</p>
         </div>
       </div>
     );
@@ -78,7 +78,7 @@ export default function EditJobPage({ params }: PageProps) {
         <div className="mb-6">
           <Link
             href="/dashboard/library"
-            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
           >
             <svg
               className="mr-1 h-4 w-4"
@@ -96,8 +96,8 @@ export default function EditJobPage({ params }: PageProps) {
             Back to Library
           </Link>
         </div>
-        <div className="card bg-red-50 border-red-200">
-          <p className="text-red-600">Job description not found or failed to load.</p>
+        <div className="card bg-destructive/10 border-destructive/20">
+          <p className="text-destructive">Job description not found or failed to load.</p>
         </div>
       </div>
     );
@@ -108,7 +108,7 @@ export default function EditJobPage({ params }: PageProps) {
       <div className="mb-6">
         <Link
           href={`/dashboard/library/jobs/${jobId}`}
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <svg
             className="mr-1 h-4 w-4"
@@ -128,8 +128,8 @@ export default function EditJobPage({ params }: PageProps) {
       </div>
 
       <div className="card">
-        <h1 className="text-2xl font-bold text-gray-900">Edit Job Description</h1>
-        <p className="mt-1 text-gray-600">Update the job details below.</p>
+        <h1 className="text-2xl font-bold text-foreground">Edit Job Description</h1>
+        <p className="mt-1 text-muted-foreground">Update the job details below.</p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
@@ -145,14 +145,14 @@ export default function EditJobPage({ params }: PageProps) {
                 {...register("title")}
               />
               {errors.title && (
-                <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
+                <p className="mt-1 text-sm text-destructive">{errors.title.message}</p>
               )}
             </div>
 
             <div>
               <label htmlFor="company" className="label">
                 Company Name{" "}
-                <span className="text-gray-500 font-normal">(optional)</span>
+                <span className="text-muted-foreground font-normal">(optional)</span>
               </label>
               <input
                 id="company"
@@ -162,7 +162,7 @@ export default function EditJobPage({ params }: PageProps) {
                 {...register("company")}
               />
               {errors.company && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-sm text-destructive">
                   {errors.company.message}
                 </p>
               )}
@@ -172,7 +172,7 @@ export default function EditJobPage({ params }: PageProps) {
           <div>
             <label htmlFor="url" className="label">
               Job Posting URL{" "}
-              <span className="text-gray-500 font-normal">(optional)</span>
+              <span className="text-muted-foreground font-normal">(optional)</span>
             </label>
             <input
               id="url"
@@ -182,7 +182,7 @@ export default function EditJobPage({ params }: PageProps) {
               {...register("url")}
             />
             {errors.url && (
-              <p className="mt-1 text-sm text-red-600">{errors.url.message}</p>
+              <p className="mt-1 text-sm text-destructive">{errors.url.message}</p>
             )}
           </div>
 
@@ -198,15 +198,15 @@ export default function EditJobPage({ params }: PageProps) {
               {...register("raw_content")}
             />
             {errors.raw_content && (
-              <p className="mt-1 text-sm text-red-600">
+              <p className="mt-1 text-sm text-destructive">
                 {errors.raw_content.message}
               </p>
             )}
           </div>
 
           {updateJob.error && (
-            <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-              <p className="text-sm text-red-600">
+            <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4">
+              <p className="text-sm text-destructive">
                 {updateJob.error.message || "Failed to update job"}
               </p>
             </div>

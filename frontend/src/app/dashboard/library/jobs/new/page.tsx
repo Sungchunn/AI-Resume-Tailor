@@ -47,7 +47,7 @@ export default function NewJobPage() {
       <div className="mb-6">
         <Link
           href="/dashboard/library"
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <svg
             className="mr-1 h-4 w-4"
@@ -67,8 +67,8 @@ export default function NewJobPage() {
       </div>
 
       <div className="card">
-        <h1 className="text-2xl font-bold text-gray-900">Add Job Description</h1>
-        <p className="mt-1 text-gray-600">
+        <h1 className="text-2xl font-bold text-foreground">Add Job Description</h1>
+        <p className="mt-1 text-muted-foreground">
           Paste the job posting below. We&apos;ll analyze it to tailor your
           resume.
         </p>
@@ -87,14 +87,14 @@ export default function NewJobPage() {
                 {...register("title")}
               />
               {errors.title && (
-                <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
+                <p className="mt-1 text-sm text-destructive">{errors.title.message}</p>
               )}
             </div>
 
             <div>
               <label htmlFor="company" className="label">
                 Company Name{" "}
-                <span className="text-gray-500 font-normal">(optional)</span>
+                <span className="text-muted-foreground font-normal">(optional)</span>
               </label>
               <input
                 id="company"
@@ -104,7 +104,7 @@ export default function NewJobPage() {
                 {...register("company")}
               />
               {errors.company && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-sm text-destructive">
                   {errors.company.message}
                 </p>
               )}
@@ -114,7 +114,7 @@ export default function NewJobPage() {
           <div>
             <label htmlFor="url" className="label">
               Job Posting URL{" "}
-              <span className="text-gray-500 font-normal">(optional)</span>
+              <span className="text-muted-foreground font-normal">(optional)</span>
             </label>
             <input
               id="url"
@@ -124,7 +124,7 @@ export default function NewJobPage() {
               {...register("url")}
             />
             {errors.url && (
-              <p className="mt-1 text-sm text-red-600">{errors.url.message}</p>
+              <p className="mt-1 text-sm text-destructive">{errors.url.message}</p>
             )}
           </div>
 
@@ -140,18 +140,18 @@ export default function NewJobPage() {
               {...register("raw_content")}
             />
             {errors.raw_content && (
-              <p className="mt-1 text-sm text-red-600">
+              <p className="mt-1 text-sm text-destructive">
                 {errors.raw_content.message}
               </p>
             )}
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               Include the full job posting for best results.
             </p>
           </div>
 
           {createJob.error && (
-            <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-              <p className="text-sm text-red-600">
+            <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4">
+              <p className="text-sm text-destructive">
                 {createJob.error.message || "Failed to create job"}
               </p>
             </div>
