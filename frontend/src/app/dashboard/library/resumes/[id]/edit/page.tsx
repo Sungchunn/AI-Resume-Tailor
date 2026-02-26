@@ -15,9 +15,12 @@ export default function ResumeEditPage({ params }: PageProps) {
   const resumeId = parseInt(id, 10);
   const searchParams = useSearchParams();
 
-  // Get jobId from query params (passed when navigating from job board)
+  // Get job context from query params (passed when navigating from job board)
+  // jobId = user-created job, jobListingId = scraped job listing
   const jobIdParam = searchParams.get("jobId");
+  const jobListingIdParam = searchParams.get("jobListingId");
   const jobId = jobIdParam ? parseInt(jobIdParam, 10) : null;
+  const jobListingId = jobListingIdParam ? parseInt(jobListingIdParam, 10) : null;
   const { data: resume, isLoading, error } = useResume(resumeId);
   const updateResume = useUpdateResume();
 
@@ -78,7 +81,12 @@ export default function ResumeEditPage({ params }: PageProps) {
       initialStyle={resume.style as Record<string, unknown> | null}
       onSave={handleSave}
     >
-      <EditorLayout resumeId={resumeId} title={resume.title} jobId={jobId} />
+      <EditorLayout
+        resumeId={resumeId}
+        title={resume.title}
+        jobId={jobId}
+        jobListingId={jobListingId}
+      />
     </BlockEditorProvider>
   );
 }

@@ -64,6 +64,10 @@ import type {
   ATSKeywordDetailedResponse,
   ResumeExportRequest,
   ExportTemplatesResponse,
+  ImproveSectionRequest,
+  ImproveSectionResponse,
+  AIChatRequest,
+  AIChatResponse,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -691,4 +695,19 @@ export const atsApi = {
     }),
 
   getTips: (): Promise<{ tips: string[] }> => fetchApi("/api/v1/ats/tips"),
+};
+
+// AI Chat API (Resume Section Improvements)
+export const aiApi = {
+  improveSection: (data: ImproveSectionRequest): Promise<ImproveSectionResponse> =>
+    fetchApi("/api/v1/ai/improve-section", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  chat: (data: AIChatRequest): Promise<AIChatResponse> =>
+    fetchApi("/api/v1/ai/chat", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };

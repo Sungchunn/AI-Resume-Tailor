@@ -89,6 +89,7 @@ curl http://localhost:8000/api/resumes \
 | [Semantic Match](tailor-match.md) | `/v1/match` | Semantic search and gap analysis |
 | [Resume Builds](resume-builds.md) | `/v1/resume-builds` | Resume building workshops |
 | [ATS Analysis](ats.md) | `/v1/ats` | ATS compatibility checks |
+| [AI Chat](ai-chat.md) | `/v1/ai` | AI-powered section improvements and chat |
 | [Admin](admin.md) | `/api/admin` | Scraper and system administration |
 
 ## Request/Response Format

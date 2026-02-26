@@ -426,6 +426,7 @@ export function createEmptyState(): BlockEditorState {
   return {
     blocks: [],
     activeBlockId: null,
+    hoveredBlockId: null,
     style: { ...DEFAULT_STYLE },
     isDirty: false,
     isLoading: false,
@@ -441,6 +442,7 @@ export function createInitialState(): BlockEditorState {
   return {
     blocks: createStarterBlocks(),
     activeBlockId: null,
+    hoveredBlockId: null,
     style: { ...DEFAULT_STYLE },
     isDirty: false,
     isLoading: false,

@@ -43,9 +43,10 @@ export function SectionDraggerTab() {
     removeBlock,
     setActiveBlock,
     toggleBlockVisibility,
+    setHoveredBlock,
   } = useBlockEditor();
 
-  const { blocks, activeBlockId } = state;
+  const { blocks, activeBlockId, hoveredBlockId } = state;
 
   // Count visible sections
   const visibleCount = blocks.filter((b) => !b.isHidden).length;
@@ -146,9 +147,11 @@ export function SectionDraggerTab() {
                     key={block.id}
                     block={block}
                     isActive={activeBlockId === block.id}
+                    isHovered={hoveredBlockId === block.id}
                     onSelect={() => handleSelectBlock(block.id)}
                     onRemove={() => removeBlock(block.id)}
                     onToggleVisibility={() => toggleBlockVisibility(block.id)}
+                    onHover={(hovered) => setHoveredBlock(hovered ? block.id : null)}
                   />
                 ))}
               </div>
@@ -198,15 +201,19 @@ export function SectionDraggerTab() {
 function SortableSectionItem({
   block,
   isActive,
+  isHovered,
   onSelect,
   onRemove,
   onToggleVisibility,
+  onHover,
 }: {
   block: AnyResumeBlock;
   isActive: boolean;
+  isHovered: boolean;
   onSelect: () => void;
   onRemove: () => void;
   onToggleVisibility: () => void;
+  onHover: (hovered: boolean) => void;
 }) {
   const {
     attributes,
@@ -223,28 +230,31 @@ function SortableSectionItem({
   };
 
   const blockInfo = BLOCK_TYPE_INFO[block.type];
-  const isHidden = block.isHidden ?? false;
+  const isHiddenBlock = block.isHidden ?? false;
+
+  // Determine border/background classes based on state
+  const getStateClasses = () => {
+    if (isDragging) return "opacity-50 border-primary/40 bg-primary/10";
+    if (isActive) return "border-primary/30 bg-primary/5";
+    if (isHovered && !isHiddenBlock) return "border-primary/30 bg-primary/5 ring-1 ring-dashed ring-primary/30";
+    if (isHiddenBlock) return "border-border/50 bg-muted/30";
+    return "border-border hover:border-input hover:bg-accent/50";
+  };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${
-        isDragging
-          ? "opacity-50 border-primary/40 bg-primary/10"
-          : isActive
-            ? "border-primary/30 bg-primary/5"
-            : isHidden
-              ? "border-border/50 bg-muted/30"
-              : "border-border hover:border-input hover:bg-accent/50"
-      }`}
+      className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${getStateClasses()}`}
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
     >
       {/* Drag Handle */}
       <button
         {...attributes}
         {...listeners}
         className={`p-1 cursor-grab active:cursor-grabbing ${
-          isHidden ? "text-muted-foreground/40" : "text-muted-foreground hover:text-foreground"
+          isHiddenBlock ? "text-muted-foreground/40" : "text-muted-foreground hover:text-foreground"
         }`}
       >
         <GripVertical className="w-4 h-4" />
@@ -257,16 +267,16 @@ function SortableSectionItem({
       >
         <BlockIcon
           iconName={blockInfo.icon}
-          className={`w-4 h-4 shrink-0 ${isHidden ? "text-muted-foreground/40" : "text-muted-foreground"}`}
+          className={`w-4 h-4 shrink-0 ${isHiddenBlock ? "text-muted-foreground/40" : "text-muted-foreground"}`}
         />
         <span
           className={`text-sm font-medium truncate ${
-            isHidden ? "text-muted-foreground/60 line-through" : "text-foreground"
+            isHiddenBlock ? "text-muted-foreground/60 line-through" : "text-foreground"
           }`}
         >
           {blockInfo.label}
         </span>
-        {isHidden && (
+        {isHiddenBlock && (
           <span className="text-xs text-muted-foreground/50">(hidden)</span>
         )}
       </button>
@@ -278,13 +288,13 @@ function SortableSectionItem({
           onToggleVisibility();
         }}
         className={`p-1.5 rounded transition-colors ${
-          isHidden
+          isHiddenBlock
             ? "text-muted-foreground/60 hover:text-foreground hover:bg-accent"
             : "text-muted-foreground hover:text-foreground hover:bg-accent"
         }`}
-        title={isHidden ? "Show section" : "Hide section"}
+        title={isHiddenBlock ? "Show section" : "Hide section"}
       >
-        {isHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+        {isHiddenBlock ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
       </button>
 
       {/* Remove Button */}

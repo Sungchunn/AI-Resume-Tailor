@@ -30,6 +30,11 @@ export interface BlockEditorContextValue {
   toggleBlockCollapse: (id: string) => void;
   toggleBlockVisibility: (id: string) => void;
 
+  // Hover interactions for preview
+  setHoveredBlock: (id: string | null) => void;
+  moveBlockUp: (id: string) => void;
+  moveBlockDown: (id: string) => void;
+
   // Style operations
   updateStyle: (style: Partial<BlockEditorStyle>) => void;
   applyStylePreset: (presetName: "classic" | "modern" | "minimal" | "executive") => void;

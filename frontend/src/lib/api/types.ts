@@ -714,3 +714,57 @@ export interface ATSKeywordDetailedResponse {
   suggestions: string[];
   warnings: string[];
 }
+
+// ============================================================================
+// AI Chat Types (Resume Section Improvements)
+// ============================================================================
+
+export type AISectionType =
+  | "summary"
+  | "experience"
+  | "education"
+  | "skills"
+  | "projects"
+  | "certifications"
+  | "volunteer"
+  | "publications"
+  | "awards"
+  | "interests"
+  | "languages"
+  | "references"
+  | "courses"
+  | "memberships";
+
+export interface ImproveSectionRequest {
+  section_type: AISectionType;
+  section_content: string;
+  instruction: string;
+  job_context?: string | null;
+}
+
+export interface ImproveSectionResponse {
+  improved_content: string;
+  changes_summary: string;
+  suggestions: string[];
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface AIChatRequest {
+  message: string;
+  section_type?: AISectionType | null;
+  section_content?: string | null;
+  chat_history?: ChatMessage[];
+  job_context?: string | null;
+}
+
+export type AIChatActionType = "advice" | "improvement" | "question";
+
+export interface AIChatResponse {
+  message: string;
+  improved_content: string | null;
+  action_type: AIChatActionType;
+}

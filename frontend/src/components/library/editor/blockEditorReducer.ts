@@ -95,6 +95,47 @@ export function blockEditorReducer(
         activeBlockId: action.payload,
       };
 
+    case "SET_HOVERED_BLOCK":
+      return {
+        ...state,
+        hoveredBlockId: action.payload,
+      };
+
+    case "MOVE_BLOCK_UP": {
+      const blockId = action.payload;
+      const blockIndex = state.blocks.findIndex((b) => b.id === blockId);
+      if (blockIndex <= 0) return state; // Can't move up if first or not found
+
+      // Get the block above (by order, not array index)
+      const sortedBlocks = [...state.blocks].sort((a, b) => a.order - b.order);
+      const sortedIndex = sortedBlocks.findIndex((b) => b.id === blockId);
+      if (sortedIndex <= 0) return state;
+
+      const blockAbove = sortedBlocks[sortedIndex - 1];
+      const newBlocks = reorderBlocks(state.blocks, blockId, blockAbove.id);
+      return {
+        ...state,
+        blocks: newBlocks,
+        isDirty: true,
+      };
+    }
+
+    case "MOVE_BLOCK_DOWN": {
+      const blockId = action.payload;
+      const sortedBlocks = [...state.blocks].sort((a, b) => a.order - b.order);
+      const sortedIndex = sortedBlocks.findIndex((b) => b.id === blockId);
+      if (sortedIndex === -1 || sortedIndex >= sortedBlocks.length - 1)
+        return state; // Can't move down if last or not found
+
+      const blockBelow = sortedBlocks[sortedIndex + 1];
+      const newBlocks = reorderBlocks(state.blocks, blockId, blockBelow.id);
+      return {
+        ...state,
+        blocks: newBlocks,
+        isDirty: true,
+      };
+    }
+
     case "TOGGLE_COLLAPSE": {
       const { id } = action.payload;
       const newBlocks = state.blocks.map((block) =>
@@ -196,6 +237,21 @@ export const blockEditorActions = {
 
   setActiveBlock: (id: string | null): BlockEditorAction => ({
     type: "SET_ACTIVE_BLOCK",
+    payload: id,
+  }),
+
+  setHoveredBlock: (id: string | null): BlockEditorAction => ({
+    type: "SET_HOVERED_BLOCK",
+    payload: id,
+  }),
+
+  moveBlockUp: (id: string): BlockEditorAction => ({
+    type: "MOVE_BLOCK_UP",
+    payload: id,
+  }),
+
+  moveBlockDown: (id: string): BlockEditorAction => ({
+    type: "MOVE_BLOCK_DOWN",
     payload: id,
   }),
 

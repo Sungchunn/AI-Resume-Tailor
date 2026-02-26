@@ -669,3 +669,162 @@ export function getBlockSectionOrder(blocks: AnyResumeBlock[]): string[] {
     .sort((a, b) => a.order - b.order)
     .map((block) => block.type);
 }
+
+/**
+ * Convert resume blocks to plain text for ATS analysis
+ * Concatenates all textual content from visible blocks
+ */
+export function blocksToText(blocks: AnyResumeBlock[]): string {
+  const lines: string[] = [];
+
+  // Sort blocks by order and filter out hidden blocks
+  const visibleBlocks = [...blocks]
+    .filter((block) => !block.isHidden)
+    .sort((a, b) => a.order - b.order);
+
+  for (const block of visibleBlocks) {
+    switch (block.type) {
+      case "contact": {
+        const content = block.content as ContactContent;
+        if (content.fullName) lines.push(content.fullName);
+        if (content.email) lines.push(content.email);
+        if (content.phone) lines.push(content.phone);
+        if (content.location) lines.push(content.location);
+        break;
+      }
+
+      case "summary": {
+        const summary = block.content as string;
+        if (summary) lines.push(summary);
+        break;
+      }
+
+      case "experience": {
+        const entries = block.content as ExperienceEntry[];
+        for (const entry of entries) {
+          if (entry.title) lines.push(entry.title);
+          if (entry.company) lines.push(entry.company);
+          if (entry.location) lines.push(entry.location);
+          if (entry.bullets) {
+            lines.push(...entry.bullets);
+          }
+        }
+        break;
+      }
+
+      case "education": {
+        const entries = block.content as EducationEntry[];
+        for (const entry of entries) {
+          if (entry.degree) lines.push(entry.degree);
+          if (entry.institution) lines.push(entry.institution);
+          if (entry.location) lines.push(entry.location);
+          if (entry.honors) lines.push(entry.honors);
+          if (entry.relevantCourses) lines.push(...entry.relevantCourses);
+        }
+        break;
+      }
+
+      case "skills": {
+        const skills = block.content as string[];
+        lines.push(...skills);
+        break;
+      }
+
+      case "certifications": {
+        const entries = block.content as CertificationEntry[];
+        for (const entry of entries) {
+          if (entry.name) lines.push(entry.name);
+          if (entry.issuer) lines.push(entry.issuer);
+        }
+        break;
+      }
+
+      case "projects": {
+        const entries = block.content as ProjectEntry[];
+        for (const entry of entries) {
+          if (entry.name) lines.push(entry.name);
+          if (entry.description) lines.push(entry.description);
+          if (entry.technologies) lines.push(...entry.technologies);
+          if (entry.bullets) lines.push(...entry.bullets);
+        }
+        break;
+      }
+
+      case "languages": {
+        const entries = block.content as LanguageEntry[];
+        for (const entry of entries) {
+          if (entry.language) lines.push(`${entry.language} (${entry.proficiency})`);
+        }
+        break;
+      }
+
+      case "volunteer": {
+        const entries = block.content as VolunteerEntry[];
+        for (const entry of entries) {
+          if (entry.role) lines.push(entry.role);
+          if (entry.organization) lines.push(entry.organization);
+          if (entry.description) lines.push(entry.description);
+          if (entry.bullets) lines.push(...entry.bullets);
+        }
+        break;
+      }
+
+      case "publications": {
+        const entries = block.content as PublicationEntry[];
+        for (const entry of entries) {
+          if (entry.title) lines.push(entry.title);
+          if (entry.publisher) lines.push(entry.publisher);
+          if (entry.description) lines.push(entry.description);
+        }
+        break;
+      }
+
+      case "awards": {
+        const entries = block.content as AwardEntry[];
+        for (const entry of entries) {
+          if (entry.title) lines.push(entry.title);
+          if (entry.issuer) lines.push(entry.issuer);
+          if (entry.description) lines.push(entry.description);
+        }
+        break;
+      }
+
+      case "interests": {
+        const interests = block.content as string;
+        if (interests) lines.push(interests);
+        break;
+      }
+
+      case "references": {
+        const entries = block.content as ReferenceEntry[];
+        for (const entry of entries) {
+          if (entry.name) lines.push(entry.name);
+          if (entry.title) lines.push(entry.title);
+          if (entry.company) lines.push(entry.company);
+        }
+        break;
+      }
+
+      case "courses": {
+        const entries = block.content as CourseEntry[];
+        for (const entry of entries) {
+          if (entry.name) lines.push(entry.name);
+          if (entry.provider) lines.push(entry.provider);
+          if (entry.description) lines.push(entry.description);
+        }
+        break;
+      }
+
+      case "memberships": {
+        const entries = block.content as MembershipEntry[];
+        for (const entry of entries) {
+          if (entry.organization) lines.push(entry.organization);
+          if (entry.role) lines.push(entry.role);
+        }
+        break;
+      }
+    }
+  }
+
+  return lines.join("\n");
+}

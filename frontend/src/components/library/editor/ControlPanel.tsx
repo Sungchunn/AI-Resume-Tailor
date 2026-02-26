@@ -7,8 +7,10 @@ import { AIChatTab, ATSEvaluationTab, FormattingTab, SectionDraggerTab } from ".
 type ControlPanelTab = "ai" | "ats" | "formatting" | "sections";
 
 interface ControlPanelProps {
-  /** Job ID for ATS analysis - null means no job context */
+  /** User-created job ID for ATS analysis - null means no job context */
   jobId: number | null;
+  /** Scraped job listing ID for ATS analysis - null means no job context */
+  jobListingId: number | null;
 }
 
 /**
@@ -20,8 +22,11 @@ interface ControlPanelProps {
  * 3. Formatting - Style, font, and spacing controls
  * 4. Sections - Drag-and-drop section ordering
  */
-export function ControlPanel({ jobId }: ControlPanelProps) {
+export function ControlPanel({ jobId, jobListingId }: ControlPanelProps) {
   const [activeTab, setActiveTab] = useState<ControlPanelTab>("formatting");
+
+  // Has job context if either job ID is provided
+  const hasJobContext = jobId !== null || jobListingId !== null;
 
   return (
     <div className="h-full flex flex-col bg-card border-l border-border">
@@ -38,7 +43,7 @@ export function ControlPanel({ jobId }: ControlPanelProps) {
           onClick={() => setActiveTab("ats")}
           icon={<Target className="w-4 h-4" />}
           label="ATS"
-          disabled={jobId === null}
+          disabled={!hasJobContext}
         />
         <TabButton
           active={activeTab === "formatting"}
@@ -57,7 +62,9 @@ export function ControlPanel({ jobId }: ControlPanelProps) {
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
         {activeTab === "ai" && <AIChatTab />}
-        {activeTab === "ats" && <ATSEvaluationTab jobId={jobId} />}
+        {activeTab === "ats" && (
+          <ATSEvaluationTab jobId={jobId} jobListingId={jobListingId} />
+        )}
         {activeTab === "formatting" && <FormattingTab />}
         {activeTab === "sections" && <SectionDraggerTab />}
       </div>

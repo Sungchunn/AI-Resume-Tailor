@@ -262,6 +262,7 @@ export interface BlockEditorStyle {
 export interface BlockEditorState {
   blocks: AnyResumeBlock[];
   activeBlockId: string | null;
+  hoveredBlockId: string | null;
   style: BlockEditorStyle;
   isDirty: boolean;
   isLoading: boolean;
@@ -277,6 +278,9 @@ export type BlockEditorAction =
   | { type: "REORDER_BLOCKS"; payload: { activeId: string; overId: string } }
   | { type: "UPDATE_BLOCK"; payload: { id: string; content: BlockContent } }
   | { type: "SET_ACTIVE_BLOCK"; payload: string | null }
+  | { type: "SET_HOVERED_BLOCK"; payload: string | null }
+  | { type: "MOVE_BLOCK_UP"; payload: string }
+  | { type: "MOVE_BLOCK_DOWN"; payload: string }
   | { type: "TOGGLE_COLLAPSE"; payload: { id: string } }
   | { type: "TOGGLE_VISIBILITY"; payload: { id: string } }
   | { type: "SET_STYLE"; payload: Partial<BlockEditorStyle> }

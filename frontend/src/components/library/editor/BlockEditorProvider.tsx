@@ -220,6 +220,19 @@ export function BlockEditorProvider({
     dispatch(blockEditorActions.toggleVisibility(id));
   }, []);
 
+  // Hover interactions for preview
+  const setHoveredBlock = useCallback((id: string | null) => {
+    dispatch(blockEditorActions.setHoveredBlock(id));
+  }, []);
+
+  const moveBlockUp = useCallback((id: string) => {
+    dispatch(blockEditorActions.moveBlockUp(id));
+  }, []);
+
+  const moveBlockDown = useCallback((id: string) => {
+    dispatch(blockEditorActions.moveBlockDown(id));
+  }, []);
+
   // Style operations
   const updateStyle = useCallback((style: Partial<BlockEditorStyle>) => {
     dispatch(blockEditorActions.setStyle(style));
@@ -305,6 +318,9 @@ export function BlockEditorProvider({
       setActiveBlock,
       toggleBlockCollapse,
       toggleBlockVisibility,
+      setHoveredBlock,
+      moveBlockUp,
+      moveBlockDown,
       updateStyle,
       applyStylePreset,
       setFitToOnePage,
@@ -329,6 +345,9 @@ export function BlockEditorProvider({
       setActiveBlock,
       toggleBlockCollapse,
       toggleBlockVisibility,
+      setHoveredBlock,
+      moveBlockUp,
+      moveBlockDown,
       updateStyle,
       applyStylePreset,
       setFitToOnePage,

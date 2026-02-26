@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     admin,
+    ai,
     ats,
     auth,
     blocks,
@@ -31,6 +32,9 @@ api_router.include_router(resume_builds.router, prefix="/v1/resume-builds", tags
 
 # Phase 5: ATS Analysis
 api_router.include_router(ats.router, prefix="/v1/ats", tags=["ats"])
+
+# Phase 6: AI Chat for Resume Editor
+api_router.include_router(ai.router, prefix="/v1/ai", tags=["ai"])
 
 # Job Listings (system-wide jobs from external sources)
 api_router.include_router(job_listings.router, prefix="/job-listings", tags=["job-listings"])
