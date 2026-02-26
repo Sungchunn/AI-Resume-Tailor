@@ -99,26 +99,26 @@ function SortableItem({ id, index }: SortableItemProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 p-3 bg-white border rounded-lg ${
-        isDragging ? "shadow-lg border-primary-300 z-10" : "border-gray-200"
+      className={`flex items-center gap-3 p-3 bg-card border rounded-lg ${
+        isDragging ? "shadow-lg border-primary/30 z-10" : "border-border"
       }`}
       {...attributes}
     >
       <button
-        className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+        className="cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-muted-foreground"
         {...listeners}
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
         </svg>
       </button>
-      <span className="flex-shrink-0 text-gray-500">
+      <span className="flex-shrink-0 text-muted-foreground">
         {SECTION_ICONS[id] || SECTION_ICONS.summary}
       </span>
-      <span className="flex-1 text-sm font-medium text-gray-700">
+      <span className="flex-1 text-sm font-medium text-foreground/80">
         {SECTION_LABELS[id] || id}
       </span>
-      <span className="text-xs text-gray-400">{index + 1}</span>
+      <span className="text-xs text-muted-foreground/60">{index + 1}</span>
     </div>
   );
 }
@@ -148,16 +148,16 @@ export function SectionReorderPanel({
   return (
     <div className="h-full overflow-y-auto p-4">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-900">Section Order</h3>
+        <h3 className="text-sm font-semibold text-foreground">Section Order</h3>
         <button
           onClick={onReset}
-          className="text-xs text-gray-500 hover:text-gray-700"
+          className="text-xs text-muted-foreground hover:text-foreground/80"
         >
           Reset Order
         </button>
       </div>
 
-      <p className="text-xs text-gray-500 mb-4">
+      <p className="text-xs text-muted-foreground mb-4">
         Drag and drop to reorder sections in your resume.
       </p>
 

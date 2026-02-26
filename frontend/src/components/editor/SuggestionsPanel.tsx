@@ -15,7 +15,7 @@ interface SuggestionsPanelProps {
 const IMPACT_COLORS = {
   high: "bg-red-100 text-red-700 border-red-200",
   medium: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  low: "bg-gray-100 text-gray-700 border-gray-200",
+  low: "bg-muted text-foreground/80 border-border",
 };
 
 const SECTION_LABELS: Record<string, string> = {
@@ -52,7 +52,7 @@ export function SuggestionsPanel({
       <div className="h-full flex items-center justify-center p-4">
         <div className="text-center">
           <svg
-            className="mx-auto h-12 w-12 text-gray-400"
+            className="mx-auto h-12 w-12 text-muted-foreground/60"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -64,10 +64,10 @@ export function SuggestionsPanel({
               d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">
+          <h3 className="mt-2 text-sm font-medium text-foreground">
             All suggestions applied
           </h3>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-muted-foreground">
             No pending suggestions remaining.
           </p>
         </div>
@@ -78,9 +78,9 @@ export function SuggestionsPanel({
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 p-4 border-b border-gray-200">
+      <div className="flex-shrink-0 p-4 border-b border-border">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-900">
+          <h3 className="text-sm font-semibold text-foreground">
             AI Suggestions ({suggestions.length})
           </h3>
           <div className="flex gap-2">
@@ -113,7 +113,7 @@ export function SuggestionsPanel({
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+          className="w-full px-3 py-1.5 text-xs border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
         >
           <option value="all">All Suggestions</option>
           <option value="high">High Impact</option>
@@ -136,7 +136,7 @@ export function SuggestionsPanel({
             <div
               key={originalIndex}
               className={`border rounded-lg overflow-hidden transition-all ${
-                isExpanded ? "border-primary-300 shadow-sm" : "border-gray-200"
+                isExpanded ? "border-primary/30 shadow-sm" : "border-border"
               }`}
             >
               {/* Header */}
@@ -144,10 +144,10 @@ export function SuggestionsPanel({
                 onClick={() =>
                   setExpandedIndex(isExpanded ? null : originalIndex)
                 }
-                className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 text-left"
+                className="w-full flex items-center justify-between p-3 bg-muted hover:bg-accent text-left"
               >
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 text-xs rounded bg-gray-200 text-gray-700 font-medium">
+                  <span className="px-2 py-0.5 text-xs rounded bg-muted text-foreground/80 font-medium">
                     {SECTION_LABELS[suggestion.section] || suggestion.section}
                   </span>
                   <span
@@ -161,7 +161,7 @@ export function SuggestionsPanel({
                   </span>
                 </div>
                 <svg
-                  className={`w-4 h-4 text-gray-500 transition-transform ${
+                  className={`w-4 h-4 text-muted-foreground transition-transform ${
                     isExpanded ? "rotate-180" : ""
                   }`}
                   fill="none"
@@ -182,29 +182,29 @@ export function SuggestionsPanel({
                 <div className="p-3 space-y-3">
                   {suggestion.original && (
                     <div>
-                      <div className="text-xs font-medium text-gray-500 mb-1">
+                      <div className="text-xs font-medium text-muted-foreground mb-1">
                         Original
                       </div>
-                      <p className="text-sm text-gray-600 bg-red-50 p-2 rounded border border-red-100">
+                      <p className="text-sm text-muted-foreground bg-destructive/10 p-2 rounded border border-destructive/20">
                         {suggestion.original}
                       </p>
                     </div>
                   )}
 
                   <div>
-                    <div className="text-xs font-medium text-gray-500 mb-1">
+                    <div className="text-xs font-medium text-muted-foreground mb-1">
                       Suggested
                     </div>
-                    <p className="text-sm text-gray-900 bg-green-50 p-2 rounded border border-green-100">
+                    <p className="text-sm text-foreground bg-green-50 p-2 rounded border border-green-100">
                       {suggestion.suggested}
                     </p>
                   </div>
 
                   <div>
-                    <div className="text-xs font-medium text-gray-500 mb-1">
+                    <div className="text-xs font-medium text-muted-foreground mb-1">
                       Reason
                     </div>
-                    <p className="text-sm text-gray-600">{suggestion.reason}</p>
+                    <p className="text-sm text-muted-foreground">{suggestion.reason}</p>
                   </div>
 
                   {/* Actions */}
@@ -217,7 +217,7 @@ export function SuggestionsPanel({
                     </button>
                     <button
                       onClick={() => onReject(originalIndex)}
-                      className="flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                      className="flex-1 px-3 py-1.5 text-sm font-medium text-foreground/80 bg-muted hover:bg-accent rounded-md transition-colors"
                     >
                       Reject
                     </button>
