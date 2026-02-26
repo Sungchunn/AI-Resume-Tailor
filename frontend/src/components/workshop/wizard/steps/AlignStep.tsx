@@ -113,7 +113,7 @@ export function AlignStep({
       {/* Projected Score */}
       <div className="bg-muted rounded-lg p-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-medium text-foreground/80">
             Projected Score
           </span>
           <div className="flex items-center gap-2">
