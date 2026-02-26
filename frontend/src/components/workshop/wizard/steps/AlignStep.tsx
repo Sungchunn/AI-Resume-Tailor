@@ -47,10 +47,10 @@ export function AlignStep({
     <div className="space-y-6">
       {/* Intro Text */}
       <div className="text-center">
-        <h3 className="text-xl font-semibold text-gray-900">
+        <h3 className="text-xl font-semibold text-foreground">
           Choose Sections to Enhance
         </h3>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-muted-foreground">
           Select the sections you'd like AI to improve for this job
         </p>
       </div>
@@ -68,14 +68,14 @@ export function AlignStep({
               className={`w-full flex items-center justify-between p-4 rounded-lg border-2 text-left transition-colors ${
                 isSelected
                   ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 hover:border-gray-300"
+                  : "border-border hover:border-input"
               }`}
             >
               <div className="flex items-center gap-3">
                 {/* Checkbox */}
                 <div
                   className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${
-                    isSelected ? "bg-blue-600" : "border-2 border-gray-300"
+                    isSelected ? "bg-blue-600" : "border-2 border-input"
                   }`}
                 >
                   {isSelected && <CheckIcon className="w-3 h-3 text-white" />}
@@ -83,7 +83,7 @@ export function AlignStep({
 
                 {/* Section Info */}
                 <div>
-                  <div className="font-medium text-gray-900 flex items-center gap-2">
+                  <div className="font-medium text-foreground flex items-center gap-2">
                     {section.name}
                     {section.isRecommended && (
                       <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
@@ -91,7 +91,7 @@ export function AlignStep({
                       </span>
                     )}
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-muted-foreground">
                     {section.description}
                   </div>
                 </div>
@@ -100,7 +100,7 @@ export function AlignStep({
               {/* Score Impact */}
               <div
                 className={`text-sm font-medium flex-shrink-0 ${
-                  isSelected ? "text-green-600" : "text-gray-400"
+                  isSelected ? "text-green-600" : "text-muted-foreground/60"
                 }`}
               >
                 +{section.projectedImprovement} pts
@@ -111,13 +111,13 @@ export function AlignStep({
       </div>
 
       {/* Projected Score */}
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="bg-muted rounded-lg p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-gray-700">
             Projected Score
           </span>
           <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-gray-900">
+            <span className="text-lg font-bold text-foreground">
               {projectedScore}%
             </span>
             {projectedImprovement > 0 && (
@@ -127,7 +127,7 @@ export function AlignStep({
             )}
           </div>
         </div>
-        <div className="h-3 bg-gray-200 rounded-full overflow-hidden relative">
+        <div className="h-3 bg-muted rounded-full overflow-hidden relative">
           {/* Current score (darker) */}
           <div
             className="absolute inset-y-0 left-0 bg-blue-600 rounded-l-full"
@@ -144,7 +144,7 @@ export function AlignStep({
             />
           )}
         </div>
-        <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+        <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
           <span>Current: {currentScore}%</span>
           <span>Target: {projectedScore}%</span>
         </div>

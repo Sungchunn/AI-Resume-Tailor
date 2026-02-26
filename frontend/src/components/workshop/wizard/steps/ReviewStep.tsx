@@ -78,23 +78,23 @@ export function ReviewStep({
     <div className="space-y-6">
       {/* Intro Text */}
       <div className="text-center">
-        <h3 className="text-xl font-semibold text-gray-900">
+        <h3 className="text-xl font-semibold text-foreground">
           Your Tailored Resume is Ready
         </h3>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-muted-foreground">
           Review your changes and export when you're satisfied
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Mini Preview Placeholder */}
-        <div className="border rounded-lg p-4 bg-white">
-          <h4 className="font-medium text-gray-900 mb-3">Preview</h4>
-          <div className="bg-gray-50 rounded border aspect-[8.5/11] flex items-center justify-center text-gray-400 text-sm p-4">
+        <div className="border rounded-lg p-4 bg-card">
+          <h4 className="font-medium text-foreground mb-3">Preview</h4>
+          <div className="bg-muted rounded border aspect-[8.5/11] flex items-center justify-center text-muted-foreground/60 text-sm p-4">
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-3 bg-gray-200 rounded-lg flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-3 bg-muted rounded-lg flex items-center justify-center">
                 <svg
-                  className="w-8 h-8 text-gray-400"
+                  className="w-8 h-8 text-muted-foreground/60"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -116,7 +116,7 @@ export function ReviewStep({
         {/* Changes Summary */}
         <div className="space-y-4">
           <div className="border rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-3">
+            <h4 className="font-medium text-foreground mb-3">
               {hasChanges ? "Suggestions Ready" : "Next Steps"}
             </h4>
             {hasChanges ? (
@@ -124,7 +124,7 @@ export function ReviewStep({
                 {changesSummary.map((change, index) => (
                   <li
                     key={index}
-                    className="flex items-center text-sm text-gray-700"
+                    className="flex items-center text-sm text-foreground/80"
                   >
                     <CheckIcon className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                     <span>
@@ -139,7 +139,7 @@ export function ReviewStep({
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Open the workshop to generate AI suggestions and fine-tune your
                 resume content.
               </p>
@@ -153,7 +153,7 @@ export function ReviewStep({
                 ? "bg-green-50 border-green-200"
                 : finalScore >= 60
                   ? "bg-yellow-50 border-yellow-200"
-                  : "bg-gray-50 border-gray-200"
+                  : "bg-muted border-gray-200"
             }`}
           >
             <div className="flex items-center justify-between">
@@ -163,7 +163,7 @@ export function ReviewStep({
                     ? "text-green-800"
                     : finalScore >= 60
                       ? "text-yellow-800"
-                      : "text-gray-700"
+                      : "text-foreground/80"
                 }`}
               >
                 Current Match Score
@@ -174,7 +174,7 @@ export function ReviewStep({
                     ? "text-green-600"
                     : finalScore >= 60
                       ? "text-yellow-600"
-                      : "text-gray-600"
+                      : "text-muted-foreground"
                 }`}
               >
                 {finalScore}%
@@ -194,14 +194,14 @@ export function ReviewStep({
       <div className="flex items-center justify-between pt-6">
         <button
           onClick={onBack}
-          className="px-4 py-2 text-gray-600 font-medium hover:text-gray-900 transition-colors"
+          className="px-4 py-2 text-muted-foreground font-medium hover:text-foreground transition-colors"
         >
           Back
         </button>
         <div className="flex items-center gap-3">
           <button
             onClick={onOpenWorkshop}
-            className="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 border border-gray-300 text-foreground/80 font-medium rounded-lg hover:bg-muted transition-colors"
           >
             Open Workshop
           </button>

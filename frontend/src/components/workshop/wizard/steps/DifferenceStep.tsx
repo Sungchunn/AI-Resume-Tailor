@@ -61,10 +61,10 @@ export function DifferenceStep({ onContinue }: DifferenceStepProps) {
     <div className="space-y-6">
       {/* Intro Text */}
       <div className="text-center">
-        <h3 className="text-xl font-semibold text-gray-900">
+        <h3 className="text-xl font-semibold text-foreground">
           See How You Compare
         </h3>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-muted-foreground">
           Here's how your resume matches the job requirements
         </p>
       </div>
@@ -73,7 +73,7 @@ export function DifferenceStep({ onContinue }: DifferenceStepProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Your Skills */}
         <div className="border rounded-lg p-4">
-          <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+          <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-green-500" />
             Skills You Have ({resumeSkills.length})
           </h4>
@@ -82,7 +82,7 @@ export function DifferenceStep({ onContinue }: DifferenceStepProps) {
               {resumeSkills.map((skill) => (
                 <li
                   key={skill}
-                  className="flex items-center text-sm text-gray-700"
+                  className="flex items-center text-sm text-foreground/80"
                 >
                   <CheckIcon className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                   {skill}
@@ -90,7 +90,7 @@ export function DifferenceStep({ onContinue }: DifferenceStepProps) {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-gray-500 italic">
+            <p className="text-sm text-muted-foreground italic">
               No matching skills detected
             </p>
           )}
@@ -98,7 +98,7 @@ export function DifferenceStep({ onContinue }: DifferenceStepProps) {
 
         {/* Missing Skills */}
         <div className="border rounded-lg p-4">
-          <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+          <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-red-500" />
             Skills to Highlight ({missingSkills.length})
           </h4>
@@ -107,7 +107,7 @@ export function DifferenceStep({ onContinue }: DifferenceStepProps) {
               {missingSkills.map((skill) => (
                 <li
                   key={skill}
-                  className="flex items-center text-sm text-gray-700"
+                  className="flex items-center text-sm text-foreground/80"
                 >
                   <XIcon className="w-4 h-4 text-red-500 mr-2 flex-shrink-0" />
                   {skill}
@@ -115,7 +115,7 @@ export function DifferenceStep({ onContinue }: DifferenceStepProps) {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-gray-500 italic">
+            <p className="text-sm text-muted-foreground italic">
               Great job! No major skill gaps detected
             </p>
           )}
@@ -123,27 +123,27 @@ export function DifferenceStep({ onContinue }: DifferenceStepProps) {
       </div>
 
       {/* Match Score Bar */}
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="bg-muted rounded-lg p-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-medium text-foreground/80">
             Current Match Score
           </span>
-          <span className="text-lg font-bold text-gray-900">{matchScore}%</span>
+          <span className="text-lg font-bold text-foreground">{matchScore}%</span>
         </div>
-        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+        <div className="h-3 bg-muted rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${scoreColor}`}
             style={{ width: `${matchScore}%` }}
           />
         </div>
         {missingSkills.length > 0 && (
-          <p className="mt-3 text-sm text-gray-600">
+          <p className="mt-3 text-sm text-muted-foreground">
             You're missing <strong>{missingSkills.length} key skills</strong>.
             Let's see how to improve your match.
           </p>
         )}
         {missingSkills.length === 0 && matchScore < 80 && (
-          <p className="mt-3 text-sm text-gray-600">
+          <p className="mt-3 text-sm text-muted-foreground">
             Your skills match well. Let's optimize your content to boost your
             score further.
           </p>
