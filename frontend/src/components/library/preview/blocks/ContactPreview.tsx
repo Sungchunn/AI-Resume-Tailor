@@ -16,7 +16,7 @@ export function ContactPreview({ content, style }: ContactPreviewProps) {
   const contactItems = buildContactItems(content);
 
   return (
-    <div className="text-center pb-3 border-b border-gray-300">
+    <div className="text-center pb-3 border-b border-input">
       {/* Name - Primary heading */}
       {content.fullName && (
         <h1
@@ -30,7 +30,7 @@ export function ContactPreview({ content, style }: ContactPreviewProps) {
       {/* Contact details row */}
       {contactItems.length > 0 && (
         <div
-          className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2 text-gray-600"
+          className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2 text-muted-foreground"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
           {contactItems.map((item, idx) => (
@@ -53,7 +53,7 @@ interface ContactItem {
 function buildContactItems(content: ContactContent): ContactItem[] {
   const items: ContactItem[] = [];
   const iconSize = 12;
-  const iconClass = "text-gray-400";
+  const iconClass = "text-muted-foreground/60";
 
   if (content.email) {
     items.push({

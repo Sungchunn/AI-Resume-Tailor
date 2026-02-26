@@ -46,7 +46,7 @@ function EducationEntryPreview({ entry, style }: EducationEntryPreviewProps) {
         </span>
         {entry.graduationDate && (
           <span
-            className="text-gray-600 flex-shrink-0 ml-4"
+            className="text-muted-foreground flex-shrink-0 ml-4"
             style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
           >
             {entry.graduationDate}
@@ -57,7 +57,7 @@ function EducationEntryPreview({ entry, style }: EducationEntryPreviewProps) {
       {/* Institution and location row */}
       {(entry.institution || entry.location) && (
         <div
-          className="text-gray-700"
+          className="text-foreground/80"
           style={{ fontSize: style.bodyFontSize }}
         >
           {entry.institution}
@@ -69,7 +69,7 @@ function EducationEntryPreview({ entry, style }: EducationEntryPreviewProps) {
       {/* GPA and honors */}
       {(entry.gpa || entry.honors) && (
         <div
-          className="text-gray-600 mt-0.5"
+          className="text-muted-foreground mt-0.5"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
           {entry.gpa && <span>GPA: {entry.gpa}</span>}
@@ -81,7 +81,7 @@ function EducationEntryPreview({ entry, style }: EducationEntryPreviewProps) {
       {/* Relevant courses */}
       {entry.relevantCourses && entry.relevantCourses.length > 0 && (
         <div
-          className="text-gray-600 mt-1"
+          className="text-muted-foreground mt-1"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
           <span className="font-medium">Relevant Courses: </span>

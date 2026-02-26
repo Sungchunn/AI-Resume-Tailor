@@ -77,7 +77,7 @@ export function BlockRenderer({
     >
       {/* Section header */}
       <h2
-        className="font-semibold uppercase tracking-wide border-b border-gray-300 pb-1 mb-2"
+        className="font-semibold uppercase tracking-wide border-b border-input pb-1 mb-2"
         style={{ fontSize: style.subheadingFontSize }}
       >
         {getSectionTitle(block.type)}
@@ -97,7 +97,7 @@ function getBlockWrapperClasses(isActive: boolean, onClick?: () => void): string
   const activeClasses = isActive
     ? "ring-2 ring-blue-400 ring-offset-2 bg-blue-50/30"
     : "";
-  const hoverClasses = !isActive && onClick ? "hover:bg-gray-50/50 cursor-pointer" : "";
+  const hoverClasses = !isActive && onClick ? "hover:bg-accent/50 cursor-pointer" : "";
 
   return `${baseClasses} ${activeClasses} ${hoverClasses}`.trim();
 }
@@ -187,7 +187,7 @@ function renderBlockContent(
       // Type-safe exhaustive check
       const _exhaustiveCheck: never = block;
       return (
-        <div className="text-sm text-gray-500 italic">
+        <div className="text-sm text-muted-foreground italic">
           No preview available for this block type
         </div>
       );

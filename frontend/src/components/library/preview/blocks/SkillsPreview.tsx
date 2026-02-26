@@ -30,7 +30,7 @@ export function SkillsPreview({ content, style }: SkillsPreviewProps) {
         <span key={idx}>
           {skill}
           {idx < filteredSkills.length - 1 && (
-            <span className="text-gray-400 ml-2">|</span>
+            <span className="text-muted-foreground/60 ml-2">|</span>
           )}
         </span>
       ))}
