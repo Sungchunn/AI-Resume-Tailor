@@ -61,3 +61,8 @@ export {
   BulletList,
   EntryList,
 } from "./blocks";
+
+// Editor layout components (Phase 6)
+export { EditorLayout } from "./EditorLayout";
+export { EditorHeader } from "./EditorHeader";
+export { EditorToolbar } from "./EditorToolbar";

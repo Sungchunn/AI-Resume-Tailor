@@ -1,10 +1,15 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useMemo } from "react";
 import Link from "next/link";
 import { useResume, useDeleteResume } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import ExportDialog from "@/components/export/ExportDialog";
+import { ResumePreview } from "@/components/library/preview";
+import { parsedContentToBlocks, apiStyleToEditorStyle } from "@/lib/resume/transforms";
+import { DEFAULT_STYLE } from "@/lib/resume/defaults";
+import type { ParsedResumeContent } from "@/lib/resume/types";
+import { Edit, Trash2, Download, FileText, ChevronDown, ChevronUp } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -17,6 +22,19 @@ export default function ResumeDetailPage({ params }: PageProps) {
   const { data: resume, isLoading, error } = useResume(resumeId);
   const deleteResume = useDeleteResume();
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showRawContent, setShowRawContent] = useState(false);
+
+  // Convert parsed_content to blocks for preview
+  const blocks = useMemo(() => {
+    if (!resume?.parsed_content) return [];
+    return parsedContentToBlocks(resume.parsed_content as ParsedResumeContent);
+  }, [resume?.parsed_content]);
+
+  // Get style settings
+  const style = useMemo(() => {
+    if (!resume?.style) return DEFAULT_STYLE;
+    return apiStyleToEditorStyle(resume.style as Record<string, unknown>);
+  }, [resume?.style]);
 
   const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this resume?")) {
@@ -27,9 +45,12 @@ export default function ResumeDetailPage({ params }: PageProps) {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl">
+      <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="card">
-          <p className="text-gray-600">Loading resume...</p>
+          <div className="flex items-center gap-3">
+            <div className="w-5 h-5 border-2 border-gray-300 border-t-primary-600 rounded-full animate-spin" />
+            <p className="text-gray-600">Loading resume...</p>
+          </div>
         </div>
       </div>
     );
@@ -37,7 +58,7 @@ export default function ResumeDetailPage({ params }: PageProps) {
 
   if (error || !resume) {
     return (
-      <div className="max-w-4xl">
+      <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="mb-6">
           <Link
             href="/dashboard/library"
@@ -66,8 +87,11 @@ export default function ResumeDetailPage({ params }: PageProps) {
     );
   }
 
+  const hasPreviewContent = blocks.length > 0;
+
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      {/* Back Navigation */}
       <div className="mb-6">
         <Link
           href="/dashboard/library"
@@ -90,7 +114,8 @@ export default function ResumeDetailPage({ params }: PageProps) {
         </Link>
       </div>
 
-      <div className="card">
+      {/* Header Card */}
+      <div className="card mb-6">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{resume.title}</h1>
@@ -106,58 +131,87 @@ export default function ResumeDetailPage({ params }: PageProps) {
               onClick={() => setShowExportDialog(true)}
               className="btn-secondary inline-flex items-center gap-1.5"
             >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
-                />
-              </svg>
+              <Download className="h-4 w-4" />
               Export
             </button>
             <Link
               href={`/dashboard/library/resumes/${resumeId}/edit`}
-              className="btn-primary"
+              className="btn-primary inline-flex items-center gap-1.5"
             >
+              <Edit className="h-4 w-4" />
               Edit
             </Link>
             <button
               onClick={handleDelete}
               disabled={deleteResume.isPending}
-              className="btn-ghost text-red-600 hover:bg-red-50"
+              className="btn-ghost text-red-600 hover:bg-red-50 inline-flex items-center gap-1.5"
             >
+              <Trash2 className="h-4 w-4" />
               {deleteResume.isPending ? "Deleting..." : "Delete"}
             </button>
           </div>
         </div>
+      </div>
 
-        <hr className="my-6 border-gray-200" />
-
-        <div className="prose max-w-none">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Resume Content</h2>
-          <pre className="whitespace-pre-wrap font-mono text-sm text-gray-700 bg-gray-50 p-4 rounded-lg border border-gray-200">
-            {resume.raw_content}
-          </pre>
+      {/* Resume Preview */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Resume Preview</h2>
+          {!hasPreviewContent && resume.raw_content && (
+            <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+              Preview unavailable - edit to add structured content
+            </span>
+          )}
         </div>
 
-        {resume.parsed_content && (
-          <>
-            <hr className="my-6 border-gray-200" />
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Parsed Data</h2>
-              <pre className="whitespace-pre-wrap font-mono text-sm text-gray-700 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                {JSON.stringify(resume.parsed_content, null, 2)}
-              </pre>
-            </div>
-          </>
+        {hasPreviewContent ? (
+          <div className="bg-gray-100 rounded-lg p-4 overflow-auto">
+            <ResumePreview
+              blocks={blocks}
+              style={style}
+              showPageBorder={true}
+            />
+          </div>
+        ) : (
+          <div className="bg-gray-50 rounded-lg p-8 text-center">
+            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 mb-4">
+              No structured content available for preview.
+            </p>
+            <Link
+              href={`/dashboard/library/resumes/${resumeId}/edit`}
+              className="btn-primary inline-flex items-center gap-1.5"
+            >
+              <Edit className="h-4 w-4" />
+              Open Editor
+            </Link>
+          </div>
         )}
       </div>
+
+      {/* Raw Content (Collapsible) */}
+      {resume.raw_content && (
+        <div className="card mt-6">
+          <button
+            onClick={() => setShowRawContent(!showRawContent)}
+            className="w-full flex items-center justify-between text-left"
+          >
+            <h2 className="text-lg font-semibold text-gray-900">Raw Content</h2>
+            {showRawContent ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
+          </button>
+          {showRawContent && (
+            <div className="mt-4">
+              <pre className="whitespace-pre-wrap font-mono text-sm text-gray-700 bg-gray-50 p-4 rounded-lg border border-gray-200 max-h-96 overflow-auto">
+                {resume.raw_content}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Export Dialog */}
       {showExportDialog && (
