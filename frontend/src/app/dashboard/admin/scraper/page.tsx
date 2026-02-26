@@ -59,8 +59,8 @@ export default function AdminScraperPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Job Scraper</h1>
-        <p className="mt-1 text-gray-600">
+        <h1 className="text-2xl font-bold text-foreground">Job Scraper</h1>
+        <p className="mt-1 text-muted-foreground">
           Import jobs from LinkedIn using scheduled presets or one-time scrapes.
         </p>
       </div>
@@ -69,11 +69,11 @@ export default function AdminScraperPage() {
       <button
         type="button"
         onClick={() => setShowHelp(!showHelp)}
-        className="w-full flex items-center justify-between text-left p-4 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between text-left p-4 rounded-lg bg-card border border-border hover:bg-muted transition-colors"
       >
         <div className="flex items-center gap-2">
           <svg
-            className="h-5 w-5 text-primary-600"
+            className="h-5 w-5 text-primary"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={1.5}
@@ -85,10 +85,10 @@ export default function AdminScraperPage() {
               d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"
             />
           </svg>
-          <span className="text-sm font-medium text-gray-700">How this page works</span>
+          <span className="text-sm font-medium text-foreground/80">How this page works</span>
         </div>
         <svg
-          className={`h-5 w-5 text-gray-500 transition-transform ${showHelp ? "rotate-180" : ""}`}
+          className={`h-5 w-5 text-muted-foreground transition-transform ${showHelp ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -99,52 +99,52 @@ export default function AdminScraperPage() {
       </button>
 
       {showHelp && (
-        <div className="p-4 rounded-lg bg-gray-50 border border-gray-200 space-y-4">
+        <div className="p-4 rounded-lg bg-muted border border-border space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
             <div className="flex gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-sm">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-semibold text-sm">
                 1
               </div>
               <div>
-                <p className="font-medium text-gray-900">Schedule Settings</p>
-                <p className="text-sm text-gray-600">
+                <p className="font-medium text-foreground">Schedule Settings</p>
+                <p className="text-sm text-muted-foreground">
                   Enable automatic scraping and choose how often to run (daily or weekly at a specific time).
                 </p>
               </div>
             </div>
 
             <div className="flex gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-sm">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-semibold text-sm">
                 2
               </div>
               <div>
-                <p className="font-medium text-gray-900">Saved Presets</p>
-                <p className="text-sm text-gray-600">
+                <p className="font-medium text-foreground">Saved Presets</p>
+                <p className="text-sm text-muted-foreground">
                   Save LinkedIn job search URLs as presets. Active presets run automatically on schedule.
                 </p>
               </div>
             </div>
 
             <div className="flex gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-sm">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-semibold text-sm">
                 3
               </div>
               <div>
-                <p className="font-medium text-gray-900">Ad-Hoc Scraper</p>
-                <p className="text-sm text-gray-600">
+                <p className="font-medium text-foreground">Ad-Hoc Scraper</p>
+                <p className="text-sm text-muted-foreground">
                   Run a one-time scrape by pasting any LinkedIn job search URL directly.
                 </p>
               </div>
             </div>
           </div>
 
-          <p className="text-xs text-gray-500 pt-2 border-t border-gray-200">
+          <p className="text-xs text-muted-foreground pt-2 border-t border-border">
             To get a LinkedIn URL: Go to{" "}
             <a
               href="https://linkedin.com/jobs"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary-600 hover:underline"
+              className="text-primary hover:underline"
             >
               linkedin.com/jobs
             </a>
@@ -163,8 +163,8 @@ export default function AdminScraperPage() {
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Ad-Hoc Scraper</h2>
-            <p className="text-sm text-gray-600">
+            <h2 className="text-lg font-semibold text-foreground">Ad-Hoc Scraper</h2>
+            <p className="text-sm text-muted-foreground">
               Run a one-time import from any LinkedIn job search URL.
             </p>
           </div>
@@ -173,13 +173,13 @@ export default function AdminScraperPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* URL Input */}
           <div>
-            <label htmlFor="url" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="url" className="block text-sm font-medium text-foreground/80">
               LinkedIn Job Search URL
             </label>
             <div className="mt-1 relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg
-                  className="h-5 w-5 text-gray-400"
+                  className="h-5 w-5 text-muted-foreground/60"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
@@ -198,7 +198,7 @@ export default function AdminScraperPage() {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://www.linkedin.com/jobs/search/?keywords=..."
-                className="block w-full pl-10 pr-3 py-2.5 rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                className="block w-full pl-10 pr-3 py-2.5 rounded-lg border-input shadow-sm focus:border-ring focus:ring-ring sm:text-sm"
                 required
               />
             </div>
@@ -224,7 +224,7 @@ export default function AdminScraperPage() {
 
           {/* Count Input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-foreground/80">
               Number of Jobs to Scrape
             </label>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -235,21 +235,21 @@ export default function AdminScraperPage() {
                   onClick={() => setCount(preset)}
                   className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                     count === preset
-                      ? "bg-primary-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      ? "bg-primary text-white"
+                      : "bg-muted text-foreground/80 hover:bg-accent"
                   }`}
                 >
                   {preset}
                 </button>
               ))}
-              <span className="text-gray-400 text-sm">or</span>
+              <span className="text-muted-foreground/60 text-sm">or</span>
               <input
                 type="number"
                 value={count}
                 onChange={(e) => setCount(Math.max(100, parseInt(e.target.value) || 100))}
                 min={100}
                 max={1000}
-                className="w-20 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-center"
+                className="w-20 rounded-md border-input shadow-sm focus:border-ring focus:ring-ring sm:text-sm text-center"
               />
             </div>
           </div>
@@ -283,7 +283,7 @@ export default function AdminScraperPage() {
             <button
               type="submit"
               disabled={isPending || !url || !isValidUrl}
-              className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isPending ? (
                 <>
@@ -329,7 +329,7 @@ export default function AdminScraperPage() {
             </button>
 
             {isPending && (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 This may take a few minutes. Please don&apos;t close this page.
               </p>
             )}
@@ -354,7 +354,7 @@ export default function AdminScraperPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             )}
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-foreground">
               {result.status === "success"
                 ? "Scraping Complete"
                 : result.status === "partial"
@@ -373,7 +373,7 @@ export default function AdminScraperPage() {
                   : "bg-red-50 border-red-200"
               }`}
             >
-              <p className="text-sm font-medium text-gray-600">Status</p>
+              <p className="text-sm font-medium text-muted-foreground">Status</p>
               <p
                 className={`text-2xl font-bold ${
                   result.status === "success"
@@ -388,23 +388,23 @@ export default function AdminScraperPage() {
             </div>
 
             <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
-              <p className="text-sm font-medium text-gray-600">Jobs Found</p>
+              <p className="text-sm font-medium text-muted-foreground">Jobs Found</p>
               <p className="text-2xl font-bold text-blue-600">{result.jobs_found}</p>
             </div>
 
             <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200">
-              <p className="text-sm font-medium text-gray-600">New Jobs Created</p>
+              <p className="text-sm font-medium text-muted-foreground">New Jobs Created</p>
               <p className="text-2xl font-bold text-emerald-600">{result.jobs_created}</p>
             </div>
 
             <div className="p-4 rounded-lg bg-purple-50 border border-purple-200">
-              <p className="text-sm font-medium text-gray-600">Existing Jobs Updated</p>
+              <p className="text-sm font-medium text-muted-foreground">Existing Jobs Updated</p>
               <p className="text-2xl font-bold text-purple-600">{result.jobs_updated}</p>
             </div>
           </div>
 
           {result.duration_seconds && (
-            <p className="mt-4 text-sm text-gray-500 flex items-center gap-1.5">
+            <p className="mt-4 text-sm text-muted-foreground flex items-center gap-1.5">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -431,7 +431,7 @@ export default function AdminScraperPage() {
                         <button
                           type="button"
                           onClick={copyErrorDetails}
-                          className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                          className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded bg-muted text-foreground/80 hover:bg-accent transition-colors"
                         >
                           {copied ? (
                             <>
@@ -449,7 +449,7 @@ export default function AdminScraperPage() {
                             </>
                           )}
                         </button>
-                        <pre className="p-3 pr-16 bg-white rounded text-xs overflow-auto max-h-48 border border-red-100">
+                        <pre className="p-3 pr-16 bg-card rounded text-xs overflow-auto max-h-48 border border-red-100">
                           {JSON.stringify(result.error_details, null, 2)}
                         </pre>
                       </div>

@@ -59,8 +59,8 @@ export default function ScheduleSettings() {
   if (isLoading) {
     return (
       <div className="card animate-pulse">
-        <div className="h-6 w-48 bg-gray-200 rounded mb-4" />
-        <div className="h-4 w-64 bg-gray-200 rounded" />
+        <div className="h-6 w-48 bg-muted rounded mb-4" />
+        <div className="h-4 w-64 bg-muted rounded" />
       </div>
     );
   }
@@ -69,23 +69,23 @@ export default function ScheduleSettings() {
     <div className="card">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Schedule Settings</h2>
-          <p className="text-sm text-gray-600">
+          <h2 className="text-lg font-semibold text-foreground">Schedule Settings</h2>
+          <p className="text-sm text-muted-foreground">
             Configure when to automatically run all active presets
           </p>
         </div>
 
         {/* Global Toggle */}
         <div className="flex items-center gap-3">
-          <span className={`text-sm font-medium ${settings?.is_enabled ? "text-green-600" : "text-gray-500"}`}>
+          <span className={`text-sm font-medium ${settings?.is_enabled ? "text-green-500" : "text-muted-foreground"}`}>
             {settings?.is_enabled ? "Enabled" : "Disabled"}
           </span>
           <button
             type="button"
             onClick={() => toggleSchedule()}
             disabled={isToggling}
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-              settings?.is_enabled ? "bg-primary-600" : "bg-gray-200"
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+              settings?.is_enabled ? "bg-primary" : "bg-muted"
             } ${isToggling ? "opacity-50" : ""}`}
           >
             <span className="sr-only">Toggle schedule</span>
@@ -102,7 +102,7 @@ export default function ScheduleSettings() {
       <div className="space-y-4">
         {/* Schedule Type */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-foreground/80 mb-2">
             Frequency
           </label>
           <div className="flex gap-4">
@@ -113,9 +113,9 @@ export default function ScheduleSettings() {
                 value="daily"
                 checked={scheduleType === "daily"}
                 onChange={() => setScheduleType("daily")}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                className="h-4 w-4 text-primary focus:ring-ring border-input"
               />
-              <span className="ml-2 text-sm text-gray-700">Daily</span>
+              <span className="ml-2 text-sm text-foreground/80">Daily</span>
             </label>
             <label className="inline-flex items-center">
               <input
@@ -124,9 +124,9 @@ export default function ScheduleSettings() {
                 value="weekly"
                 checked={scheduleType === "weekly"}
                 onChange={() => setScheduleType("weekly")}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                className="h-4 w-4 text-primary focus:ring-ring border-input"
               />
-              <span className="ml-2 text-sm text-gray-700">Weekly</span>
+              <span className="ml-2 text-sm text-foreground/80">Weekly</span>
             </label>
           </div>
         </div>
@@ -134,14 +134,14 @@ export default function ScheduleSettings() {
         {/* Day of Week (for weekly) */}
         {scheduleType === "weekly" && (
           <div>
-            <label htmlFor="dayOfWeek" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="dayOfWeek" className="block text-sm font-medium text-foreground/80 mb-2">
               Day of Week
             </label>
             <select
               id="dayOfWeek"
               value={scheduleDayOfWeek ?? 0}
               onChange={(e) => setScheduleDayOfWeek(parseInt(e.target.value))}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+              className="block w-full rounded-md border-input shadow-sm focus:border-ring focus:ring-ring sm:text-sm"
             >
               {DAYS_OF_WEEK.map((day) => (
                 <option key={day.value} value={day.value}>
@@ -154,7 +154,7 @@ export default function ScheduleSettings() {
 
         {/* Hour */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-foreground/80 mb-2">
             Time (UTC)
           </label>
           <div className="flex flex-wrap gap-2">
@@ -165,8 +165,8 @@ export default function ScheduleSettings() {
                 onClick={() => setScheduleHour(hour.value)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                   scheduleHour === hour.value
-                    ? "bg-primary-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    ? "bg-primary text-white"
+                    : "bg-muted text-foreground/80 hover:bg-muted"
                 }`}
               >
                 {hour.label}
@@ -182,7 +182,7 @@ export default function ScheduleSettings() {
               type="button"
               onClick={handleSave}
               disabled={isUpdating}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring disabled:opacity-50"
             >
               {isUpdating ? "Saving..." : "Save Changes"}
             </button>

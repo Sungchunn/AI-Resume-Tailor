@@ -45,10 +45,10 @@ export default function PresetList() {
   if (isLoading) {
     return (
       <div className="card animate-pulse">
-        <div className="h-6 w-48 bg-gray-200 rounded mb-4" />
+        <div className="h-6 w-48 bg-muted rounded mb-4" />
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-gray-100 rounded" />
+            <div key={i} className="h-16 bg-muted rounded" />
           ))}
         </div>
       </div>
@@ -61,8 +61,8 @@ export default function PresetList() {
     <div className="card">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Saved Presets</h2>
-          <p className="text-sm text-gray-600">
+          <h2 className="text-lg font-semibold text-foreground">Saved Presets</h2>
+          <p className="text-sm text-muted-foreground">
             {presets.length === 0
               ? "No presets yet. Add one to get started."
               : `${presets.length} preset${presets.length === 1 ? "" : "s"} configured`}
@@ -71,7 +71,7 @@ export default function PresetList() {
         <button
           type="button"
           onClick={() => setShowForm(true)}
-          className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring"
         >
           <svg
             className="-ml-0.5 mr-1.5 h-4 w-4"
@@ -89,7 +89,7 @@ export default function PresetList() {
       {presets.length === 0 ? (
         <div className="text-center py-8">
           <svg
-            className="mx-auto h-12 w-12 text-gray-400"
+            className="mx-auto h-12 w-12 text-muted-foreground/60"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={1.5}
@@ -101,8 +101,8 @@ export default function PresetList() {
               d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
             />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No presets</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <h3 className="mt-2 text-sm font-medium text-foreground">No presets</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
             Create a preset to save a LinkedIn search URL for scheduled scraping.
           </p>
         </div>
@@ -113,27 +113,27 @@ export default function PresetList() {
               key={preset.id}
               className={`flex items-center justify-between p-4 rounded-lg border ${
                 preset.is_active
-                  ? "border-primary-200 bg-primary-50"
-                  : "border-gray-200 bg-gray-50"
+                  ? "border-primary/20 bg-primary/10"
+                  : "border-border bg-muted"
               }`}
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium text-gray-900 truncate">{preset.name}</h3>
+                  <h3 className="text-sm font-medium text-foreground truncate">{preset.name}</h3>
                   <span
                     className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                       preset.is_active
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-200 text-gray-600"
+                        ? "bg-green-500/20 text-green-500"
+                        : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {preset.is_active ? "Active" : "Paused"}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-gray-500 truncate" title={preset.url}>
+                <p className="mt-1 text-xs text-muted-foreground truncate" title={preset.url}>
                   {truncateUrl(preset.url)}
                 </p>
-                <p className="mt-1 text-xs text-gray-500">Max {preset.count} jobs per run</p>
+                <p className="mt-1 text-xs text-muted-foreground">Max {preset.count} jobs per run</p>
               </div>
 
               <div className="flex items-center gap-2 ml-4">
@@ -142,8 +142,8 @@ export default function PresetList() {
                   type="button"
                   onClick={() => togglePreset(preset.id)}
                   disabled={isToggling}
-                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                    preset.is_active ? "bg-primary-600" : "bg-gray-200"
+                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                    preset.is_active ? "bg-primary" : "bg-muted"
                   } ${isToggling ? "opacity-50" : ""}`}
                   title={preset.is_active ? "Pause preset" : "Activate preset"}
                 >
@@ -158,7 +158,7 @@ export default function PresetList() {
                 <button
                   type="button"
                   onClick={() => handleEdit(preset)}
-                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100"
+                  className="p-1.5 text-muted-foreground/60 hover:text-muted-foreground rounded-md hover:bg-muted"
                   title="Edit preset"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -175,7 +175,7 @@ export default function PresetList() {
                   type="button"
                   onClick={() => handleDelete(preset)}
                   disabled={isDeleting && deletingId === preset.id}
-                  className="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 disabled:opacity-50"
+                  className="p-1.5 text-muted-foreground/60 hover:text-destructive rounded-md hover:bg-destructive/10 disabled:opacity-50"
                   title="Delete preset"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

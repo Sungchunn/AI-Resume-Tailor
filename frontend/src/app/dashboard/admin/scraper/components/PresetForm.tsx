@@ -72,15 +72,15 @@ export default function PresetForm({ preset, onClose }: PresetFormProps) {
         />
 
         {/* Modal */}
-        <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+        <div className="relative transform overflow-hidden rounded-lg bg-card text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
           <form onSubmit={handleSubmit}>
-            <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+            <div className="bg-card px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
               <div className="sm:flex sm:items-start">
                 <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-                  <h3 className="text-lg font-semibold leading-6 text-gray-900">
+                  <h3 className="text-lg font-semibold leading-6 text-foreground">
                     {isEditing ? "Edit Preset" : "Add Preset"}
                   </h3>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {isEditing
                       ? "Update this preset's settings."
                       : "Save a LinkedIn job search URL as a preset for scheduled scraping."}
@@ -89,7 +89,7 @@ export default function PresetForm({ preset, onClose }: PresetFormProps) {
                   <div className="mt-6 space-y-4">
                     {/* Name */}
                     <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="name" className="block text-sm font-medium text-foreground/80">
                         Name
                       </label>
                       <input
@@ -98,14 +98,14 @@ export default function PresetForm({ preset, onClose }: PresetFormProps) {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="e.g., Thailand Remote Jobs"
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-input shadow-sm focus:border-ring focus:ring-ring sm:text-sm"
                         required
                       />
                     </div>
 
                     {/* URL */}
                     <div>
-                      <label htmlFor="url" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="url" className="block text-sm font-medium text-foreground/80">
                         LinkedIn Job Search URL
                       </label>
                       <input
@@ -114,16 +114,16 @@ export default function PresetForm({ preset, onClose }: PresetFormProps) {
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
                         placeholder="https://www.linkedin.com/jobs/search/?keywords=..."
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-input shadow-sm focus:border-ring focus:ring-ring sm:text-sm"
                         required
                       />
                       {url && !isValidUrl && (
-                        <p className="mt-1 text-sm text-red-600">
+                        <p className="mt-1 text-sm text-destructive">
                           URL must be a LinkedIn jobs URL
                         </p>
                       )}
                       {url && isValidUrl && (
-                        <p className="mt-1 text-sm text-green-600">
+                        <p className="mt-1 text-sm text-green-500">
                           Valid LinkedIn jobs URL
                         </p>
                       )}
@@ -131,7 +131,7 @@ export default function PresetForm({ preset, onClose }: PresetFormProps) {
 
                     {/* Count */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-foreground/80">
                         Max Jobs per Run
                       </label>
                       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -142,21 +142,21 @@ export default function PresetForm({ preset, onClose }: PresetFormProps) {
                             onClick={() => setCount(presetValue)}
                             className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                               count === presetValue
-                                ? "bg-primary-600 text-white"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                ? "bg-primary text-white"
+                                : "bg-muted text-foreground/80 hover:bg-muted"
                             }`}
                           >
                             {presetValue}
                           </button>
                         ))}
-                        <span className="text-gray-400 text-sm">or</span>
+                        <span className="text-muted-foreground/60 text-sm">or</span>
                         <input
                           type="number"
                           value={count}
                           onChange={(e) => setCount(Math.max(100, parseInt(e.target.value) || 100))}
                           min={100}
                           max={1000}
-                          className="w-20 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm text-center"
+                          className="w-20 rounded-md border-input shadow-sm focus:border-ring focus:ring-ring sm:text-sm text-center"
                         />
                       </div>
                     </div>
@@ -164,22 +164,22 @@ export default function PresetForm({ preset, onClose }: PresetFormProps) {
                     {/* Active Toggle */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
+                        <label htmlFor="isActive" className="text-sm font-medium text-foreground/80">
                           Active
                         </label>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted-foreground">
                           Include in scheduled runs
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => setIsActive(!isActive)}
-                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                          isActive ? "bg-primary-600" : "bg-gray-200"
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                          isActive ? "bg-primary" : "bg-muted"
                         }`}
                       >
                         <span
-                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-card shadow ring-0 transition duration-200 ease-in-out ${
                             isActive ? "translate-x-5" : "translate-x-0"
                           }`}
                         />
@@ -190,11 +190,11 @@ export default function PresetForm({ preset, onClose }: PresetFormProps) {
               </div>
             </div>
 
-            <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+            <div className="bg-muted px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
               <button
                 type="submit"
                 disabled={!isValid || isPending}
-                className="inline-flex w-full justify-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 sm:ml-3 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary/90 sm:ml-3 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isPending
                   ? isEditing
@@ -208,7 +208,7 @@ export default function PresetForm({ preset, onClose }: PresetFormProps) {
                 type="button"
                 onClick={onClose}
                 disabled={isPending}
-                className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto disabled:opacity-50"
+                className="mt-3 inline-flex w-full justify-center rounded-md bg-card px-3 py-2 text-sm font-semibold text-foreground shadow-sm ring-1 ring-inset ring-border hover:bg-muted sm:mt-0 sm:w-auto disabled:opacity-50"
               >
                 Cancel
               </button>
