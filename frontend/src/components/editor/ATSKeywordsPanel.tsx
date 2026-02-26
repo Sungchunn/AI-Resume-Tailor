@@ -306,7 +306,7 @@ export function ATSKeywordsPanel({
     return (
       <div className="h-full flex flex-col items-center justify-center p-4">
         <svg
-          className="animate-spin h-8 w-8 text-primary-600"
+          className="animate-spin h-8 w-8 text-primary"
           fill="none"
           viewBox="0 0 24 24"
         >

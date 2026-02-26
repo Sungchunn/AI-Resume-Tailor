@@ -180,18 +180,18 @@ describe("EditorToolbar", () => {
       });
       render(<EditorToolbar editor={editor} />);
       const boldButton = screen.getByTitle("Bold (Ctrl+B)");
-      expect(boldButton).toHaveClass("bg-primary-100");
+      expect(boldButton).toHaveClass("bg-primary/10");
     });
 
     it("should show active state for heading when active", () => {
       const editor = createMockEditor({
-        isActive: vi.fn((format, attrs) => 
+        isActive: vi.fn((format, attrs) =>
           format === "heading" && attrs?.level === 2
         ),
       });
       render(<EditorToolbar editor={editor} />);
       const h2Button = screen.getByTitle("Heading 2");
-      expect(h2Button).toHaveClass("bg-primary-100");
+      expect(h2Button).toHaveClass("bg-primary/10");
     });
   });
 });
