@@ -80,16 +80,16 @@ export function ExperienceEditor({ entries, onChange }: ExperienceEditorProps) {
       {entries.map((exp, expIndex) => (
         <div
           key={expIndex}
-          className="border border-gray-200 rounded-lg p-4 bg-gray-50"
+          className="border border-border rounded-lg p-4 bg-muted"
         >
           {/* Header with delete button */}
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Position {expIndex + 1}
             </span>
             <button
               onClick={() => handleRemoveExperience(expIndex)}
-              className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+              className="p-1 text-muted-foreground/60 hover:text-red-500 transition-colors"
               aria-label="Remove experience"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -105,21 +105,21 @@ export function ExperienceEditor({ entries, onChange }: ExperienceEditorProps) {
               value={exp.title}
               onChange={(e) => handleFieldChange(expIndex, "title", e.target.value)}
               placeholder="Job Title"
-              className="px-3 py-2 text-sm font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
+              className="px-3 py-2 text-sm font-medium border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 bg-card"
             />
             <input
               type="text"
               value={exp.company}
               onChange={(e) => handleFieldChange(expIndex, "company", e.target.value)}
               placeholder="Company"
-              className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
+              className="px-3 py-2 text-sm border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 bg-card"
             />
             <input
               type="text"
               value={exp.location}
               onChange={(e) => handleFieldChange(expIndex, "location", e.target.value)}
               placeholder="Location"
-              className="px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
+              className="px-3 py-2 text-sm text-muted-foreground border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 bg-card"
             />
             <div className="flex gap-2">
               <input
@@ -127,35 +127,35 @@ export function ExperienceEditor({ entries, onChange }: ExperienceEditorProps) {
                 value={exp.start_date}
                 onChange={(e) => handleFieldChange(expIndex, "start_date", e.target.value)}
                 placeholder="Start"
-                className="flex-1 px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
+                className="flex-1 px-3 py-2 text-sm text-muted-foreground border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 bg-card"
               />
               <input
                 type="text"
                 value={exp.end_date}
                 onChange={(e) => handleFieldChange(expIndex, "end_date", e.target.value)}
                 placeholder="End"
-                className="flex-1 px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
+                className="flex-1 px-3 py-2 text-sm text-muted-foreground border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 bg-card"
               />
             </div>
           </div>
 
           {/* Bullets */}
           <div>
-            <div className="text-xs font-medium text-gray-500 mb-2">Bullet Points</div>
+            <div className="text-xs font-medium text-muted-foreground mb-2">Bullet Points</div>
             <div className="space-y-2">
               {exp.bullets.map((bullet, bulletIndex) => (
                 <div key={bulletIndex} className="flex items-start gap-2">
-                  <span className="text-gray-400 mt-2.5">•</span>
+                  <span className="text-muted-foreground/60 mt-2.5">•</span>
                   <textarea
                     value={bullet}
                     onChange={(e) => handleBulletChange(expIndex, bulletIndex, e.target.value)}
-                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none bg-white"
+                    className="flex-1 px-3 py-2 text-sm border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none bg-card"
                     rows={2}
                     placeholder="Describe your achievement..."
                   />
                   <button
                     onClick={() => handleRemoveBullet(expIndex, bulletIndex)}
-                    className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                    className="p-2 text-muted-foreground/60 hover:text-red-500 transition-colors"
                     aria-label="Remove bullet"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -181,7 +181,7 @@ export function ExperienceEditor({ entries, onChange }: ExperienceEditorProps) {
       {/* Add Experience Button */}
       <button
         onClick={handleAddExperience}
-        className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-primary-400 hover:text-primary-600 transition-colors"
+        className="w-full py-3 border-2 border-dashed border-input rounded-lg text-sm text-muted-foreground hover:border-primary-400 hover:text-primary-600 transition-colors"
       >
         + Add Experience
       </button>

@@ -38,12 +38,12 @@ export function HighlightsEditor({ highlights, onChange }: HighlightsEditorProps
             type="text"
             value={highlight}
             onChange={(e) => handleChange(index, e.target.value)}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+            className="flex-1 px-3 py-2 text-sm border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
             placeholder="Enter a key highlight..."
           />
           <button
             onClick={() => handleRemove(index)}
-            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+            className="p-2 text-muted-foreground/60 hover:text-red-500 transition-colors"
             aria-label="Remove highlight"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

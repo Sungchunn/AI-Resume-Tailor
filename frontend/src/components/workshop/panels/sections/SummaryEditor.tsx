@@ -31,11 +31,11 @@ export function SummaryEditor({ value, onChange }: SummaryEditorProps) {
       <textarea
         value={value}
         onChange={handleChange}
-        className="w-full min-h-[120px] p-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y"
+        className="w-full min-h-[120px] p-3 text-sm border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y"
         placeholder="Write your professional summary..."
       />
       <div className="flex items-center justify-between text-xs">
-        <span className="text-gray-500">
+        <span className="text-muted-foreground">
           {MIN_RECOMMENDED}-{MAX_RECOMMENDED} characters recommended
         </span>
         <span className={countColor}>
