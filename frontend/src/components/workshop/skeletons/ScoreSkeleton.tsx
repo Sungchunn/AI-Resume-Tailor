@@ -23,19 +23,19 @@ export function ScoreSkeleton({
     <div className={`space-y-2 ${className} ${animateClass}`}>
       {/* Score number */}
       <div className="flex items-baseline gap-2">
-        <div className={`${classes.number} bg-gray-200 rounded`} />
-        <div className="w-8 h-4 bg-gray-200 rounded" />
+        <div className={`${classes.number} bg-muted rounded`} />
+        <div className="w-8 h-4 bg-muted rounded" />
       </div>
 
       {/* Progress bar */}
       <div
-        className={`w-full bg-gray-200 rounded-full overflow-hidden ${classes.container}`}
+        className={`w-full bg-muted rounded-full overflow-hidden ${classes.container}`}
       >
-        <div className="h-full w-2/3 bg-gray-300 rounded-full" />
+        <div className="h-full w-2/3 bg-muted rounded-full" />
       </div>
 
       {/* Label */}
-      <div className="w-24 h-4 bg-gray-200 rounded" />
+      <div className="w-24 h-4 bg-muted rounded" />
     </div>
   );
 }

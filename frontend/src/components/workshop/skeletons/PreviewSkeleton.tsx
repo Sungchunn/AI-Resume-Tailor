@@ -17,30 +17,30 @@ export function PreviewSkeleton({
 
   return (
     <div
-      className={`bg-white rounded-lg border shadow-sm overflow-hidden ${ratio} ${className}`}
+      className={`bg-card rounded-lg border shadow-sm overflow-hidden ${ratio} ${className}`}
     >
       <div className={`p-8 h-full ${animateClass}`}>
         {/* Header */}
         <div className="text-center mb-6">
-          <div className="w-48 h-6 bg-gray-200 rounded mx-auto mb-2" />
-          <div className="w-32 h-4 bg-gray-200 rounded mx-auto" />
+          <div className="w-48 h-6 bg-muted rounded mx-auto mb-2" />
+          <div className="w-32 h-4 bg-muted rounded mx-auto" />
         </div>
 
         {/* Contact Info */}
         <div className="flex justify-center gap-4 mb-6">
-          <div className="w-24 h-3 bg-gray-200 rounded" />
-          <div className="w-24 h-3 bg-gray-200 rounded" />
-          <div className="w-24 h-3 bg-gray-200 rounded" />
+          <div className="w-24 h-3 bg-muted rounded" />
+          <div className="w-24 h-3 bg-muted rounded" />
+          <div className="w-24 h-3 bg-muted rounded" />
         </div>
 
         {/* Sections */}
         {[1, 2, 3].map((section) => (
           <div key={section} className="mb-6">
-            <div className="w-20 h-4 bg-gray-200 rounded mb-3" />
+            <div className="w-20 h-4 bg-muted rounded mb-3" />
             <div className="space-y-2">
-              <div className="w-full h-3 bg-gray-200 rounded" />
-              <div className="w-full h-3 bg-gray-200 rounded" />
-              <div className="w-3/4 h-3 bg-gray-200 rounded" />
+              <div className="w-full h-3 bg-muted rounded" />
+              <div className="w-full h-3 bg-muted rounded" />
+              <div className="w-3/4 h-3 bg-muted rounded" />
             </div>
           </div>
         ))}
