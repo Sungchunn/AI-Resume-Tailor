@@ -29,12 +29,12 @@ export function ScoreBreakdown({ categories, className = "" }: ScoreBreakdownPro
         return (
           <div key={category.label}>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm text-gray-700">{category.label}</span>
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm text-foreground/80">{category.label}</span>
+              <span className="text-sm font-medium text-foreground">
                 {Math.round(category.score)}/{max}
               </span>
             </div>
-            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
               <div
                 className={`h-full ${barColor} rounded-full transition-all duration-500`}
                 style={{ width: `${percentage}%` }}
@@ -109,12 +109,12 @@ export function SkillBreakdown({
       {/* Coverage bar */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <span className="text-sm text-gray-700">Keyword Coverage</span>
-          <span className="text-sm font-medium text-gray-900">
+          <span className="text-sm text-foreground/80">Keyword Coverage</span>
+          <span className="text-sm font-medium text-foreground">
             {Math.round(keywordCoverage)}%
           </span>
         </div>
-        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div className="h-2 bg-muted rounded-full overflow-hidden">
           <div
             className={`h-full ${getBarColor(keywordCoverage, 100)} rounded-full transition-all duration-500`}
             style={{ width: `${keywordCoverage}%` }}
@@ -125,7 +125,7 @@ export function SkillBreakdown({
       {/* Skill matches */}
       {skillMatches.length > 0 && (
         <div>
-          <h4 className="text-xs font-medium text-gray-500 mb-2">
+          <h4 className="text-xs font-medium text-muted-foreground mb-2">
             Matched Skills ({skillMatches.length})
           </h4>
           <div className="flex flex-wrap gap-1">
@@ -138,7 +138,7 @@ export function SkillBreakdown({
               </span>
             ))}
             {skillMatches.length > 8 && (
-              <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full">
+              <span className="px-2 py-0.5 text-xs bg-muted text-muted-foreground rounded-full">
                 +{skillMatches.length - 8} more
               </span>
             )}
@@ -149,7 +149,7 @@ export function SkillBreakdown({
       {/* Skill gaps */}
       {skillGaps.length > 0 && (
         <div>
-          <h4 className="text-xs font-medium text-gray-500 mb-2">
+          <h4 className="text-xs font-medium text-muted-foreground mb-2">
             Missing Skills ({skillGaps.length})
           </h4>
           <div className="flex flex-wrap gap-1">
@@ -162,7 +162,7 @@ export function SkillBreakdown({
               </span>
             ))}
             {skillGaps.length > 6 && (
-              <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full">
+              <span className="px-2 py-0.5 text-xs bg-muted text-muted-foreground rounded-full">
                 +{skillGaps.length - 6} more
               </span>
             )}

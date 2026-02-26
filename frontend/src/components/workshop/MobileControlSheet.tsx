@@ -39,7 +39,7 @@ export function MobileControlSheet({ children }: MobileControlSheetProps) {
       {/* Collapsed handle */}
       <button
         onClick={() => setIsExpanded(true)}
-        className="fixed bottom-0 left-0 right-0 h-12 bg-white border-t flex items-center justify-center gap-2 text-gray-600 z-40"
+        className="fixed bottom-0 left-0 right-0 h-12 bg-card border-t flex items-center justify-center gap-2 text-muted-foreground z-40"
       >
         <svg
           className="w-5 h-5"
@@ -69,7 +69,7 @@ export function MobileControlSheet({ children }: MobileControlSheetProps) {
       {/* Expanded sheet */}
       <div
         ref={panelRef}
-        className={`fixed bottom-0 left-0 right-0 bg-white rounded-t-xl shadow-xl z-50 transition-transform duration-200 ${
+        className={`fixed bottom-0 left-0 right-0 bg-card rounded-t-xl shadow-xl z-50 transition-transform duration-200 ${
           isExpanded ? "translate-y-0" : "translate-y-full"
         }`}
         style={{ height: "70vh" }}
@@ -79,7 +79,7 @@ export function MobileControlSheet({ children }: MobileControlSheetProps) {
           className="h-6 flex items-center justify-center cursor-pointer"
           onClick={() => setIsExpanded(false)}
         >
-          <div className="w-10 h-1 bg-gray-300 rounded-full" />
+          <div className="w-10 h-1 bg-muted rounded-full" />
         </div>
 
         {/* Content */}

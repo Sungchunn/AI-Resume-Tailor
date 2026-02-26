@@ -96,7 +96,7 @@ export function MatchScoreGauge({
         </div>
       </div>
       {showLabel && (
-        <span className={`mt-1 ${config.labelSize} text-gray-500`}>
+        <span className={`mt-1 ${config.labelSize} text-muted-foreground`}>
           Match Score
         </span>
       )}
