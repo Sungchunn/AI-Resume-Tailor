@@ -50,7 +50,7 @@ function PublicationEntryPreview({ entry, style }: PublicationEntryPreviewProps)
         </span>
         {entry.date && (
           <span
-            className="text-gray-600 flex-shrink-0 ml-4"
+            className="text-muted-foreground flex-shrink-0 ml-4"
             style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
           >
             {entry.date}
@@ -61,7 +61,7 @@ function PublicationEntryPreview({ entry, style }: PublicationEntryPreviewProps)
       {/* Type and publisher row */}
       {(entry.publicationType || entry.publisher) && (
         <div
-          className="text-gray-700"
+          className="text-foreground/80"
           style={{ fontSize: style.bodyFontSize }}
         >
           {typeLabel}
@@ -73,7 +73,7 @@ function PublicationEntryPreview({ entry, style }: PublicationEntryPreviewProps)
       {/* Authors */}
       {entry.authors && (
         <div
-          className="text-gray-600"
+          className="text-muted-foreground"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
           {entry.authors}
@@ -83,7 +83,7 @@ function PublicationEntryPreview({ entry, style }: PublicationEntryPreviewProps)
       {/* Description */}
       {entry.description && (
         <div
-          className="text-gray-600 mt-0.5"
+          className="text-muted-foreground mt-0.5"
           style={{
             fontSize: style.bodyFontSize,
             lineHeight: style.lineHeight,

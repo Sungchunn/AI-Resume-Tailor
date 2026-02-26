@@ -49,7 +49,7 @@ function VolunteerEntryPreview({ entry, style }: VolunteerEntryPreviewProps) {
         </span>
         {dateRange && (
           <span
-            className="text-gray-600 flex-shrink-0 ml-4"
+            className="text-muted-foreground flex-shrink-0 ml-4"
             style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
           >
             {dateRange}
@@ -60,7 +60,7 @@ function VolunteerEntryPreview({ entry, style }: VolunteerEntryPreviewProps) {
       {/* Organization and location row */}
       {(entry.organization || entry.location) && (
         <div
-          className="text-gray-700"
+          className="text-foreground/80"
           style={{ fontSize: style.bodyFontSize }}
         >
           {entry.organization}
@@ -72,7 +72,7 @@ function VolunteerEntryPreview({ entry, style }: VolunteerEntryPreviewProps) {
       {/* Description */}
       {entry.description && (
         <div
-          className="text-gray-600 mt-0.5"
+          className="text-muted-foreground mt-0.5"
           style={{
             fontSize: style.bodyFontSize,
             lineHeight: style.lineHeight,

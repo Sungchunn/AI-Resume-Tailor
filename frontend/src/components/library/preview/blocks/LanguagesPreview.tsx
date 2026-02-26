@@ -32,7 +32,7 @@ export function LanguagesPreview({ content, style }: LanguagesPreviewProps) {
         <span key={entry.id}>
           <span className="font-medium">{entry.language}</span>
           {entry.proficiency && (
-            <span className="text-gray-600">
+            <span className="text-muted-foreground">
               {" "}
               ({PROFICIENCY_LABELS[entry.proficiency] || entry.proficiency})
             </span>

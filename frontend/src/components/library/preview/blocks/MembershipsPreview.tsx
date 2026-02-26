@@ -47,7 +47,7 @@ function MembershipEntryPreview({ entry, style }: MembershipEntryPreviewProps) {
         </span>
         {dateRange && (
           <span
-            className="text-gray-600 flex-shrink-0 ml-4"
+            className="text-muted-foreground flex-shrink-0 ml-4"
             style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
           >
             {dateRange}
@@ -58,7 +58,7 @@ function MembershipEntryPreview({ entry, style }: MembershipEntryPreviewProps) {
       {/* Role row */}
       {entry.role && (
         <div
-          className="text-gray-700"
+          className="text-foreground/80"
           style={{ fontSize: style.bodyFontSize }}
         >
           {entry.role}

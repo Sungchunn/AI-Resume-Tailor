@@ -48,7 +48,7 @@ function ReferenceEntryPreview({ entry, style }: ReferenceEntryPreviewProps) {
         </span>
         {entry.relationship && (
           <span
-            className="text-gray-600 flex-shrink-0 ml-4"
+            className="text-muted-foreground flex-shrink-0 ml-4"
             style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
           >
             {entry.relationship}
@@ -59,7 +59,7 @@ function ReferenceEntryPreview({ entry, style }: ReferenceEntryPreviewProps) {
       {/* Title and company row */}
       {(entry.title || entry.company) && (
         <div
-          className="text-gray-700"
+          className="text-foreground/80"
           style={{ fontSize: style.bodyFontSize }}
         >
           {entry.title}
@@ -71,7 +71,7 @@ function ReferenceEntryPreview({ entry, style }: ReferenceEntryPreviewProps) {
       {/* Contact info */}
       {contactInfo && (
         <div
-          className="text-gray-600"
+          className="text-muted-foreground"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
           {contactInfo}

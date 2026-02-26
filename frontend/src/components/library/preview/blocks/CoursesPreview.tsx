@@ -45,7 +45,7 @@ function CourseEntryPreview({ entry, style }: CourseEntryPreviewProps) {
         </span>
         {entry.date && (
           <span
-            className="text-gray-600 flex-shrink-0 ml-4"
+            className="text-muted-foreground flex-shrink-0 ml-4"
             style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
           >
             {entry.date}
@@ -56,7 +56,7 @@ function CourseEntryPreview({ entry, style }: CourseEntryPreviewProps) {
       {/* Provider row */}
       {entry.provider && (
         <div
-          className="text-gray-700"
+          className="text-foreground/80"
           style={{ fontSize: style.bodyFontSize }}
         >
           {entry.provider}
@@ -66,7 +66,7 @@ function CourseEntryPreview({ entry, style }: CourseEntryPreviewProps) {
       {/* Description */}
       {entry.description && (
         <div
-          className="text-gray-600 mt-0.5"
+          className="text-muted-foreground mt-0.5"
           style={{
             fontSize: style.bodyFontSize,
             lineHeight: style.lineHeight,

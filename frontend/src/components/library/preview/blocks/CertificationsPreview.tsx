@@ -48,7 +48,7 @@ function CertificationEntryPreview({ entry, style }: CertificationEntryPreviewPr
         </span>
         {dateInfo && (
           <span
-            className="text-gray-600 flex-shrink-0 ml-4"
+            className="text-muted-foreground flex-shrink-0 ml-4"
             style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
           >
             {dateInfo}
@@ -59,7 +59,7 @@ function CertificationEntryPreview({ entry, style }: CertificationEntryPreviewPr
       {/* Issuer row */}
       {entry.issuer && (
         <div
-          className="text-gray-700"
+          className="text-foreground/80"
           style={{ fontSize: style.bodyFontSize }}
         >
           {entry.issuer}
@@ -69,7 +69,7 @@ function CertificationEntryPreview({ entry, style }: CertificationEntryPreviewPr
       {/* Credential ID */}
       {entry.credentialId && (
         <div
-          className="text-gray-500"
+          className="text-muted-foreground"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
           Credential ID: {entry.credentialId}

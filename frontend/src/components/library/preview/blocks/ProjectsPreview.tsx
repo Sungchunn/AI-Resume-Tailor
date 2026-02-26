@@ -47,14 +47,14 @@ function ProjectEntryPreview({ entry, style }: ProjectEntryPreviewProps) {
         >
           {entry.name}
           {entry.url && (
-            <span className="text-gray-500 font-normal ml-2">
+            <span className="text-muted-foreground font-normal ml-2">
               ({entry.url})
             </span>
           )}
         </span>
         {dateRange && (
           <span
-            className="text-gray-600 flex-shrink-0 ml-4"
+            className="text-muted-foreground flex-shrink-0 ml-4"
             style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
           >
             {dateRange}
@@ -65,7 +65,7 @@ function ProjectEntryPreview({ entry, style }: ProjectEntryPreviewProps) {
       {/* Description */}
       {entry.description && (
         <div
-          className="text-gray-700 mt-0.5"
+          className="text-foreground/80 mt-0.5"
           style={{
             fontSize: style.bodyFontSize,
             lineHeight: style.lineHeight,
@@ -78,7 +78,7 @@ function ProjectEntryPreview({ entry, style }: ProjectEntryPreviewProps) {
       {/* Technologies */}
       {entry.technologies && entry.technologies.length > 0 && (
         <div
-          className="text-gray-600 mt-1"
+          className="text-muted-foreground mt-1"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
           <span className="font-medium">Technologies: </span>
