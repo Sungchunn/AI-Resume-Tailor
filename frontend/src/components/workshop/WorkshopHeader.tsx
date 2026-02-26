@@ -30,13 +30,13 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
 
   return (
     <header
-      className={`flex-shrink-0 border-b bg-white flex items-center justify-between px-4 ${headerHeight}`}
+      className={`flex-shrink-0 border-b bg-card flex items-center justify-between px-4 ${headerHeight}`}
     >
       {/* Left: Back button, Title, and Score */}
       <div className="flex items-center gap-3">
         <Link
           href="/dashboard/tailor"
-          className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+          className="p-1 text-muted-foreground hover:text-foreground/80 hover:bg-accent rounded"
         >
           <ChevronLeftIcon className="w-5 h-5" />
         </Link>
@@ -56,7 +56,7 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
             />
           )
         ) : (
-          <span className="text-xs text-gray-400">No job linked</span>
+          <span className="text-xs text-muted-foreground/60">No job linked</span>
         )}
       </div>
 
@@ -72,7 +72,7 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
         {wizard?.state.hasCompletedBefore && hasJobId && !compact && (
           <button
             onClick={wizard.resetWizard}
-            className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+            className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground/80 hover:bg-accent rounded-md transition-colors"
           >
             Restart Guide
           </button>
@@ -84,7 +84,7 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
           className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
             state.hasChanges
               ? "bg-blue-600 text-white hover:bg-blue-700"
-              : "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-muted text-muted-foreground/60 cursor-not-allowed"
           }`}
         >
           {state.isSaving ? "Saving..." : "Save"}
@@ -92,7 +92,7 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
 
         <button
           onClick={() => setShowExportDialog(true)}
-          className="px-3 py-1.5 text-sm font-medium bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+          className="px-3 py-1.5 text-sm font-medium bg-muted hover:bg-accent rounded-md transition-colors"
         >
           Export
         </button>

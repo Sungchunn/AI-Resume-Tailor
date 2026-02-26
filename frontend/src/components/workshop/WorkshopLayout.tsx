@@ -112,7 +112,7 @@ export function WorkshopLayout() {
 
   if (state.isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
+      <div className="h-screen flex items-center justify-center bg-muted">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -120,7 +120,7 @@ export function WorkshopLayout() {
 
   if (state.error) {
     return (
-      <div className="h-screen flex items-center justify-center p-4 bg-gray-50">
+      <div className="h-screen flex items-center justify-center p-4 bg-muted">
         <ErrorMessage
           message={state.error}
           onRetry={() => window.location.reload()}
@@ -140,7 +140,7 @@ export function WorkshopLayout() {
     return (
       <>
         <WizardContainer hasJob={hasJob} jobTitle={jobTitle} company={company}>
-          <div className="h-screen flex flex-col bg-gray-50">
+          <div className="h-screen flex flex-col bg-muted">
             <WorkshopHeader compact />
 
             {/* Preview takes full screen minus header and bottom sheet handle */}
@@ -178,7 +178,7 @@ export function WorkshopLayout() {
   return (
     <>
       <WizardContainer hasJob={hasJob} jobTitle={jobTitle} company={company}>
-        <div className="h-screen flex flex-col bg-gray-50">
+        <div className="h-screen flex flex-col bg-muted">
           {/* Persistent Header */}
           <WorkshopHeader />
 
@@ -187,7 +187,7 @@ export function WorkshopLayout() {
             <Group orientation="horizontal" className="h-full">
               {/* Left Panel - PDF Preview (55%) */}
               <Panel defaultSize={55} minSize={40} maxSize={70}>
-                <div className="h-full bg-gray-100 overflow-auto p-6 flex justify-center">
+                <div className="h-full bg-muted overflow-auto p-6 flex justify-center">
                   <ResumePreview
                     content={state.content}
                     style={state.styleSettings}
@@ -201,7 +201,7 @@ export function WorkshopLayout() {
                 </div>
               </Panel>
 
-              <Separator className="w-1.5 bg-gray-200 hover:bg-blue-300 transition-colors cursor-col-resize" />
+              <Separator className="w-1.5 bg-muted hover:bg-blue-300 transition-colors cursor-col-resize" />
 
               {/* Right Panel - Controls (45%) */}
               <Panel defaultSize={45} minSize={30} maxSize={60}>
