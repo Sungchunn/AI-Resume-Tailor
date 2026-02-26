@@ -151,15 +151,15 @@ export function BlockList({
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-        <span className="text-sm font-medium text-gray-700">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <span className="text-sm font-medium text-foreground/80">
           Sections ({blocks.length})
         </span>
         <div className="flex items-center gap-2">
           {blocks.length > 0 && (
             <button
               onClick={handleToggleAll}
-              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground/80 px-2 py-1 rounded hover:bg-accent transition-colors"
             >
               {allExpanded ? (
                 <>
@@ -225,7 +225,7 @@ export function BlockList({
 
         {/* Bottom Add Button */}
         {showAddButton && blocks.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="mt-4 pt-4 border-t border-border">
             <BlockTypeMenu
               existingTypes={blocks.map((b) => b.type)}
               onAdd={(type) => handleAddBlock(type)}
@@ -250,10 +250,10 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-        <Plus className="w-8 h-8 text-gray-400" />
+      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+        <Plus className="w-8 h-8 text-muted-foreground/60" />
       </div>
-      <p className="text-sm text-gray-500 mb-4 max-w-xs">{message}</p>
+      <p className="text-sm text-muted-foreground mb-4 max-w-xs">{message}</p>
       <BlockTypeMenu
         existingTypes={[]}
         onAdd={onAdd}
