@@ -9,7 +9,7 @@ import { useReducedMotion } from "../hooks/useReducedMotion";
 const IMPACT_COLORS = {
   high: "bg-red-100 text-red-700 border-red-200",
   medium: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  low: "bg-gray-100 text-gray-700 border-gray-200",
+  low: "bg-muted text-foreground/80 border-border",
 };
 
 const SECTION_LABELS: Record<string, string> = {
@@ -115,17 +115,17 @@ export function SuggestionCard({
             x: animationState === "rejecting" ? { duration: 0.15 } : undefined,
           }}
           className={`border rounded-lg overflow-hidden ${
-            isExpanded ? "border-primary-300 shadow-sm" : "border-gray-200"
+            isExpanded ? "border-primary-300 shadow-sm" : "border-border"
           }`}
         >
           {/* Header */}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 text-left"
+            className="w-full flex items-center justify-between p-3 bg-muted hover:bg-accent text-left"
             disabled={animationState !== "idle"}
           >
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 text-xs rounded bg-gray-200 text-gray-700 font-medium">
+              <span className="px-2 py-0.5 text-xs rounded bg-muted text-foreground/80 font-medium">
                 {SECTION_LABELS[suggestion.section] || suggestion.section}
               </span>
               <span
@@ -141,7 +141,7 @@ export function SuggestionCard({
               animate={{ rotate: isExpanded ? 180 : 0 }}
               transition={{ duration: 0.2 }}
             >
-              <ChevronDownIcon className="w-4 h-4 text-gray-500" />
+              <ChevronDownIcon className="w-4 h-4 text-muted-foreground" />
             </motion.div>
           </button>
 
@@ -158,29 +158,29 @@ export function SuggestionCard({
                 <div className="p-3 space-y-3">
                   {suggestion.original && (
                     <div>
-                      <div className="text-xs font-medium text-gray-500 mb-1">
+                      <div className="text-xs font-medium text-muted-foreground mb-1">
                         Original
                       </div>
-                      <p className="text-sm text-gray-600 bg-red-50 p-2 rounded border border-red-100 line-through">
+                      <p className="text-sm text-muted-foreground bg-red-50 p-2 rounded border border-red-100 line-through">
                         {suggestion.original}
                       </p>
                     </div>
                   )}
 
                   <div>
-                    <div className="text-xs font-medium text-gray-500 mb-1">
+                    <div className="text-xs font-medium text-muted-foreground mb-1">
                       Suggested
                     </div>
-                    <p className="text-sm text-gray-900 bg-green-50 p-2 rounded border border-green-100">
+                    <p className="text-sm text-foreground bg-green-50 p-2 rounded border border-green-100">
                       {suggestion.suggested}
                     </p>
                   </div>
 
                   <div>
-                    <div className="text-xs font-medium text-gray-500 mb-1">
+                    <div className="text-xs font-medium text-muted-foreground mb-1">
                       Reason
                     </div>
-                    <p className="text-sm text-gray-600">{suggestion.reason}</p>
+                    <p className="text-sm text-muted-foreground">{suggestion.reason}</p>
                   </div>
 
                   {/* Actions */}
@@ -195,7 +195,7 @@ export function SuggestionCard({
                     <button
                       onClick={handleReject}
                       disabled={animationState !== "idle"}
-                      className="flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors disabled:opacity-50"
+                      className="flex-1 px-3 py-1.5 text-sm font-medium text-foreground/80 bg-muted hover:bg-accent rounded-md transition-colors disabled:opacity-50"
                     >
                       Reject
                     </button>

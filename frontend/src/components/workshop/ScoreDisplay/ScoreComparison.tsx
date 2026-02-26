@@ -59,7 +59,7 @@ export function ScoreComparison({
       )}
 
       {/* Previous Score (smaller) */}
-      <span className="text-xs text-gray-400">from {previousScore}%</span>
+      <span className="text-xs text-muted-foreground/60">from {previousScore}%</span>
     </div>
   );
 }

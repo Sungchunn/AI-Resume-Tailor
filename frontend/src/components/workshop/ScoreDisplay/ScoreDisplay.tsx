@@ -33,7 +33,7 @@ export function ScoreDisplay({
       <div className="relative">
         <div className={`text-3xl font-bold ${scoreColor} transition-colors`}>
           {score}
-          <span className="text-lg text-gray-400">%</span>
+          <span className="text-lg text-muted-foreground/60">%</span>
         </div>
 
         {/* Updating Indicator */}
@@ -51,7 +51,7 @@ export function ScoreDisplay({
 
       {/* Last Updated */}
       {lastUpdated && !isUpdating && (
-        <span className="text-xs text-gray-400">
+        <span className="text-xs text-muted-foreground/60">
           Updated {formatTimeAgo(lastUpdated)}
         </span>
       )}
