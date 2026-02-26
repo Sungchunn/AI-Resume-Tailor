@@ -9,6 +9,7 @@ import type {
   BlockEditorStyle,
   ResumeBlockType,
 } from "@/lib/resume/types";
+import type { AutoFitStatus, AutoFitReduction } from "./style/useAutoFitBlocks";
 
 /**
  * Block Editor Context Value
@@ -30,7 +31,12 @@ export interface BlockEditorContextValue {
 
   // Style operations
   updateStyle: (style: Partial<BlockEditorStyle>) => void;
-  applyStylePreset: (presetName: "classic" | "modern" | "minimal") => void;
+  applyStylePreset: (presetName: "classic" | "modern" | "minimal" | "executive") => void;
+
+  // Auto-fit operations
+  setFitToOnePage: (enabled: boolean) => void;
+  autoFitStatus: AutoFitStatus;
+  autoFitReductions: AutoFitReduction[];
 
   // Persistence
   save: () => Promise<void>;

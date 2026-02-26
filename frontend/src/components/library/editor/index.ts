@@ -66,3 +66,15 @@ export {
 export { EditorLayout } from "./EditorLayout";
 export { EditorHeader } from "./EditorHeader";
 export { EditorToolbar } from "./EditorToolbar";
+
+// Style panel components (Phase 7)
+export {
+  AutoFitToggle,
+  useAutoFitBlocks,
+  type AutoFitToggleProps,
+  type AutoFitStatus,
+  type AutoFitState,
+  type AutoFitReduction,
+  type UseAutoFitBlocksOptions,
+  type UseAutoFitBlocksResult,
+} from "./style";

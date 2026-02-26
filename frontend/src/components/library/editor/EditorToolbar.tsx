@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Settings2, Palette, Type, Maximize2, Minimize2 } from "lucide-react";
 import { useBlockEditor } from "./BlockEditorContext";
 import { STYLE_PRESETS, type StylePresetName } from "@/lib/resume/defaults";
+import { AutoFitToggle, type AutoFitStatus, type AutoFitReduction } from "./style";
+import type { BlockEditorStyle } from "@/lib/resume/types";
 
 type ToolbarTab = "style" | "font" | "spacing";
 
@@ -26,8 +28,8 @@ export function EditorToolbar({
   isPreviewFullscreen,
   onTogglePreviewFullscreen,
 }: EditorToolbarProps) {
-  const { state, updateStyle, applyStylePreset } = useBlockEditor();
-  const { style } = state;
+  const { state, updateStyle, applyStylePreset, setFitToOnePage, autoFitStatus, autoFitReductions } = useBlockEditor();
+  const { style, fitToOnePage } = state;
 
   const [activeTab, setActiveTab] = useState<ToolbarTab>("style");
 
@@ -77,18 +79,24 @@ export function EditorToolbar({
           <StyleTab
             currentStyle={style}
             onApplyPreset={applyStylePreset}
+            fitToOnePage={fitToOnePage}
+            onFitToggle={setFitToOnePage}
+            autoFitStatus={autoFitStatus}
+            autoFitReductions={autoFitReductions}
           />
         )}
         {activeTab === "font" && (
           <FontTab
             style={style}
             onUpdate={updateStyle}
+            disabled={fitToOnePage}
           />
         )}
         {activeTab === "spacing" && (
           <SpacingTab
             style={style}
             onUpdate={updateStyle}
+            disabled={fitToOnePage}
           />
         )}
       </div>
@@ -126,23 +134,32 @@ function TabButton({
 }
 
 /**
- * Style preset selector tab
+ * Style preset selector tab with auto-fit toggle
  */
 function StyleTab({
   currentStyle,
   onApplyPreset,
+  fitToOnePage,
+  onFitToggle,
+  autoFitStatus,
+  autoFitReductions,
 }: {
-  currentStyle: typeof STYLE_PRESETS.classic;
+  currentStyle: BlockEditorStyle;
   onApplyPreset: (preset: StylePresetName) => void;
+  fitToOnePage: boolean;
+  onFitToggle: (enabled: boolean) => void;
+  autoFitStatus: AutoFitStatus;
+  autoFitReductions: AutoFitReduction[];
 }) {
   const presets: Array<{
     name: StylePresetName;
     label: string;
     description: string;
   }> = [
-    { name: "classic", label: "Classic", description: "Traditional, professional look" },
-    { name: "modern", label: "Modern", description: "Clean, contemporary style" },
-    { name: "minimal", label: "Minimal", description: "Simple, spacious layout" },
+    { name: "classic", label: "Classic", description: "Traditional, professional" },
+    { name: "modern", label: "Modern", description: "Clean, contemporary" },
+    { name: "minimal", label: "Minimal", description: "Compact, dense layout" },
+    { name: "executive", label: "Executive", description: "Spacious, elegant" },
   ];
 
   // Determine which preset is currently active (if any)
@@ -155,27 +172,48 @@ function StyleTab({
   });
 
   return (
-    <div className="space-y-3">
-      <p className="text-xs text-gray-500">Choose a preset style:</p>
-      <div className="grid grid-cols-3 gap-2">
-        {presets.map((preset) => (
-          <button
-            key={preset.name}
-            onClick={() => onApplyPreset(preset.name)}
-            className={`p-3 rounded-lg border-2 transition-all text-left ${
-              activePreset?.name === preset.name
-                ? "border-primary-500 bg-primary-50"
-                : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-            }`}
-          >
-            <span className="block text-sm font-medium text-gray-900">
-              {preset.label}
-            </span>
-            <span className="block text-xs text-gray-500 mt-0.5">
-              {preset.description}
-            </span>
-          </button>
-        ))}
+    <div className="space-y-4">
+      {/* Auto-fit Toggle */}
+      <div className="pb-3 border-b border-gray-100">
+        <AutoFitToggle
+          enabled={fitToOnePage}
+          onToggle={onFitToggle}
+          status={autoFitStatus}
+          reductions={autoFitReductions}
+        />
+      </div>
+
+      {/* Preset Selector */}
+      <div className="space-y-2">
+        <p className="text-xs text-gray-500">Choose a preset style:</p>
+        <div className="grid grid-cols-2 gap-2">
+          {presets.map((preset) => (
+            <button
+              key={preset.name}
+              onClick={() => onApplyPreset(preset.name)}
+              disabled={fitToOnePage}
+              className={`p-2.5 rounded-lg border-2 transition-all text-left ${
+                activePreset?.name === preset.name
+                  ? "border-primary-500 bg-primary-50"
+                  : fitToOnePage
+                    ? "border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed"
+                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              <span className="block text-sm font-medium text-gray-900">
+                {preset.label}
+              </span>
+              <span className="block text-[11px] text-gray-500 mt-0.5">
+                {preset.description}
+              </span>
+            </button>
+          ))}
+        </div>
+        {fitToOnePage && (
+          <p className="text-xs text-gray-400 italic">
+            Presets disabled while auto-fit is active
+          </p>
+        )}
       </div>
     </div>
   );
@@ -187,21 +225,34 @@ function StyleTab({
 function FontTab({
   style,
   onUpdate,
+  disabled = false,
 }: {
-  style: typeof STYLE_PRESETS.classic;
-  onUpdate: (style: Partial<typeof style>) => void;
+  style: BlockEditorStyle;
+  onUpdate: (style: Partial<BlockEditorStyle>) => void;
+  disabled?: boolean;
 }) {
   const fontFamilies = [
-    { value: "Times New Roman, serif", label: "Times New Roman" },
-    { value: "Arial, sans-serif", label: "Arial" },
-    { value: "Helvetica, sans-serif", label: "Helvetica" },
-    { value: "Georgia, serif", label: "Georgia" },
-    { value: "Calibri, sans-serif", label: "Calibri" },
-    { value: "Garamond, serif", label: "Garamond" },
+    { value: "Inter", label: "Inter" },
+    { value: "Open Sans", label: "Open Sans" },
+    { value: "Times New Roman", label: "Times New Roman" },
+    { value: "Arial", label: "Arial" },
+    { value: "Georgia", label: "Georgia" },
+    { value: "Roboto", label: "Roboto" },
+    { value: "Lato", label: "Lato" },
   ];
+
+  const inputClass = `w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+    disabled ? "bg-gray-100 opacity-60 cursor-not-allowed" : ""
+  }`;
 
   return (
     <div className="space-y-4">
+      {disabled && (
+        <p className="text-xs text-gray-400 italic">
+          Font settings managed by auto-fit
+        </p>
+      )}
+
       {/* Font Family */}
       <div>
         <label className="block text-xs font-medium text-gray-700 mb-1.5">
@@ -210,7 +261,8 @@ function FontTab({
         <select
           value={style.fontFamily}
           onChange={(e) => onUpdate({ fontFamily: e.target.value })}
-          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          disabled={disabled}
+          className={inputClass}
         >
           {fontFamilies.map((font) => (
             <option key={font.value} value={font.value}>
@@ -232,7 +284,8 @@ function FontTab({
             max={14}
             value={style.fontSizeBody}
             onChange={(e) => onUpdate({ fontSizeBody: Number(e.target.value) })}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            disabled={disabled}
+            className={inputClass}
           />
         </div>
         <div>
@@ -245,7 +298,8 @@ function FontTab({
             max={24}
             value={style.fontSizeHeading}
             onChange={(e) => onUpdate({ fontSizeHeading: Number(e.target.value) })}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            disabled={disabled}
+            className={inputClass}
           />
         </div>
         <div>
@@ -258,7 +312,8 @@ function FontTab({
             max={18}
             value={style.fontSizeSubheading}
             onChange={(e) => onUpdate({ fontSizeSubheading: Number(e.target.value) })}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            disabled={disabled}
+            className={inputClass}
           />
         </div>
       </div>
@@ -272,64 +327,84 @@ function FontTab({
 function SpacingTab({
   style,
   onUpdate,
+  disabled = false,
 }: {
-  style: typeof STYLE_PRESETS.classic;
-  onUpdate: (style: Partial<typeof style>) => void;
+  style: BlockEditorStyle;
+  onUpdate: (style: Partial<BlockEditorStyle>) => void;
+  disabled?: boolean;
 }) {
+  const inputClass = `w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+    disabled ? "bg-gray-100 opacity-60 cursor-not-allowed" : ""
+  }`;
+
+  const inputClassLg = `w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+    disabled ? "bg-gray-100 opacity-60 cursor-not-allowed" : ""
+  }`;
+
   return (
     <div className="space-y-4">
+      {disabled && (
+        <p className="text-xs text-gray-400 italic">
+          Spacing settings managed by auto-fit
+        </p>
+      )}
+
       {/* Margins */}
       <div>
         <label className="block text-xs font-medium text-gray-700 mb-2">
-          Margins (px)
+          Margins (inches)
         </label>
         <div className="grid grid-cols-4 gap-2">
           <div>
             <label className="block text-[10px] text-gray-500 mb-1">Top</label>
             <input
               type="number"
-              min={20}
-              max={100}
-              step={4}
+              min={0.25}
+              max={1.5}
+              step={0.05}
               value={style.marginTop}
               onChange={(e) => onUpdate({ marginTop: Number(e.target.value) })}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              disabled={disabled}
+              className={inputClass}
             />
           </div>
           <div>
             <label className="block text-[10px] text-gray-500 mb-1">Bottom</label>
             <input
               type="number"
-              min={20}
-              max={100}
-              step={4}
+              min={0.25}
+              max={1.5}
+              step={0.05}
               value={style.marginBottom}
               onChange={(e) => onUpdate({ marginBottom: Number(e.target.value) })}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              disabled={disabled}
+              className={inputClass}
             />
           </div>
           <div>
             <label className="block text-[10px] text-gray-500 mb-1">Left</label>
             <input
               type="number"
-              min={20}
-              max={100}
-              step={4}
+              min={0.25}
+              max={1.5}
+              step={0.05}
               value={style.marginLeft}
               onChange={(e) => onUpdate({ marginLeft: Number(e.target.value) })}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              disabled={disabled}
+              className={inputClass}
             />
           </div>
           <div>
             <label className="block text-[10px] text-gray-500 mb-1">Right</label>
             <input
               type="number"
-              min={20}
-              max={100}
-              step={4}
+              min={0.25}
+              max={1.5}
+              step={0.05}
               value={style.marginRight}
               onChange={(e) => onUpdate({ marginRight: Number(e.target.value) })}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              disabled={disabled}
+              className={inputClass}
             />
           </div>
         </div>
@@ -345,10 +420,11 @@ function SpacingTab({
             type="number"
             min={1}
             max={2}
-            step={0.1}
+            step={0.05}
             value={style.lineSpacing}
             onChange={(e) => onUpdate({ lineSpacing: Number(e.target.value) })}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            disabled={disabled}
+            className={inputClassLg}
           />
         </div>
         <div>
@@ -357,12 +433,13 @@ function SpacingTab({
           </label>
           <input
             type="number"
-            min={8}
+            min={4}
             max={40}
             step={2}
             value={style.sectionSpacing}
             onChange={(e) => onUpdate({ sectionSpacing: Number(e.target.value) })}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            disabled={disabled}
+            className={inputClassLg}
           />
         </div>
         <div>
@@ -371,12 +448,13 @@ function SpacingTab({
           </label>
           <input
             type="number"
-            min={4}
+            min={2}
             max={24}
             step={2}
             value={style.entrySpacing}
             onChange={(e) => onUpdate({ entrySpacing: Number(e.target.value) })}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            disabled={disabled}
+            className={inputClassLg}
           />
         </div>
       </div>

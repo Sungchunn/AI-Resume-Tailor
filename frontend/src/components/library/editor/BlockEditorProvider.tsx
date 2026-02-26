@@ -30,6 +30,7 @@ import {
   editorStyleToApiStyle,
 } from "@/lib/resume/transforms";
 import { useUndoRedo } from "@/components/workshop/hooks/useUndoRedo";
+import { useAutoFitBlocks, type AutoFitStatus, type AutoFitReduction } from "./style/useAutoFitBlocks";
 
 /**
  * State subset that is tracked for undo/redo
@@ -225,6 +226,19 @@ export function BlockEditorProvider({
     dispatch(blockEditorActions.setStyle(preset));
   }, []);
 
+  // Auto-fit operations
+  const setFitToOnePage = useCallback((enabled: boolean) => {
+    dispatch(blockEditorActions.setFitToOnePage(enabled));
+  }, []);
+
+  // Auto-fit hook
+  const { status: autoFitStatus, reductions: autoFitReductions } = useAutoFitBlocks({
+    blocks: state.blocks,
+    style: state.style,
+    enabled: state.fitToOnePage,
+    onStyleChange: updateStyle,
+  });
+
   // Save handler
   const save = useCallback(async () => {
     if (!onSave || isSavingRef.current) return;
@@ -288,6 +302,9 @@ export function BlockEditorProvider({
       toggleBlockCollapse,
       updateStyle,
       applyStylePreset,
+      setFitToOnePage,
+      autoFitStatus,
+      autoFitReductions,
       save,
       isSaving: state.isLoading && isSavingRef.current,
       canUndo,
@@ -308,6 +325,9 @@ export function BlockEditorProvider({
       toggleBlockCollapse,
       updateStyle,
       applyStylePreset,
+      setFitToOnePage,
+      autoFitStatus,
+      autoFitReductions,
       save,
       canUndo,
       canRedo,
