@@ -5,7 +5,7 @@ import { Panel, Group, Separator } from "react-resizable-panels";
 import { useBlockEditor } from "./BlockEditorContext";
 import { EditorHeader } from "./EditorHeader";
 import { ControlPanel } from "./ControlPanel";
-import { ResumePreview } from "../preview";
+import { PagedResumePreview } from "../preview";
 import ExportDialog from "@/components/export/ExportDialog";
 
 interface EditorLayoutProps {
@@ -13,8 +13,10 @@ interface EditorLayoutProps {
   resumeId: number;
   /** Resume title for display */
   title: string;
-  /** Job ID for ATS analysis - passed via query param from job board */
+  /** User-created job ID for ATS analysis - passed via query param from job board */
   jobId?: number | null;
+  /** Scraped job listing ID for ATS analysis - passed via query param from job board */
+  jobListingId?: number | null;
 }
 
 /**
@@ -26,10 +28,25 @@ interface EditorLayoutProps {
  * - Resizable panels
  * - Keyboard shortcuts (Cmd+S, Cmd+Z, Cmd+Shift+Z)
  */
-export function EditorLayout({ resumeId, title, jobId = null }: EditorLayoutProps) {
-  const { state, setActiveBlock, save, undo, redo, canUndo, canRedo } =
-    useBlockEditor();
-  const { blocks, activeBlockId, style } = state;
+export function EditorLayout({
+  resumeId,
+  title,
+  jobId = null,
+  jobListingId = null,
+}: EditorLayoutProps) {
+  const {
+    state,
+    setActiveBlock,
+    setHoveredBlock,
+    moveBlockUp,
+    moveBlockDown,
+    save,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useBlockEditor();
+  const { blocks, activeBlockId, hoveredBlockId, style } = state;
 
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
@@ -40,6 +57,30 @@ export function EditorLayout({ resumeId, title, jobId = null }: EditorLayoutProp
       setActiveBlock(blockId);
     },
     [setActiveBlock]
+  );
+
+  // Handle block hover in preview
+  const handlePreviewBlockHover = useCallback(
+    (blockId: string | null) => {
+      setHoveredBlock(blockId);
+    },
+    [setHoveredBlock]
+  );
+
+  // Handle move block up
+  const handleMoveBlockUp = useCallback(
+    (blockId: string) => {
+      moveBlockUp(blockId);
+    },
+    [moveBlockUp]
+  );
+
+  // Handle move block down
+  const handleMoveBlockDown = useCallback(
+    (blockId: string) => {
+      moveBlockDown(blockId);
+    },
+    [moveBlockDown]
   );
 
   // Keyboard shortcuts
@@ -111,11 +152,16 @@ export function EditorLayout({ resumeId, title, jobId = null }: EditorLayoutProp
                   </button>
                 </div>
               )}
-              <ResumePreview
+              <PagedResumePreview
                 blocks={blocks}
                 style={style}
                 activeBlockId={activeBlockId}
+                hoveredBlockId={hoveredBlockId}
                 onBlockClick={handlePreviewBlockClick}
+                onBlockHover={handlePreviewBlockHover}
+                onMoveBlockUp={handleMoveBlockUp}
+                onMoveBlockDown={handleMoveBlockDown}
+                interactive={true}
                 showPageBorder={true}
               />
             </div>
@@ -128,7 +174,7 @@ export function EditorLayout({ resumeId, title, jobId = null }: EditorLayoutProp
               <Separator className="w-1.5 bg-muted hover:bg-primary/20 transition-colors cursor-col-resize" />
 
               <Panel defaultSize={45} minSize={25} maxSize={60}>
-                <ControlPanel jobId={jobId} />
+                <ControlPanel jobId={jobId} jobListingId={jobListingId} />
               </Panel>
             </>
           )}

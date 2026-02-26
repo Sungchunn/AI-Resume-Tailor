@@ -25,9 +25,18 @@
 
 // Main preview components
 export { ResumePreview, ResumePreviewStandalone } from "./ResumePreview";
+export { PagedResumePreview } from "./PagedResumePreview";
+
+// Page break calculation
+export { useBlockPageBreaks } from "./useBlockPageBreaks";
+export type {
+  BlockPageContent,
+  BlockPageBreakResult,
+} from "./useBlockPageBreaks";
 
 // Block renderer
 export { BlockRenderer, createBlockRenderer } from "./BlockRenderer";
+export { InteractiveBlockRenderer } from "./InteractiveBlockRenderer";
 
 // Types
 export type {
