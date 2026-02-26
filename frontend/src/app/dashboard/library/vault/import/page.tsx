@@ -57,15 +57,15 @@ export default function ImportWizardPage() {
       <div>
         <Link
           href="/dashboard/library"
-          className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+          className="text-sm text-muted-foreground hover:text-foreground/80 flex items-center gap-1"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Back to Library
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-gray-900">Import from Resume</h1>
-        <p className="mt-1 text-gray-600">
+        <h1 className="mt-2 text-2xl font-bold text-foreground">Import from Resume</h1>
+        <p className="mt-1 text-muted-foreground">
           Paste your resume content and we&apos;ll split it into individual experience blocks.
         </p>
       </div>
@@ -76,41 +76,41 @@ export default function ImportWizardPage() {
           <div
             className={`flex items-center justify-center w-10 h-10 rounded-full ${
               step === "input"
-                ? "bg-primary-600 text-white"
+                ? "bg-primary text-white"
                 : "bg-green-500 text-white"
             }`}
           >
             {step === "input" ? "1" : <CheckIcon />}
           </div>
-          <span className="ml-2 text-sm font-medium text-gray-900">Paste Content</span>
+          <span className="ml-2 text-sm font-medium text-foreground">Paste Content</span>
         </div>
-        <div className={`w-16 h-0.5 mx-2 ${step !== "input" ? "bg-primary-600" : "bg-gray-200"}`} />
+        <div className={`w-16 h-0.5 mx-2 ${step !== "input" ? "bg-primary" : "bg-muted"}`} />
         <div className="flex items-center">
           <div
             className={`flex items-center justify-center w-10 h-10 rounded-full ${
               step === "review"
-                ? "bg-primary-600 text-white"
+                ? "bg-primary text-white"
                 : step === "complete"
                 ? "bg-green-500 text-white"
-                : "bg-gray-200 text-gray-500"
+                : "bg-muted text-muted-foreground"
             }`}
           >
             {step === "complete" ? <CheckIcon /> : "2"}
           </div>
-          <span className="ml-2 text-sm font-medium text-gray-900">Review Blocks</span>
+          <span className="ml-2 text-sm font-medium text-foreground">Review Blocks</span>
         </div>
-        <div className={`w-16 h-0.5 mx-2 ${step === "complete" ? "bg-primary-600" : "bg-gray-200"}`} />
+        <div className={`w-16 h-0.5 mx-2 ${step === "complete" ? "bg-primary" : "bg-muted"}`} />
         <div className="flex items-center">
           <div
             className={`flex items-center justify-center w-10 h-10 rounded-full ${
               step === "complete"
                 ? "bg-green-500 text-white"
-                : "bg-gray-200 text-gray-500"
+                : "bg-muted text-muted-foreground"
             }`}
           >
             {step === "complete" ? <CheckIcon /> : "3"}
           </div>
-          <span className="ml-2 text-sm font-medium text-gray-900">Complete</span>
+          <span className="ml-2 text-sm font-medium text-foreground">Complete</span>
         </div>
       </div>
 
@@ -135,14 +135,14 @@ Example:
 • Mentored 3 junior developers, resulting in 2 promotions within 18 months`}
                 required
               />
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Paste bullet points, job descriptions, or any resume text. Our AI will split it into individual blocks.
               </p>
             </div>
 
             <div className="border-t pt-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Source Information (Optional)</h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <h3 className="text-lg font-medium text-foreground mb-4">Source Information (Optional)</h3>
+              <p className="text-sm text-muted-foreground mb-4">
                 If this content is from a specific job, provide the details below.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -199,7 +199,7 @@ Example:
             </div>
 
             {importBlocks.isError && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive">
                 Failed to import content. Please try again.
               </div>
             )}
@@ -222,23 +222,23 @@ Example:
             </div>
 
             <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Imported Blocks</h3>
+              <h3 className="text-lg font-medium text-foreground mb-4">Imported Blocks</h3>
               <div className="space-y-3 max-h-[400px] overflow-y-auto">
                 {importedBlocks.map((block, index) => (
-                  <div key={block.id} className="p-4 border rounded-lg bg-gray-50">
+                  <div key={block.id} className="p-4 border rounded-lg bg-muted">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-medium text-gray-500">#{index + 1}</span>
+                      <span className="text-xs font-medium text-muted-foreground">#{index + 1}</span>
                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                         {block.block_type}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-900">{block.content}</p>
+                    <p className="text-sm text-foreground">{block.content}</p>
                     {block.tags.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">
                         {block.tags.map((tag) => (
                           <span
                             key={tag}
-                            className="px-2 py-0.5 rounded text-xs bg-gray-200 text-gray-600"
+                            className="px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground"
                           >
                             {tag}
                           </span>
@@ -251,8 +251,8 @@ Example:
             </div>
 
             <div className="border-t pt-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Generate Embeddings</h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <h3 className="text-lg font-medium text-foreground mb-2">Generate Embeddings</h3>
+              <p className="text-sm text-muted-foreground mb-4">
                 Embeddings enable semantic search to match your experience to job descriptions.
                 This is recommended for the best results.
               </p>
@@ -294,8 +294,8 @@ Example:
                 />
               </svg>
             </div>
-            <h3 className="mt-4 text-xl font-semibold text-gray-900">Import Complete!</h3>
-            <p className="mt-2 text-gray-600">
+            <h3 className="mt-4 text-xl font-semibold text-foreground">Import Complete!</h3>
+            <p className="mt-2 text-muted-foreground">
               {importedBlocks.length} blocks have been added to your vault.
               You can now use them to build tailored resumes.
             </p>

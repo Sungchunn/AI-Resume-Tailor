@@ -77,14 +77,14 @@ export default function BlockPage({ params }: { params: Promise<{ id: string }> 
         <div>
           <Link
             href="/dashboard/library"
-            className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+            className="text-sm text-muted-foreground hover:text-foreground/80 flex items-center gap-1"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Library
           </Link>
-          <h1 className="mt-2 text-2xl font-bold text-gray-900">
+          <h1 className="mt-2 text-2xl font-bold text-foreground">
             Edit {blockTypeLabels[block.block_type]}
           </h1>
         </div>
@@ -118,7 +118,7 @@ export default function BlockPage({ params }: { params: Promise<{ id: string }> 
           <button
             onClick={handleDelete}
             disabled={deleteBlock.isPending}
-            className="btn-ghost text-red-600 hover:bg-red-50"
+            className="btn-ghost text-destructive hover:bg-destructive/10"
           >
             Delete
           </button>
@@ -149,7 +149,7 @@ export default function BlockPage({ params }: { params: Promise<{ id: string }> 
         />
       </div>
 
-      <div className="text-sm text-gray-500">
+      <div className="text-sm text-muted-foreground">
         <p>Created: {new Date(block.created_at).toLocaleString()}</p>
         {block.updated_at && (
           <p>Last updated: {new Date(block.updated_at).toLocaleString()}</p>

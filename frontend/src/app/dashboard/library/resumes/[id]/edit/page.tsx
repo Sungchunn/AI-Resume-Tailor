@@ -32,10 +32,10 @@ export default function ResumeEditPage({ params }: PageProps) {
   // Loading state
   if (isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
+      <div className="h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading resume editor...</p>
+          <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading resume editor...</p>
         </div>
       </div>
     );
@@ -44,19 +44,19 @@ export default function ResumeEditPage({ params }: PageProps) {
   // Error state
   if (error || !resume) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
-        <div className="card max-w-md bg-red-50 border-red-200">
-          <h2 className="text-lg font-semibold text-red-900 mb-2">
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="card max-w-md bg-destructive/10 border-destructive/20">
+          <h2 className="text-lg font-semibold text-destructive mb-2">
             Failed to load resume
           </h2>
-          <p className="text-red-600 text-sm">
+          <p className="text-destructive/80 text-sm">
             {error instanceof Error
               ? error.message
               : "Resume not found or failed to load."}
           </p>
           <a
             href="/dashboard/library"
-            className="mt-4 inline-block text-sm text-primary-600 hover:text-primary-700"
+            className="mt-4 inline-block text-sm text-primary hover:text-primary/80"
           >
             &larr; Back to Library
           </a>

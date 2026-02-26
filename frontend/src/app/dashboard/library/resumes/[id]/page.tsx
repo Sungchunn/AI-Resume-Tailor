@@ -48,8 +48,8 @@ export default function ResumeDetailPage({ params }: PageProps) {
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="card">
           <div className="flex items-center gap-3">
-            <div className="w-5 h-5 border-2 border-gray-300 border-t-primary-600 rounded-full animate-spin" />
-            <p className="text-gray-600">Loading resume...</p>
+            <div className="w-5 h-5 border-2 border-muted border-t-primary rounded-full animate-spin" />
+            <p className="text-muted-foreground">Loading resume...</p>
           </div>
         </div>
       </div>
@@ -62,7 +62,7 @@ export default function ResumeDetailPage({ params }: PageProps) {
         <div className="mb-6">
           <Link
             href="/dashboard/library"
-            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
           >
             <svg
               className="mr-1 h-4 w-4"
@@ -80,8 +80,8 @@ export default function ResumeDetailPage({ params }: PageProps) {
             Back to Library
           </Link>
         </div>
-        <div className="card bg-red-50 border-red-200">
-          <p className="text-red-600">Resume not found or failed to load.</p>
+        <div className="card bg-destructive/10 border-destructive/20">
+          <p className="text-destructive">Resume not found or failed to load.</p>
         </div>
       </div>
     );
@@ -95,7 +95,7 @@ export default function ResumeDetailPage({ params }: PageProps) {
       <div className="mb-6">
         <Link
           href="/dashboard/library"
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <svg
             className="mr-1 h-4 w-4"
@@ -118,8 +118,8 @@ export default function ResumeDetailPage({ params }: PageProps) {
       <div className="card mb-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{resume.title}</h1>
-            <p className="mt-1 text-sm text-gray-600">
+            <h1 className="text-2xl font-bold text-foreground">{resume.title}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
               Created {new Date(resume.created_at).toLocaleDateString()}
               {resume.updated_at && (
                 <> &middot; Updated {new Date(resume.updated_at).toLocaleDateString()}</>
@@ -144,7 +144,7 @@ export default function ResumeDetailPage({ params }: PageProps) {
             <button
               onClick={handleDelete}
               disabled={deleteResume.isPending}
-              className="btn-ghost text-red-600 hover:bg-red-50 inline-flex items-center gap-1.5"
+              className="btn-ghost text-destructive hover:bg-destructive/10 inline-flex items-center gap-1.5"
             >
               <Trash2 className="h-4 w-4" />
               {deleteResume.isPending ? "Deleting..." : "Delete"}
@@ -156,16 +156,16 @@ export default function ResumeDetailPage({ params }: PageProps) {
       {/* Resume Preview */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Resume Preview</h2>
+          <h2 className="text-lg font-semibold text-foreground">Resume Preview</h2>
           {!hasPreviewContent && resume.raw_content && (
-            <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+            <span className="text-xs text-amber-600 bg-amber-500/10 px-2 py-1 rounded">
               Preview unavailable - edit to add structured content
             </span>
           )}
         </div>
 
         {hasPreviewContent ? (
-          <div className="bg-gray-100 rounded-lg p-4 overflow-auto">
+          <div className="bg-muted rounded-lg p-4 overflow-auto">
             <ResumePreview
               blocks={blocks}
               style={style}
@@ -173,9 +173,9 @@ export default function ResumeDetailPage({ params }: PageProps) {
             />
           </div>
         ) : (
-          <div className="bg-gray-50 rounded-lg p-8 text-center">
-            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 mb-4">
+          <div className="bg-muted rounded-lg p-8 text-center">
+            <FileText className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
+            <p className="text-muted-foreground mb-4">
               No structured content available for preview.
             </p>
             <Link
@@ -196,16 +196,16 @@ export default function ResumeDetailPage({ params }: PageProps) {
             onClick={() => setShowRawContent(!showRawContent)}
             className="w-full flex items-center justify-between text-left"
           >
-            <h2 className="text-lg font-semibold text-gray-900">Raw Content</h2>
+            <h2 className="text-lg font-semibold text-foreground">Raw Content</h2>
             {showRawContent ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
+              <ChevronUp className="w-5 h-5 text-muted-foreground" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
+              <ChevronDown className="w-5 h-5 text-muted-foreground" />
             )}
           </button>
           {showRawContent && (
             <div className="mt-4">
-              <pre className="whitespace-pre-wrap font-mono text-sm text-gray-700 bg-gray-50 p-4 rounded-lg border border-gray-200 max-h-96 overflow-auto">
+              <pre className="whitespace-pre-wrap font-mono text-sm text-foreground/80 bg-muted p-4 rounded-lg border border-border max-h-96 overflow-auto">
                 {resume.raw_content}
               </pre>
             </div>

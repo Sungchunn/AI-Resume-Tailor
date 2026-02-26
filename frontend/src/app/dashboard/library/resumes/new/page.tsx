@@ -110,7 +110,7 @@ export default function NewResumePage() {
       <div className="mb-6">
         <Link
           href="/dashboard/library"
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <svg
             className="mr-1 h-4 w-4"
@@ -132,10 +132,10 @@ export default function NewResumePage() {
       <div className="card">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-foreground">
               Create New Resume
             </h1>
-            <p className="mt-1 text-gray-600">
+            <p className="mt-1 text-muted-foreground">
               {inputMode === "upload"
                 ? "Upload a PDF or DOCX file to get started."
                 : "Edit your resume content with formatting."}
@@ -145,7 +145,7 @@ export default function NewResumePage() {
             <button
               type="button"
               onClick={handleStartOver}
-              className="text-sm text-gray-500 hover:text-gray-700"
+              className="text-sm text-muted-foreground hover:text-foreground"
             >
               Start over
             </button>
@@ -157,7 +157,7 @@ export default function NewResumePage() {
             // Upload Mode
             <div className="space-y-4">
               <FileUploadZone onExtracted={handleExtracted} />
-              <p className="text-sm text-gray-500 text-center">
+              <p className="text-sm text-muted-foreground text-center">
                 Upload a PDF or DOCX file. We&apos;ll extract the content and
                 preserve formatting for editing.
               </p>
@@ -165,10 +165,10 @@ export default function NewResumePage() {
               {/* Divider with "or" */}
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200" />
+                  <div className="w-full border-t border-border" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="bg-white px-4 text-gray-500">
+                  <span className="bg-card px-4 text-muted-foreground">
                     or start from scratch
                   </span>
                 </div>
@@ -180,7 +180,7 @@ export default function NewResumePage() {
                   setInputMode("editor");
                   setHtmlContent("<p></p>");
                 }}
-                className="w-full py-3 px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="w-full py-3 px-4 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
               >
                 Create blank resume
               </button>
@@ -202,13 +202,13 @@ export default function NewResumePage() {
                   onChange={(e) => setTitle(e.target.value)}
                 />
                 {titleError && (
-                  <p className="mt-1 text-sm text-red-600">{titleError}</p>
+                  <p className="mt-1 text-sm text-destructive">{titleError}</p>
                 )}
               </div>
 
               {/* Extraction Success Message */}
               {extractionResult && (
-                <div className="rounded-lg bg-green-50 border border-green-200 p-4">
+                <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-4">
                   <div className="flex items-start">
                     <svg
                       className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0"
@@ -224,17 +224,17 @@ export default function NewResumePage() {
                       />
                     </svg>
                     <div className="ml-3 flex-1">
-                      <p className="text-sm font-medium text-green-800">
+                      <p className="text-sm font-medium text-green-500">
                         Content imported from {extractionResult.source_filename}
                       </p>
-                      <p className="mt-1 text-sm text-green-700">
+                      <p className="mt-1 text-sm text-green-500/80">
                         {extractionResult.word_count} words
                         {extractionResult.page_count &&
                           ` from ${extractionResult.page_count} page${extractionResult.page_count > 1 ? "s" : ""}`}
                         {extractionResult.file_key && " • Original file stored"}
                       </p>
                       {extractionResult.warnings.length > 0 && (
-                        <ul className="mt-2 text-sm text-yellow-700">
+                        <ul className="mt-2 text-sm text-yellow-500">
                           {extractionResult.warnings.map((warning, idx) => (
                             <li key={idx}>{warning}</li>
                           ))}
@@ -255,9 +255,9 @@ export default function NewResumePage() {
                   className="min-h-[400px]"
                 />
                 {contentError && (
-                  <p className="mt-1 text-sm text-red-600">{contentError}</p>
+                  <p className="mt-1 text-sm text-destructive">{contentError}</p>
                 )}
-                <p className="mt-2 text-sm text-gray-500">
+                <p className="mt-2 text-sm text-muted-foreground">
                   Use the toolbar to format text with bold, italic, headings,
                   and bullet points.
                 </p>
@@ -266,15 +266,15 @@ export default function NewResumePage() {
           )}
 
           {createResume.error && (
-            <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-              <p className="text-sm text-red-600">
+            <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4">
+              <p className="text-sm text-destructive">
                 {createResume.error.message || "Failed to create resume"}
               </p>
             </div>
           )}
 
           {inputMode === "editor" && (
-            <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
+            <div className="flex items-center gap-4 pt-4 border-t border-border">
               <button
                 type="submit"
                 disabled={createResume.isPending}

@@ -43,14 +43,14 @@ export default function LibraryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Library</h1>
-        <p className="mt-1 text-gray-600">
+        <h1 className="text-2xl font-bold text-foreground">Library</h1>
+        <p className="mt-1 text-muted-foreground">
           Manage your resumes, job descriptions, and experience blocks.
         </p>
       </div>
 
       {/* Tab Navigation with Counts */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-border">
         <nav className="-mb-px flex space-x-8">
           {tabs.map((tab) => (
             <button
@@ -58,16 +58,16 @@ export default function LibraryPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
                 activeTab === tab.id
-                  ? "border-primary-500 text-primary-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
               }`}
             >
               {tab.label}
               <span
                 className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                   activeTab === tab.id
-                    ? "bg-primary-100 text-primary-700"
-                    : "bg-gray-100 text-gray-600"
+                    ? "bg-primary/20 text-primary"
+                    : "bg-muted text-muted-foreground"
                 }`}
               >
                 {tab.count}
@@ -120,14 +120,14 @@ function ResumesTab() {
             <div key={resume.id} className="card">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 truncate">
+                  <h3 className="font-semibold text-foreground truncate">
                     {resume.title}
                   </h3>
-                  <p className="mt-1 text-sm text-gray-600">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Created {new Date(resume.created_at).toLocaleDateString()}
                   </p>
                   {resume.updated_at && (
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground/80">
                       Updated {new Date(resume.updated_at).toLocaleDateString()}
                     </p>
                   )}
@@ -150,7 +150,7 @@ function ResumesTab() {
                 <button
                   onClick={() => handleDelete(resume.id)}
                   disabled={deleteResume.isPending}
-                  className="btn-ghost text-sm py-1.5 text-red-600 hover:bg-red-50"
+                  className="btn-ghost text-sm py-1.5 text-destructive hover:bg-destructive/10"
                 >
                   Delete
                 </button>
@@ -212,13 +212,13 @@ function JobsTab() {
             <div key={job.id} className="card">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 truncate">
+                  <h3 className="font-semibold text-foreground truncate">
                     {job.title}
                   </h3>
                   {job.company && (
-                    <p className="text-sm text-gray-600">{job.company}</p>
+                    <p className="text-sm text-muted-foreground">{job.company}</p>
                   )}
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-muted-foreground/80">
                     Added {new Date(job.created_at).toLocaleDateString()}
                   </p>
                 </div>
@@ -229,7 +229,7 @@ function JobsTab() {
                   href={job.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center text-sm text-primary-600 hover:text-primary-700"
+                  className="mt-2 inline-flex items-center text-sm text-primary hover:text-primary/80"
                 >
                   View Original
                   <ExternalLinkIcon className="ml-1 h-3 w-3" />
@@ -252,7 +252,7 @@ function JobsTab() {
                 <button
                   onClick={() => handleDelete(job.id)}
                   disabled={deleteJob.isPending}
-                  className="btn-ghost text-sm py-1.5 text-red-600 hover:bg-red-50"
+                  className="btn-ghost text-sm py-1.5 text-destructive hover:bg-destructive/10"
                 >
                   Delete
                 </button>
@@ -332,7 +332,7 @@ function VaultTab() {
       <div className="card">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex-1">
-            <label className="text-sm font-medium text-gray-700 mb-2 block">
+            <label className="text-sm font-medium text-foreground mb-2 block">
               Filter by Type
             </label>
             <div className="flex flex-wrap gap-2">
@@ -342,8 +342,8 @@ function VaultTab() {
                   onClick={() => toggleType(option.value)}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                     selectedTypes.includes(option.value)
-                      ? "bg-primary-100 text-primary-700 border border-primary-300"
-                      : "bg-gray-100 text-gray-600 border border-transparent hover:bg-gray-200"
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "bg-muted text-muted-foreground border border-transparent hover:bg-accent"
                   }`}
                 >
                   {option.label}
@@ -357,9 +357,9 @@ function VaultTab() {
               type="checkbox"
               checked={verifiedOnly}
               onChange={(e) => setVerifiedOnly(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              className="h-4 w-4 rounded border-border text-primary focus:ring-ring"
             />
-            <span className="text-sm text-gray-700">Verified only</span>
+            <span className="text-sm text-foreground">Verified only</span>
           </label>
         </div>
 
@@ -369,7 +369,7 @@ function VaultTab() {
               setSelectedTypes([]);
               setVerifiedOnly(false);
             }}
-            className="mt-3 text-sm text-primary-600 hover:text-primary-700"
+            className="mt-3 text-sm text-primary hover:text-primary/80"
           >
             Clear filters
           </button>
@@ -378,7 +378,7 @@ function VaultTab() {
 
       {data && data.blocks.length > 0 ? (
         <>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Showing {data.blocks.length} of {data.total} blocks
           </p>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -435,9 +435,9 @@ function EmptyState({
 }) {
   return (
     <div className="card text-center py-12">
-      <div className="mx-auto h-12 w-12 text-gray-400">{icon}</div>
-      <h3 className="mt-4 text-lg font-semibold text-gray-900">{title}</h3>
-      <p className="mt-2 text-gray-600">{description}</p>
+      <div className="mx-auto h-12 w-12 text-muted-foreground">{icon}</div>
+      <h3 className="mt-4 text-lg font-semibold text-foreground">{title}</h3>
+      <p className="mt-2 text-muted-foreground">{description}</p>
       <div className="mt-6">{action}</div>
     </div>
   );
