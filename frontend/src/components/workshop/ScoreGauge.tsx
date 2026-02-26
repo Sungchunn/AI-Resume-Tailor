@@ -86,7 +86,7 @@ export function ScoreGauge({
 
       {/* Progress Bar */}
       <div
-        className={`w-full bg-gray-200 rounded-full overflow-hidden ${classes.container}`}
+        className={`w-full bg-muted rounded-full overflow-hidden ${classes.container}`}
         role="progressbar"
         aria-valuenow={displayScore}
         aria-valuemin={0}
@@ -106,7 +106,7 @@ export function ScoreGauge({
 
       {/* Label */}
       {showLabel && (
-        <p className="text-sm text-gray-500">{getScoreLabel(displayScore)}</p>
+        <p className="text-sm text-muted-foreground">{getScoreLabel(displayScore)}</p>
       )}
     </div>
   );

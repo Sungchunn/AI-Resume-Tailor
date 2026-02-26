@@ -118,7 +118,7 @@ export function ChangeSummary({
                 )}
                 {lowImpact.length > 0 && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-muted text-muted-foreground">
-                    <span className="w-2 h-2 rounded-full bg-gray-400" />
+                    <span className="w-2 h-2 rounded-full bg-muted-foreground/60" />
                     {lowImpact.length} Low
                   </span>
                 )}

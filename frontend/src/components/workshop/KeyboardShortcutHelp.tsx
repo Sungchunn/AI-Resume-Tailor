@@ -58,20 +58,20 @@ export function KeyboardShortcutHelp({
     >
       <ScaleTransition show={isOpen} duration={250}>
         <div
-          className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
+          className="bg-card rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b">
             <h2
               id="keyboard-shortcuts-title"
-              className="text-lg font-semibold text-gray-900"
+              className="text-lg font-semibold text-foreground"
             >
               Keyboard Shortcuts
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-muted-foreground/60 hover:text-muted-foreground transition-colors"
               aria-label="Close"
             >
               <XIcon className="w-5 h-5" />
@@ -83,7 +83,7 @@ export function KeyboardShortcutHelp({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {groups.map((group) => (
                 <div key={group.category}>
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                     {group.label}
                   </h3>
                   <div className="space-y-2">
@@ -92,10 +92,10 @@ export function KeyboardShortcutHelp({
                         key={index}
                         className="flex items-center justify-between"
                       >
-                        <span className="text-sm text-gray-700">
+                        <span className="text-sm text-foreground/80">
                           {shortcut.description}
                         </span>
-                        <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 border border-gray-300 rounded text-gray-600">
+                        <kbd className="px-2 py-1 text-xs font-mono bg-muted border border-input rounded text-muted-foreground">
                           {formatShortcut(shortcut)}
                         </kbd>
                       </div>
@@ -107,10 +107,10 @@ export function KeyboardShortcutHelp({
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-3 bg-gray-50 border-t text-center">
-            <span className="text-xs text-gray-500">
+          <div className="px-6 py-3 bg-muted border-t text-center">
+            <span className="text-xs text-muted-foreground">
               Press{" "}
-              <kbd className="px-1.5 py-0.5 font-mono bg-gray-200 rounded text-gray-600">
+              <kbd className="px-1.5 py-0.5 font-mono bg-muted rounded text-muted-foreground">
                 ?
               </kbd>{" "}
               to toggle this panel
