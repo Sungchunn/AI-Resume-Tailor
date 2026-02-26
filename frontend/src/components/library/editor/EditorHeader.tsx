@@ -33,21 +33,21 @@ export function EditorHeader({ resumeId, title, onExport }: EditorHeaderProps) {
   };
 
   return (
-    <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
+    <header className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
       {/* Left: Back button and title */}
       <div className="flex items-center gap-4">
         <Link
           href={`/dashboard/library/resumes/${resumeId}`}
-          className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="hidden sm:inline">Back</span>
         </Link>
 
-        <div className="h-5 w-px bg-gray-200" />
+        <div className="h-5 w-px bg-border" />
 
         <div className="flex items-center gap-2">
-          <h1 className="text-lg font-semibold text-gray-900 truncate max-w-[200px] sm:max-w-[300px]">
+          <h1 className="text-lg font-semibold text-foreground truncate max-w-[200px] sm:max-w-[300px]">
             {title}
           </h1>
           {isDirty && (
@@ -62,17 +62,17 @@ export function EditorHeader({ resumeId, title, onExport }: EditorHeaderProps) {
       <div className="flex items-center gap-2">
         {/* Error indicator */}
         {error && (
-          <span className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded hidden sm:block">
+          <span className="text-xs text-destructive bg-destructive/10 px-2 py-1 rounded hidden sm:block">
             {error}
           </span>
         )}
 
         {/* Undo/Redo */}
-        <div className="flex items-center border-r border-gray-200 pr-2 mr-2">
+        <div className="flex items-center border-r border-border pr-2 mr-2">
           <button
             onClick={undo}
             disabled={!canUndo}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-2 text-muted-foreground hover:text-foreground/80 hover:bg-accent rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             title="Undo (Cmd+Z)"
           >
             <Undo2 className="w-4 h-4" />
@@ -80,7 +80,7 @@ export function EditorHeader({ resumeId, title, onExport }: EditorHeaderProps) {
           <button
             onClick={redo}
             disabled={!canRedo}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-2 text-muted-foreground hover:text-foreground/80 hover:bg-accent rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             title="Redo (Cmd+Shift+Z)"
           >
             <Redo2 className="w-4 h-4" />
@@ -91,7 +91,7 @@ export function EditorHeader({ resumeId, title, onExport }: EditorHeaderProps) {
         {onExport && (
           <button
             onClick={onExport}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-foreground/80 hover:bg-accent rounded-md transition-colors"
           >
             <Download className="w-4 h-4" />
             <span className="hidden sm:inline">Export</span>
@@ -104,8 +104,8 @@ export function EditorHeader({ resumeId, title, onExport }: EditorHeaderProps) {
           disabled={isSaving || !isDirty}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
             isDirty
-              ? "bg-primary-600 text-white hover:bg-primary-700"
-              : "bg-gray-100 text-gray-500 cursor-not-allowed"
+              ? "bg-primary text-white hover:bg-primary/90"
+              : "bg-muted text-muted-foreground cursor-not-allowed"
           }`}
         >
           <Save className="w-4 h-4" />

@@ -87,10 +87,10 @@ export function BlockItem({
       style={style}
       className={`rounded-lg border-2 transition-all ${
         isDragging
-          ? "border-primary-400 bg-primary-50 shadow-lg opacity-90 z-50"
+          ? "border-primary/40 bg-primary/10 shadow-lg opacity-90 z-50"
           : isActive
-          ? "border-primary-300 bg-white shadow-sm"
-          : "border-gray-200 bg-white hover:border-gray-300"
+          ? "border-primary/30 bg-card shadow-sm"
+          : "border-border bg-card hover:border-input"
       }`}
       onClick={onSelect}
     >
@@ -98,7 +98,7 @@ export function BlockItem({
       <div className="flex items-center gap-2 px-3 py-2.5">
         {/* Drag Handle */}
         <button
-          className="p-1 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing touch-none shrink-0"
+          className="p-1 text-muted-foreground/60 hover:text-muted-foreground cursor-grab active:cursor-grabbing touch-none shrink-0"
           {...attributes}
           {...listeners}
           aria-label="Drag to reorder"
@@ -112,7 +112,7 @@ export function BlockItem({
             e.stopPropagation();
             onToggleCollapse();
           }}
-          className="p-1 text-gray-500 hover:text-gray-700 transition-transform shrink-0"
+          className="p-1 text-muted-foreground hover:text-foreground/80 transition-transform shrink-0"
           aria-label={isCollapsed ? "Expand section" : "Collapse section"}
         >
           <ChevronRight
@@ -123,17 +123,17 @@ export function BlockItem({
         </button>
 
         {/* Block Icon */}
-        <div className="shrink-0 text-gray-400">
+        <div className="shrink-0 text-muted-foreground/60">
           <BlockIcon iconName={blockInfo.icon} className="w-4 h-4" />
         </div>
 
         {/* Block Name & Preview */}
         <div className="flex-1 min-w-0">
-          <span className="font-medium text-gray-900 text-sm">
+          <span className="font-medium text-foreground text-sm">
             {blockInfo.label}
           </span>
           {contentPreview && (
-            <span className="ml-2 text-xs text-gray-400">{contentPreview}</span>
+            <span className="ml-2 text-xs text-muted-foreground/60">{contentPreview}</span>
           )}
         </div>
 
@@ -144,14 +144,14 @@ export function BlockItem({
               e.stopPropagation();
               setShowMenu(!showMenu);
             }}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            className="p-1.5 text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent rounded transition-colors"
             aria-label="Block actions"
           >
             <MoreVertical className="w-4 h-4" />
           </button>
 
           {showMenu && (
-            <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+            <div className="absolute right-0 top-full mt-1 w-48 bg-card rounded-lg shadow-lg border border-border py-1 z-50">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -159,19 +159,19 @@ export function BlockItem({
                   onAddAfter(block.type);
                   setShowMenu(false);
                 }}
-                className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-sm text-foreground/80 hover:bg-accent flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Add section below
               </button>
-              <div className="border-t border-gray-100 my-1" />
+              <div className="border-t border-border my-1" />
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onRemove();
                   setShowMenu(false);
                 }}
-                className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-sm text-destructive hover:bg-destructive/10 flex items-center gap-2"
               >
                 <Trash2 className="w-4 h-4" />
                 Delete section
@@ -183,7 +183,7 @@ export function BlockItem({
 
       {/* Block Content */}
       {!isCollapsed && children && (
-        <div className="px-4 pb-4 pt-2 border-t border-gray-100">{children}</div>
+        <div className="px-4 pb-4 pt-2 border-t border-border">{children}</div>
       )}
     </div>
   );

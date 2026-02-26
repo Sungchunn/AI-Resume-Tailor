@@ -97,9 +97,9 @@ export function BlockTypeMenu({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 w-72 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-96 overflow-y-auto">
+        <div className="absolute right-0 top-full mt-1 w-72 bg-card rounded-lg shadow-lg border border-border py-2 z-50 max-h-96 overflow-y-auto">
           {afterId && (
-            <div className="px-3 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Insert section below
             </div>
           )}
@@ -150,7 +150,7 @@ function TriggerButton({
       return (
         <button
           onClick={onClick}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium text-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium text-sm"
         >
           <Plus className="w-4 h-4" />
           Add Section
@@ -161,7 +161,7 @@ function TriggerButton({
       return (
         <button
           onClick={onClick}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-colors text-sm"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-input rounded-lg text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/10 transition-colors text-sm"
         >
           <Plus className="w-4 h-4" />
           Add Section
@@ -175,8 +175,8 @@ function TriggerButton({
           onClick={onClick}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
             isOpen
-              ? "bg-primary-100 text-primary-700"
-              : "text-primary-600 hover:text-primary-700 hover:bg-primary-50"
+              ? "bg-primary/10 text-primary"
+              : "text-primary hover:text-primary hover:bg-primary/10"
           }`}
         >
           <Plus className="w-4 h-4" />
@@ -202,7 +202,7 @@ function CategorySection({
 }) {
   return (
     <div className="py-1">
-      <div className="px-3 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide">
+      <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
         {label}
       </div>
       {types.map((info) => (
@@ -245,12 +245,12 @@ function BlockTypeMenuItem({
       className={`w-full px-3 py-2 text-left flex items-start gap-3 transition-colors ${
         disabled
           ? "opacity-50 cursor-not-allowed"
-          : "hover:bg-gray-50 cursor-pointer"
+          : "hover:bg-accent cursor-pointer"
       }`}
     >
       <div
         className={`shrink-0 mt-0.5 ${
-          disabled ? "text-gray-300" : "text-gray-400"
+          disabled ? "text-muted-foreground/30" : "text-muted-foreground/60"
         }`}
       >
         <BlockIcon iconName={icon} className="w-5 h-5" />
@@ -258,19 +258,19 @@ function BlockTypeMenuItem({
       <div className="flex-1 min-w-0">
         <div
           className={`text-sm font-medium ${
-            disabled ? "text-gray-400" : "text-gray-900"
+            disabled ? "text-muted-foreground/60" : "text-foreground"
           }`}
         >
           {label}
           {disabled && (
-            <span className="ml-2 text-xs text-gray-400 font-normal">
+            <span className="ml-2 text-xs text-muted-foreground/60 font-normal">
               (already added)
             </span>
           )}
         </div>
         <div
           className={`text-xs ${
-            disabled ? "text-gray-300" : "text-gray-500"
+            disabled ? "text-muted-foreground/30" : "text-muted-foreground"
           } line-clamp-1`}
         >
           {description}

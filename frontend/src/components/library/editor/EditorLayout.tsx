@@ -95,7 +95,7 @@ export function EditorLayout({ resumeId, title }: EditorLayoutProps) {
   }, [state.isDirty]);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-muted">
       {/* Header */}
       <EditorHeader
         resumeId={resumeId}
@@ -110,7 +110,7 @@ export function EditorLayout({ resumeId, title }: EditorLayoutProps) {
           {!isPreviewFullscreen && (
             <>
               <Panel defaultSize={45} minSize={30} maxSize={60}>
-                <div className="h-full flex flex-col bg-white border-r border-gray-200">
+                <div className="h-full flex flex-col bg-card border-r border-border">
                   {/* Toolbar */}
                   <EditorToolbar
                     isPreviewFullscreen={isPreviewFullscreen}
@@ -131,18 +131,18 @@ export function EditorLayout({ resumeId, title }: EditorLayoutProps) {
               </Panel>
 
               {/* Resize Handle */}
-              <PanelResizeHandle className="w-1.5 bg-gray-100 hover:bg-primary-200 transition-colors cursor-col-resize" />
+              <PanelResizeHandle className="w-1.5 bg-muted hover:bg-primary/20 transition-colors cursor-col-resize" />
             </>
           )}
 
           {/* Right Panel: Preview */}
           <Panel defaultSize={isPreviewFullscreen ? 100 : 55} minSize={40}>
-            <div className="h-full overflow-auto bg-gray-100 p-4">
+            <div className="h-full overflow-auto bg-muted p-4">
               {isPreviewFullscreen && (
                 <div className="mb-4 flex justify-end">
                   <button
                     onClick={() => setIsPreviewFullscreen(false)}
-                    className="px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition-colors"
+                    className="px-3 py-1.5 text-sm bg-card border border-border rounded-md shadow-sm hover:bg-accent transition-colors"
                   >
                     Exit Fullscreen
                   </button>
