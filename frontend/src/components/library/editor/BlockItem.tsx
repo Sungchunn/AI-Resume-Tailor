@@ -98,7 +98,7 @@ export function BlockItem({
       <div className="flex items-center gap-2 px-3 py-2.5">
         {/* Drag Handle */}
         <button
-          className="p-1 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing touch-none flex-shrink-0"
+          className="p-1 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing touch-none shrink-0"
           {...attributes}
           {...listeners}
           aria-label="Drag to reorder"
@@ -112,7 +112,7 @@ export function BlockItem({
             e.stopPropagation();
             onToggleCollapse();
           }}
-          className="p-1 text-gray-500 hover:text-gray-700 transition-transform flex-shrink-0"
+          className="p-1 text-gray-500 hover:text-gray-700 transition-transform shrink-0"
           aria-label={isCollapsed ? "Expand section" : "Collapse section"}
         >
           <ChevronRight
@@ -123,7 +123,7 @@ export function BlockItem({
         </button>
 
         {/* Block Icon */}
-        <div className="flex-shrink-0 text-gray-400">
+        <div className="shrink-0 text-gray-400">
           <BlockIcon iconName={blockInfo.icon} className="w-4 h-4" />
         </div>
 
@@ -138,7 +138,7 @@ export function BlockItem({
         </div>
 
         {/* Actions Menu */}
-        <div className="relative flex-shrink-0" ref={menuRef}>
+        <div className="relative shrink-0" ref={menuRef}>
           <button
             onClick={(e) => {
               e.stopPropagation();

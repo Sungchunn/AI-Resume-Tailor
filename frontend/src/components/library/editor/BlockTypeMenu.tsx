@@ -249,7 +249,7 @@ function BlockTypeMenuItem({
       }`}
     >
       <div
-        className={`flex-shrink-0 mt-0.5 ${
+        className={`shrink-0 mt-0.5 ${
           disabled ? "text-gray-300" : "text-gray-400"
         }`}
       >

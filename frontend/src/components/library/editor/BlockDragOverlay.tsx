@@ -30,17 +30,17 @@ export function BlockDragOverlay({ block }: BlockDragOverlayProps) {
       {/* Simplified Block Header */}
       <div className="flex items-center gap-2 px-3 py-2.5">
         {/* Drag Handle (visual only) */}
-        <div className="p-1 text-primary-500 cursor-grabbing flex-shrink-0">
+        <div className="p-1 text-primary-500 cursor-grabbing shrink-0">
           <GripVertical className="w-5 h-5" />
         </div>
 
         {/* Expand/Collapse (visual only) */}
-        <div className="p-1 text-primary-400 flex-shrink-0">
+        <div className="p-1 text-primary-400 shrink-0">
           <ChevronRight className="w-4 h-4 rotate-90" />
         </div>
 
         {/* Block Icon */}
-        <div className="flex-shrink-0 text-primary-400">
+        <div className="shrink-0 text-primary-400">
           <BlockIcon iconName={blockInfo.icon} className="w-4 h-4" />
         </div>
 
