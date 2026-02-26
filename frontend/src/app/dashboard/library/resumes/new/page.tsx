@@ -211,7 +211,7 @@ export default function NewResumePage() {
                 <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-4">
                   <div className="flex items-start">
                     <svg
-                      className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0"
+                      className="h-5 w-5 text-green-500 mt-0.5 shrink-0"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={1.5}
@@ -252,7 +252,7 @@ export default function NewResumePage() {
                   content={htmlContent}
                   onChange={handleEditorChange}
                   placeholder="Start typing your resume content..."
-                  className="min-h-[400px]"
+                  className="min-h-100"
                 />
                 {contentError && (
                   <p className="mt-1 text-sm text-destructive">{contentError}</p>

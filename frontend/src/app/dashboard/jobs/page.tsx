@@ -76,7 +76,7 @@ export default function JobListingsPage() {
 
       <div className="flex gap-6">
         {/* Filters Sidebar */}
-        <div className="w-72 flex-shrink-0">
+        <div className="w-72 shrink-0">
           <JobListingFilters
             filters={filters}
             onFiltersChange={setFilters}
