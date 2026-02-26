@@ -10,10 +10,10 @@ export function AutoFitToggle({
   return (
     <div className="flex items-center justify-between">
       <div className="flex-1">
-        <label className="text-sm font-medium text-gray-700">
+        <label className="text-sm font-medium text-foreground/80">
           Fit to One Page
         </label>
-        <p className="text-xs text-gray-500 mt-0.5">
+        <p className="text-xs text-muted-foreground mt-0.5">
           Automatically adjust styles to fit content on one page
         </p>
       </div>
@@ -28,11 +28,11 @@ export function AutoFitToggle({
           aria-checked={enabled}
           onClick={() => onToggle(!enabled)}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            enabled ? "bg-blue-600" : "bg-gray-200"
+            enabled ? "bg-blue-600" : "bg-muted"
           }`}
         >
           <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+            className={`inline-block h-4 w-4 transform rounded-full bg-card transition-transform ${
               enabled ? "translate-x-6" : "translate-x-1"
             }`}
           />

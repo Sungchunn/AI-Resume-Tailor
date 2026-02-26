@@ -49,7 +49,7 @@ export function StylePanel() {
     <div className="h-full flex flex-col">
       {/* Template Selector Section */}
       <div className="border-b p-4">
-        <h3 className="text-sm font-medium text-gray-700 mb-3">
+        <h3 className="text-sm font-medium text-foreground/80 mb-3">
           Template Presets
         </h3>
         <TemplateSelector
@@ -69,7 +69,7 @@ export function StylePanel() {
 
         {/* Show reductions when fitted */}
         {status.state === "fitted" && reductions.length > 0 && (
-          <div className="mt-2 text-xs text-gray-500">
+          <div className="mt-2 text-xs text-muted-foreground">
             <span className="font-medium">Adjustments made:</span>
             <ul className="mt-1 space-y-0.5">
               {reductions.map((r, idx) => (

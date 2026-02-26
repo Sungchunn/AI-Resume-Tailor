@@ -13,20 +13,20 @@ export function TemplateThumbnail({
       className={`flex flex-col items-start p-3 rounded-lg border-2 transition-all text-left hover:border-blue-300 hover:bg-blue-50/50 ${
         isActive
           ? "border-blue-500 bg-blue-50"
-          : "border-gray-200 bg-white"
+          : "border-border bg-card"
       }`}
     >
       {/* Mini Preview */}
       <div
-        className="w-full h-20 bg-white border rounded mb-2 overflow-hidden"
+        className="w-full h-20 bg-card border rounded mb-2 overflow-hidden"
         style={{ fontFamily: preset.style.font_family }}
       >
         <MiniPreview preset={preset} />
       </div>
 
       {/* Name and Description */}
-      <span className="text-sm font-medium text-gray-900">{preset.name}</span>
-      <span className="text-xs text-gray-500 mt-0.5">{preset.description}</span>
+      <span className="text-sm font-medium text-foreground">{preset.name}</span>
+      <span className="text-xs text-muted-foreground mt-0.5">{preset.description}</span>
     </button>
   );
 }
