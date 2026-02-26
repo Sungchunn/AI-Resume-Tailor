@@ -61,7 +61,7 @@ export function FileUploadZone({ onExtracted, onError }: FileUploadZoneProps) {
     });
 
   const getBorderColor = () => {
-    if (isDragReject) return "border-red-400 bg-red-50";
+    if (isDragReject) return "border-destructive bg-destructive/10";
     if (isDragActive) return "border-blue-400 bg-blue-50";
     if (fileError) return "border-destructive/30";
     return "border-input hover:border-input/80";

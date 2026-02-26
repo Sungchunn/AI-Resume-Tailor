@@ -47,8 +47,8 @@ export function BlockCard({
   return (
     <div
       className={`card relative ${
-        selectable ? "cursor-pointer hover:border-primary-300" : ""
-      } ${selected ? "ring-2 ring-primary-500 border-primary-500" : ""}`}
+        selectable ? "cursor-pointer hover:border-primary/30" : ""
+      } ${selected ? "ring-2 ring-primary border-primary" : ""}`}
       onClick={selectable ? () => onSelect?.(block.id) : undefined}
     >
       {selectable && (
