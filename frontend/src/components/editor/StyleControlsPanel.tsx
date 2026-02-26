@@ -63,11 +63,11 @@ export function StyleControlsPanel({
         </div>
       )}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-900">Style Settings</h3>
+        <h3 className="text-sm font-semibold text-foreground">Style Settings</h3>
         <button
           onClick={onReset}
           disabled={disabled}
-          className="text-xs text-gray-500 hover:text-gray-700 disabled:cursor-not-allowed"
+          className="text-xs text-muted-foreground hover:text-foreground/80 disabled:cursor-not-allowed"
         >
           Reset to Default
         </button>
@@ -77,11 +77,11 @@ export function StyleControlsPanel({
       <div className="border rounded-lg overflow-hidden">
         <button
           onClick={() => toggleSection("typography")}
-          className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100"
+          className="w-full flex items-center justify-between p-3 bg-muted hover:bg-accent"
         >
-          <span className="text-sm font-medium text-gray-700">Typography</span>
+          <span className="text-sm font-medium text-foreground/80">Typography</span>
           <svg
-            className={`w-4 h-4 text-gray-500 transition-transform ${
+            className={`w-4 h-4 text-muted-foreground transition-transform ${
               expanded.typography ? "rotate-180" : ""
             }`}
             fill="none"
@@ -99,13 +99,13 @@ export function StyleControlsPanel({
         {expanded.typography && (
           <div className="p-3 space-y-4">
             <div>
-              <label className="block text-xs text-gray-600 mb-1">
+              <label className="block text-xs text-muted-foreground mb-1">
                 Font Family
               </label>
               <select
                 value={style.font_family || DEFAULT_STYLE.font_family}
                 onChange={(e) => handleChange("font_family", e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full px-3 py-2 text-sm border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 {FONT_OPTIONS.map((font) => (
                   <option key={font.value} value={font.value}>
@@ -117,7 +117,7 @@ export function StyleControlsPanel({
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">
+                <label className="block text-xs text-muted-foreground mb-1">
                   Body Size
                 </label>
                 <input
@@ -128,11 +128,11 @@ export function StyleControlsPanel({
                   onChange={(e) =>
                     handleChange("font_size_body", parseInt(e.target.value))
                   }
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full px-2 py-1.5 text-sm border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">
+                <label className="block text-xs text-muted-foreground mb-1">
                   Heading
                 </label>
                 <input
@@ -145,11 +145,11 @@ export function StyleControlsPanel({
                   onChange={(e) =>
                     handleChange("font_size_heading", parseInt(e.target.value))
                   }
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full px-2 py-1.5 text-sm border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">
+                <label className="block text-xs text-muted-foreground mb-1">
                   Subhead
                 </label>
                 <input
@@ -166,7 +166,7 @@ export function StyleControlsPanel({
                       parseInt(e.target.value)
                     )
                   }
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full px-2 py-1.5 text-sm border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
             </div>
@@ -178,11 +178,11 @@ export function StyleControlsPanel({
       <div className="border rounded-lg overflow-hidden">
         <button
           onClick={() => toggleSection("spacing")}
-          className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100"
+          className="w-full flex items-center justify-between p-3 bg-muted hover:bg-accent"
         >
-          <span className="text-sm font-medium text-gray-700">Spacing</span>
+          <span className="text-sm font-medium text-foreground/80">Spacing</span>
           <svg
-            className={`w-4 h-4 text-gray-500 transition-transform ${
+            className={`w-4 h-4 text-muted-foreground transition-transform ${
               expanded.spacing ? "rotate-180" : ""
             }`}
             fill="none"
@@ -200,7 +200,7 @@ export function StyleControlsPanel({
         {expanded.spacing && (
           <div className="p-3 space-y-4">
             <div>
-              <label className="block text-xs text-gray-600 mb-1">
+              <label className="block text-xs text-muted-foreground mb-1">
                 Line Spacing: {style.line_spacing || DEFAULT_STYLE.line_spacing}
               </label>
               <input
@@ -212,11 +212,11 @@ export function StyleControlsPanel({
                 onChange={(e) =>
                   handleChange("line_spacing", parseFloat(e.target.value))
                 }
-                className="w-full accent-primary-500"
+                className="w-full accent-primary"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-600 mb-1">
+              <label className="block text-xs text-muted-foreground mb-1">
                 Section Spacing:{" "}
                 {style.section_spacing || DEFAULT_STYLE.section_spacing}
               </label>
@@ -229,7 +229,7 @@ export function StyleControlsPanel({
                 onChange={(e) =>
                   handleChange("section_spacing", parseFloat(e.target.value))
                 }
-                className="w-full accent-primary-500"
+                className="w-full accent-primary"
               />
             </div>
           </div>
@@ -240,13 +240,13 @@ export function StyleControlsPanel({
       <div className="border rounded-lg overflow-hidden">
         <button
           onClick={() => toggleSection("margins")}
-          className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100"
+          className="w-full flex items-center justify-between p-3 bg-muted hover:bg-accent"
         >
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-medium text-foreground/80">
             Margins (inches)
           </span>
           <svg
-            className={`w-4 h-4 text-gray-500 transition-transform ${
+            className={`w-4 h-4 text-muted-foreground transition-transform ${
               expanded.margins ? "rotate-180" : ""
             }`}
             fill="none"
@@ -265,7 +265,7 @@ export function StyleControlsPanel({
           <div className="p-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Top</label>
+                <label className="block text-xs text-muted-foreground mb-1">Top</label>
                 <input
                   type="number"
                   min={0.25}
@@ -275,11 +275,11 @@ export function StyleControlsPanel({
                   onChange={(e) =>
                     handleChange("margin_top", parseFloat(e.target.value))
                   }
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full px-2 py-1.5 text-sm border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">
+                <label className="block text-xs text-muted-foreground mb-1">
                   Bottom
                 </label>
                 <input
@@ -291,11 +291,11 @@ export function StyleControlsPanel({
                   onChange={(e) =>
                     handleChange("margin_bottom", parseFloat(e.target.value))
                   }
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full px-2 py-1.5 text-sm border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Left</label>
+                <label className="block text-xs text-muted-foreground mb-1">Left</label>
                 <input
                   type="number"
                   min={0.25}
@@ -305,11 +305,11 @@ export function StyleControlsPanel({
                   onChange={(e) =>
                     handleChange("margin_left", parseFloat(e.target.value))
                   }
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full px-2 py-1.5 text-sm border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">
+                <label className="block text-xs text-muted-foreground mb-1">
                   Right
                 </label>
                 <input
@@ -321,7 +321,7 @@ export function StyleControlsPanel({
                   onChange={(e) =>
                     handleChange("margin_right", parseFloat(e.target.value))
                   }
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full px-2 py-1.5 text-sm border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
             </div>

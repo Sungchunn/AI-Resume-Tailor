@@ -23,7 +23,7 @@ export default function ResumeEditPage({ params }: PageProps) {
     await updateResume.mutateAsync({
       id: resumeId,
       data: {
-        parsed_content: data.parsedContent,
+        parsed_content: data.parsedContent as Record<string, unknown>,
         style: data.style,
       },
     });

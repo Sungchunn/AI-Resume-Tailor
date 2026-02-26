@@ -133,9 +133,9 @@ export function EditorLayout({
   return (
     <div className="h-full flex flex-col">
       {/* Top Bar */}
-      <div className="flex-shrink-0 h-14 border-b border-gray-200 bg-white flex items-center justify-between px-4">
+      <div className="flex-shrink-0 h-14 border-b border-border bg-card flex items-center justify-between px-4">
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-semibold text-gray-900">Resume Editor</h1>
+          <h1 className="text-lg font-semibold text-foreground">Resume Editor</h1>
           <div className="flex items-center gap-2">
             <span
               className={`px-2 py-1 text-xs font-medium rounded ${
@@ -158,15 +158,15 @@ export function EditorLayout({
 
         <div className="flex items-center gap-3">
           {hasChanges && (
-            <span className="text-xs text-gray-500">Unsaved changes</span>
+            <span className="text-xs text-muted-foreground">Unsaved changes</span>
           )}
           <button
             onClick={onSave}
             disabled={isSaving || !hasChanges}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
               hasChanges
-                ? "bg-primary-600 text-white hover:bg-primary-700"
-                : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                ? "bg-primary text-white hover:bg-primary/90"
+                : "bg-muted text-muted-foreground cursor-not-allowed"
             }`}
           >
             {isSaving ? (
@@ -204,15 +204,15 @@ export function EditorLayout({
         <Group orientation="horizontal" className="h-full">
           {/* Left Panel - Style/Sections */}
           <Panel defaultSize={20} minSize={15} maxSize={30}>
-            <div className="h-full flex flex-col bg-gray-50 border-r border-gray-200">
+            <div className="h-full flex flex-col bg-muted border-r border-border">
               {/* Tab Switcher */}
-              <div className="flex border-b border-gray-200">
+              <div className="flex border-b border-border">
                 <button
                   onClick={() => setLeftTab("style")}
                   className={`flex-1 py-2 text-sm font-medium transition-colors ${
                     leftTab === "style"
-                      ? "text-primary-600 border-b-2 border-primary-600 bg-white"
-                      : "text-gray-500 hover:text-gray-700"
+                      ? "text-primary border-b-2 border-primary bg-card"
+                      : "text-muted-foreground hover:text-foreground/80"
                   }`}
                 >
                   Style
@@ -221,8 +221,8 @@ export function EditorLayout({
                   onClick={() => setLeftTab("sections")}
                   className={`flex-1 py-2 text-sm font-medium transition-colors ${
                     leftTab === "sections"
-                      ? "text-primary-600 border-b-2 border-primary-600 bg-white"
-                      : "text-gray-500 hover:text-gray-700"
+                      ? "text-primary border-b-2 border-primary bg-card"
+                      : "text-muted-foreground hover:text-foreground/80"
                   }`}
                 >
                   Sections
@@ -248,11 +248,11 @@ export function EditorLayout({
             </div>
           </Panel>
 
-          <Separator className="w-1 bg-gray-200 hover:bg-primary-300 transition-colors cursor-col-resize" />
+          <Separator className="w-1 bg-muted hover:bg-primary/30 transition-colors cursor-col-resize" />
 
           {/* Center Panel - Content Editor */}
           <Panel defaultSize={55} minSize={40}>
-            <div className="h-full bg-white">
+            <div className="h-full bg-card">
               <ContentEditor
                 content={content}
                 sectionOrder={sectionOrder}
@@ -263,19 +263,19 @@ export function EditorLayout({
             </div>
           </Panel>
 
-          <Separator className="w-1 bg-gray-200 hover:bg-primary-300 transition-colors cursor-col-resize" />
+          <Separator className="w-1 bg-muted hover:bg-primary/30 transition-colors cursor-col-resize" />
 
           {/* Right Panel - Suggestions/ATS Keywords */}
           <Panel defaultSize={25} minSize={20} maxSize={35}>
-            <div className="h-full flex flex-col bg-gray-50 border-l border-gray-200">
+            <div className="h-full flex flex-col bg-muted border-l border-border">
               {/* Tab Switcher */}
-              <div className="flex-shrink-0 flex border-b border-gray-200">
+              <div className="flex-shrink-0 flex border-b border-border">
                 <button
                   onClick={() => setRightTab("suggestions")}
                   className={`flex-1 py-2 text-sm font-medium transition-colors ${
                     rightTab === "suggestions"
-                      ? "text-primary-600 border-b-2 border-primary-600 bg-white"
-                      : "text-gray-500 hover:text-gray-700"
+                      ? "text-primary border-b-2 border-primary bg-card"
+                      : "text-muted-foreground hover:text-foreground/80"
                   }`}
                 >
                   Suggestions
@@ -289,8 +289,8 @@ export function EditorLayout({
                   onClick={() => setRightTab("ats")}
                   className={`flex-1 py-2 text-sm font-medium transition-colors ${
                     rightTab === "ats"
-                      ? "text-primary-600 border-b-2 border-primary-600 bg-white"
-                      : "text-gray-500 hover:text-gray-700"
+                      ? "text-primary border-b-2 border-primary bg-card"
+                      : "text-muted-foreground hover:text-foreground/80"
                   }`}
                 >
                   ATS Keywords

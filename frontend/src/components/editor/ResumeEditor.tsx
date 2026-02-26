@@ -298,10 +298,10 @@ export function ResumeEditor({
 
   if (!editor) {
     return (
-      <div className={`border border-gray-300 rounded-lg ${className}`}>
+      <div className={`border border-input rounded-lg ${className}`}>
         <div className="animate-pulse p-4">
-          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+          <div className="h-4 bg-muted rounded w-1/2"></div>
         </div>
       </div>
     );
@@ -310,21 +310,21 @@ export function ResumeEditor({
   return (
     <>
       <div
-        className={`border border-gray-300 rounded-lg overflow-hidden bg-white ${className}`}
+        className={`border border-input rounded-lg overflow-hidden bg-card ${className}`}
       >
         {showToolbar && <EditorToolbar editor={editor} />}
         <div className="overflow-y-auto max-h-[600px]">
           <EditorContent
             editor={editor}
-            className="[&_.ProseMirror]:min-h-[400px] [&_.ProseMirror]:focus:outline-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-gray-400 [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none"
+            className="[&_.ProseMirror]:min-h-[400px] [&_.ProseMirror]:focus:outline-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-muted-foreground/60 [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none"
             data-placeholder={placeholder}
           />
         </div>
 
         {/* Suggestion count indicator */}
         {suggestions.length > 0 && (
-          <div className="px-3 py-2 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="px-3 py-2 bg-muted border-t border-border flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
