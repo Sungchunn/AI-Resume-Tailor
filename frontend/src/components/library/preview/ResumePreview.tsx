@@ -68,7 +68,7 @@ export function ResumePreview({
         className={`resume-preview-container flex flex-col items-center ${className ?? ""}`}
       >
         <div
-          className={`bg-white ${showPageBorder ? "shadow-lg rounded-sm border border-gray-200" : ""}`}
+          className={`bg-card ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
           style={{
             width: PAGE_DIMENSIONS.WIDTH,
             minHeight: PAGE_DIMENSIONS.HEIGHT,
@@ -77,7 +77,7 @@ export function ResumePreview({
             padding: computedStyles.paddingTop,
           }}
         >
-          <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+          <div className="flex flex-col items-center justify-center h-64 text-muted-foreground/60">
             <p className="text-lg">No content yet</p>
             <p className="text-sm mt-1">Add sections to build your resume</p>
           </div>
@@ -92,7 +92,7 @@ export function ResumePreview({
       className={`resume-preview-container flex flex-col items-center ${className ?? ""}`}
     >
       <div
-        className={`preview-page bg-white ${showPageBorder ? "shadow-lg rounded-sm border border-gray-200" : ""}`}
+        className={`preview-page bg-card ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
         style={{
           width: PAGE_DIMENSIONS.WIDTH,
           minHeight: PAGE_DIMENSIONS.HEIGHT,
@@ -138,7 +138,7 @@ export function ResumePreviewStandalone({
 
   return (
     <div
-      className={`preview-page bg-white ${className ?? ""}`}
+      className={`preview-page bg-card ${className ?? ""}`}
       style={{
         width: PAGE_DIMENSIONS.WIDTH,
         minHeight: PAGE_DIMENSIONS.HEIGHT,

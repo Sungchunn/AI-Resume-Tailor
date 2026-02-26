@@ -29,10 +29,10 @@ export function AutoFitToggle({
       {/* Toggle Row */}
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <label className="text-sm font-medium text-gray-700">
+          <label className="text-sm font-medium text-foreground/80">
             Fit to One Page
           </label>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Automatically adjust styles to fit content
           </p>
         </div>
@@ -46,12 +46,12 @@ export function AutoFitToggle({
             role="switch"
             aria-checked={enabled}
             onClick={() => onToggle(!enabled)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-              enabled ? "bg-primary-600" : "bg-gray-200"
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+              enabled ? "bg-primary" : "bg-muted"
             }`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+              className={`inline-block h-4 w-4 transform rounded-full bg-card shadow transition-transform ${
                 enabled ? "translate-x-6" : "translate-x-1"
               }`}
             />
