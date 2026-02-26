@@ -3,12 +3,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { Panel, Group, Separator } from "react-resizable-panels";
 import { useBlockEditor } from "./BlockEditorContext";
-import { BlockList } from "./BlockList";
-import { BlockEditorDispatcher } from "./blocks";
 import { EditorHeader } from "./EditorHeader";
-import { EditorToolbar } from "./EditorToolbar";
+import { ControlPanel } from "./ControlPanel";
 import { ResumePreview } from "../preview";
-import type { AnyResumeBlock } from "@/lib/resume/types";
 import ExportDialog from "@/components/export/ExportDialog";
 
 interface EditorLayoutProps {
@@ -16,31 +13,26 @@ interface EditorLayoutProps {
   resumeId: number;
   /** Resume title for display */
   title: string;
+  /** Job ID for ATS analysis - passed via query param from job board */
+  jobId?: number | null;
 }
 
 /**
  * EditorLayout - Split-screen layout for the block editor
  *
  * Features:
- * - Left panel: Block list with drag-and-drop reordering
- * - Right panel: Live WYSIWYG preview
+ * - Left panel: Live WYSIWYG A4 preview
+ * - Right panel: Tabbed control panel (AI, ATS, Formatting, Sections)
  * - Resizable panels
- * - Style toolbar
  * - Keyboard shortcuts (Cmd+S, Cmd+Z, Cmd+Shift+Z)
  */
-export function EditorLayout({ resumeId, title }: EditorLayoutProps) {
+export function EditorLayout({ resumeId, title, jobId = null }: EditorLayoutProps) {
   const { state, setActiveBlock, save, undo, redo, canUndo, canRedo } =
     useBlockEditor();
   const { blocks, activeBlockId, style } = state;
 
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
-
-  // Render function for block editors
-  const renderBlockEditor = useCallback(
-    (block: AnyResumeBlock) => <BlockEditorDispatcher block={block} />,
-    []
-  );
 
   // Handle block click in preview
   const handlePreviewBlockClick = useCallback(
@@ -106,36 +98,7 @@ export function EditorLayout({ resumeId, title }: EditorLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
         <Group orientation="horizontal">
-          {/* Left Panel: Editor */}
-          {!isPreviewFullscreen && (
-            <>
-              <Panel defaultSize={45} minSize={25} maxSize={60}>
-                <div className="h-full flex flex-col bg-card border-r border-border min-w-[320px]">
-                  {/* Toolbar */}
-                  <EditorToolbar
-                    isPreviewFullscreen={isPreviewFullscreen}
-                    onTogglePreviewFullscreen={() =>
-                      setIsPreviewFullscreen(!isPreviewFullscreen)
-                    }
-                  />
-
-                  {/* Block List */}
-                  <div className="flex-1 overflow-hidden">
-                    <BlockList
-                      renderBlockEditor={renderBlockEditor}
-                      showAddButton={true}
-                      emptyMessage="No sections yet. Click 'Add' to get started."
-                    />
-                  </div>
-                </div>
-              </Panel>
-
-              {/* Resize Handle */}
-              <Separator className="w-1.5 bg-muted hover:bg-primary/20 transition-colors cursor-col-resize" />
-            </>
-          )}
-
-          {/* Right Panel: Preview */}
+          {/* Left Panel: Preview */}
           <Panel defaultSize={isPreviewFullscreen ? 100 : 55} minSize={40}>
             <div className="h-full overflow-auto bg-muted p-4">
               {isPreviewFullscreen && (
@@ -157,6 +120,18 @@ export function EditorLayout({ resumeId, title }: EditorLayoutProps) {
               />
             </div>
           </Panel>
+
+          {/* Right Panel: Control Panel */}
+          {!isPreviewFullscreen && (
+            <>
+              {/* Resize Handle */}
+              <Separator className="w-1.5 bg-muted hover:bg-primary/20 transition-colors cursor-col-resize" />
+
+              <Panel defaultSize={45} minSize={25} maxSize={60}>
+                <ControlPanel jobId={jobId} />
+              </Panel>
+            </>
+          )}
         </Group>
       </div>
 

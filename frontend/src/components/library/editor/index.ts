@@ -66,6 +66,15 @@ export {
 export { EditorLayout } from "./EditorLayout";
 export { EditorHeader } from "./EditorHeader";
 export { EditorToolbar } from "./EditorToolbar";
+export { ControlPanel } from "./ControlPanel";
+
+// Tab components
+export {
+  AIChatTab,
+  ATSEvaluationTab,
+  FormattingTab,
+  SectionDraggerTab,
+} from "./tabs";
 
 // Style panel components (Phase 7)
 export {

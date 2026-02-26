@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import { useSearchParams } from "next/navigation";
 import { useResume, useUpdateResume } from "@/lib/api";
 import { BlockEditorProvider, EditorLayout } from "@/components/library/editor";
 import type { ParsedResumeContent } from "@/lib/resume/types";
@@ -12,6 +13,11 @@ interface PageProps {
 export default function ResumeEditPage({ params }: PageProps) {
   const { id } = use(params);
   const resumeId = parseInt(id, 10);
+  const searchParams = useSearchParams();
+
+  // Get jobId from query params (passed when navigating from job board)
+  const jobIdParam = searchParams.get("jobId");
+  const jobId = jobIdParam ? parseInt(jobIdParam, 10) : null;
   const { data: resume, isLoading, error } = useResume(resumeId);
   const updateResume = useUpdateResume();
 
@@ -72,7 +78,7 @@ export default function ResumeEditPage({ params }: PageProps) {
       initialStyle={resume.style as Record<string, unknown> | null}
       onSave={handleSave}
     >
-      <EditorLayout resumeId={resumeId} title={resume.title} />
+      <EditorLayout resumeId={resumeId} title={resume.title} jobId={jobId} />
     </BlockEditorProvider>
   );
 }
