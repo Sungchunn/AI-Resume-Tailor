@@ -222,7 +222,7 @@ export function TechStackLogos({ className }: TechStackLogosProps) {
   return (
     <section className={className}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <p className="text-center text-sm font-medium text-gray-500 mb-6">
+        <p className="text-center text-sm font-medium text-muted-foreground mb-6">
           Built with modern technologies
         </p>
         <LogoLoop
