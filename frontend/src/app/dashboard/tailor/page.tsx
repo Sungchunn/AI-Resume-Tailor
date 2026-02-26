@@ -86,8 +86,8 @@ function TailorPageContent() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tailor Resume</h1>
-          <p className="mt-1 text-gray-600">
+          <h1 className="text-2xl font-bold text-foreground">Tailor Resume</h1>
+          <p className="mt-1 text-muted-foreground">
             AI-powered resume tailoring for specific job descriptions
           </p>
         </div>
@@ -101,16 +101,16 @@ function TailorPageContent() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tailor Resume</h1>
-          <p className="mt-1 text-gray-600">
+          <h1 className="text-2xl font-bold text-foreground">Tailor Resume</h1>
+          <p className="mt-1 text-muted-foreground">
             AI-powered resume tailoring for specific job descriptions
           </p>
         </div>
 
         <div className="card text-center py-12">
-          <div className="mx-auto w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center mb-4">
+          <div className="mx-auto w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">
             <svg
-              className="w-8 h-8 text-primary-600"
+              className="w-8 h-8 text-primary"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={1.5}
@@ -123,10 +123,10 @@ function TailorPageContent() {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          <h3 className="text-xl font-semibold text-foreground mb-2">
             Get Started with AI Tailoring
           </h3>
-          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
             To tailor a resume, you need at least one resume and one job
             description. Add both to get started.
           </p>
@@ -151,8 +151,8 @@ function TailorPageContent() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tailor Resume</h1>
-          <p className="mt-1 text-gray-600">
+          <h1 className="text-2xl font-bold text-foreground">Tailor Resume</h1>
+          <p className="mt-1 text-muted-foreground">
             {hasJobListingFromUrl
               ? "Select a resume to optimize for this job"
               : "Select a resume and job to generate a tailored version optimized for the position"}
@@ -170,10 +170,10 @@ function TailorPageContent() {
         <>
           {/* Error loading job listing from URL */}
           {jobListingId && jobListingError && (
-            <div className="card border-2 border-red-200 bg-red-50">
+            <div className="card border-2 border-destructive/20 bg-destructive/10">
               <div className="flex items-center gap-2 mb-2">
                 <svg
-                  className="w-5 h-5 text-red-600"
+                  className="w-5 h-5 text-destructive"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
@@ -185,11 +185,11 @@ function TailorPageContent() {
                     d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
                   />
                 </svg>
-                <span className="text-sm font-medium text-red-700">
+                <span className="text-sm font-medium text-destructive">
                   Failed to load job listing
                 </span>
               </div>
-              <p className="text-sm text-red-600">
+              <p className="text-sm text-destructive">
                 The job listing could not be loaded. Please select a job from your library below, or{" "}
                 <Link href={`/dashboard/jobs/${jobListingId}`} className="underline hover:no-underline">
                   try viewing the job again
@@ -200,10 +200,10 @@ function TailorPageContent() {
 
           {/* Pre-selected Job Listing from URL */}
           {hasJobListingFromUrl && jobListing && (
-            <div className="card border-2 border-primary-200 bg-primary-50/50">
+            <div className="card border-2 border-primary/20 bg-primary/10/50">
               <div className="flex items-center gap-2 mb-3">
                 <svg
-                  className="w-5 h-5 text-primary-600"
+                  className="w-5 h-5 text-primary"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
@@ -215,7 +215,7 @@ function TailorPageContent() {
                     d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <span className="text-sm font-medium text-primary-700">
+                <span className="text-sm font-medium text-primary">
                   Job Selected
                 </span>
               </div>
@@ -226,33 +226,33 @@ function TailorPageContent() {
                     alt={`${jobListing.company_name} logo`}
                     width={48}
                     height={48}
-                    className="rounded-lg object-contain bg-white border border-gray-200"
+                    className="rounded-lg object-contain bg-white border border-border"
                     unoptimized
                   />
                 ) : (
                   <div className="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-500 text-lg font-semibold">
+                    <span className="text-muted-foreground text-lg font-semibold">
                       {jobListing.company_name.charAt(0)}
                     </span>
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 truncate">
+                  <h3 className="font-semibold text-foreground truncate">
                     {jobListing.job_title}
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     {jobListing.company_name}
                     {jobListing.location && ` • ${jobListing.location}`}
                   </p>
                   {jobListing.job_description && (
-                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                       {jobListing.job_description.slice(0, 150)}...
                     </p>
                   )}
                 </div>
                 <Link
                   href={`/dashboard/jobs/${jobListingId}`}
-                  className="text-sm text-primary-600 hover:text-primary-700 whitespace-nowrap"
+                  className="text-sm text-primary hover:text-primary whitespace-nowrap"
                 >
                   View Job →
                 </Link>
@@ -264,12 +264,12 @@ function TailorPageContent() {
             {/* Resume Selection */}
             <div className="card">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-foreground">
                   {hasJobListingFromUrl ? "Select Resume" : "1. Select Resume"}
                 </h2>
                 <Link
                   href="/dashboard/library/resumes/new"
-                  className="text-sm text-primary-600 hover:text-primary-700"
+                  className="text-sm text-primary hover:text-primary"
                 >
                   + Add New
                 </Link>
@@ -281,12 +281,12 @@ function TailorPageContent() {
                     onClick={() => setSelectedResumeId(resume.id)}
                     className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${
                       selectedResumeId === resume.id
-                        ? "border-primary-500 bg-primary-50"
-                        : "border-gray-200 hover:border-gray-300"
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-border/80"
                     }`}
                   >
-                    <div className="font-medium text-gray-900">{resume.title}</div>
-                    <div className="text-sm text-gray-500 mt-1">
+                    <div className="font-medium text-foreground">{resume.title}</div>
+                    <div className="text-sm text-muted-foreground mt-1">
                       Created {new Date(resume.created_at).toLocaleDateString()}
                     </div>
                   </button>
@@ -298,12 +298,12 @@ function TailorPageContent() {
             {!hasJobListingFromUrl && (
               <div className="card">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">
+                  <h2 className="text-lg font-semibold text-foreground">
                     2. Select Job Description
                   </h2>
                   <Link
                     href="/dashboard/library/jobs/new"
-                    className="text-sm text-primary-600 hover:text-primary-700"
+                    className="text-sm text-primary hover:text-primary"
                   >
                     + Add New
                   </Link>
@@ -315,12 +315,12 @@ function TailorPageContent() {
                       onClick={() => setSelectedJobId(job.id)}
                       className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${
                         selectedJobId === job.id
-                          ? "border-primary-500 bg-primary-50"
-                          : "border-gray-200 hover:border-gray-300"
+                          ? "border-primary bg-primary/10"
+                          : "border-border hover:border-border/80"
                       }`}
                     >
-                      <div className="font-medium text-gray-900">{job.title}</div>
-                      <div className="text-sm text-gray-500">
+                      <div className="font-medium text-foreground">{job.title}</div>
+                      <div className="text-sm text-muted-foreground">
                         {job.company || "Company not specified"}
                       </div>
                     </button>
@@ -332,17 +332,17 @@ function TailorPageContent() {
 
           {/* Selection Summary & Actions - for job listing from URL */}
           {hasJobListingFromUrl && selectedResume && (
-            <div className="card bg-gray-50">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <div className="card bg-muted">
+              <h3 className="text-lg font-semibold text-foreground mb-2">
                 Ready to Tailor
               </h3>
               <div className="grid md:grid-cols-2 gap-4 text-sm mb-4">
                 <div>
-                  <span className="text-gray-500">Resume:</span>{" "}
+                  <span className="text-muted-foreground">Resume:</span>{" "}
                   <span className="font-medium">{selectedResume.title}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Job:</span>{" "}
+                  <span className="text-muted-foreground">Job:</span>{" "}
                   <span className="font-medium">
                     {jobListing!.job_title} at {jobListing!.company_name}
                   </span>
@@ -394,17 +394,17 @@ function TailorPageContent() {
 
           {/* Selection Summary & Actions - for user-created jobs */}
           {!hasJobListingFromUrl && selectedResume && selectedJob && (
-            <div className="card bg-gray-50">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <div className="card bg-muted">
+              <h3 className="text-lg font-semibold text-foreground mb-2">
                 Selection Summary
               </h3>
               <div className="grid md:grid-cols-2 gap-4 text-sm mb-4">
                 <div>
-                  <span className="text-gray-500">Resume:</span>{" "}
+                  <span className="text-muted-foreground">Resume:</span>{" "}
                   <span className="font-medium">{selectedResume.title}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Job:</span>{" "}
+                  <span className="text-muted-foreground">Job:</span>{" "}
                   <span className="font-medium">
                     {selectedJob.title} at {selectedJob.company || "N/A"}
                   </span>
@@ -460,42 +460,42 @@ function TailorPageContent() {
       {step === "analyze" && quickMatch.data && (
         <>
           <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <h2 className="text-lg font-semibold text-foreground mb-4">
               Match Analysis
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
-              <div className="text-center p-6 bg-gray-50 rounded-lg">
+              <div className="text-center p-6 bg-muted rounded-lg">
                 <div
                   className={`text-5xl font-bold ${
                     quickMatch.data.match_score >= 70
                       ? "text-green-600"
                       : quickMatch.data.match_score >= 40
                       ? "text-yellow-600"
-                      : "text-red-600"
+                      : "text-destructive"
                   }`}
                 >
                   {quickMatch.data.match_score}%
                 </div>
-                <div className="text-sm text-gray-500 mt-2">Match Score</div>
+                <div className="text-sm text-muted-foreground mt-2">Match Score</div>
               </div>
-              <div className="text-center p-6 bg-gray-50 rounded-lg">
+              <div className="text-center p-6 bg-muted rounded-lg">
                 <div className="text-5xl font-bold text-blue-600">
                   {Math.round(quickMatch.data.keyword_coverage * 100)}%
                 </div>
-                <div className="text-sm text-gray-500 mt-2">Keyword Coverage</div>
+                <div className="text-sm text-muted-foreground mt-2">Keyword Coverage</div>
               </div>
-              <div className="text-center p-6 bg-gray-50 rounded-lg">
+              <div className="text-center p-6 bg-muted rounded-lg">
                 <div className="text-5xl font-bold text-green-600">
                   {quickMatch.data.skill_matches.length}
                 </div>
-                <div className="text-sm text-gray-500 mt-2">Skills Matched</div>
+                <div className="text-sm text-muted-foreground mt-2">Skills Matched</div>
               </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6 mt-6">
               {quickMatch.data.skill_matches.length > 0 && (
                 <div>
-                  <div className="text-sm font-medium text-gray-700 mb-2">
+                  <div className="text-sm font-medium text-foreground/80 mb-2">
                     Matching Skills
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -512,7 +512,7 @@ function TailorPageContent() {
               )}
               {quickMatch.data.skill_gaps.length > 0 && (
                 <div>
-                  <div className="text-sm font-medium text-gray-700 mb-2">
+                  <div className="text-sm font-medium text-foreground/80 mb-2">
                     Skills to Highlight
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -572,8 +572,8 @@ function TailorPageContent() {
 
       {/* Error Display */}
       {tailorResume.error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-          <p className="text-sm text-red-600">
+        <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4">
+          <p className="text-sm text-destructive">
             {tailorResume.error.message || "Failed to tailor resume"}
           </p>
         </div>
@@ -582,7 +582,7 @@ function TailorPageContent() {
       {/* Recent Tailored Resumes */}
       {step === "select" && !tailoredLoading && tailoredResumes && tailoredResumes.length > 0 && (
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <h2 className="text-lg font-semibold text-foreground mb-4">
             Recent Tailored Resumes
           </h2>
           <div className="space-y-3">
@@ -590,14 +590,14 @@ function TailorPageContent() {
               <Link
                 key={tailored.id}
                 href={`/dashboard/tailor/${tailored.id}`}
-                className="block p-4 border rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors"
+                className="block p-4 border rounded-lg hover:border-primary/30 hover:bg-primary/10 transition-colors"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-gray-900">
+                    <div className="font-medium text-foreground">
                       Tailored Resume #{tailored.id}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-muted-foreground">
                       Created {new Date(tailored.created_at).toLocaleDateString()}
                     </div>
                   </div>
@@ -608,7 +608,7 @@ function TailorPageContent() {
                           ? "text-green-600"
                           : tailored.match_score >= 40
                           ? "text-yellow-600"
-                          : "text-red-600"
+                          : "text-destructive"
                       }`}
                     >
                       {Math.round(tailored.match_score)}%
@@ -630,8 +630,8 @@ export default function TailorPage() {
       fallback={
         <div className="space-y-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Tailor Resume</h1>
-            <p className="mt-1 text-gray-600">
+            <h1 className="text-2xl font-bold text-foreground">Tailor Resume</h1>
+            <p className="mt-1 text-muted-foreground">
               AI-powered resume tailoring for specific job descriptions
             </p>
           </div>

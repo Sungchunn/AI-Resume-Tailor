@@ -176,10 +176,10 @@ export default function ResumeEditorPage({ params }: PageProps) {
   // Loading state
   if (isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
+      <div className="h-screen flex items-center justify-center bg-muted">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading editor...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading editor...</p>
         </div>
       </div>
     );
@@ -188,10 +188,10 @@ export default function ResumeEditorPage({ params }: PageProps) {
   // Error state
   if (error || !tailored) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
+      <div className="h-screen flex items-center justify-center bg-muted">
         <div className="text-center max-w-md">
           <svg
-            className="mx-auto h-12 w-12 text-red-500"
+            className="mx-auto h-12 w-12 text-destructive"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -203,17 +203,17 @@ export default function ResumeEditorPage({ params }: PageProps) {
               d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
             />
           </svg>
-          <h2 className="mt-4 text-lg font-semibold text-gray-900">
+          <h2 className="mt-4 text-lg font-semibold text-foreground">
             Failed to load resume
           </h2>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-muted-foreground">
             The tailored resume could not be loaded. It may have been deleted or you
             may not have permission to view it.
           </p>
           <div className="mt-6 flex gap-3 justify-center">
             <Link
               href="/dashboard/tailor"
-              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-md"
+              className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-md"
             >
               Back to Tailor
             </Link>
@@ -226,8 +226,8 @@ export default function ResumeEditorPage({ params }: PageProps) {
   // Ensure content is loaded before rendering editor
   if (!content) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="h-screen flex items-center justify-center bg-muted">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -235,10 +235,10 @@ export default function ResumeEditorPage({ params }: PageProps) {
   return (
     <div className="h-screen flex flex-col">
       {/* Back link */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-2">
+      <div className="flex-shrink-0 bg-card border-b border-border px-4 py-2">
         <Link
           href={`/dashboard/tailor/${tailoredId}`}
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <svg
             className="mr-1 h-4 w-4"
