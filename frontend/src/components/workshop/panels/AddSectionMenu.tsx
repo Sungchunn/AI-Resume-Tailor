@@ -49,7 +49,7 @@ export function AddSectionMenu({ existingSections, onAdd }: AddSectionMenuProps)
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-md transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -58,7 +58,7 @@ export function AddSectionMenu({ existingSections, onAdd }: AddSectionMenuProps)
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+        <div className="absolute right-0 top-full mt-1 w-48 bg-card rounded-lg shadow-lg border border-border py-1 z-20">
           {availableSections.map((section) => (
             <button
               key={section.key}
@@ -66,7 +66,7 @@ export function AddSectionMenu({ existingSections, onAdd }: AddSectionMenuProps)
                 onAdd(section.key);
                 setIsOpen(false);
               }}
-              className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+              className="w-full px-3 py-2 text-left text-sm text-foreground/80 hover:bg-accent"
             >
               {section.label}
             </button>

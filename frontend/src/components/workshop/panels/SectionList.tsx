@@ -197,7 +197,7 @@ export function SectionList({
         );
       default:
         return (
-          <div className="text-sm text-gray-500 italic">
+          <div className="text-sm text-muted-foreground italic">
             Editor for "{section}" section coming soon
           </div>
         );
@@ -207,12 +207,12 @@ export function SectionList({
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-        <span className="text-sm font-medium text-gray-700">Sections</span>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <span className="text-sm font-medium text-foreground/80">Sections</span>
         <div className="flex items-center gap-2">
           <button
             onClick={toggleAll}
-            className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+            className="text-xs text-muted-foreground hover:text-foreground/80 px-2 py-1 rounded hover:bg-accent transition-colors"
           >
             {allExpanded ? "Collapse All" : "Expand All"}
           </button>
@@ -258,7 +258,7 @@ export function SectionList({
         </DndContext>
 
         {sectionOrder.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-muted-foreground">
             <p className="text-sm">No sections yet.</p>
             <p className="text-xs mt-1">Click "Add" to add your first section.</p>
           </div>
