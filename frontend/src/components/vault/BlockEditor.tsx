@@ -90,7 +90,7 @@ export function BlockEditor({ block, onSave, onCancel, isSaving }: BlockEditorPr
           placeholder="Describe your experience, achievement, or skill..."
           required
         />
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           Be specific and include metrics where possible (e.g., &quot;Increased sales by 25%&quot;)
         </p>
       </div>
@@ -103,8 +103,8 @@ export function BlockEditor({ block, onSave, onCancel, isSaving }: BlockEditorPr
               key={option.value}
               className={`flex flex-col p-3 rounded-lg border-2 cursor-pointer transition-colors ${
                 blockType === option.value
-                  ? "border-primary-500 bg-primary-50"
-                  : "border-gray-200 hover:border-gray-300"
+                  ? "border-primary bg-primary/10"
+                  : "border-border hover:border-input"
               }`}
             >
               <input
@@ -115,8 +115,8 @@ export function BlockEditor({ block, onSave, onCancel, isSaving }: BlockEditorPr
                 onChange={(e) => setBlockType(e.target.value as BlockType)}
                 className="sr-only"
               />
-              <span className="font-medium text-gray-900">{option.label}</span>
-              <span className="text-xs text-gray-500 mt-1">{option.description}</span>
+              <span className="font-medium text-foreground">{option.label}</span>
+              <span className="text-xs text-muted-foreground mt-1">{option.description}</span>
             </label>
           ))}
         </div>
@@ -149,13 +149,13 @@ export function BlockEditor({ block, onSave, onCancel, isSaving }: BlockEditorPr
             {tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm bg-gray-100 text-gray-700"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm bg-muted text-foreground/80"
               >
                 {tag}
                 <button
                   type="button"
                   onClick={() => handleRemoveTag(tag)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-muted-foreground/60 hover:text-muted-foreground"
                 >
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path
@@ -172,7 +172,7 @@ export function BlockEditor({ block, onSave, onCancel, isSaving }: BlockEditorPr
       </div>
 
       <div className="border-t pt-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Source (Optional)</h3>
+        <h3 className="text-lg font-medium text-foreground mb-4">Source (Optional)</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="label" htmlFor="sourceCompany">

@@ -57,7 +57,7 @@ export function BlockCard({
             type="checkbox"
             checked={selected}
             onChange={() => onSelect?.(block.id)}
-            className="h-5 w-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            className="h-5 w-5 rounded border-input text-primary focus:ring-ring"
             onClick={(e) => e.stopPropagation()}
           />
         </div>
@@ -88,10 +88,10 @@ export function BlockCard({
         )}
       </div>
 
-      <p className="mt-3 text-gray-900 text-sm line-clamp-3">{block.content}</p>
+      <p className="mt-3 text-foreground text-sm line-clamp-3">{block.content}</p>
 
       {(block.source_company || block.source_role) && (
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-muted-foreground">
           {block.source_role && <span>{block.source_role}</span>}
           {block.source_role && block.source_company && <span> at </span>}
           {block.source_company && <span>{block.source_company}</span>}
@@ -103,13 +103,13 @@ export function BlockCard({
           {block.tags.slice(0, 5).map((tag) => (
             <span
               key={tag}
-              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600"
+              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground"
             >
               {tag}
             </span>
           ))}
           {block.tags.length > 5 && (
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-muted-foreground">
               +{block.tags.length - 5} more
             </span>
           )}
@@ -139,7 +139,7 @@ export function BlockCard({
             <button
               onClick={() => onDelete(block.id)}
               disabled={isDeleting}
-              className="btn-ghost text-sm py-1.5 text-red-600 hover:bg-red-50"
+              className="btn-ghost text-sm py-1.5 text-destructive hover:bg-destructive/10"
             >
               Delete
             </button>
