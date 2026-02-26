@@ -79,7 +79,7 @@ Redesign the custom resume editor page (`/dashboard/library/resumes/{id}/edit`) 
 
 #### 2. Tabbed Control Panel (Right Panel)
 
-**Tab 1: AI Chat**
+##### Tab 1: AI Chat
 
 - Conversational chat interface for AI recommendations
 - Quick action buttons for common operations
@@ -89,7 +89,7 @@ Redesign the custom resume editor page (`/dashboard/library/resumes/{id}/edit`) 
   - "Add more action verbs to this experience"
   - "Make this more concise"
 
-**Tab 2: ATS Evaluation**
+##### Tab 2: ATS Evaluation
 
 - **Requires job context** - disabled without a job
 - Job context passed via URL from job board (`?jobId=123`)
@@ -99,7 +99,7 @@ Redesign the custom resume editor page (`/dashboard/library/resumes/{id}/edit`) 
   - Missing keyword suggestions
   - Section-by-section feedback
 
-**Tab 3: Formatting**
+##### Tab 3: Formatting
 
 - Style presets: Classic, Modern, Minimal, Executive
 - Font controls:
@@ -114,7 +114,7 @@ Redesign the custom resume editor page (`/dashboard/library/resumes/{id}/edit`) 
   - Entry spacing
 - Auto-fit to one page toggle
 
-**Tab 4: Section Dragger**
+##### Tab 4: Section Dragger
 
 - Drag-and-drop section reordering
 - Add section button (dropdown with available types)
