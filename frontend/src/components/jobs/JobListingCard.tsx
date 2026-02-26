@@ -69,7 +69,7 @@ export function JobListingCard({ listing }: JobListingCardProps) {
   return (
     <Link
       href={`/dashboard/jobs/${listing.id}`}
-      className="block bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all p-4"
+      className="block bg-card rounded-lg border border-border hover:border-primary-300 hover:shadow-md transition-all p-4"
     >
       <div className="flex justify-between items-start">
         <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -78,16 +78,16 @@ export function JobListingCard({ listing }: JobListingCardProps) {
             <img
               src={listing.company_logo}
               alt={listing.company_name ? `${listing.company_name} logo` : 'Company logo'}
-              className="w-10 h-10 rounded-lg object-contain border border-gray-100 shrink-0"
+              className="w-10 h-10 rounded-lg object-contain border border-border shrink-0"
               loading="lazy"
               onError={(e) => { e.currentTarget.style.display = 'none' }}
             />
           )}
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-gray-900 truncate">
+            <h3 className="text-lg font-semibold text-foreground truncate">
               {listing.job_title}
             </h3>
-            <p className="text-sm text-gray-600 mt-1">{listing.company_name}</p>
+            <p className="text-sm text-muted-foreground mt-1">{listing.company_name}</p>
           </div>
         </div>
 
@@ -97,8 +97,8 @@ export function JobListingCard({ listing }: JobListingCardProps) {
             onClick={handleSave}
             className={`p-2 rounded-lg transition-colors ${
               listing.is_saved
-                ? "text-primary-600 bg-primary-50 hover:bg-primary-100"
-                : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                ? "text-primary bg-primary/10 hover:bg-primary/20"
+                : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted"
             }`}
             disabled={saveMutation.isPending}
             title={listing.is_saved ? "Unsave" : "Save"}
@@ -109,8 +109,8 @@ export function JobListingCard({ listing }: JobListingCardProps) {
             onClick={handleHide}
             className={`p-2 rounded-lg transition-colors ${
               listing.is_hidden
-                ? "text-gray-600 bg-gray-100"
-                : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                ? "text-muted-foreground bg-muted"
+                : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted"
             }`}
             disabled={hideMutation.isPending}
             title={listing.is_hidden ? "Unhide" : "Hide"}
@@ -121,7 +121,7 @@ export function JobListingCard({ listing }: JobListingCardProps) {
       </div>
 
       {/* Meta info */}
-      <div className="flex flex-wrap items-center gap-3 mt-3 text-sm text-gray-500">
+      <div className="flex flex-wrap items-center gap-3 mt-3 text-sm text-muted-foreground">
         {listing.location && (
           <span className="flex items-center gap-1">
             <MapPinIcon className="h-4 w-4" />
@@ -129,7 +129,7 @@ export function JobListingCard({ listing }: JobListingCardProps) {
           </span>
         )}
         {listing.seniority && (
-          <span className="px-2 py-0.5 bg-gray-100 rounded-full text-xs capitalize">
+          <span className="px-2 py-0.5 bg-muted rounded-full text-xs capitalize">
             {listing.seniority}
           </span>
         )}
@@ -142,19 +142,19 @@ export function JobListingCard({ listing }: JobListingCardProps) {
       </div>
 
       {/* Description preview */}
-      <p className="mt-3 text-sm text-gray-600 line-clamp-2">
+      <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
         {listing.job_description.substring(0, 200)}...
       </p>
 
       {/* Footer */}
-      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-        <div className="flex items-center gap-2 text-xs text-gray-400">
+      <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
           {listing.source_platform && (
             <span className="capitalize">{listing.source_platform}</span>
           )}
           {postedDate && (
             <>
-              <span className="text-gray-300">|</span>
+              <span className="text-muted-foreground/40">|</span>
               <span>{postedDate}</span>
             </>
           )}
