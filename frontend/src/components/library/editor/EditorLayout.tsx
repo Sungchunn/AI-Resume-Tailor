@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { Panel, Group, Separator } from "react-resizable-panels";
 import { useBlockEditor } from "./BlockEditorContext";
 import { BlockList } from "./BlockList";
 import { BlockEditorDispatcher } from "./blocks";
@@ -105,7 +105,7 @@ export function EditorLayout({ resumeId, title }: EditorLayoutProps) {
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        <PanelGroup direction="horizontal">
+        <Group orientation="horizontal">
           {/* Left Panel: Editor */}
           {!isPreviewFullscreen && (
             <>
@@ -131,7 +131,7 @@ export function EditorLayout({ resumeId, title }: EditorLayoutProps) {
               </Panel>
 
               {/* Resize Handle */}
-              <PanelResizeHandle className="w-1.5 bg-muted hover:bg-primary/20 transition-colors cursor-col-resize" />
+              <Separator className="w-1.5 bg-muted hover:bg-primary/20 transition-colors cursor-col-resize" />
             </>
           )}
 
@@ -157,7 +157,7 @@ export function EditorLayout({ resumeId, title }: EditorLayoutProps) {
               />
             </div>
           </Panel>
-        </PanelGroup>
+        </Group>
       </div>
 
       {/* Export Dialog */}
