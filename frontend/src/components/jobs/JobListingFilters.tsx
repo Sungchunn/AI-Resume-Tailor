@@ -249,7 +249,7 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
           value={filters.search || ""}
           onChange={handleSearchChange}
           placeholder="Search jobs..."
-          className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          className="w-full px-3 py-2 bg-background text-foreground border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         />
       </div>
 
@@ -274,7 +274,7 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
               value={filters.company_name || ""}
               onChange={handleCompanyNameChange}
               placeholder="e.g., Google, Microsoft"
-              className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 bg-background text-foreground border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
 
@@ -456,14 +456,14 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
                 value={filters.salary_min || ""}
                 onChange={handleSalaryMinChange}
                 placeholder="Min"
-                className="w-1/2 px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="w-1/2 px-3 py-2 bg-background text-foreground border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
               <input
                 type="number"
                 value={filters.salary_max || ""}
                 onChange={handleSalaryMaxChange}
                 placeholder="Max"
-                className="w-1/2 px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="w-1/2 px-3 py-2 bg-background text-foreground border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
           </div>
@@ -499,7 +499,7 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
               <select
                 value={filters.sort_by || "date_posted"}
                 onChange={handleSortChange}
-                className="flex-1 px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="flex-1 px-3 py-2 bg-background text-foreground border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 {SORT_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
