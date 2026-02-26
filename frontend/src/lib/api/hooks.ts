@@ -239,8 +239,13 @@ export function useTailorResume() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.tailored.byResume(resume_id),
       });
+      if (job_id) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.tailored.byJob(job_id),
+        });
+      }
       queryClient.invalidateQueries({
-        queryKey: queryKeys.tailored.byJob(job_id),
+        queryKey: queryKeys.tailored.list(),
       });
     },
   });

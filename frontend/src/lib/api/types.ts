@@ -96,12 +96,14 @@ export interface ApiError {
 // Tailor Types
 export interface TailorRequest {
   resume_id: number;
-  job_id: number;
+  job_id?: number;
+  job_listing_id?: number;
 }
 
 export interface QuickMatchRequest {
   resume_id: number;
-  job_id: number;
+  job_id?: number;
+  job_listing_id?: number;
 }
 
 export interface Suggestion {
@@ -173,7 +175,8 @@ export interface QuickMatchResponse {
 export interface TailoredResumeListItem {
   id: number;
   resume_id: number;
-  job_id: number;
+  job_id: number | null;
+  job_listing_id: number | null;
   match_score: number | null;
   created_at: string;
 }
