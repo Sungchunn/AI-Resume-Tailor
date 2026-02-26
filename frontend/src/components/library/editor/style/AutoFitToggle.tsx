@@ -90,7 +90,7 @@ function StatusBadge({ status }: { status: AutoFitStatus }) {
   switch (status.state) {
     case "fitting":
       return (
-        <span className="text-xs text-primary-600 bg-primary-50 px-2 py-0.5 rounded animate-pulse">
+        <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded animate-pulse">
           Fitting...
         </span>
       );

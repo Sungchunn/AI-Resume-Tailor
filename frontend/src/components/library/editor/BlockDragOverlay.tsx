@@ -20,7 +20,7 @@ export function BlockDragOverlay({ block }: BlockDragOverlayProps) {
 
   return (
     <div
-      className="rounded-lg border-2 border-primary-400 bg-primary-50 shadow-xl opacity-95 w-full"
+      className="rounded-lg border-2 border-primary/40 bg-primary/10 shadow-xl opacity-95 w-full"
       style={{
         // Match the width of the original item
         minWidth: "200px",
@@ -30,27 +30,27 @@ export function BlockDragOverlay({ block }: BlockDragOverlayProps) {
       {/* Simplified Block Header */}
       <div className="flex items-center gap-2 px-3 py-2.5">
         {/* Drag Handle (visual only) */}
-        <div className="p-1 text-primary-500 cursor-grabbing shrink-0">
+        <div className="p-1 text-primary cursor-grabbing shrink-0">
           <GripVertical className="w-5 h-5" />
         </div>
 
         {/* Expand/Collapse (visual only) */}
-        <div className="p-1 text-primary-400 shrink-0">
+        <div className="p-1 text-primary/60 shrink-0">
           <ChevronRight className="w-4 h-4 rotate-90" />
         </div>
 
         {/* Block Icon */}
-        <div className="shrink-0 text-primary-400">
+        <div className="shrink-0 text-primary/60">
           <BlockIcon iconName={blockInfo.icon} className="w-4 h-4" />
         </div>
 
         {/* Block Name */}
-        <span className="font-medium text-primary-900 text-sm flex-1">
+        <span className="font-medium text-foreground text-sm flex-1">
           {blockInfo.label}
         </span>
 
         {/* Dragging indicator */}
-        <span className="text-xs text-primary-600 bg-primary-100 px-2 py-0.5 rounded">
+        <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded">
           Moving...
         </span>
       </div>
