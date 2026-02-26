@@ -30,6 +30,7 @@ export interface UseScoreCalculationOptions {
   content: TailoredContent;
   resumeId: number;
   jobId: number | null;
+  jobListingId?: number | null;
   enabled?: boolean;
   debounceMs?: number;
 }

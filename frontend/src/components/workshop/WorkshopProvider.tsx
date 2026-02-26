@@ -81,7 +81,8 @@ export function WorkshopProvider({ tailoredId, children }: WorkshopProviderProps
     content: state.content,
     resumeId: state.tailoredResume?.resume_id ?? 0,
     jobId: state.tailoredResume?.job_id ?? null,
-    enabled: !!state.tailoredResume?.job_id && !state.isLoading,
+    jobListingId: state.tailoredResume?.job_listing_id ?? null,
+    enabled: !!(state.tailoredResume?.job_id || state.tailoredResume?.job_listing_id) && !state.isLoading,
   });
 
   // Sync calculated score to state

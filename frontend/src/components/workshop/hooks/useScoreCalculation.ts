@@ -16,6 +16,7 @@ export function useScoreCalculation({
   content,
   resumeId,
   jobId,
+  jobListingId,
   enabled = true,
   debounceMs = DEFAULT_DEBOUNCE_MS,
 }: UseScoreCalculationOptions): UseScoreCalculationResult {
@@ -38,15 +39,16 @@ export function useScoreCalculation({
   }, [score]);
 
   const calculateScore = useCallback(async () => {
-    if (!jobId || !enabled || !resumeId) return;
+    if ((!jobId && !jobListingId) || !enabled || !resumeId) return;
 
     setStatus({ state: "calculating" });
 
     try {
-      const response = await quickMatchMutation.mutateAsync({
-        resume_id: resumeId,
-        job_id: jobId,
-      });
+      const request = jobListingId
+        ? { resume_id: resumeId, job_listing_id: jobListingId }
+        : { resume_id: resumeId, job_id: jobId! };
+
+      const response = await quickMatchMutation.mutateAsync(request);
 
       const newScore = response.match_score;
 
@@ -65,7 +67,7 @@ export function useScoreCalculation({
         message: error instanceof Error ? error.message : "Failed to calculate score",
       });
     }
-  }, [resumeId, jobId, enabled, quickMatchMutation]);
+  }, [resumeId, jobId, jobListingId, enabled, quickMatchMutation]);
 
   // Debounced calculation
   const debouncedCalculate = useDebouncedCallback(calculateScore, debounceMs);
@@ -85,7 +87,7 @@ export function useScoreCalculation({
 
   // Watch for content changes
   useEffect(() => {
-    if (!enabled || !jobId) return;
+    if (!enabled || (!jobId && !jobListingId)) return;
 
     const newHash = getContentHash(content);
 
@@ -100,7 +102,7 @@ export function useScoreCalculation({
         debouncedCalculate();
       }
     }
-  }, [content, getContentHash, debouncedCalculate, calculateScore, status.state, enabled, jobId]);
+  }, [content, getContentHash, debouncedCalculate, calculateScore, status.state, enabled, jobId, jobListingId]);
 
   const triggerRecalculation = useCallback(() => {
     debouncedCalculate.cancel();
