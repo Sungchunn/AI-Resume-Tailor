@@ -1,7 +1,7 @@
 # Resume Editor Redesign
 
 **Created:** 2026-02-26
-**Status:** Planning
+**Status:** In Progress (Phase 7 Complete)
 **Feature Area:** Library / Resume Editor
 
 ---
@@ -363,17 +363,25 @@ Tasks:
 4. Implement section-based editing (target specific sections)
 5. Add chat message history to context
 
-### Phase 7: ATS Evaluation Tab
+### Phase 7: ATS Evaluation Tab ✅ COMPLETE
 
 **Goal:** Job-aware ATS analysis
 
 Tasks:
 
-1. Create `ATSEvaluationTab.tsx` component
-2. Handle disabled state when no jobId in URL
-3. Fetch job description when jobId present
-4. Integrate `ATSKeywordsPanel` functionality
-5. Show keyword coverage and ATS score
+1. ✅ Create `ATSEvaluationTab.tsx` component
+2. ✅ Handle disabled state when no jobId in URL
+3. ✅ Fetch job description when jobId present (supports both user-created jobs and scraped job listings)
+4. ✅ Integrate `ATSKeywordsPanel` functionality (keyword sections, coverage indicators)
+5. ✅ Show keyword coverage and ATS score
+
+**Implementation Notes:**
+- Added `blocksToText()` function in `transforms.ts` to convert resume blocks to plain text for ATS analysis
+- Updated page.tsx to handle both `?jobId=` (user-created job) and `?jobListingId=` (scraped listing) query params
+- Updated EditorLayout and ControlPanel to pass both job context types
+- ATSEvaluationTab fetches from appropriate API based on which ID is provided
+- Auto-runs analysis when job description loads with 1000ms debounce
+- Shows job title/company header, ATS score display, coverage progress bars, keyword sections by importance, and suggestions
 
 ---
 
