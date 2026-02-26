@@ -14,13 +14,13 @@ export default function AppliedJobsPage() {
         <div className="flex items-center gap-4">
           <Link
             href="/dashboard/jobs"
-            className="text-gray-600 hover:text-gray-900"
+            className="text-muted-foreground hover:text-foreground"
           >
             <ChevronLeftIcon className="h-5 w-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Applied Jobs</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-2xl font-bold text-foreground">Applied Jobs</h1>
+            <p className="text-muted-foreground mt-1">
               Track your job applications
             </p>
           </div>
@@ -33,12 +33,12 @@ export default function AppliedJobsPage() {
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
-              className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse"
+              className="bg-card rounded-lg border border-border p-4 animate-pulse"
             >
-              <div className="h-5 bg-gray-200 rounded w-3/4 mb-2" />
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-3" />
-              <div className="h-3 bg-gray-200 rounded w-full mb-2" />
-              <div className="h-3 bg-gray-200 rounded w-5/6" />
+              <div className="h-5 bg-muted rounded w-3/4 mb-2" />
+              <div className="h-4 bg-muted rounded w-1/2 mb-3" />
+              <div className="h-3 bg-muted rounded w-full mb-2" />
+              <div className="h-3 bg-muted rounded w-5/6" />
             </div>
           ))}
         </div>
@@ -46,7 +46,7 @@ export default function AppliedJobsPage() {
 
       {/* Error state */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 text-destructive">
           <p className="font-medium">Error loading applied jobs</p>
           <p className="text-sm">
             {error.message?.toLowerCase().includes("session expired") ||
@@ -60,12 +60,12 @@ export default function AppliedJobsPage() {
 
       {/* Empty state */}
       {data && data.listings.length === 0 && (
-        <div className="bg-gray-50 rounded-lg p-8 text-center">
-          <ClipboardIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-1">
+        <div className="bg-muted rounded-lg p-8 text-center">
+          <ClipboardIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-1">
             No applications tracked
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-muted-foreground mb-4">
             Mark jobs as applied to track your applications here
           </p>
           <Link href="/dashboard/jobs" className="btn-primary">
@@ -77,7 +77,7 @@ export default function AppliedJobsPage() {
       {/* Job listings */}
       {data && data.listings.length > 0 && (
         <>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             {data.total} application{data.total !== 1 ? "s" : ""} tracked
           </p>
           <div className="space-y-4">
