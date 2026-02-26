@@ -14,6 +14,7 @@ class Resume(Base):
     raw_content = Column(Text, nullable=False)  # Original resume text (plain text)
     html_content = Column(Text, nullable=True)  # TipTap-compatible HTML for rich editing
     parsed_content = Column(JSON, nullable=True)  # Structured JSON after parsing
+    style = Column(JSON, nullable=True)  # Font/margin/spacing settings for rendering
 
     # File storage fields (original uploaded file in MinIO/S3)
     original_file_key = Column(String(512), nullable=True)  # Storage path in MinIO/S3
