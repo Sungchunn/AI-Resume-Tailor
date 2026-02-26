@@ -222,17 +222,15 @@ export function TechStackLogos({ className }: TechStackLogosProps) {
   return (
     <section className={className}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <p className="text-center text-sm font-medium text-gray-500 mb-8">
+        <p className="text-center text-sm font-medium text-gray-500 mb-6">
           Built with modern technologies
         </p>
         <LogoLoop
           logos={techStackLogos}
           speed={60}
-          logoHeight={36}
-          gap={48}
+          logoHeight={48}
+          gap={56}
           pauseOnHover
-          fadeOut
-          fadeOutColor="rgb(249 250 251)"
           scaleOnHover
           ariaLabel="Tech stack logos"
           className="logoloop--grayscale"

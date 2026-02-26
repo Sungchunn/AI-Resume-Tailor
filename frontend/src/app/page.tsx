@@ -9,33 +9,36 @@ export default function LandingPage() {
       <Header />
 
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="bg-gradient-to-b from-primary-50 to-white py-20">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
-                Tailor Your Resume with{" "}
-                <span className="text-primary-600">AI</span>
-              </h1>
-              <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600">
-                Stop sending generic resumes. Our AI analyzes job descriptions
-                and customizes your resume to match what employers are looking
-                for.
-              </p>
-              <div className="mt-10 flex items-center justify-center gap-4">
-                <Link href="/signup" className="btn-primary text-base px-8 py-3">
-                  Get Started Free
-                </Link>
-                <Link href="/dashboard/jobs" className="btn-secondary text-base px-8 py-3">
-                  View Demo
-                </Link>
+        {/* Hero + Tech Stack Section - Full viewport height */}
+        <div className="min-h-[calc(100vh-64px)] flex flex-col bg-gradient-to-b from-primary-50 to-gray-50">
+          {/* Hero Section */}
+          <section className="flex-1 flex items-end pb-[10vh]">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
+              <div className="text-center">
+                <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
+                  Tailor Your Resume with{" "}
+                  <span className="text-primary-600">AI</span>
+                </h1>
+                <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600">
+                  Stop sending generic resumes. Our AI analyzes job descriptions
+                  and customizes your resume to match what employers are looking
+                  for.
+                </p>
+                <div className="mt-10 flex items-center justify-center gap-4">
+                  <Link href="/signup" className="btn-primary text-base px-8 py-3">
+                    Get Started Free
+                  </Link>
+                  <Link href="/dashboard/jobs" className="btn-secondary text-base px-8 py-3">
+                    View Demo
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Tech Stack Section */}
-        <TechStackLogos className="py-12 bg-gray-50" />
+          {/* Tech Stack Section */}
+          <TechStackLogos className="py-8" />
+        </div>
 
         {/* Features Section */}
         <section className="py-20">
