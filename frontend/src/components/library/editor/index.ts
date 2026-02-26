@@ -23,3 +23,10 @@ export {
 
 // Reducer and actions
 export { blockEditorReducer, blockEditorActions } from "./blockEditorReducer";
+
+// Block list components (Phase 3)
+export { BlockList } from "./BlockList";
+export { BlockItem } from "./BlockItem";
+export { BlockTypeMenu } from "./BlockTypeMenu";
+export { BlockDragOverlay } from "./BlockDragOverlay";
+export { BlockIcon } from "./BlockIcon";
