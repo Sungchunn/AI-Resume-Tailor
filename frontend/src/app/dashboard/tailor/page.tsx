@@ -1,24 +1,33 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   useResumes,
   useJobs,
   useTailorResume,
   useQuickMatch,
   useTailoredResumes,
+  useJobListing,
 } from "@/lib/api";
 import { CardGridSkeleton } from "@/components/ui";
 
 type TailorStep = "select" | "analyze" | "result";
 
-export default function TailorPage() {
+function TailorPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Check for job_listing_id from URL (e.g., from job detail page)
+  const jobListingIdParam = searchParams.get("job_listing_id");
+  const jobListingId = jobListingIdParam ? parseInt(jobListingIdParam, 10) : null;
+
   const { data: resumes, isLoading: resumesLoading } = useResumes();
   const { data: jobs, isLoading: jobsLoading } = useJobs();
   const { data: tailoredResumes, isLoading: tailoredLoading } = useTailoredResumes();
+  const { data: jobListing, isLoading: jobListingLoading, error: jobListingError } = useJobListing(jobListingId ?? 0);
   const tailorResume = useTailorResume();
   const quickMatch = useQuickMatch();
 
@@ -30,23 +39,39 @@ export default function TailorPage() {
   const selectedJob = jobs?.find((j) => j.id === selectedJobId);
   const hasResumes = resumes && resumes.length > 0;
   const hasJobs = jobs && jobs.length > 0;
-  const canTailor = hasResumes && hasJobs && selectedResumeId && selectedJobId;
+
+  // Check if we have a valid job listing from URL
+  const hasJobListingFromUrl = !!jobListingId && !!jobListing && !jobListingError;
+
+  // Can tailor if we have a resume and either a selected job OR a job listing from URL
+  const canTailor = hasResumes && selectedResumeId && (hasJobListingFromUrl || selectedJobId);
 
   const handleQuickMatch = async () => {
-    if (!selectedResumeId || !selectedJobId) return;
+    if (!selectedResumeId) return;
+
+    // Need either a job listing from URL or a selected job
+    if (!hasJobListingFromUrl && !selectedJobId) return;
+
     setStep("analyze");
-    await quickMatch.mutateAsync({
-      resume_id: selectedResumeId,
-      job_id: selectedJobId,
-    });
+
+    const request = hasJobListingFromUrl
+      ? { resume_id: selectedResumeId, job_listing_id: jobListingId! }
+      : { resume_id: selectedResumeId, job_id: selectedJobId! };
+
+    await quickMatch.mutateAsync(request);
   };
 
   const handleTailor = async () => {
-    if (!selectedResumeId || !selectedJobId) return;
-    const result = await tailorResume.mutateAsync({
-      resume_id: selectedResumeId,
-      job_id: selectedJobId,
-    });
+    if (!selectedResumeId) return;
+
+    // Need either a job listing from URL or a selected job
+    if (!hasJobListingFromUrl && !selectedJobId) return;
+
+    const request = hasJobListingFromUrl
+      ? { resume_id: selectedResumeId, job_listing_id: jobListingId! }
+      : { resume_id: selectedResumeId, job_id: selectedJobId! };
+
+    const result = await tailorResume.mutateAsync(request);
     router.push(`/dashboard/tailor/${result.id}`);
   };
 
@@ -57,7 +82,7 @@ export default function TailorPage() {
     quickMatch.reset();
   };
 
-  if (resumesLoading || jobsLoading) {
+  if (resumesLoading || jobsLoading || (jobListingId && jobListingLoading)) {
     return (
       <div className="space-y-6">
         <div>
@@ -71,8 +96,8 @@ export default function TailorPage() {
     );
   }
 
-  // Prerequisites check
-  if (!hasResumes || !hasJobs) {
+  // Prerequisites check - need resumes, and either jobs OR a job listing from URL
+  if (!hasResumes || (!hasJobs && !hasJobListingFromUrl)) {
     return (
       <div className="space-y-6">
         <div>
@@ -111,7 +136,7 @@ export default function TailorPage() {
                 Add Resume
               </Link>
             )}
-            {!hasJobs && (
+            {!hasJobs && !hasJobListingFromUrl && (
               <Link href="/dashboard/library/jobs/new" className="btn-secondary">
                 Add Job Description
               </Link>
@@ -128,7 +153,9 @@ export default function TailorPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Tailor Resume</h1>
           <p className="mt-1 text-gray-600">
-            Select a resume and job to generate a tailored version optimized for the position
+            {hasJobListingFromUrl
+              ? "Select a resume to optimize for this job"
+              : "Select a resume and job to generate a tailored version optimized for the position"}
           </p>
         </div>
         {step !== "select" && (
@@ -141,12 +168,104 @@ export default function TailorPage() {
       {/* Selection Step */}
       {step === "select" && (
         <>
-          <div className="grid md:grid-cols-2 gap-6">
+          {/* Error loading job listing from URL */}
+          {jobListingId && jobListingError && (
+            <div className="card border-2 border-red-200 bg-red-50">
+              <div className="flex items-center gap-2 mb-2">
+                <svg
+                  className="w-5 h-5 text-red-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                  />
+                </svg>
+                <span className="text-sm font-medium text-red-700">
+                  Failed to load job listing
+                </span>
+              </div>
+              <p className="text-sm text-red-600">
+                The job listing could not be loaded. Please select a job from your library below, or{" "}
+                <Link href={`/dashboard/jobs/${jobListingId}`} className="underline hover:no-underline">
+                  try viewing the job again
+                </Link>.
+              </p>
+            </div>
+          )}
+
+          {/* Pre-selected Job Listing from URL */}
+          {hasJobListingFromUrl && jobListing && (
+            <div className="card border-2 border-primary-200 bg-primary-50/50">
+              <div className="flex items-center gap-2 mb-3">
+                <svg
+                  className="w-5 h-5 text-primary-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span className="text-sm font-medium text-primary-700">
+                  Job Selected
+                </span>
+              </div>
+              <div className="flex items-start gap-4">
+                {jobListing.company_logo && jobListing.company_logo.length > 0 ? (
+                  <Image
+                    src={jobListing.company_logo}
+                    alt={`${jobListing.company_name} logo`}
+                    width={48}
+                    height={48}
+                    className="rounded-lg object-contain bg-white border border-gray-200"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-500 text-lg font-semibold">
+                      {jobListing.company_name.charAt(0)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-900 truncate">
+                    {jobListing.job_title}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {jobListing.company_name}
+                    {jobListing.location && ` • ${jobListing.location}`}
+                  </p>
+                  {jobListing.job_description && (
+                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                      {jobListing.job_description.slice(0, 150)}...
+                    </p>
+                  )}
+                </div>
+                <Link
+                  href={`/dashboard/jobs/${jobListingId}`}
+                  className="text-sm text-primary-600 hover:text-primary-700 whitespace-nowrap"
+                >
+                  View Job →
+                </Link>
+              </div>
+            </div>
+          )}
+
+          <div className={hasJobListingFromUrl ? "" : "grid md:grid-cols-2 gap-6"}>
             {/* Resume Selection */}
             <div className="card">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  1. Select Resume
+                  {hasJobListingFromUrl ? "Select Resume" : "1. Select Resume"}
                 </h2>
                 <Link
                   href="/dashboard/library/resumes/new"
@@ -175,42 +294,106 @@ export default function TailorPage() {
               </div>
             </div>
 
-            {/* Job Selection */}
-            <div className="card">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  2. Select Job Description
-                </h2>
-                <Link
-                  href="/dashboard/library/jobs/new"
-                  className="text-sm text-primary-600 hover:text-primary-700"
-                >
-                  + Add New
-                </Link>
-              </div>
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                {jobs?.map((job) => (
-                  <button
-                    key={job.id}
-                    onClick={() => setSelectedJobId(job.id)}
-                    className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${
-                      selectedJobId === job.id
-                        ? "border-primary-500 bg-primary-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
+            {/* Job Selection - only show when no job listing from URL */}
+            {!hasJobListingFromUrl && (
+              <div className="card">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    2. Select Job Description
+                  </h2>
+                  <Link
+                    href="/dashboard/library/jobs/new"
+                    className="text-sm text-primary-600 hover:text-primary-700"
                   >
-                    <div className="font-medium text-gray-900">{job.title}</div>
-                    <div className="text-sm text-gray-500">
-                      {job.company || "Company not specified"}
-                    </div>
-                  </button>
-                ))}
+                    + Add New
+                  </Link>
+                </div>
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {jobs?.map((job) => (
+                    <button
+                      key={job.id}
+                      onClick={() => setSelectedJobId(job.id)}
+                      className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${
+                        selectedJobId === job.id
+                          ? "border-primary-500 bg-primary-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className="font-medium text-gray-900">{job.title}</div>
+                      <div className="text-sm text-gray-500">
+                        {job.company || "Company not specified"}
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Selection Summary & Actions */}
-          {selectedResume && selectedJob && (
+          {/* Selection Summary & Actions - for job listing from URL */}
+          {hasJobListingFromUrl && selectedResume && (
+            <div className="card bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Ready to Tailor
+              </h3>
+              <div className="grid md:grid-cols-2 gap-4 text-sm mb-4">
+                <div>
+                  <span className="text-gray-500">Resume:</span>{" "}
+                  <span className="font-medium">{selectedResume.title}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Job:</span>{" "}
+                  <span className="font-medium">
+                    {jobListing!.job_title} at {jobListing!.company_name}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleQuickMatch}
+                  disabled={quickMatch.isPending}
+                  className="btn-secondary"
+                >
+                  {quickMatch.isPending ? "Analyzing..." : "Preview Match Analysis"}
+                </button>
+                <button
+                  onClick={handleTailor}
+                  disabled={tailorResume.isPending}
+                  className="btn-primary"
+                >
+                  {tailorResume.isPending ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      Tailoring...
+                    </>
+                  ) : (
+                    "Generate Tailored Resume"
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Selection Summary & Actions - for user-created jobs */}
+          {!hasJobListingFromUrl && selectedResume && selectedJob && (
             <div className="card bg-gray-50">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Selection Summary
@@ -438,5 +621,25 @@ export default function TailorPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function TailorPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Tailor Resume</h1>
+            <p className="mt-1 text-gray-600">
+              AI-powered resume tailoring for specific job descriptions
+            </p>
+          </div>
+          <CardGridSkeleton count={2} />
+        </div>
+      }
+    >
+      <TailorPageContent />
+    </Suspense>
   );
 }
