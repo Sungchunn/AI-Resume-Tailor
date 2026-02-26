@@ -30,3 +30,34 @@ export { BlockItem } from "./BlockItem";
 export { BlockTypeMenu } from "./BlockTypeMenu";
 export { BlockDragOverlay } from "./BlockDragOverlay";
 export { BlockIcon } from "./BlockIcon";
+
+// Block editors (Phase 4)
+export {
+  // Dispatcher
+  BlockEditorDispatcher,
+  createBlockEditorRenderer,
+  // Individual editors
+  ContactEditor,
+  SummaryEditor,
+  ExperienceEditor,
+  EducationEditor,
+  SkillsEditor,
+  CertificationsEditor,
+  ProjectsEditor,
+  LanguagesEditor,
+  VolunteerEditor,
+  PublicationsEditor,
+  AwardsEditor,
+  InterestsEditor,
+  ReferencesEditor,
+  CoursesEditor,
+  MembershipsEditor,
+  // Shared form components
+  FormInput,
+  FormTextarea,
+  FormSelect,
+  DateInput,
+  TagInput,
+  BulletList,
+  EntryList,
+} from "./blocks";
