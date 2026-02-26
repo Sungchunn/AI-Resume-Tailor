@@ -10,9 +10,9 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* Hero + Tech Stack Section - Full viewport height */}
-        <div className="min-h-[calc(100vh-64px)] flex flex-col bg-gradient-to-b from-primary-50 to-gray-50">
-          {/* Hero Section */}
-          <section className="flex-1 flex items-end pb-[10vh]">
+        <div className="min-h-screen flex flex-col bg-linear-to-b from-primary-50 to-gray-50">
+          {/* Hero stays centered */}
+          <section className="flex-1 flex items-center justify-center pt-16">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
               <div className="text-center">
                 <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
@@ -21,8 +21,7 @@ export default function LandingPage() {
                 </h1>
                 <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600">
                   Stop sending generic resumes. Our AI analyzes job descriptions
-                  and customizes your resume to match what employers are looking
-                  for.
+                  and customizes your resume to match what employers are looking for.
                 </p>
                 <div className="mt-10 flex items-center justify-center gap-4">
                   <Link href="/signup" className="btn-primary text-base px-8 py-3">
@@ -36,12 +35,14 @@ export default function LandingPage() {
             </div>
           </section>
 
-          {/* Tech Stack Section */}
-          <TechStackLogos className="py-8" />
+          {/* Logo loop is independent */}
+          <div className="mt-auto pb-10">
+            <TechStackLogos className="py-20" />
+          </div>
         </div>
 
-        {/* Features Section */}
-        <section className="py-20">
+        {/* How It Works Section */}
+        <section id="how-it-works" className="py-20 scroll-mt-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <h2 className="text-3xl font-bold text-gray-900">

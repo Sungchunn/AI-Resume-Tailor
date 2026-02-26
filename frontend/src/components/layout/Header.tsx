@@ -1,40 +1,228 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
+// Hamburger icon component with animated transitions
+const HamburgerIcon = ({ isOpen }: { isOpen: boolean }) => (
+  <svg
+    aria-label="Menu"
+    className="pointer-events-none"
+    fill="none"
+    height={16}
+    role="img"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth="2"
+    viewBox="0 0 24 24"
+    width={16}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      className={`origin-center transition-all duration-300 ease-[cubic-bezier(.5,.85,.25,1.1)] ${
+        isOpen
+          ? "translate-y-0 rotate-315"
+          : "-translate-y-1.75"
+      }`}
+      d="M4 12L20 12"
+    />
+    <path
+      className={`origin-center transition-all duration-300 ease-[cubic-bezier(.5,.85,.25,1.8)] ${
+        isOpen ? "rotate-45" : ""
+      }`}
+      d="M4 12H20"
+    />
+    <path
+      className={`origin-center transition-all duration-300 ease-[cubic-bezier(.5,.85,.25,1.1)] ${
+        isOpen
+          ? "translate-y-0 rotate-135"
+          : "translate-y-1.75"
+      }`}
+      d="M4 12H20"
+    />
+  </svg>
+);
+
+// Navigation links configuration
+const navigationLinks = [
+  { href: "#how-it-works", label: "How It Works" },
+  { href: "/dashboard/jobs", label: "Jobs", protected: true },
+  { href: "/dashboard/library", label: "Library", protected: true },
+  { href: "/dashboard/tailor", label: "Tailor", protected: true },
+];
+
 export function Header() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
+  const router = useRouter();
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const containerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const checkWidth = () => {
+      if (containerRef.current) {
+        const width = containerRef.current.offsetWidth;
+        setIsMobile(width < 768);
+      }
+    };
+
+    checkWidth();
+
+    const resizeObserver = new ResizeObserver(checkWidth);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (mobileMenuOpen && containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [mobileMenuOpen]);
+
+  // Handle navigation with auth check
+  const handleNavClick = (href: string, isProtected: boolean) => {
+    setMobileMenuOpen(false);
+
+    if (isProtected && !isAuthenticated) {
+      // Redirect to signup if trying to access protected route while not authenticated
+      router.push("/signup");
+      return;
+    }
+
+    // Handle anchor links
+    if (href.startsWith("#")) {
+      const element = document.querySelector(href);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+      return;
+    }
+
+    router.push(href);
+  };
+
+  // Filter navigation links based on context
+  const visibleLinks = navigationLinks.filter(link => {
+    // On landing page (not authenticated), show public links
+    // When authenticated, show all links
+    if (!isAuthenticated) {
+      return !link.protected;
+    }
+    return true;
+  });
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
-      <div className="flex h-20 items-center px-4">
-        {/* Left section - empty spacer for balance */}
-        <div className="flex-1" />
+    <header
+      ref={containerRef}
+      className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/60 px-4 md:px-6"
+    >
+      <div className="container mx-auto flex h-20 max-w-screen-2xl items-center justify-between gap-4">
+        {/* Left side - Logo and Navigation */}
+        <div className="flex items-center gap-2">
+          {/* Mobile menu trigger */}
+          {isMobile && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+                aria-expanded={mobileMenuOpen}
+                aria-label="Toggle menu"
+              >
+                <HamburgerIcon isOpen={mobileMenuOpen} />
+              </button>
 
-        {/* Center section - Logo */}
-        <div className="flex items-center justify-center">
-          <Link href={isAuthenticated ? "/dashboard/jobs" : "/"} className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary-600 flex items-center justify-center">
-              <span className="text-white font-bold text-base">RT</span>
+              {/* Mobile menu dropdown */}
+              {mobileMenuOpen && (
+                <div className="absolute top-full left-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg p-2">
+                  {visibleLinks.map((link, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleNavClick(link.href, link.protected || false)}
+                      className="flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                    >
+                      {link.label}
+                      {link.protected && !isAuthenticated && (
+                        <span className="ml-auto text-xs text-gray-400">Sign up</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            <span className="text-lg font-semibold text-gray-900">
+          )}
+
+          {/* Logo */}
+          <Link
+            href={isAuthenticated ? "/dashboard/jobs" : "/"}
+            className="flex items-center gap-3 hover:opacity-90 transition-opacity"
+          >
+            <div className="h-9 w-9 rounded-lg bg-primary-600 flex items-center justify-center">
+              <span className="text-white font-bold text-sm">RT</span>
+            </div>
+            <span className="hidden sm:inline-block text-lg font-semibold text-gray-900">
               Resume Tailor
             </span>
           </Link>
+
+          {/* Desktop Navigation */}
+          {!isMobile && (
+            <nav className="flex items-center gap-1 ml-6">
+              {visibleLinks.map((link, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => handleNavClick(link.href, link.protected || false)}
+                  className="h-9 px-4 flex items-center justify-center rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                >
+                  {link.label}
+                </button>
+              ))}
+            </nav>
+          )}
         </div>
 
-        {/* Right section - Auth buttons for non-authenticated users */}
-        <div className="flex-1 flex items-center justify-end">
-          {!isAuthenticated && (
-            <div className="flex items-center gap-4">
-              <Link href="/login" className="btn-ghost text-sm">
-                Sign in
-              </Link>
-              <Link href="/signup" className="btn-primary text-sm">
-                Get Started
-              </Link>
-            </div>
+        {/* Right side - Auth buttons */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/signup"
+            className="text-sm font-medium px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 shadow-sm transition-colors"
+          >
+            Get Started
+          </Link>
+          {isAuthenticated ? (
+            <button
+              type="button"
+              onClick={() => {
+                logout();
+                router.push("/");
+              }}
+              className="text-sm font-medium px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+            >
+              Log out
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className="text-sm font-medium px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+            >
+              Login
+            </Link>
           )}
         </div>
       </div>
