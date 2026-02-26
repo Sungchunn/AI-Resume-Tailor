@@ -23,15 +23,15 @@ export default function NewBlockPage() {
       <div>
         <Link
           href="/dashboard/library"
-          className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+          className="text-sm text-muted-foreground hover:text-foreground/80 flex items-center gap-1"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Back to Library
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-gray-900">Add Experience Block</h1>
-        <p className="mt-1 text-gray-600">
+        <h1 className="mt-2 text-2xl font-bold text-foreground">Add Experience Block</h1>
+        <p className="mt-1 text-muted-foreground">
           Create a new experience block to add to your vault.
         </p>
       </div>

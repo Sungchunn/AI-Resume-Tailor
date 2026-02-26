@@ -228,7 +228,7 @@ Example:
                   <div key={block.id} className="p-4 border rounded-lg bg-muted">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xs font-medium text-muted-foreground">#{index + 1}</span>
-                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                         {block.block_type}
                       </span>
                     </div>
