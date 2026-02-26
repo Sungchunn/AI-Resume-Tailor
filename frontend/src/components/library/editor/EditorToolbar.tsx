@@ -34,9 +34,9 @@ export function EditorToolbar({
   const [activeTab, setActiveTab] = useState<ToolbarTab>("style");
 
   return (
-    <div className="bg-white border-b border-gray-200">
+    <div className="bg-card border-b border-border">
       {/* Tab Navigation */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border">
         <div className="flex items-center gap-1">
           <TabButton
             active={activeTab === "style"}
@@ -61,7 +61,7 @@ export function EditorToolbar({
         {onTogglePreviewFullscreen && (
           <button
             onClick={onTogglePreviewFullscreen}
-            className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+            className="p-1.5 text-muted-foreground hover:text-foreground/80 hover:bg-accent rounded transition-colors"
             title={isPreviewFullscreen ? "Exit fullscreen" : "Fullscreen preview"}
           >
             {isPreviewFullscreen ? (
@@ -123,8 +123,8 @@ function TabButton({
       onClick={onClick}
       className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors ${
         active
-          ? "bg-primary-100 text-primary-700 font-medium"
-          : "text-gray-600 hover:bg-gray-100"
+          ? "bg-primary/10 text-primary font-medium"
+          : "text-muted-foreground hover:bg-accent"
       }`}
     >
       {icon}
@@ -174,7 +174,7 @@ function StyleTab({
   return (
     <div className="space-y-4">
       {/* Auto-fit Toggle */}
-      <div className="pb-3 border-b border-gray-100">
+      <div className="pb-3 border-b border-border">
         <AutoFitToggle
           enabled={fitToOnePage}
           onToggle={onFitToggle}
@@ -185,7 +185,7 @@ function StyleTab({
 
       {/* Preset Selector */}
       <div className="space-y-2">
-        <p className="text-xs text-gray-500">Choose a preset style:</p>
+        <p className="text-xs text-muted-foreground">Choose a preset style:</p>
         <div className="grid grid-cols-2 gap-2">
           {presets.map((preset) => (
             <button
@@ -194,23 +194,23 @@ function StyleTab({
               disabled={fitToOnePage}
               className={`p-2.5 rounded-lg border-2 transition-all text-left ${
                 activePreset?.name === preset.name
-                  ? "border-primary-500 bg-primary-50"
+                  ? "border-primary bg-primary/10"
                   : fitToOnePage
-                    ? "border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed"
-                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                    ? "border-border bg-muted opacity-50 cursor-not-allowed"
+                    : "border-border hover:border-input hover:bg-accent"
               }`}
             >
-              <span className="block text-sm font-medium text-gray-900">
+              <span className="block text-sm font-medium text-foreground">
                 {preset.label}
               </span>
-              <span className="block text-[11px] text-gray-500 mt-0.5">
+              <span className="block text-[11px] text-muted-foreground mt-0.5">
                 {preset.description}
               </span>
             </button>
           ))}
         </div>
         {fitToOnePage && (
-          <p className="text-xs text-gray-400 italic">
+          <p className="text-xs text-muted-foreground/60 italic">
             Presets disabled while auto-fit is active
           </p>
         )}
@@ -241,21 +241,21 @@ function FontTab({
     { value: "Lato", label: "Lato" },
   ];
 
-  const inputClass = `w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-    disabled ? "bg-gray-100 opacity-60 cursor-not-allowed" : ""
+  const inputClass = `w-full px-3 py-2 text-sm border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-transparent ${
+    disabled ? "bg-muted opacity-60 cursor-not-allowed" : ""
   }`;
 
   return (
     <div className="space-y-4">
       {disabled && (
-        <p className="text-xs text-gray-400 italic">
+        <p className="text-xs text-muted-foreground/60 italic">
           Font settings managed by auto-fit
         </p>
       )}
 
       {/* Font Family */}
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+        <label className="block text-xs font-medium text-foreground/80 mb-1.5">
           Font Family
         </label>
         <select
@@ -275,7 +275,7 @@ function FontTab({
       {/* Font Sizes */}
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+          <label className="block text-xs font-medium text-foreground/80 mb-1.5">
             Body
           </label>
           <input
@@ -289,7 +289,7 @@ function FontTab({
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+          <label className="block text-xs font-medium text-foreground/80 mb-1.5">
             Heading
           </label>
           <input
@@ -303,7 +303,7 @@ function FontTab({
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+          <label className="block text-xs font-medium text-foreground/80 mb-1.5">
             Subheading
           </label>
           <input
@@ -333,30 +333,30 @@ function SpacingTab({
   onUpdate: (style: Partial<BlockEditorStyle>) => void;
   disabled?: boolean;
 }) {
-  const inputClass = `w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-    disabled ? "bg-gray-100 opacity-60 cursor-not-allowed" : ""
+  const inputClass = `w-full px-2 py-1.5 text-sm border border-input rounded focus:ring-2 focus:ring-ring focus:border-transparent ${
+    disabled ? "bg-muted opacity-60 cursor-not-allowed" : ""
   }`;
 
-  const inputClassLg = `w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-    disabled ? "bg-gray-100 opacity-60 cursor-not-allowed" : ""
+  const inputClassLg = `w-full px-3 py-2 text-sm border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-transparent ${
+    disabled ? "bg-muted opacity-60 cursor-not-allowed" : ""
   }`;
 
   return (
     <div className="space-y-4">
       {disabled && (
-        <p className="text-xs text-gray-400 italic">
+        <p className="text-xs text-muted-foreground/60 italic">
           Spacing settings managed by auto-fit
         </p>
       )}
 
       {/* Margins */}
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-2">
+        <label className="block text-xs font-medium text-foreground/80 mb-2">
           Margins (inches)
         </label>
         <div className="grid grid-cols-4 gap-2">
           <div>
-            <label className="block text-[10px] text-gray-500 mb-1">Top</label>
+            <label className="block text-[10px] text-muted-foreground mb-1">Top</label>
             <input
               type="number"
               min={0.25}
@@ -369,7 +369,7 @@ function SpacingTab({
             />
           </div>
           <div>
-            <label className="block text-[10px] text-gray-500 mb-1">Bottom</label>
+            <label className="block text-[10px] text-muted-foreground mb-1">Bottom</label>
             <input
               type="number"
               min={0.25}
@@ -382,7 +382,7 @@ function SpacingTab({
             />
           </div>
           <div>
-            <label className="block text-[10px] text-gray-500 mb-1">Left</label>
+            <label className="block text-[10px] text-muted-foreground mb-1">Left</label>
             <input
               type="number"
               min={0.25}
@@ -395,7 +395,7 @@ function SpacingTab({
             />
           </div>
           <div>
-            <label className="block text-[10px] text-gray-500 mb-1">Right</label>
+            <label className="block text-[10px] text-muted-foreground mb-1">Right</label>
             <input
               type="number"
               min={0.25}
@@ -413,7 +413,7 @@ function SpacingTab({
       {/* Line and Section Spacing */}
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+          <label className="block text-xs font-medium text-foreground/80 mb-1.5">
             Line Height
           </label>
           <input
@@ -428,7 +428,7 @@ function SpacingTab({
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+          <label className="block text-xs font-medium text-foreground/80 mb-1.5">
             Section Gap
           </label>
           <input
@@ -443,7 +443,7 @@ function SpacingTab({
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+          <label className="block text-xs font-medium text-foreground/80 mb-1.5">
             Entry Gap
           </label>
           <input

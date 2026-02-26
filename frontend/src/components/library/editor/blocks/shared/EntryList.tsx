@@ -75,10 +75,10 @@ export function EntryList<T extends { id: string }>({
     <div className="space-y-3">
       {label && (
         <div className="flex items-center justify-between">
-          <label className="block text-xs font-medium text-gray-700">
+          <label className="block text-xs font-medium text-foreground/80">
             {label}
           </label>
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-muted-foreground/60">
             {entries.length} {entries.length === 1 ? "entry" : "entries"}
           </span>
         </div>
@@ -86,13 +86,13 @@ export function EntryList<T extends { id: string }>({
 
       {/* Empty State */}
       {entries.length === 0 && (
-        <div className="text-center py-6 border-2 border-dashed border-gray-200 rounded-lg">
-          <p className="text-sm text-gray-500 mb-3">{emptyMessage}</p>
+        <div className="text-center py-6 border-2 border-dashed border-border rounded-lg">
+          <p className="text-sm text-muted-foreground mb-3">{emptyMessage}</p>
           <button
             type="button"
             onClick={addEntry}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium
-              text-primary-600 bg-primary-50 rounded-md hover:bg-primary-100 transition-colors"
+              text-primary bg-primary/10 rounded-md hover:bg-primary/20 transition-colors"
           >
             <Plus className="w-4 h-4" />
             {addLabel}
@@ -106,15 +106,15 @@ export function EntryList<T extends { id: string }>({
           {entries.map((entry, index) => (
             <div
               key={entry.id}
-              className="border border-gray-200 rounded-lg overflow-hidden"
+              className="border border-border rounded-lg overflow-hidden"
             >
               {/* Entry Header */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border-b border-gray-200">
-                <span className="text-xs font-medium text-gray-500">
+              <div className="flex items-center gap-2 px-3 py-2 bg-muted border-b border-border">
+                <span className="text-xs font-medium text-muted-foreground">
                   #{index + 1}
                 </span>
                 {getEntryTitle && (
-                  <span className="text-sm text-gray-700 truncate flex-1">
+                  <span className="text-sm text-foreground/80 truncate flex-1">
                     {getEntryTitle(entry) || "(Untitled)"}
                   </span>
                 )}
@@ -124,7 +124,7 @@ export function EntryList<T extends { id: string }>({
                     type="button"
                     onClick={() => moveEntry(index, "up")}
                     disabled={index === 0}
-                    className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30
+                    className="p-1 text-muted-foreground/60 hover:text-muted-foreground disabled:opacity-30
                       disabled:cursor-not-allowed transition-colors"
                     aria-label="Move up"
                   >
@@ -135,7 +135,7 @@ export function EntryList<T extends { id: string }>({
                     type="button"
                     onClick={() => moveEntry(index, "down")}
                     disabled={index === entries.length - 1}
-                    className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30
+                    className="p-1 text-muted-foreground/60 hover:text-muted-foreground disabled:opacity-30
                       disabled:cursor-not-allowed transition-colors"
                     aria-label="Move down"
                   >
@@ -145,7 +145,7 @@ export function EntryList<T extends { id: string }>({
                   <button
                     type="button"
                     onClick={() => removeEntry(index)}
-                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                    className="p-1 text-muted-foreground/60 hover:text-destructive transition-colors"
                     aria-label="Remove entry"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -170,8 +170,8 @@ export function EntryList<T extends { id: string }>({
           type="button"
           onClick={addEntry}
           className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm
-            text-gray-500 border-2 border-dashed border-gray-200 rounded-lg
-            hover:text-primary-600 hover:border-primary-300 hover:bg-primary-50 transition-colors"
+            text-muted-foreground border-2 border-dashed border-border rounded-lg
+            hover:text-primary hover:border-primary/30 hover:bg-primary/10 transition-colors"
         >
           <Plus className="w-4 h-4" />
           {addLabel}

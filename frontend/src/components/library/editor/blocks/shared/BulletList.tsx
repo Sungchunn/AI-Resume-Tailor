@@ -90,7 +90,7 @@ export function BulletList({
   return (
     <div className="space-y-2">
       {label && (
-        <label className="block text-xs font-medium text-gray-700">
+        <label className="block text-xs font-medium text-foreground/80">
           {label}
         </label>
       )}
@@ -99,10 +99,10 @@ export function BulletList({
       <div className="space-y-2">
         {bullets.map((bullet, index) => (
           <div key={index} className="flex items-start gap-2 group">
-            <div className="pt-2.5 text-gray-400 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="pt-2.5 text-muted-foreground/60 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity">
               <GripVertical className="w-4 h-4" />
             </div>
-            <span className="pt-2.5 text-gray-400 select-none">•</span>
+            <span className="pt-2.5 text-muted-foreground/60 select-none">•</span>
             <input
               ref={(el) => {
                 inputRefs.current[index] = el;
@@ -112,14 +112,14 @@ export function BulletList({
               onChange={(e) => updateBullet(index, e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               placeholder={placeholder}
-              className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-md
-                focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
-                hover:border-gray-300 transition-colors"
+              className="flex-1 px-3 py-2 text-sm border border-border rounded-md
+                focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
+                hover:border-input transition-colors"
             />
             <button
               type="button"
               onClick={() => removeBullet(index)}
-              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md
+              className="p-2 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 rounded-md
                 opacity-0 group-hover:opacity-100 transition-all"
               aria-label="Remove bullet"
             >
@@ -134,8 +134,8 @@ export function BulletList({
         <button
           type="button"
           onClick={addBullet}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500
-            hover:text-primary-600 hover:bg-gray-50 rounded-md transition-colors"
+          className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground
+            hover:text-primary hover:bg-accent rounded-md transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add bullet point
@@ -143,7 +143,7 @@ export function BulletList({
       )}
 
       {/* Hint */}
-      {hint && <p className="text-xs text-gray-500">{hint}</p>}
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }

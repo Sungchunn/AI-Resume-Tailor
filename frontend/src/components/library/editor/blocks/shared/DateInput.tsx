@@ -49,7 +49,7 @@ export function DateInput({
       {label && (
         <label
           htmlFor={inputId}
-          className="block text-xs font-medium text-gray-700"
+          className="block text-xs font-medium text-foreground/80"
         >
           {label}
         </label>
@@ -62,17 +62,17 @@ export function DateInput({
           onChange={handleChange}
           placeholder={placeholder}
           disabled={disabled || isPresent}
-          className={`flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md
-            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
-            disabled:bg-gray-50 disabled:text-gray-500`}
+          className={`flex-1 px-3 py-2 text-sm border border-input rounded-md
+            focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
+            disabled:bg-muted disabled:text-muted-foreground`}
         />
         {showPresent && (
-          <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer whitespace-nowrap">
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
             <input
               type="checkbox"
               checked={isPresent}
               onChange={handlePresentToggle}
-              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              className="rounded border-input text-primary focus:ring-ring"
             />
             Present
           </label>

@@ -59,7 +59,7 @@ export function TagInput({
   return (
     <div className="space-y-2">
       {label && (
-        <label className="block text-xs font-medium text-gray-700">
+        <label className="block text-xs font-medium text-foreground/80">
           {label}
         </label>
       )}
@@ -70,14 +70,14 @@ export function TagInput({
           {tags.map((tag, index) => (
             <span
               key={`${tag}-${index}`}
-              className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-50 text-primary-700
-                text-sm rounded-full border border-primary-200"
+              className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary
+                text-sm rounded-full border border-primary/20"
             >
               {tag}
               <button
                 type="button"
                 onClick={() => removeTag(index)}
-                className="p-0.5 hover:bg-primary-200 rounded-full transition-colors"
+                className="p-0.5 hover:bg-primary/20 rounded-full transition-colors"
                 aria-label={`Remove ${tag}`}
               >
                 <X className="w-3 h-3" />
@@ -96,15 +96,15 @@ export function TagInput({
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md
-              focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="flex-1 px-3 py-2 text-sm border border-input rounded-md
+              focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
           />
           <button
             type="button"
             onClick={addTag}
             disabled={!inputValue.trim()}
-            className="p-2 text-primary-600 hover:bg-primary-50 rounded-md
-              disabled:text-gray-400 disabled:hover:bg-transparent transition-colors"
+            className="p-2 text-primary hover:bg-primary/10 rounded-md
+              disabled:text-muted-foreground/60 disabled:hover:bg-transparent transition-colors"
             aria-label="Add tag"
           >
             <Plus className="w-5 h-5" />
@@ -113,9 +113,9 @@ export function TagInput({
       )}
 
       {/* Hint */}
-      {hint && <p className="text-xs text-gray-500">{hint}</p>}
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       {maxTags && (
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-muted-foreground/60">
           {tags.length} / {maxTags} tags
         </p>
       )}
