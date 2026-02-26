@@ -2,15 +2,12 @@
 
 import { useState } from "react";
 import { useJobListings } from "@/lib/api/hooks";
-import { useAuth } from "@/contexts/AuthContext";
 import { JobListingCard } from "@/components/jobs/JobListingCard";
 import { JobListingFilters } from "@/components/jobs/JobListingFilters";
 import type { JobListingFilters as Filters } from "@/lib/api/types";
 import Link from "next/link";
-import Image from "next/image";
 
 export default function JobListingsPage() {
-  const { user } = useAuth();
   const [filters, setFilters] = useState<Filters>({
     limit: 20,
     offset: 0,
@@ -57,20 +54,6 @@ export default function JobListingsPage() {
             <BookmarkIcon />
             Saved Jobs
           </Link>
-          {user?.is_admin && (
-            <Link
-              href="/dashboard/admin/scraper"
-              className="btn-secondary flex items-center justify-center"
-              title="Import Jobs from LinkedIn"
-            >
-              <Image
-                src="/icons/apify-light.png"
-                alt="Import Jobs"
-                width={20}
-                height={20}
-              />
-            </Link>
-          )}
         </div>
       </div>
 

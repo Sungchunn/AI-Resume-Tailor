@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -138,6 +139,31 @@ export function Sidebar() {
             })}
           </div>
         </nav>
+
+        {/* Admin: Apify Scraper */}
+        {user?.is_admin && (
+          <div className={`py-2 ${isCollapsed ? "px-2" : "px-3"}`}>
+            <Link
+              href="/dashboard/admin/scraper"
+              className={`w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-sm font-medium transition-all duration-150 ${
+                pathname === "/dashboard/admin/scraper"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              } ${isCollapsed ? "justify-center px-2" : ""}`}
+              title={isCollapsed ? "Import Jobs" : undefined}
+            >
+              <span className="w-5 h-5 flex items-center justify-center shrink-0 overflow-visible">
+                <Image
+                  src="/icons/apify-symbol-safe.png"
+                  alt="Import Jobs"
+                  width={30}
+                  height={30}
+                />
+              </span>
+              {!isCollapsed && "Import Jobs"}
+            </Link>
+          </div>
+        )}
 
         {/* Theme toggle */}
         <div className={`py-2 ${isCollapsed ? "px-2" : "px-3"}`}>
