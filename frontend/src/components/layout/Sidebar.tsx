@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   BriefcaseIcon,
   LibraryIcon,
@@ -31,6 +32,7 @@ const sidebarNavigation = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -76,13 +78,13 @@ export function Sidebar() {
         <div className={`pt-5 pb-4 ${isCollapsed ? "px-3" : "px-4"}`}>
           <Link
             href="/dashboard/jobs"
-            className={`flex items-center gap-2.5 ${isCollapsed ? "justify-center" : ""}`}
+            className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}
           >
-            <div className="h-8 w-8 shrink-0 rounded-lg bg-linear-to-b from-primary to-primary/80 flex items-center justify-center shadow-sm">
-              <span className="text-primary-foreground font-semibold text-sm">RT</span>
+            <div className="h-11 w-11 shrink-0 rounded-xl bg-linear-to-b from-primary to-primary/80 flex items-center justify-center shadow-md">
+              <span className="text-primary-foreground font-bold text-lg">RT</span>
             </div>
             {!isCollapsed && (
-              <span className="text-base font-semibold text-sidebar-foreground tracking-tight">
+              <span className="text-lg font-semibold text-sidebar-foreground tracking-tight">
                 Resume Tailor
               </span>
             )}
@@ -136,6 +138,52 @@ export function Sidebar() {
             })}
           </div>
         </nav>
+
+        {/* Theme toggle */}
+        <div className={`py-2 ${isCollapsed ? "px-2" : "px-3"}`}>
+          <button
+            onClick={toggleTheme}
+            className={`w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-150 ${
+              isCollapsed ? "justify-center px-2" : ""
+            }`}
+            title={isCollapsed ? `Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode` : undefined}
+          >
+            {resolvedTheme === "dark" ? (
+              <svg
+                className="h-5 w-5 shrink-0 text-sidebar-foreground/60"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="h-5 w-5 shrink-0 text-sidebar-foreground/60"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"
+                />
+              </svg>
+            )}
+            {!isCollapsed && (
+              <span className="flex-1 text-left">
+                {resolvedTheme === "dark" ? "Light Mode" : "Dark Mode"}
+              </span>
+            )}
+          </button>
+        </div>
 
         {/* User menu at bottom */}
         <div

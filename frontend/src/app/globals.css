@@ -58,9 +58,56 @@
   --radius-xl: calc(var(--radius) + 0.5rem);
 }
 
-/* Dark Theme (System Preference) */
+/* Dark Theme (Manual class override) */
+:root.dark {
+  --color-background: oklch(0.141 0.005 285.823);
+  --color-foreground: oklch(0.985 0 0);
+
+  --color-card: oklch(0.21 0.006 285.885);
+  --color-card-foreground: oklch(0.985 0 0);
+
+  --color-popover: oklch(0.21 0.006 285.885);
+  --color-popover-foreground: oklch(0.985 0 0);
+
+  --color-primary: oklch(0.546 0.245 262.881);
+  --color-primary-foreground: oklch(0.379 0.146 265.522);
+
+  --color-secondary: oklch(0.274 0.006 286.033);
+  --color-secondary-foreground: oklch(0.985 0 0);
+
+  --color-muted: oklch(0.274 0.006 286.033);
+  --color-muted-foreground: oklch(0.705 0.015 286.067);
+
+  --color-accent: oklch(0.274 0.006 286.033);
+  --color-accent-foreground: oklch(0.985 0 0);
+
+  --color-destructive: oklch(0.704 0.191 22.216);
+
+  --color-border: oklch(1 0 0 / 10%);
+  --color-input: oklch(1 0 0 / 15%);
+  --color-ring: oklch(0.488 0.243 264.376);
+
+  /* Chart Colors */
+  --color-chart-1: oklch(0.488 0.243 264.376);
+  --color-chart-2: oklch(0.696 0.17 162.48);
+  --color-chart-3: oklch(0.769 0.188 70.08);
+  --color-chart-4: oklch(0.627 0.265 303.9);
+  --color-chart-5: oklch(0.645 0.246 16.439);
+
+  /* Sidebar Colors */
+  --color-sidebar: oklch(0.21 0.006 285.885);
+  --color-sidebar-foreground: oklch(0.985 0 0);
+  --color-sidebar-primary: oklch(0.546 0.245 262.881);
+  --color-sidebar-primary-foreground: oklch(0.379 0.146 265.522);
+  --color-sidebar-accent: oklch(0.274 0.006 286.033);
+  --color-sidebar-accent-foreground: oklch(0.985 0 0);
+  --color-sidebar-border: oklch(1 0 0 / 10%);
+  --color-sidebar-ring: oklch(0.488 0.243 264.376);
+}
+
+/* Dark Theme (System Preference - fallback when no class is set) */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light):not(.dark) {
     --color-background: oklch(0.141 0.005 285.823);
     --color-foreground: oklch(0.985 0 0);
 
@@ -146,21 +193,38 @@
   }
 }
 
-/* Dark mode scrollbar */
+/* Dark mode scrollbar (manual class) */
+:root.dark * {
+  scrollbar-color: oklch(0.4 0 0) oklch(0.2 0 0);
+}
+
+:root.dark *::-webkit-scrollbar-track {
+  background: oklch(0.2 0 0);
+}
+
+:root.dark *::-webkit-scrollbar-thumb {
+  background-color: oklch(0.4 0 0);
+}
+
+:root.dark *::-webkit-scrollbar-thumb:hover {
+  background-color: oklch(0.5 0 0);
+}
+
+/* Dark mode scrollbar (system preference fallback) */
 @media (prefers-color-scheme: dark) {
-  * {
+  :root:not(.light):not(.dark) * {
     scrollbar-color: oklch(0.4 0 0) oklch(0.2 0 0);
   }
 
-  *::-webkit-scrollbar-track {
+  :root:not(.light):not(.dark) *::-webkit-scrollbar-track {
     background: oklch(0.2 0 0);
   }
 
-  *::-webkit-scrollbar-thumb {
+  :root:not(.light):not(.dark) *::-webkit-scrollbar-thumb {
     background-color: oklch(0.4 0 0);
   }
 
-  *::-webkit-scrollbar-thumb:hover {
+  :root:not(.light):not(.dark) *::-webkit-scrollbar-thumb:hover {
     background-color: oklch(0.5 0 0);
   }
 }

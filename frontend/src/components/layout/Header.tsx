@@ -172,10 +172,10 @@ export function Header() {
             href={isAuthenticated ? "/dashboard/jobs" : "/"}
             className="flex items-center gap-3 hover:opacity-90 transition-opacity"
           >
-            <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">RT</span>
+            <div className="h-11 w-11 rounded-xl bg-linear-to-b from-primary to-primary/80 flex items-center justify-center shadow-md">
+              <span className="text-primary-foreground font-extrabold text-lg">RT</span>
             </div>
-            <span className="hidden sm:inline-block text-lg font-semibold text-foreground">
+            <span className="hidden sm:inline-block text-xl font-bold text-foreground tracking-tight">
               Resume Tailor
             </span>
           </Link>
