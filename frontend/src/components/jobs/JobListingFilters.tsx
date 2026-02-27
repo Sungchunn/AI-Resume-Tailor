@@ -312,53 +312,6 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
             />
           </div>
 
-          {/* City - Tri-state toggle: click to cycle neutral → include → exclude */}
-          {cityOptions.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-foreground/80">
-                  City
-                </label>
-                <span className="text-xs text-muted-foreground">Click to cycle: include → exclude</span>
-              </div>
-              <div className="space-y-1 max-h-48 overflow-y-auto">
-                {cityOptions.map((option) => {
-                  const isIncluded = selectedCities.includes(option.value);
-                  const isExcluded = excludedCities.includes(option.value);
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => handleCityToggle(option.value)}
-                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors ${
-                        isIncluded
-                          ? "bg-primary/10 text-primary"
-                          : isExcluded
-                          ? "bg-destructive/10 text-destructive"
-                          : "hover:bg-accent text-muted-foreground"
-                      }`}
-                    >
-                      <span className={`flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center text-xs font-bold ${
-                        isIncluded
-                          ? "bg-primary border-primary text-primary-foreground"
-                          : isExcluded
-                          ? "bg-destructive border-destructive text-destructive-foreground"
-                          : "border-input"
-                      }`}>
-                        {isIncluded && "✓"}
-                        {isExcluded && "✕"}
-                      </span>
-                      <span className="text-sm flex-1">
-                        {option.label}
-                      </span>
-                      <span className="text-xs text-muted-foreground/60">({option.count})</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {/* Country - Tri-state toggle: click to cycle neutral → include → exclude */}
           {countryOptions.length > 0 && (
             <div>
@@ -385,7 +338,54 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
                           : "hover:bg-accent text-muted-foreground"
                       }`}
                     >
-                      <span className={`flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center text-xs font-bold ${
+                      <span className={`shrink-0 w-5 h-5 rounded border flex items-center justify-center text-xs font-bold ${
+                        isIncluded
+                          ? "bg-primary border-primary text-primary-foreground"
+                          : isExcluded
+                          ? "bg-destructive border-destructive text-destructive-foreground"
+                          : "border-input"
+                      }`}>
+                        {isIncluded && "✓"}
+                        {isExcluded && "✕"}
+                      </span>
+                      <span className="text-sm flex-1">
+                        {option.label}
+                      </span>
+                      <span className="text-xs text-muted-foreground/60">({option.count})</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* City - Tri-state toggle: click to cycle neutral → include → exclude */}
+          {cityOptions.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-foreground/80">
+                  City
+                </label>
+                <span className="text-xs text-muted-foreground">Click to cycle: include → exclude</span>
+              </div>
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {cityOptions.map((option) => {
+                  const isIncluded = selectedCities.includes(option.value);
+                  const isExcluded = excludedCities.includes(option.value);
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleCityToggle(option.value)}
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors ${
+                        isIncluded
+                          ? "bg-primary/10 text-primary"
+                          : isExcluded
+                          ? "bg-destructive/10 text-destructive"
+                          : "hover:bg-accent text-muted-foreground"
+                      }`}
+                    >
+                      <span className={`shrink-0 w-5 h-5 rounded border flex items-center justify-center text-xs font-bold ${
                         isIncluded
                           ? "bg-primary border-primary text-primary-foreground"
                           : isExcluded

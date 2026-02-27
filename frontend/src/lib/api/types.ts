@@ -442,6 +442,7 @@ export interface JobListingResponse {
   salary_currency: string;
   salary_period: string | null;
   date_posted: string | null;
+  scraped_at: string | null;
   source_platform: string | null;
   is_active: boolean;
   created_at: string;

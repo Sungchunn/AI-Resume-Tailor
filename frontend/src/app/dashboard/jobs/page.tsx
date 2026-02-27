@@ -7,6 +7,24 @@ import { JobListingFilters } from "@/components/jobs/JobListingFilters";
 import type { JobListingFilters as Filters } from "@/lib/api/types";
 import Link from "next/link";
 
+function formatRelativeTime(dateStr: string | null): string {
+  if (!dateStr) return "N/A";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? "" : "s"} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+  if (diffDays === 1) return "yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) === 1 ? "" : "s"} ago`;
+  return date.toLocaleDateString();
+}
+
 export default function JobListingsPage() {
   const [filters, setFilters] = useState<Filters>({
     limit: 20,
@@ -38,8 +56,20 @@ export default function JobListingsPage() {
           <p className="text-muted-foreground mt-1">
             Browse and discover job opportunities
           </p>
+          {data && data.listings.length > 0 && (
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              Last updated {formatRelativeTime(
+                data.listings.reduce((latest, listing) => {
+                  if (!listing.scraped_at) return latest;
+                  return !latest || new Date(listing.scraped_at) > new Date(latest)
+                    ? listing.scraped_at
+                    : latest;
+                }, null as string | null)
+              )}
+            </p>
+          )}
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 mt-1">
           <Link
             href="/dashboard/jobs/applied"
             className="btn-secondary flex items-center gap-2"

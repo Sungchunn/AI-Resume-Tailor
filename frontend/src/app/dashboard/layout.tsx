@@ -10,7 +10,7 @@ export default function DashboardLayout({
     <ProtectedRoute>
       <div className="min-h-screen bg-background flex">
         <Sidebar />
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 pt-8 px-6 pb-6">{children}</main>
       </div>
     </ProtectedRoute>
   );

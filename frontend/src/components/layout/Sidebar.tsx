@@ -76,16 +76,16 @@ export function Sidebar() {
         }`}
       >
         {/* Logo section */}
-        <div className={`pt-5 pb-4 ${isCollapsed ? "px-3" : "px-4"}`}>
+        <div className={`pt-8 pb-4 ${isCollapsed ? "px-3" : "px-4"}`}>
           <Link
             href="/dashboard/jobs"
             className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}
           >
-            <div className="h-11 w-11 shrink-0 rounded-xl bg-linear-to-b from-primary to-primary/80 flex items-center justify-center shadow-md">
-              <span className="text-primary-foreground font-bold text-lg">RT</span>
+            <div className="h-14 w-14 shrink-0 rounded-xl bg-linear-to-b from-primary to-primary/80 flex items-center justify-center shadow-md">
+              <span className="text-primary-foreground font-bold text-2xl">RT</span>
             </div>
             {!isCollapsed && (
-              <span className="text-lg font-semibold text-sidebar-foreground tracking-tight">
+              <span className="text-2xl font-bold text-sidebar-foreground tracking-tight">
                 Resume Tailor
               </span>
             )}
@@ -95,7 +95,7 @@ export function Sidebar() {
         {/* Collapse toggle */}
         <button
           onClick={toggleCollapsed}
-          className="absolute -right-3 top-16 h-6 w-6 bg-card border border-border rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shadow-sm"
+          className="absolute -right-3 top-19 h-6 w-6 bg-card border border-border rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shadow-sm"
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           <svg
@@ -110,7 +110,7 @@ export function Sidebar() {
         </button>
 
         {/* Navigation */}
-        <nav className={`flex-1 overflow-y-auto py-2 ${isCollapsed ? "px-2" : "px-3"}`}>
+        <nav className={`flex-1 overflow-y-auto pt-4 pb-2 ${isCollapsed ? "px-2" : "px-3"}`}>
           <div className="space-y-0.5">
             {sidebarNavigation.map((item) => {
               const isActive =
