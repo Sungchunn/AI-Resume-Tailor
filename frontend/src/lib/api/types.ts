@@ -625,6 +625,7 @@ export interface ScheduleSettingsUpdate {
   schedule_hour?: number;
   schedule_minute?: number;
   schedule_day_of_week?: number | null;
+  schedule_timezone?: string;
 }
 
 export interface ScheduleSettingsResponse {
@@ -633,6 +634,7 @@ export interface ScheduleSettingsResponse {
   schedule_hour: number;
   schedule_minute: number;
   schedule_day_of_week: number | null;
+  schedule_timezone: string;
   last_run_at: string | null;
   next_run_at: string | null;
   updated_at: string | null;
