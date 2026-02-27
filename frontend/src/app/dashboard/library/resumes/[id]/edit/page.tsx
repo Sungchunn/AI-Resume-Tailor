@@ -1,9 +1,10 @@
 "use client";
 
-import { use } from "react";
+import { use, useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { useResume, useUpdateResume } from "@/lib/api";
+import { useResume, useUpdateResume, useParseResume, useParseStatus } from "@/lib/api";
 import { BlockEditorProvider, EditorLayout } from "@/components/library/editor";
+import { Loader2, Sparkles } from "lucide-react";
 import type { ParsedResumeContent } from "@/lib/resume/types";
 
 interface PageProps {
@@ -21,8 +22,49 @@ export default function ResumeEditPage({ params }: PageProps) {
   const jobListingIdParam = searchParams.get("jobListingId");
   const jobId = jobIdParam ? parseInt(jobIdParam, 10) : null;
   const jobListingId = jobListingIdParam ? parseInt(jobListingIdParam, 10) : null;
-  const { data: resume, isLoading, error } = useResume(resumeId);
+  const { data: resume, isLoading, error, refetch } = useResume(resumeId);
   const updateResume = useUpdateResume();
+  const parseResume = useParseResume();
+
+  // Auto-parse state
+  const [autoParseTaskId, setAutoParseTaskId] = useState<string | null>(null);
+  const [autoParseAttempted, setAutoParseAttempted] = useState(false);
+
+  // Poll for auto-parse completion
+  const { data: parseStatus } = useParseStatus(resumeId, autoParseTaskId);
+
+  // Auto-parse effect: trigger parsing when resume has raw_content but no parsed_content
+  useEffect(() => {
+    if (
+      resume &&
+      !resume.parsed_content &&
+      resume.raw_content &&
+      !autoParseAttempted &&
+      !autoParseTaskId
+    ) {
+      setAutoParseAttempted(true);
+      parseResume
+        .mutateAsync({ id: resumeId })
+        .then((result) => setAutoParseTaskId(result.task_id))
+        .catch((err) => console.error("Auto-parse failed to start:", err));
+    }
+  }, [resume, resumeId, autoParseAttempted, autoParseTaskId, parseResume]);
+
+  // Handle parse completion
+  useEffect(() => {
+    if (parseStatus?.status === "completed") {
+      setAutoParseTaskId(null);
+      refetch(); // Refresh resume data to get new parsed_content
+    } else if (parseStatus?.status === "failed") {
+      setAutoParseTaskId(null);
+      console.error("Auto-parse failed:", parseStatus.error);
+    }
+  }, [parseStatus, refetch]);
+
+  // Callback for manual parse completion from header button
+  const handleParseComplete = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
   // Handle save
   const handleSave = async (data: {
@@ -45,6 +87,27 @@ export default function ResumeEditPage({ params }: PageProps) {
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Loading resume editor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Auto-parsing loading state (shows while AI is parsing the resume)
+  if (autoParseTaskId && parseStatus?.status === "pending") {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="text-center max-w-md">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+          </div>
+          <h2 className="text-lg font-semibold text-foreground mb-2">
+            Parsing your resume with AI
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Extracting sections, contact info, experience, skills, and more.
+            This usually takes a few seconds.
+          </p>
         </div>
       </div>
     );
@@ -84,6 +147,9 @@ export default function ResumeEditPage({ params }: PageProps) {
       <EditorLayout
         resumeId={resumeId}
         title={resume.title}
+        hasRawContent={!!resume.raw_content}
+        hasParsedContent={!!resume.parsed_content}
+        onParseComplete={handleParseComplete}
         jobId={jobId}
         jobListingId={jobListingId}
       />

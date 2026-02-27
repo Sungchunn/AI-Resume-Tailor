@@ -67,6 +67,7 @@ export { EditorLayout } from "./EditorLayout";
 export { EditorHeader } from "./EditorHeader";
 export { EditorToolbar } from "./EditorToolbar";
 export { ControlPanel } from "./ControlPanel";
+export { ParseResumeButton } from "./ParseResumeButton";
 
 // Tab components
 export {

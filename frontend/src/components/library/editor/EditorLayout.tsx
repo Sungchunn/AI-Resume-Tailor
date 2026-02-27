@@ -13,6 +13,12 @@ interface EditorLayoutProps {
   resumeId: number;
   /** Resume title for display */
   title: string;
+  /** Whether the resume has raw content that can be parsed */
+  hasRawContent?: boolean;
+  /** Whether the resume has parsed content */
+  hasParsedContent?: boolean;
+  /** Callback when parsing completes */
+  onParseComplete?: () => void;
   /** User-created job ID for ATS analysis - passed via query param from job board */
   jobId?: number | null;
   /** Scraped job listing ID for ATS analysis - passed via query param from job board */
@@ -31,6 +37,9 @@ interface EditorLayoutProps {
 export function EditorLayout({
   resumeId,
   title,
+  hasRawContent = false,
+  hasParsedContent = false,
+  onParseComplete,
   jobId = null,
   jobListingId = null,
 }: EditorLayoutProps) {
@@ -133,6 +142,9 @@ export function EditorLayout({
       <EditorHeader
         resumeId={resumeId}
         title={title}
+        hasRawContent={hasRawContent}
+        hasParsedContent={hasParsedContent}
+        onParseComplete={onParseComplete}
         onExport={() => setShowExportDialog(true)}
       />
 

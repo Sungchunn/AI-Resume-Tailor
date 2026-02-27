@@ -3,12 +3,19 @@
 import { ArrowLeft, Save, Download, Undo2, Redo2 } from "lucide-react";
 import Link from "next/link";
 import { useBlockEditor } from "./BlockEditorContext";
+import { ParseResumeButton } from "./ParseResumeButton";
 
 interface EditorHeaderProps {
   /** Resume ID for back navigation */
   resumeId: number;
   /** Resume title to display */
   title: string;
+  /** Whether the resume has raw content that can be parsed */
+  hasRawContent?: boolean;
+  /** Whether the resume already has parsed content */
+  hasParsedContent?: boolean;
+  /** Callback when parsing completes */
+  onParseComplete?: () => void;
   /** Callback when export button is clicked */
   onExport?: () => void;
 }
@@ -23,7 +30,14 @@ interface EditorHeaderProps {
  * - Undo/Redo buttons
  * - Export button
  */
-export function EditorHeader({ resumeId, title, onExport }: EditorHeaderProps) {
+export function EditorHeader({
+  resumeId,
+  title,
+  hasRawContent = false,
+  hasParsedContent = false,
+  onParseComplete,
+  onExport,
+}: EditorHeaderProps) {
   const { state, save, isSaving, canUndo, canRedo, undo, redo } =
     useBlockEditor();
   const { isDirty, error } = state;
@@ -86,6 +100,15 @@ export function EditorHeader({ resumeId, title, onExport }: EditorHeaderProps) {
             <Redo2 className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Parse Button */}
+        {hasRawContent && (
+          <ParseResumeButton
+            resumeId={resumeId}
+            hasParsedContent={hasParsedContent}
+            onParseComplete={onParseComplete}
+          />
+        )}
 
         {/* Export */}
         {onExport && (
