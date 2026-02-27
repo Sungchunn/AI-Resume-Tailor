@@ -66,6 +66,7 @@ class Settings(BaseSettings):
     apify_actor_id: str = "hKByXkMQaC5Qt9UMN"
     apify_timeout_seconds: int = 300
     apify_max_retries: int = 3
+    apify_memory_mbytes: int = 1024  # Memory allocation for actor (256, 512, 1024, 2048, 4096)
 
     # Apify Cost Limits
     apify_max_cost_per_run_usd: float = 1.0  # Max $1 per actor run

@@ -37,12 +37,14 @@ class ApifyClient:
         timeout_seconds: int = 300,
         max_retries: int = 3,
         max_cost_per_run_usd: float = 1.0,
+        memory_mbytes: int = 1024,
     ):
         self.api_token = api_token
         self.actor_id = actor_id
         self.timeout_seconds = timeout_seconds
         self.max_retries = max_retries
         self.max_cost_per_run_usd = max_cost_per_run_usd
+        self.memory_mbytes = memory_mbytes
 
     async def run_actor(
         self,
@@ -71,10 +73,12 @@ class ApifyClient:
         # Build the API URL for sync run with dataset items
         # Add timeout parameter to limit actor run time on Apify's side
         # Add maxTotalChargeUsd to cap costs per run
+        # Add memory to prevent OOM errors on larger scrapes
         api_url = (
             f"{APIFY_BASE_URL}/acts/{self.actor_id}/run-sync-get-dataset-items"
             f"?timeout={self.timeout_seconds}"
             f"&maxTotalChargeUsd={self.max_cost_per_run_usd}"
+            f"&memory={self.memory_mbytes}"
         )
 
         headers = {
@@ -92,7 +96,8 @@ class ApifyClient:
                 logger.info(
                     f"Running APIFY actor for {config.region.value} "
                     f"(geo_id={config.geo_id}, count={config.count}, "
-                    f"timeout={self.timeout_seconds}s, max_cost=${self.max_cost_per_run_usd})"
+                    f"timeout={self.timeout_seconds}s, memory={self.memory_mbytes}MB, "
+                    f"max_cost=${self.max_cost_per_run_usd})"
                 )
 
                 response = await client.post(
@@ -234,10 +239,12 @@ class ApifyClient:
         # Build the API URL for sync run with dataset items
         # Add timeout parameter to limit actor run time on Apify's side
         # Add maxTotalChargeUsd to cap costs per run
+        # Add memory to prevent OOM errors on larger scrapes
         api_url = (
             f"{APIFY_BASE_URL}/acts/{self.actor_id}/run-sync-get-dataset-items"
             f"?timeout={self.timeout_seconds}"
             f"&maxTotalChargeUsd={self.max_cost_per_run_usd}"
+            f"&memory={self.memory_mbytes}"
         )
 
         headers = {
@@ -255,7 +262,7 @@ class ApifyClient:
                 logger.info(
                     f"Running ad-hoc APIFY scrape: url={url}, count={count}, "
                     f"apify_timeout={self.timeout_seconds}s, http_timeout={http_timeout}s, "
-                    f"max_cost=${self.max_cost_per_run_usd}"
+                    f"memory={self.memory_mbytes}MB, max_cost=${self.max_cost_per_run_usd}"
                 )
 
                 response = await client.post(
@@ -360,4 +367,5 @@ def get_apify_client() -> ApifyClient:
         timeout_seconds=settings.apify_timeout_seconds,
         max_retries=settings.apify_max_retries,
         max_cost_per_run_usd=settings.apify_max_cost_per_run_usd,
+        memory_mbytes=settings.apify_memory_mbytes,
     )
