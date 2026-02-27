@@ -37,6 +37,7 @@ from app.schemas.scraper import (
     ScraperRunResult,
 )
 from app.services.scraping.apify_client import ApifyClientError, get_apify_client
+from app.services.scraping.cost_tracker import get_cost_tracker
 from app.services.core.cache import get_cache_service
 
 logger = logging.getLogger(__name__)
@@ -366,14 +367,33 @@ class SchedulerService:
         Execute the scraper job for all configured regions.
 
         This is the main job function that:
-        1. Iterates through all scraper configurations
-        2. Calls APIFY for each region (with concurrency control)
-        3. Batch upserts results into the database
-        4. Persists run results for audit trail
+        1. Checks budget availability
+        2. Iterates through all scraper configurations
+        3. Calls APIFY for each region (with concurrency control)
+        4. Batch upserts results into the database
+        5. Persists run results for audit trail
+        6. Records estimated cost
         """
         started_at = datetime.now(timezone.utc)
         batch_id = str(uuid.uuid4())[:8]
         logger.info(f"Starting scraper job (batch_id={batch_id}, type={run_type})")
+
+        # Check budget before running
+        cost_tracker = get_cost_tracker()
+        can_run, reason = await cost_tracker.check_budget_available()
+        if not can_run:
+            logger.warning(f"Scraper job skipped due to budget: {reason}")
+            return ScraperBatchResult(
+                status="budget_exceeded",
+                total_jobs_found=0,
+                total_jobs_created=0,
+                total_jobs_updated=0,
+                total_errors=0,
+                region_results=[],
+                started_at=started_at,
+                completed_at=datetime.now(timezone.utc),
+                duration_seconds=0,
+            )
 
         apify_client = get_apify_client()
 
@@ -459,6 +479,12 @@ class SchedulerService:
             batch_id=batch_id,
         )
 
+        # Record estimated cost (use max_cost_per_run * successful_regions as estimate)
+        if successful_regions > 0:
+            estimated_cost = successful_regions * self.settings.apify_max_cost_per_run_usd
+            await cost_tracker.record_cost(estimated_cost)
+            logger.info(f"Recorded estimated Apify cost: ${estimated_cost:.2f}")
+
         logger.info(
             f"Scraper job completed (batch_id={batch_id}): status={status}, "
             f"found={total_jobs_found}, created={total_created}, "
@@ -468,6 +494,18 @@ class SchedulerService:
 
         return batch_result
 
+    def _calculate_backoff_delay(self, attempt: int) -> int:
+        """
+        Calculate exponential backoff delay for retry attempts.
+
+        Uses base delay of 30 seconds with exponential multiplier:
+        - Attempt 0: 30s
+        - Attempt 1: 60s
+        - Attempt 2: 120s
+        """
+        base_delay = 30
+        return base_delay * (2 ** attempt)
+
     async def _process_region_with_retry(
         self,
         apify_client,
@@ -476,6 +514,7 @@ class SchedulerService:
         """
         Process a region with automatic retry for transient failures.
 
+        Uses exponential backoff (30s, 60s, 120s) for network errors.
         Distinguishes between retryable errors (network, timeout) and
         non-retryable errors (auth, validation).
         """
@@ -498,13 +537,15 @@ class SchedulerService:
 
             except (httpx.TimeoutException, httpx.NetworkError, RetryableError) as e:
                 last_error = e
+                backoff_delay = self._calculate_backoff_delay(attempt)
                 logger.warning(
                     f"Retryable error for {config.region.value} "
-                    f"(attempt {attempt + 1}): {e}"
+                    f"(attempt {attempt + 1}): {e}. "
+                    f"Retrying in {backoff_delay}s..."
                 )
 
                 if attempt < self._retry_attempts:
-                    await asyncio.sleep(self._retry_delay_seconds)
+                    await asyncio.sleep(backoff_delay)
                     continue
 
             except (ApifyClientError, httpx.HTTPStatusError) as e:
@@ -666,6 +707,23 @@ class SchedulerService:
         batch_id = str(uuid.uuid4())[:8]
         logger.info(f"Starting preset scraper job (batch_id={batch_id}, type={run_type})")
 
+        # Check budget before running
+        cost_tracker = get_cost_tracker()
+        can_run, reason = await cost_tracker.check_budget_available()
+        if not can_run:
+            logger.warning(f"Preset scraper job skipped due to budget: {reason}")
+            return ScraperBatchResult(
+                status="budget_exceeded",
+                total_jobs_found=0,
+                total_jobs_created=0,
+                total_jobs_updated=0,
+                total_errors=0,
+                region_results=[],
+                started_at=started_at,
+                completed_at=datetime.now(timezone.utc),
+                duration_seconds=0,
+            )
+
         apify_client = get_apify_client()
 
         # Get active presets from database
@@ -775,6 +833,12 @@ class SchedulerService:
             batch_id=batch_id,
         )
 
+        # Record estimated cost (use max_cost_per_run * successful_presets as estimate)
+        if successful_presets > 0:
+            estimated_cost = successful_presets * self.settings.apify_max_cost_per_run_usd
+            await cost_tracker.record_cost(estimated_cost)
+            logger.info(f"Recorded estimated Apify cost: ${estimated_cost:.2f}")
+
         # Update schedule settings with last run time
         async with AsyncSessionLocal() as db:
             try:
@@ -804,6 +868,8 @@ class SchedulerService:
     ) -> tuple[list, dict]:
         """
         Process a preset with automatic retry for transient failures.
+
+        Uses exponential backoff (30s, 60s, 120s) for network errors.
         """
         last_error = None
 
@@ -828,13 +894,15 @@ class SchedulerService:
 
             except (httpx.TimeoutException, httpx.NetworkError, RetryableError) as e:
                 last_error = e
+                backoff_delay = self._calculate_backoff_delay(attempt)
                 logger.warning(
                     f"Retryable error for preset '{preset.name}' "
-                    f"(attempt {attempt + 1}): {e}"
+                    f"(attempt {attempt + 1}): {e}. "
+                    f"Retrying in {backoff_delay}s..."
                 )
 
                 if attempt < self._retry_attempts:
-                    await asyncio.sleep(self._retry_delay_seconds)
+                    await asyncio.sleep(backoff_delay)
                     continue
 
             except (ApifyClientError, httpx.HTTPStatusError) as e:
