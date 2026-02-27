@@ -29,6 +29,7 @@ from app.models.job_listing import JobListing
 from app.schemas.scraper import (
     AdHocScrapeRequest,
     AdHocScrapeResponse,
+    ApifyCostSummary,
     ScraperBatchResult,
     ScraperStatsResponse,
     ScraperStatusResponse,
@@ -40,6 +41,7 @@ from app.schemas.scraper import (
     ScheduleSettingsResponse,
 )
 from app.services.scraping.apify_client import get_apify_client
+from app.services.scraping.cost_tracker import get_cost_tracker
 from app.services.scraping.scheduler import get_scheduler_service
 
 router = APIRouter(dependencies=[Depends(require_admin)])
@@ -179,6 +181,22 @@ async def trigger_cleanup() -> CleanupResponse:
         duration_seconds=result.get("duration_seconds"),
         error=result.get("error"),
     )
+
+
+@router.get("/scraper/costs", response_model=ApifyCostSummary)
+async def get_apify_cost_summary() -> ApifyCostSummary:
+    """
+    Get current Apify cost usage and limits.
+
+    Returns daily and weekly cost tracking information including:
+    - Amount spent today/this week
+    - Configured spending limits
+    - Remaining budget
+    - Whether any limit has been exceeded
+    """
+    cost_tracker = get_cost_tracker()
+    usage = await cost_tracker.get_current_usage()
+    return ApifyCostSummary(**usage)
 
 
 @router.get("/scraper/stats", response_model=ScraperStatsResponse)
