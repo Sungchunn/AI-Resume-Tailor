@@ -68,6 +68,8 @@ import type {
   ImproveSectionResponse,
   AIChatRequest,
   AIChatResponse,
+  ParseTaskResponse,
+  ParseStatusResponse,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -254,6 +256,15 @@ export const resumeApi = {
     }
     return response.blob();
   },
+
+  // Parse operations
+  parse: (id: number, force = false): Promise<ParseTaskResponse> =>
+    fetchApi(`/api/resumes/${id}/parse${force ? "?force=true" : ""}`, {
+      method: "POST",
+    }),
+
+  getParseStatus: (id: number, taskId: string): Promise<ParseStatusResponse> =>
+    fetchApi(`/api/resumes/${id}/parse/status?task_id=${encodeURIComponent(taskId)}`),
 };
 
 // Job API

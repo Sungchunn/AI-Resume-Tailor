@@ -771,3 +771,19 @@ export interface AIChatResponse {
   improved_content: string | null;
   action_type: AIChatActionType;
 }
+
+// ============================================================================
+// Parse Task Types (Resume AI Parsing)
+// ============================================================================
+
+export type ParseTaskStatus = "pending" | "completed" | "failed";
+
+export interface ParseTaskResponse {
+  task_id: string;
+  status: ParseTaskStatus;
+  resume_id: number;
+}
+
+export interface ParseStatusResponse extends ParseTaskResponse {
+  error?: string | null;
+}

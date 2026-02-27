@@ -47,6 +47,8 @@ export const queryKeys = {
     all: ["resumes"] as const,
     list: () => [...queryKeys.resumes.all, "list"] as const,
     detail: (id: number) => [...queryKeys.resumes.all, "detail", id] as const,
+    parseStatus: (resumeId: number, taskId: string) =>
+      [...queryKeys.resumes.all, "parseStatus", resumeId, taskId] as const,
   },
   jobs: {
     all: ["jobs"] as const,
@@ -175,6 +177,29 @@ export function useExportResume() {
       resumeId: number;
       data: import("./types").ResumeExportRequest;
     }) => resumeApi.export(resumeId, data),
+  });
+}
+
+// Trigger parse mutation
+export function useParseResume() {
+  return useMutation({
+    mutationFn: ({ id, force = false }: { id: number; force?: boolean }) =>
+      resumeApi.parse(id, force),
+  });
+}
+
+// Poll for parse status (enabled when taskId is set)
+export function useParseStatus(resumeId: number, taskId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.resumes.parseStatus(resumeId, taskId ?? ""),
+    queryFn: () => resumeApi.getParseStatus(resumeId, taskId!),
+    enabled: !!taskId,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      // Stop polling when completed or failed
+      if (status === "completed" || status === "failed") return false;
+      return 3000; // Poll every 3 seconds
+    },
   });
 }
 
