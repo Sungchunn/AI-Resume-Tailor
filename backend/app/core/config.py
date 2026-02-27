@@ -67,6 +67,11 @@ class Settings(BaseSettings):
     apify_timeout_seconds: int = 300
     apify_max_retries: int = 3
 
+    # Apify Cost Limits
+    apify_max_cost_per_run_usd: float = 1.0  # Max $1 per actor run
+    apify_daily_cost_limit_usd: float = 5.0  # Max $5 per day
+    apify_weekly_cost_limit_usd: float = 20.0  # Max $20 per week
+
     # Scraper Schedule
     scraper_schedule_hour: int = 6  # UTC
     scraper_schedule_minute: int = 0
