@@ -49,8 +49,8 @@ class RateLimitConfig:
     upload_requests_per_hour: int = 100
 
     # Admin scraper endpoint limits (restrictive due to external API costs)
-    admin_scraper_requests_per_minute: int = 5
-    admin_scraper_requests_per_hour: int = 20
+    admin_scraper_requests_per_minute: int = 2
+    admin_scraper_requests_per_hour: int = 10
 
     # Sliding window size in seconds
     window_size_minutes: int = 60
