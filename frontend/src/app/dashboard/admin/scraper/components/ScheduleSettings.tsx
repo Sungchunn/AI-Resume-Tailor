@@ -14,31 +14,40 @@ const DAYS_OF_WEEK = [
   { value: 6, label: "Sunday" },
 ];
 
-const ALL_HOURS = [
-  { value: 0, label: "12 AM" },
-  { value: 1, label: "1 AM" },
-  { value: 2, label: "2 AM" },
-  { value: 3, label: "3 AM" },
-  { value: 4, label: "4 AM" },
-  { value: 5, label: "5 AM" },
-  { value: 6, label: "6 AM" },
-  { value: 7, label: "7 AM" },
-  { value: 8, label: "8 AM" },
-  { value: 9, label: "9 AM" },
-  { value: 10, label: "10 AM" },
-  { value: 11, label: "11 AM" },
-  { value: 12, label: "12 PM" },
-  { value: 13, label: "1 PM" },
-  { value: 14, label: "2 PM" },
-  { value: 15, label: "3 PM" },
-  { value: 16, label: "4 PM" },
-  { value: 17, label: "5 PM" },
-  { value: 18, label: "6 PM" },
-  { value: 19, label: "7 PM" },
-  { value: 20, label: "8 PM" },
-  { value: 21, label: "9 PM" },
-  { value: 22, label: "10 PM" },
-  { value: 23, label: "11 PM" },
+const HOURS_12 = [
+  { value: 12, label: "12" },
+  { value: 1, label: "1" },
+  { value: 2, label: "2" },
+  { value: 3, label: "3" },
+  { value: 4, label: "4" },
+  { value: 5, label: "5" },
+  { value: 6, label: "6" },
+  { value: 7, label: "7" },
+  { value: 8, label: "8" },
+  { value: 9, label: "9" },
+  { value: 10, label: "10" },
+  { value: 11, label: "11" },
+];
+
+// Convert 24-hour to 12-hour format
+const to12Hour = (hour24: number): { hour: number; period: "AM" | "PM" } => {
+  if (hour24 === 0) return { hour: 12, period: "AM" };
+  if (hour24 === 12) return { hour: 12, period: "PM" };
+  if (hour24 > 12) return { hour: hour24 - 12, period: "PM" };
+  return { hour: hour24, period: "AM" };
+};
+
+// Convert 12-hour to 24-hour format
+const to24Hour = (hour12: number, period: "AM" | "PM"): number => {
+  if (hour12 === 12) return period === "AM" ? 0 : 12;
+  return period === "AM" ? hour12 : hour12 + 12;
+};
+
+const MINUTES = [
+  { value: 0, label: ":00" },
+  { value: 15, label: ":15" },
+  { value: 30, label: ":30" },
+  { value: 45, label: ":45" },
 ];
 
 export default function ScheduleSettings() {
@@ -47,23 +56,30 @@ export default function ScheduleSettings() {
   const { mutate: toggleSchedule, isPending: isToggling } = useToggleSchedule();
 
   const [scheduleType, setScheduleType] = useState<ScheduleType>("daily");
-  const [scheduleHour, setScheduleHour] = useState(2);
+  const [hour12, setHour12] = useState(2);
+  const [period, setPeriod] = useState<"AM" | "PM">("AM");
+  const [scheduleMinute, setScheduleMinute] = useState(0);
   const [scheduleDayOfWeek, setScheduleDayOfWeek] = useState<number | null>(null);
 
   // Sync local state with server data
   useEffect(() => {
     if (settings) {
       setScheduleType(settings.schedule_type);
-      setScheduleHour(settings.schedule_hour);
+      const { hour, period: p } = to12Hour(settings.schedule_hour);
+      setHour12(hour);
+      setPeriod(p);
+      setScheduleMinute(settings.schedule_minute);
       setScheduleDayOfWeek(settings.schedule_day_of_week);
     }
   }, [settings]);
 
+  const scheduleHour24 = to24Hour(hour12, period);
+
   const handleSave = () => {
     updateSettings({
       schedule_type: scheduleType,
-      schedule_hour: scheduleHour,
-      schedule_minute: 0,
+      schedule_hour: scheduleHour24,
+      schedule_minute: scheduleMinute,
       schedule_day_of_week: scheduleType === "weekly" ? scheduleDayOfWeek : null,
     });
   };
@@ -71,7 +87,8 @@ export default function ScheduleSettings() {
   const hasChanges =
     settings &&
     (scheduleType !== settings.schedule_type ||
-      scheduleHour !== settings.schedule_hour ||
+      scheduleHour24 !== settings.schedule_hour ||
+      scheduleMinute !== settings.schedule_minute ||
       scheduleDayOfWeek !== settings.schedule_day_of_week);
 
   if (isLoading) {
@@ -170,26 +187,42 @@ export default function ScheduleSettings() {
           </div>
         )}
 
-        {/* Hour */}
+        {/* Time Selection */}
         <div>
           <label className="block text-sm font-medium text-foreground/80 mb-2">
             Time (Bangkok)
           </label>
-          <div className="grid grid-cols-6 gap-1.5">
-            {ALL_HOURS.map((hour) => (
-              <button
-                key={hour.value}
-                type="button"
-                onClick={() => setScheduleHour(hour.value)}
-                className={`px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  scheduleHour === hour.value
-                    ? "bg-primary text-white"
-                    : "bg-muted text-foreground/80 hover:bg-muted/80"
-                }`}
-              >
-                {hour.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <select
+              value={hour12}
+              onChange={(e) => setHour12(parseInt(e.target.value))}
+              className="block w-20 rounded-md border-input bg-background px-3 py-2 text-sm shadow-sm focus:border-ring focus:ring-ring"
+            >
+              {HOURS_12.map((hour) => (
+                <option key={hour.value} value={hour.value}>
+                  {hour.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={scheduleMinute}
+              onChange={(e) => setScheduleMinute(parseInt(e.target.value))}
+              className="block w-20 rounded-md border-input bg-background px-3 py-2 text-sm shadow-sm focus:border-ring focus:ring-ring"
+            >
+              {MINUTES.map((minute) => (
+                <option key={minute.value} value={minute.value}>
+                  {minute.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value as "AM" | "PM")}
+              className="block w-20 rounded-md border-input bg-background px-3 py-2 text-sm shadow-sm focus:border-ring focus:ring-ring"
+            >
+              <option value="AM">AM</option>
+              <option value="PM">PM</option>
+            </select>
           </div>
         </div>
 
