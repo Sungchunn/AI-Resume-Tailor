@@ -289,12 +289,167 @@ When a resume is processed, the `parsed_content` field contains extracted inform
 }
 ```
 
+---
+
+## AI Parsing
+
+### Trigger Parse
+
+Trigger background AI parsing of a resume's raw content.
+
+```http
+POST /api/resumes/{resume_id}/parse
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `resume_id` | integer | Resume identifier |
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `force` | boolean | false | Bypass cache and re-parse |
+
+**Example Request:**
+
+```bash
+curl -X POST "http://localhost:8000/api/resumes/1/parse?force=true" \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "task_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "pending",
+  "resume_id": 1
+}
+```
+
+**Error Responses:**
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Resume has no content to parse |
+| 403 | Resume belongs to another user |
+| 404 | Resume not found |
+
+---
+
+### Get Parse Status
+
+Poll for parse task completion status.
+
+```http
+GET /api/resumes/{resume_id}/parse/status
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `resume_id` | integer | Resume identifier |
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `task_id` | string | Yes | Task ID returned from POST /parse |
+
+**Example Request:**
+
+```bash
+curl "http://localhost:8000/api/resumes/1/parse/status?task_id=550e8400-e29b-41d4-a716-446655440000" \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response (200 OK) - Pending:**
+
+```json
+{
+  "task_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "pending",
+  "resume_id": 1,
+  "error": null
+}
+```
+
+**Response (200 OK) - Completed:**
+
+```json
+{
+  "task_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "completed",
+  "resume_id": 1,
+  "error": null
+}
+```
+
+**Response (200 OK) - Failed:**
+
+```json
+{
+  "task_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "failed",
+  "resume_id": 1,
+  "error": "AI service unavailable"
+}
+```
+
+**Error Responses:**
+
+| Status | Condition |
+|--------|-----------|
+| 403 | Resume belongs to another user |
+| 404 | Resume or task not found |
+
+**Status Values:**
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Task is still running |
+| `completed` | Parsing finished, resume.parsed_content updated |
+| `failed` | Parsing failed, check error field |
+
+---
+
+## Data Models
+
+### ParseTaskResponse
+
+```typescript
+{
+  task_id: string;               // UUID of the background task
+  status: "pending" | "completed" | "failed";
+  resume_id: number;
+}
+```
+
+### ParseStatusResponse
+
+```typescript
+{
+  task_id: string;
+  status: "pending" | "completed" | "failed";
+  resume_id: number;
+  error?: string | null;         // Error message if failed
+}
+```
+
+---
+
 ## Usage Notes
 
-- Resumes are automatically parsed when created/updated to extract structured content
+- Parsing uses AI to extract structured content from raw resume text
 - The parsed content is used by the tailoring system for matching
 - Raw content is preserved for export and editing
 - Each user can have multiple resumes for different purposes
+- Parse tasks expire after 1 hour
+- Use `force=true` to bypass cache and re-parse content
 
 ## Related Endpoints
 
