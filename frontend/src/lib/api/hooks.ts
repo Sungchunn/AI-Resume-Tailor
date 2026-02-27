@@ -767,6 +767,20 @@ export function useAdhocScrape() {
   });
 }
 
+export function useTriggerScraper() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => adminApi.triggerScraper(),
+    onSuccess: () => {
+      // Invalidate job listings to show newly scraped jobs
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.all });
+      // Invalidate schedule settings to update last_run_at
+      queryClient.invalidateQueries({ queryKey: queryKeys.scheduleSettings.all });
+    },
+  });
+}
+
 // Scraper Preset Hooks
 export function useScraperPresets() {
   return useQuery({

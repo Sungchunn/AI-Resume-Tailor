@@ -580,6 +580,28 @@ export interface AdHocScrapeResponse {
   duration_seconds: number | null;
 }
 
+export interface ScraperRegionResult {
+  region: string;
+  status: string;
+  jobs_found: number;
+  jobs_created: number;
+  jobs_updated: number;
+  errors: number;
+  error_details: Array<Record<string, unknown>>;
+  duration_seconds: number | null;
+}
+
+export interface ScraperBatchResult {
+  status: string;
+  started_at: string;
+  completed_at: string | null;
+  total_jobs_found: number;
+  total_jobs_created: number;
+  total_jobs_updated: number;
+  total_errors: number;
+  region_results: ScraperRegionResult[];
+}
+
 // ============================================================================
 // Scraper Preset Types
 // ============================================================================

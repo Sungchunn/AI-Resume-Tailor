@@ -53,6 +53,7 @@ import type {
   JobInteractionActionResponse,
   AdHocScrapeRequest,
   AdHocScrapeResponse,
+  ScraperBatchResult,
   JobListingFilterOptionsResponse,
   ScraperPresetCreate,
   ScraperPresetUpdate,
@@ -648,6 +649,11 @@ export const adminApi = {
     fetchApi("/api/admin/scraper/adhoc", {
       method: "POST",
       body: JSON.stringify(data),
+    }),
+
+  triggerScraper: (): Promise<ScraperBatchResult> =>
+    fetchApi("/api/admin/scraper/trigger", {
+      method: "POST",
     }),
 
   // Scraper Presets
