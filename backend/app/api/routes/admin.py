@@ -121,14 +121,14 @@ async def get_scraper_status() -> ScraperStatusResponse:
 @router.post("/scraper/trigger", response_model=ScraperBatchResult)
 async def trigger_scraper() -> ScraperBatchResult:
     """
-    Manually trigger the scraper job.
+    Manually trigger the scraper job using database presets.
 
     This endpoint allows manual triggering of the scraper for
     testing or on-demand data refresh. The scraper will run
-    for all configured regions.
+    for all active presets configured in the database.
 
     Note: This is a long-running operation that may take several
-    minutes depending on the number of regions and jobs to fetch.
+    minutes depending on the number of presets and jobs to fetch.
 
     Uses distributed locking to prevent duplicate runs if another
     instance is already running the scraper.
@@ -141,7 +141,7 @@ async def trigger_scraper() -> ScraperBatchResult:
             detail="Scraper is disabled via configuration",
         )
 
-    result = await scheduler.trigger_scraper_now(triggered_by="api_manual")
+    result = await scheduler.trigger_preset_scraper_now(triggered_by="api_manual")
 
     # Check if job was skipped due to lock
     if result.status == "skipped":
