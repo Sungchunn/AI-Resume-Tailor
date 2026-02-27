@@ -38,3 +38,20 @@ class ResumeResponse(ResumeBase):
     updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+class ParseTaskResponse(BaseModel):
+    """Response when triggering a parse task."""
+
+    task_id: str
+    status: Literal["pending", "completed", "failed"]
+    resume_id: int
+
+
+class ParseStatusResponse(BaseModel):
+    """Response when checking parse task status."""
+
+    task_id: str
+    status: Literal["pending", "completed", "failed"]
+    resume_id: int
+    error: str | None = None
