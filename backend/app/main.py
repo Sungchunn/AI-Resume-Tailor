@@ -18,6 +18,9 @@ async def lifespan(app: FastAPI):
     scheduler = get_scheduler_service()
     scheduler.start()
 
+    # Load schedule settings from database and register preset-based job
+    await scheduler.reconfigure_from_db()
+
     yield
 
     # Shutdown: Stop scheduler gracefully
