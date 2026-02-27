@@ -569,6 +569,7 @@ async def update_schedule_settings(
         schedule_hour=request.schedule_hour,
         schedule_minute=request.schedule_minute,
         schedule_day_of_week=request.schedule_day_of_week,
+        schedule_timezone=request.schedule_timezone,
     )
     await db.commit()
 

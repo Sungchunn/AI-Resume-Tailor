@@ -253,19 +253,19 @@ class SchedulerService:
                 logger.info("Scraper schedule disabled, no job registered")
                 return
 
-            # Create new trigger based on schedule type
+            # Create new trigger based on schedule type with dynamic timezone
             if settings.schedule_type == "weekly" and settings.schedule_day_of_week is not None:
                 trigger = CronTrigger(
                     day_of_week=settings.schedule_day_of_week,
                     hour=settings.schedule_hour,
                     minute=settings.schedule_minute,
-                    timezone="UTC",
+                    timezone=settings.schedule_timezone,
                 )
             else:
                 trigger = CronTrigger(
                     hour=settings.schedule_hour,
                     minute=settings.schedule_minute,
-                    timezone="UTC",
+                    timezone=settings.schedule_timezone,
                 )
 
             self.scheduler.add_job(
@@ -278,7 +278,7 @@ class SchedulerService:
 
             logger.info(
                 f"Scraper job reconfigured: {settings.schedule_type} at "
-                f"{settings.schedule_hour:02d}:{settings.schedule_minute:02d} UTC"
+                f"{settings.schedule_hour:02d}:{settings.schedule_minute:02d} {settings.schedule_timezone}"
             )
 
     async def _acquire_lock(self, lock_id: str) -> bool:

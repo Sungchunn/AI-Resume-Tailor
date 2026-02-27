@@ -9,6 +9,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -217,6 +218,18 @@ class ScheduleSettingsUpdate(BaseModel):
     schedule_hour: int | None = Field(default=None, ge=0, le=23)
     schedule_minute: int | None = Field(default=None, ge=0, le=59)
     schedule_day_of_week: int | None = Field(default=None, ge=0, le=6)
+    schedule_timezone: str | None = Field(default=None, max_length=50)
+
+    @field_validator("schedule_timezone")
+    @classmethod
+    def validate_timezone(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        try:
+            ZoneInfo(v)
+            return v
+        except KeyError:
+            raise ValueError(f"Invalid timezone: {v}")
 
 
 class ScheduleSettingsResponse(BaseModel):
@@ -227,6 +240,7 @@ class ScheduleSettingsResponse(BaseModel):
     schedule_hour: int
     schedule_minute: int
     schedule_day_of_week: int | None
+    schedule_timezone: str
     last_run_at: datetime | None
     next_run_at: datetime | None
     updated_at: datetime | None

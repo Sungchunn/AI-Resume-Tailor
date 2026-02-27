@@ -37,6 +37,7 @@ class ScraperScheduleSettings(Base):
     schedule_hour = Column(Integer, nullable=False, default=2)  # 0-23 UTC
     schedule_minute = Column(Integer, nullable=False, default=0)  # 0-59
     schedule_day_of_week = Column(Integer, nullable=True)  # 0-6 (Mon=0), only for weekly
+    schedule_timezone = Column(String(50), nullable=False, default="Asia/Bangkok")
 
     # Tracking
     last_run_at = Column(DateTime(timezone=True), nullable=True)
@@ -47,4 +48,4 @@ class ScraperScheduleSettings(Base):
 
     def __repr__(self) -> str:
         status = "enabled" if self.is_enabled else "disabled"
-        return f"<ScraperScheduleSettings {self.schedule_type} at {self.schedule_hour:02d}:{self.schedule_minute:02d} UTC ({status})>"
+        return f"<ScraperScheduleSettings {self.schedule_type} at {self.schedule_hour:02d}:{self.schedule_minute:02d} {self.schedule_timezone} ({status})>"

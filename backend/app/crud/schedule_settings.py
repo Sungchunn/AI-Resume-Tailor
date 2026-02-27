@@ -39,6 +39,7 @@ class ScheduleSettingsRepository:
                 schedule_hour=2,
                 schedule_minute=0,
                 schedule_day_of_week=None,
+                schedule_timezone="Asia/Bangkok",
             )
             db.add(settings)
             await db.flush()
@@ -55,6 +56,7 @@ class ScheduleSettingsRepository:
         schedule_hour: int | None = None,
         schedule_minute: int | None = None,
         schedule_day_of_week: int | None = None,
+        schedule_timezone: str | None = None,
     ) -> ScraperScheduleSettings:
         """
         Update schedule settings.
@@ -63,9 +65,10 @@ class ScheduleSettingsRepository:
             db: Database session
             is_enabled: Global on/off toggle
             schedule_type: "daily" or "weekly"
-            schedule_hour: Hour of day (0-23 UTC)
+            schedule_hour: Hour of day (0-23)
             schedule_minute: Minute of hour (0-59)
             schedule_day_of_week: Day of week (0-6, Mon=0) for weekly
+            schedule_timezone: IANA timezone string (e.g. "Asia/Bangkok")
 
         Returns:
             Updated ScraperScheduleSettings
@@ -85,6 +88,8 @@ class ScheduleSettingsRepository:
         # Handle explicit None for day_of_week when switching to daily
         elif schedule_type == "daily":
             settings.schedule_day_of_week = None
+        if schedule_timezone is not None:
+            settings.schedule_timezone = schedule_timezone
 
         await db.flush()
         await db.refresh(settings)
