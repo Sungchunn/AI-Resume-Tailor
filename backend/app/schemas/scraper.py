@@ -234,6 +234,23 @@ class ScheduleSettingsResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ============================================================================
+# Apify Cost Tracking Schemas
+# ============================================================================
+
+
+class ApifyCostSummary(BaseModel):
+    """Response for Apify cost monitoring endpoint."""
+
+    daily_used_usd: float = Field(..., description="Amount spent today in USD")
+    daily_limit_usd: float = Field(..., description="Daily spending limit in USD")
+    daily_remaining_usd: float = Field(..., description="Remaining daily budget in USD")
+    weekly_used_usd: float = Field(..., description="Amount spent this week in USD")
+    weekly_limit_usd: float = Field(..., description="Weekly spending limit in USD")
+    weekly_remaining_usd: float = Field(..., description="Remaining weekly budget in USD")
+    budget_exceeded: bool = Field(..., description="Whether any budget limit has been exceeded")
+
+
 # Hardcoded scraper configurations using exact user URLs
 # TODO: Re-enable all regions after testing
 SCRAPER_CONFIGS = [
