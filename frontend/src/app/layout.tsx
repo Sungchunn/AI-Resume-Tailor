@@ -7,6 +7,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "AI Resume Tailor",
   description: "AI-powered resume customization for job applications",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-icon.svg",
+  },
 };
 
 export default function RootLayout({
