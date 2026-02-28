@@ -35,7 +35,7 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
       {/* Left: Back button, Title, and Score */}
       <div className="flex items-center gap-3">
         <Link
-          href="/dashboard/tailor"
+          href="/tailor"
           className="p-1 text-muted-foreground hover:text-foreground/80 hover:bg-accent rounded"
         >
           <ChevronLeftIcon className="w-5 h-5" />

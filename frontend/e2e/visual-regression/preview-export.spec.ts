@@ -114,12 +114,12 @@ test.describe("Preview vs PDF Export Visual Comparison", () => {
     await page.fill('[name="email"]', process.env.TEST_USER_EMAIL ?? "test@example.com");
     await page.fill('[name="password"]', process.env.TEST_USER_PASSWORD ?? "testpassword");
     await page.click('button[type="submit"]');
-    await page.waitForURL("/dashboard/**");
+    await page.waitForURL("/jobs");
   });
 
   test("preview matches PDF export for basic resume", async ({ page }) => {
     // Navigate to workshop with test resume
-    await page.goto("/dashboard/workshop/test-resume-id");
+    await page.goto("/workshop/test-resume-id");
     await page.waitForSelector(".resume-preview-container");
 
     // Take screenshot of preview
@@ -140,7 +140,7 @@ test.describe("Preview vs PDF Export Visual Comparison", () => {
   });
 
   test("font rendering matches between preview and export", async ({ page }) => {
-    await page.goto("/dashboard/workshop/test-resume-id");
+    await page.goto("/workshop/test-resume-id");
     await page.waitForSelector(".resume-preview-container");
 
     // Change font to test font rendering
@@ -160,7 +160,7 @@ test.describe("Preview vs PDF Export Visual Comparison", () => {
   });
 
   test("section spacing matches between preview and PDF", async ({ page }) => {
-    await page.goto("/dashboard/workshop/test-resume-id");
+    await page.goto("/workshop/test-resume-id");
     await page.waitForSelector(".resume-preview-container");
 
     // Adjust section spacing
@@ -180,7 +180,7 @@ test.describe("Preview vs PDF Export Visual Comparison", () => {
   });
 
   test("margins match between preview and PDF", async ({ page }) => {
-    await page.goto("/dashboard/workshop/test-resume-id");
+    await page.goto("/workshop/test-resume-id");
     await page.waitForSelector(".resume-preview-container");
 
     // Adjust margins
@@ -204,7 +204,7 @@ test.describe("Preview vs PDF Export Visual Comparison", () => {
 
   test("multi-page documents paginate identically", async ({ page }) => {
     // Use a resume with lots of content that spans multiple pages
-    await page.goto("/dashboard/workshop/long-resume-id");
+    await page.goto("/workshop/long-resume-id");
     await page.waitForSelector(".resume-preview-container");
 
     // Verify pagination shows >1 page
@@ -231,7 +231,7 @@ test.describe("Preview vs PDF Export Visual Comparison", () => {
   });
 
   test("page breaks occur at same points", async ({ page }) => {
-    await page.goto("/dashboard/workshop/long-resume-id");
+    await page.goto("/workshop/long-resume-id");
     await page.waitForSelector(".resume-preview-container");
 
     // Get the last element on page 1 in preview
@@ -253,7 +253,7 @@ test.describe("Preview vs PDF Export Visual Comparison", () => {
   test("fit-to-one-page produces identical preview and PDF", async ({
     page,
   }) => {
-    await page.goto("/dashboard/workshop/long-resume-id");
+    await page.goto("/workshop/long-resume-id");
     await page.waitForSelector(".resume-preview-container");
 
     // Enable fit to one page
@@ -276,7 +276,7 @@ test.describe("Preview vs PDF Export Visual Comparison", () => {
 
 test.describe("Line Height Visual Consistency", () => {
   test("line height setting produces identical results", async ({ page }) => {
-    await page.goto("/dashboard/workshop/test-resume-id");
+    await page.goto("/workshop/test-resume-id");
     await page.waitForSelector(".resume-preview-container");
 
     const lineHeights = [1.2, 1.4, 1.6, 1.8];
@@ -304,7 +304,7 @@ test.describe("Line Height Visual Consistency", () => {
 
 test.describe("Font Size Visual Consistency", () => {
   test("different font sizes produce consistent results", async ({ page }) => {
-    await page.goto("/dashboard/workshop/test-resume-id");
+    await page.goto("/workshop/test-resume-id");
     await page.waitForSelector(".resume-preview-container");
 
     const fontSizes = [10, 11, 12];

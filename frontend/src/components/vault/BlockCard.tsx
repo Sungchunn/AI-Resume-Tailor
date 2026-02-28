@@ -119,7 +119,7 @@ export function BlockCard({
       {!selectable && (
         <div className="mt-4 flex items-center gap-2 border-t pt-3">
           <Link
-            href={`/dashboard/vault/${block.id}`}
+            href={`/library/vault/${block.id}`}
             className="btn-secondary text-sm py-1.5"
           >
             View

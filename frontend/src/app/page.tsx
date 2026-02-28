@@ -27,7 +27,7 @@ export default function LandingPage() {
                   <Link href="/signup" className="btn-primary text-base px-8 py-3">
                     Get Started Free
                   </Link>
-                  <Link href="/dashboard/jobs" className="btn-secondary text-base px-8 py-3">
+                  <Link href="/jobs" className="btn-secondary text-base px-8 py-3">
                     View Demo
                   </Link>
                 </div>

@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (credentials: UserLogin) => {
     await authApi.login(credentials);
     await refreshUser();
-    router.push("/dashboard/jobs");
+    router.push("/jobs");
   };
 
   const register = async (data: UserCreate) => {

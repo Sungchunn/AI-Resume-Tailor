@@ -49,9 +49,9 @@ const HamburgerIcon = ({ isOpen }: { isOpen: boolean }) => (
 // Navigation links configuration
 const navigationLinks = [
   { href: "#how-it-works", label: "How It Works" },
-  { href: "/dashboard/jobs", label: "Jobs", protected: true },
-  { href: "/dashboard/library", label: "Library", protected: true },
-  { href: "/dashboard/tailor", label: "Tailor", protected: true },
+  { href: "/jobs", label: "Jobs", protected: true },
+  { href: "/library", label: "Library", protected: true },
+  { href: "/tailor", label: "Tailor", protected: true },
 ];
 
 export function Header() {
@@ -169,7 +169,7 @@ export function Header() {
 
           {/* Logo */}
           <Link
-            href={isAuthenticated ? "/dashboard/jobs" : "/"}
+            href={isAuthenticated ? "/jobs" : "/"}
             className="flex items-center gap-3 hover:opacity-90 transition-opacity"
           >
             <div className="h-11 w-11 rounded-xl bg-linear-to-b from-primary to-primary/80 flex items-center justify-center shadow-md">

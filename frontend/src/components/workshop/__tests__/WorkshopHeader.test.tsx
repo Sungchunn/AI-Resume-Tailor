@@ -152,7 +152,7 @@ describe("WorkshopHeader", () => {
       );
 
       const backLink = screen.getByTestId("back-link");
-      expect(backLink).toHaveAttribute("href", "/dashboard/tailor");
+      expect(backLink).toHaveAttribute("href", "/tailor");
     });
 
     it("renders title with tailored resume ID", () => {

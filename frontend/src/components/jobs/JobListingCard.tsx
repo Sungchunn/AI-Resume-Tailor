@@ -68,7 +68,7 @@ export function JobListingCard({ listing }: JobListingCardProps) {
 
   return (
     <Link
-      href={`/dashboard/jobs/${listing.id}`}
+      href={`/jobs/${listing.id}`}
       className="block bg-card rounded-lg border border-border hover:border-primary-300 hover:shadow-md transition-all p-4"
     >
       <div className="flex justify-between items-start">

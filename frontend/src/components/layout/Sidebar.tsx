@@ -15,17 +15,17 @@ import {
 const sidebarNavigation = [
   {
     name: "Jobs",
-    href: "/dashboard/jobs",
+    href: "/jobs",
     icon: BriefcaseIcon,
   },
   {
     name: "Library",
-    href: "/dashboard/library",
+    href: "/library",
     icon: LibraryIcon,
   },
   {
     name: "Tailor",
-    href: "/dashboard/tailor",
+    href: "/tailor",
     icon: SparklesIcon,
   },
 ];
@@ -78,7 +78,7 @@ export function Sidebar() {
         {/* Logo section */}
         <div className={`pt-8 pb-4 ${isCollapsed ? "px-3" : "px-4"}`}>
           <Link
-            href="/dashboard/jobs"
+            href="/jobs"
             className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}
           >
             <div className="h-14 w-14 shrink-0 rounded-xl bg-linear-to-b from-primary to-primary/80 flex items-center justify-center shadow-md">
@@ -144,9 +144,9 @@ export function Sidebar() {
         {user?.is_admin && (
           <div className={`py-2 ${isCollapsed ? "px-2" : "px-3"}`}>
             <Link
-              href="/dashboard/admin/scraper"
+              href="/admin/scraper"
               className={`w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-sm font-medium transition-all duration-150 ${
-                pathname === "/dashboard/admin/scraper"
+                pathname === "/admin/scraper"
                   ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
                   : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               } ${isCollapsed ? "justify-center px-2" : ""}`}
@@ -254,7 +254,7 @@ export function Sidebar() {
                 }`}
               >
                 <Link
-                  href="/dashboard/settings"
+                  href="/settings"
                   className="flex items-center gap-2.5 px-3 py-2 text-sm text-popover-foreground hover:bg-accent transition-colors"
                   onClick={() => setIsUserMenuOpen(false)}
                 >
