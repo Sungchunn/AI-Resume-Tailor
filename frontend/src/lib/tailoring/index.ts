@@ -53,3 +53,16 @@ export {
   isDraftModified,
   getAcceptedCount,
 } from "./operations";
+
+// Text diff utilities (word-level diffing)
+export type { DiffPart, WordDiffResult } from "./textDiff";
+
+export {
+  computeWordDiff,
+  hasMeaningfulDiff,
+  getDiffSummaryText,
+  getDiffPartClassName,
+  getDiffPartStyle,
+  truncateText,
+  getChangePreview,
+} from "./textDiff";
