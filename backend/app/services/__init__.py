@@ -44,8 +44,7 @@ from app.services.resume.parser import (
 from app.services.resume.tailor import (
     TailoringService,
     TailoringResult,
-    Suggestion,
-    TailoredContent,
+    TailoringValidationError,
 )
 from app.services.resume.block_splitter import BlockSplitter, get_block_splitter
 from app.services.resume.block_classifier import BlockClassifier, get_block_classifier
@@ -110,8 +109,7 @@ __all__ = [
     "Education",
     "TailoringService",
     "TailoringResult",
-    "Suggestion",
-    "TailoredContent",
+    "TailoringValidationError",
     "BlockSplitter",
     "get_block_splitter",
     "BlockClassifier",

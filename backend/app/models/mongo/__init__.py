@@ -16,8 +16,9 @@ from app.models.mongo.tailored_resume import (
     TailoredResumeDocument,
     TailoredResumeCreate,
     TailoredResumeUpdate,
+    TailoredResumeFinalize,
+    TailoredResumeStatus,
     JobSource,
-    Suggestion,
     ATSKeywords,
 )
 from app.models.mongo.resume_build import (
@@ -45,8 +46,9 @@ __all__ = [
     "TailoredResumeDocument",
     "TailoredResumeCreate",
     "TailoredResumeUpdate",
+    "TailoredResumeFinalize",
+    "TailoredResumeStatus",
     "JobSource",
-    "Suggestion",
     "ATSKeywords",
     # Resume Build
     "ResumeBuildDocument",

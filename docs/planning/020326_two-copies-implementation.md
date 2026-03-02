@@ -558,25 +558,25 @@ function computeDiff(
 
 // UI structure:
 // ┌─────────────────────────────────────────────────────────┐
-// │ Summary                         [Accept ✓] [Reject ✗]  │
+// │ Summary                         [Accept ✓] [Reject ✗]   │
 // │ ┌─ Original ──────────────────────────────────────────┐ │
 // │ │ "Experienced software engineer..."                  │ │
-// │ └────────────────────────────────────────────────────┘ │
-// │ ┌─ AI Proposed (highlighted word-level changes) ─────┐ │
+// │ └───────────────────────────────────────────-─────────┘ │
+// │ ┌─ AI Proposed (highlighted word-level changes) ─────-┐ │
 // │ │ "Full-stack developer with..."                      │ │
-// │ └────────────────────────────────────────────────────┘ │
+// │ └───────────────────────────────────────────────────-─┘ │
 // ├─────────────────────────────────────────────────────────┤
 // │ Experience — FitSloth             [Accept All] [Reject] │
-// │   • Bullet 1 (changed)           [Accept ✓] [Reject ✗] │
-// │   • Bullet 2 (unchanged)         ── no action ──       │
-// │   • Bullet 3 (changed)           [Accept ✓] [Reject ✗] │
-// │   • Bullet 4 (NEW — AI added)    [Accept ✓] [Dismiss]  │
+// │   • Bullet 1 (changed)           [Accept ✓] [Reject ✗]  │
+// │   • Bullet 2 (unchanged)         ── no action ──        │
+// │   • Bullet 3 (changed)           [Accept ✓] [Reject ✗]  │
+// │   • Bullet 4 (NEW — AI added)    [Accept ✓] [Dismiss]   │
 // ├─────────────────────────────────────────────────────────┤
 // │ Skills                            [Accept ✓] [Reject ✗] │
-// │ ┌─ Changes ──────────────────────────────────────────┐ │
-// │ │ Added: "FastAPI", "Pydantic"                       │ │
-// │ │ Removed: "Express.js"                              │ │
-// │ └────────────────────────────────────────────────────┘ │
+// │ ┌─ Changes ──────────────────────────────────────────┐  │
+// │ │ Added: "FastAPI", "Pydantic"                       │  │
+// │ │ Removed: "Express.js"                              │  │
+// │ └────────────────────────────────────────────────────┘  │
 // ├─────────────────────────────────────────────────────────┤
 // │ Education (no changes)            ── unchanged ──       │
 // └─────────────────────────────────────────────────────────┘

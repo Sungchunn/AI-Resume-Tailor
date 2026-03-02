@@ -49,6 +49,7 @@ class ContactInfo(BaseModel):
 class ExperienceEntry(BaseModel):
     """Work experience entry in parsed resume."""
 
+    id: str | None = None  # Unique ID for frontend diffing in Two Copies architecture
     title: str | None = None
     company: str | None = None
     location: str | None = None
@@ -60,6 +61,7 @@ class ExperienceEntry(BaseModel):
 class EducationEntry(BaseModel):
     """Education entry in parsed resume."""
 
+    id: str | None = None  # Unique ID for frontend diffing in Two Copies architecture
     degree: str | None = None
     institution: str | None = None
     location: str | None = None
@@ -71,6 +73,7 @@ class EducationEntry(BaseModel):
 class ProjectEntry(BaseModel):
     """Project entry in parsed resume."""
 
+    id: str | None = None  # Unique ID for frontend diffing in Two Copies architecture
     name: str | None = None
     description: str | None = None
     technologies: list[str] = Field(default_factory=list)

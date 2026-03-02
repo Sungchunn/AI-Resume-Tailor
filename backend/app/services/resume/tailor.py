@@ -7,13 +7,28 @@ Two Copies Architecture:
 """
 
 import json
+import logging
 import re
+import uuid
 from typing import Any, TypedDict
 
-from app.services.ai.client import AIClient
+from pydantic import ValidationError
+
+from app.models.mongo.resume import ParsedContent
+from app.services.ai.client import AIClient, AIServiceError
 from app.services.core.cache import CacheService
 from app.services.resume.parser import ResumeParser, ParsedResume
 from app.services.job.analyzer import JobAnalyzer, ParsedJob
+
+logger = logging.getLogger(__name__)
+
+
+class TailoringValidationError(Exception):
+    """Raised when AI output fails Pydantic validation after retries."""
+
+    def __init__(self, message: str, validation_errors: list[dict] | None = None):
+        super().__init__(message)
+        self.validation_errors = validation_errors or []
 
 
 class TailoringResult(TypedDict):
@@ -186,11 +201,13 @@ class TailoringService:
         parsed_resume: dict[str, Any] | ParsedResume,
         parsed_job: ParsedJob,
     ) -> TailoringResult:
-        """Generate tailored content using AI.
+        """Generate tailored content using AI with retry logic.
 
         Two Copies Architecture:
         - Outputs complete resume document
         - Preserves IDs from original
+        - Validates against ParsedContent Pydantic model
+        - Retries once if validation fails
         """
         # Convert to dict if ParsedResume TypedDict
         if not isinstance(parsed_resume, dict):
@@ -199,7 +216,48 @@ class TailoringService:
         # Ensure experience/education/projects have IDs for diffing
         parsed_resume = self._ensure_ids(parsed_resume)
 
-        user_prompt = f"""Please tailor the following resume for the job description.
+        user_prompt = self._build_tailoring_prompt(parsed_resume, parsed_job)
+
+        # First attempt
+        try:
+            result = await self._attempt_tailoring(user_prompt)
+            tailored = self._validate_and_extract(result, parsed_resume)
+            return tailored
+        except (json.JSONDecodeError, ValueError, ValidationError) as first_error:
+            logger.warning(
+                f"First tailoring attempt failed: {first_error}. Retrying with error context."
+            )
+
+            # Build retry prompt with error context
+            retry_prompt = self._build_retry_prompt(
+                parsed_resume, parsed_job, first_error
+            )
+
+            # Second attempt with error feedback
+            try:
+                result = await self._attempt_tailoring(retry_prompt)
+                tailored = self._validate_and_extract(result, parsed_resume)
+                logger.info("Tailoring succeeded on retry attempt")
+                return tailored
+            except (json.JSONDecodeError, ValueError, ValidationError) as second_error:
+                logger.error(
+                    f"Both tailoring attempts failed. First: {first_error}, Second: {second_error}"
+                )
+                validation_errors = []
+                if isinstance(second_error, ValidationError):
+                    validation_errors = second_error.errors()
+                raise TailoringValidationError(
+                    f"AI output failed validation after retry: {second_error}",
+                    validation_errors=validation_errors,
+                ) from second_error
+
+    def _build_tailoring_prompt(
+        self,
+        parsed_resume: dict[str, Any],
+        parsed_job: ParsedJob,
+    ) -> str:
+        """Build the user prompt for tailoring."""
+        return f"""Please tailor the following resume for the job description.
 
 IMPORTANT: Output the COMPLETE tailored resume as a JSON object. Preserve ALL IDs exactly as they appear in the original.
 
@@ -224,13 +282,59 @@ Output format:
   "keyword_coverage": number
 }}"""
 
+    def _build_retry_prompt(
+        self,
+        parsed_resume: dict[str, Any],
+        parsed_job: ParsedJob,
+        previous_error: Exception,
+    ) -> str:
+        """Build a retry prompt that includes error context."""
+        error_details = str(previous_error)
+        if isinstance(previous_error, ValidationError):
+            # Include specific field errors for the model to correct
+            error_details = "Pydantic validation errors:\n"
+            for err in previous_error.errors():
+                loc = " -> ".join(str(x) for x in err["loc"])
+                error_details += f"  - Field '{loc}': {err['msg']}\n"
+
+        return f"""Your previous attempt to tailor this resume failed validation.
+
+ERROR FROM PREVIOUS ATTEMPT:
+{error_details}
+
+Please try again, ensuring:
+1. All fields match the expected ParsedContent schema
+2. 'contact' should be an object with optional string fields (name, email, phone, location, linkedin, github, website)
+3. 'experience', 'education', 'projects' should be arrays of objects
+4. Each experience/education/project entry MUST include its original 'id' field
+5. 'skills' and 'certifications' should be arrays of strings
+6. 'summary' should be a string or null
+7. All string values should be valid strings, not nested objects
+
+ORIGINAL RESUME (ParsedContent structure):
+{json.dumps(parsed_resume, indent=2)}
+
+JOB DESCRIPTION:
+{json.dumps(parsed_job, indent=2)}
+
+Output format (ensure valid JSON):
+{{
+  "tailored_content": {{ ... complete ParsedContent ... }},
+  "match_score": number,
+  "skill_matches": ["skill1", "skill2"],
+  "skill_gaps": ["skill1", "skill2"],
+  "keyword_coverage": number
+}}"""
+
+    async def _attempt_tailoring(self, user_prompt: str) -> dict[str, Any]:
+        """Make a single tailoring attempt and parse the response."""
         response = await self.ai.generate_json(
             system_prompt=TAILORING_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             max_tokens=8192,
         )
 
-        # Parse and validate JSON
+        # Parse JSON response
         try:
             result = json.loads(response)
         except json.JSONDecodeError:
@@ -239,17 +343,34 @@ Output format:
             if json_match:
                 result = json.loads(json_match.group(1))
             else:
-                raise ValueError("Failed to parse AI response as JSON")
+                raise ValueError(f"Failed to parse AI response as JSON: {response[:200]}...")
 
+        return result
+
+    def _validate_and_extract(
+        self,
+        result: dict[str, Any],
+        original_resume: dict[str, Any],
+    ) -> TailoringResult:
+        """Validate the result against Pydantic models and extract TailoringResult."""
         # Validate that required fields exist
         if "tailored_content" not in result:
-            raise ValueError("AI response missing tailored_content field")
+            raise ValueError("AI response missing 'tailored_content' field")
 
-        # Ensure the tailored content has the expected structure
-        tailored = result["tailored_content"]
+        tailored_dict = result["tailored_content"]
 
-        # Validate IDs were preserved
-        self._validate_ids_preserved(parsed_resume, tailored)
+        # Validate against ParsedContent Pydantic model
+        # This will raise ValidationError if the structure is invalid
+        validated_content = ParsedContent.model_validate(tailored_dict)
+
+        # Convert back to dict for storage (preserves all fields including ids)
+        tailored = validated_content.model_dump()
+
+        # Ensure IDs are present (in case AI didn't include them)
+        tailored = self._ensure_ids(tailored)
+
+        # Validate IDs were preserved from original
+        self._validate_ids_preserved(original_resume, tailored)
 
         return TailoringResult(
             tailored_content=tailored,
@@ -264,8 +385,6 @@ Output format:
 
         If items don't have IDs, generate them based on position.
         """
-        import uuid
-
         result = dict(parsed)
 
         # Add IDs to experience entries if missing
@@ -298,10 +417,6 @@ Output format:
         Logs warnings if IDs are missing (doesn't raise - AI might legitimately
         remove sections in some cases).
         """
-        import logging
-
-        logger = logging.getLogger(__name__)
-
         def get_ids(data: dict[str, Any], field: str) -> set[str]:
             items = data.get(field, [])
             if not items:

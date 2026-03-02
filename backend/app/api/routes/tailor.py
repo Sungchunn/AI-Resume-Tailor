@@ -39,7 +39,9 @@ from app.services import (
     ResumeParser,
     JobAnalyzer,
     TailoringService,
+    TailoringValidationError,
 )
+from app.services.ai.client import AIServiceError
 
 router = APIRouter()
 
@@ -123,13 +125,29 @@ async def tailor_resume(
 
     # Run tailoring - now returns complete tailored document
     service = get_tailoring_service()
-    result = await service.tailor(
-        resume_id=request.resume_id,
-        job_id=job_source_id,
-        raw_resume=resume.raw_content,
-        raw_job=raw_job,
-        original_parsed=resume.parsed.model_dump() if resume.parsed else {},
-    )
+    try:
+        result = await service.tailor(
+            resume_id=request.resume_id,
+            job_id=job_source_id,
+            raw_resume=resume.raw_content,
+            raw_job=raw_job,
+            original_parsed=resume.parsed.model_dump() if resume.parsed else {},
+        )
+    except TailoringValidationError as e:
+        # AI output failed Pydantic validation even after retry
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "message": "AI failed to generate valid tailored resume after retry",
+                "errors": e.validation_errors,
+            },
+        )
+    except AIServiceError as e:
+        # AI service unavailable or API error
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"AI service error: {str(e)}",
+        )
 
     # Save to MongoDB with complete tailored_data
     create_data = MongoTailoredResumeCreate(
