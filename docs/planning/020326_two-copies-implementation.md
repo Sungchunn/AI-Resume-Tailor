@@ -143,7 +143,7 @@ class TailoredResumeResponse(BaseModel):
 
 Follow the existing router/service patterns in the project.
 
-```
+```text
 POST   /api/v1/tailored-resumes/generate
        - Input: { original_resume_id, job_listing_id }
        - Calls AI service to generate tailored resume
