@@ -20,8 +20,9 @@ Options:
 
 import argparse
 import asyncio
+import re
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from sqlalchemy import create_engine, text
@@ -34,6 +35,12 @@ from app.core.config import get_settings
 
 
 settings = get_settings()
+
+
+def mask_uri_credentials(uri: str) -> str:
+    """Mask password in MongoDB/PostgreSQL URI for safe logging."""
+    # Pattern matches user:password@ and replaces password with ***
+    return re.sub(r"(://[^:]+:)[^@]+(@)", r"\1***\2", uri)
 
 
 def get_pg_sync_url() -> str:
@@ -77,8 +84,9 @@ async def migrate_resumes(pg_session: Session, mongo_db, dry_run: bool = False) 
             file_type, file_size_bytes, created_at, updated_at
         ) = row
 
-        # Build MongoDB document
+        # Build MongoDB document with legacy ID for idempotent migration
         doc = {
+            "_legacy_pg_id": pg_id,  # Track source ID for idempotent upsert
             "user_id": owner_id,
             "title": title,
             "raw_content": raw_content or "",
@@ -91,13 +99,24 @@ async def migrate_resumes(pg_session: Session, mongo_db, dry_run: bool = False) 
                 "file_type": file_type,
                 "size_bytes": file_size_bytes,
             } if original_file_key else None,
-            "created_at": created_at or datetime.utcnow(),
-            "updated_at": updated_at or datetime.utcnow(),
+            "created_at": created_at or datetime.now(timezone.utc),
+            "updated_at": updated_at or datetime.now(timezone.utc),
         }
 
-        result = await mongo_db.resumes.insert_one(doc)
-        id_mapping[pg_id] = result.inserted_id
-        print(f"  Migrated resume {pg_id} -> {result.inserted_id}")
+        # Use upsert to make migration idempotent
+        result = await mongo_db.resumes.update_one(
+            {"_legacy_pg_id": pg_id},
+            {"$set": doc},
+            upsert=True,
+        )
+        # Get the document to retrieve its _id
+        migrated_doc = await mongo_db.resumes.find_one(
+            {"_legacy_pg_id": pg_id},
+            {"_id": 1},
+        )
+        id_mapping[pg_id] = migrated_doc["_id"]
+        action = "Updated" if result.matched_count > 0 else "Migrated"
+        print(f"  {action} resume {pg_id} -> {migrated_doc['_id']}")
 
     print(f"Migrated {len(id_mapping)} resumes")
     return id_mapping
@@ -169,6 +188,7 @@ async def migrate_tailored_resumes(
                 })
 
         doc = {
+            "_legacy_pg_id": pg_id,  # Track source ID for idempotent upsert
             "resume_id": mongo_resume_id,
             "user_id": user_id,
             "job_source": job_source,
@@ -178,13 +198,23 @@ async def migrate_tailored_resumes(
             "match_score": float(match_score) if match_score else None,
             "ats_keywords": None,  # New field, will be populated by future tailoring
             "style_settings": style_settings or {},
-            "created_at": created_at or datetime.utcnow(),
-            "updated_at": updated_at or datetime.utcnow(),
+            "created_at": created_at or datetime.now(timezone.utc),
+            "updated_at": updated_at or datetime.now(timezone.utc),
         }
 
-        result = await mongo_db.tailored_resumes.insert_one(doc)
+        # Use upsert to make migration idempotent
+        result = await mongo_db.tailored_resumes.update_one(
+            {"_legacy_pg_id": pg_id},
+            {"$set": doc},
+            upsert=True,
+        )
+        migrated_doc = await mongo_db.tailored_resumes.find_one(
+            {"_legacy_pg_id": pg_id},
+            {"_id": 1},
+        )
         count += 1
-        print(f"  Migrated tailored resume {pg_id} -> {result.inserted_id}")
+        action = "Updated" if result.matched_count > 0 else "Migrated"
+        print(f"  {action} tailored resume {pg_id} -> {migrated_doc['_id']}")
 
     print(f"Migrated {count} tailored resumes")
     return count
@@ -245,10 +275,11 @@ async def migrate_resume_builds(
                     "original_value": diff.get("original_value"),
                     "suggested_value": diff.get("value"),
                     "reason": diff.get("reason", ""),
-                    "created_at": datetime.utcnow(),
+                    "created_at": datetime.now(timezone.utc),
                 })
 
         doc = {
+            "_legacy_pg_id": pg_id,  # Track source ID for idempotent upsert
             "user_id": user_id,
             "job": {
                 "title": job_title,
@@ -267,14 +298,24 @@ async def migrate_resume_builds(
             "section_order": ["summary", "experience", "skills", "education", "projects"],
             "pulled_block_ids": pulled_block_ids or [],
             "pending_diffs": formatted_diffs,
-            "created_at": created_at or datetime.utcnow(),
-            "updated_at": updated_at or datetime.utcnow(),
+            "created_at": created_at or datetime.now(timezone.utc),
+            "updated_at": updated_at or datetime.now(timezone.utc),
             "exported_at": exported_at,
         }
 
-        result = await mongo_db.resume_builds.insert_one(doc)
+        # Use upsert to make migration idempotent
+        result = await mongo_db.resume_builds.update_one(
+            {"_legacy_pg_id": pg_id},
+            {"$set": doc},
+            upsert=True,
+        )
+        migrated_doc = await mongo_db.resume_builds.find_one(
+            {"_legacy_pg_id": pg_id},
+            {"_id": 1},
+        )
         count += 1
-        print(f"  Migrated resume build {pg_id} -> {result.inserted_id}")
+        action = "Updated" if result.matched_count > 0 else "Migrated"
+        print(f"  {action} resume build {pg_id} -> {migrated_doc['_id']}")
 
     print(f"Migrated {count} resume builds")
     return count
@@ -358,8 +399,8 @@ async def main(dry_run: bool = False, verify: bool = False) -> None:
     print("=" * 60)
     print("MongoDB Migration Script")
     print("=" * 60)
-    print(f"PostgreSQL: {get_pg_sync_url()}")
-    print(f"MongoDB: {settings.mongodb_uri}")
+    print(f"PostgreSQL: {mask_uri_credentials(get_pg_sync_url())}")
+    print(f"MongoDB: {mask_uri_credentials(settings.mongodb_uri)}")
     print(f"Mode: {'DRY RUN' if dry_run else 'LIVE MIGRATION'}")
     print("=" * 60)
 
