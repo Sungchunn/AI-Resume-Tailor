@@ -1,21 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { JobListingResponse } from "@/lib/api/types";
 import { useSaveJobListing } from "@/lib/api/hooks";
 import { LinkedInIcon, ExternalLinkIcon, BookmarkIcon } from "@/components/icons";
-
-function formatRelativeDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays}d ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-  return date.toLocaleDateString();
-}
+import { formatRelativeDate } from "@/lib/utils/date";
 
 interface JobListingTableProps {
   listings: JobListingResponse[];
@@ -23,6 +13,16 @@ interface JobListingTableProps {
 
 function SaveButton({ listing }: { listing: JobListingResponse }) {
   const saveMutation = useSaveJobListing();
+  const [showError, setShowError] = useState(false);
+
+  // Auto-hide error after 3 seconds
+  useEffect(() => {
+    if (saveMutation.isError) {
+      setShowError(true);
+      const timer = setTimeout(() => setShowError(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [saveMutation.isError]);
 
   const handleSave = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -31,18 +31,33 @@ function SaveButton({ listing }: { listing: JobListingResponse }) {
   };
 
   return (
-    <button
-      onClick={handleSave}
-      disabled={saveMutation.isPending}
-      className={`p-1.5 rounded transition-colors ${
-        listing.is_saved
-          ? "text-primary bg-primary/10 hover:bg-primary/20"
-          : "text-muted-foreground hover:text-foreground hover:bg-muted"
-      }`}
-      title={listing.is_saved ? "Unsave" : "Save"}
-    >
-      <BookmarkIcon filled={listing.is_saved} className="h-4 w-4" />
-    </button>
+    <div className="relative">
+      <button
+        onClick={handleSave}
+        disabled={saveMutation.isPending}
+        className={`p-1.5 rounded transition-colors ${
+          saveMutation.isError
+            ? "text-destructive bg-destructive/10"
+            : listing.is_saved
+              ? "text-primary bg-primary/10 hover:bg-primary/20"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+        } ${saveMutation.isPending ? "opacity-50" : ""}`}
+        title={
+          saveMutation.isError
+            ? "Failed to save"
+            : listing.is_saved
+              ? "Unsave"
+              : "Save"
+        }
+      >
+        <BookmarkIcon filled={listing.is_saved} className="h-4 w-4" />
+      </button>
+      {showError && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs bg-destructive text-destructive-foreground rounded whitespace-nowrap z-10">
+          Failed to save
+        </div>
+      )}
+    </div>
   );
 }
 

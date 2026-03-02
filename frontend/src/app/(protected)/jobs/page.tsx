@@ -6,27 +6,10 @@ import { JobListingCard } from "@/components/jobs/JobListingCard";
 import { JobListingTable } from "@/components/jobs/JobListingTable";
 import { JobListingFilters } from "@/components/jobs/JobListingFilters";
 import type { JobListingFilters as Filters } from "@/lib/api/types";
+import { formatRelativeTime } from "@/lib/utils/date";
 import Link from "next/link";
 
 type ViewMode = "cards" | "table";
-
-function formatRelativeTime(dateStr: string | null): string {
-  if (!dateStr) return "N/A";
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? "" : "s"} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
-  if (diffDays === 1) return "yesterday";
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) === 1 ? "" : "s"} ago`;
-  return date.toLocaleDateString();
-}
 
 const PAGE_SIZE_OPTIONS = {
   cards: [10, 20, 30],
