@@ -184,6 +184,36 @@ export interface TailoredResumeListItem {
   created_at: string;
 }
 
+/**
+ * Response from the /compare endpoint for the diff review UI.
+ * Contains both original and AI-proposed resume blocks.
+ */
+export interface TailoringCompareResponse {
+  id: number;
+  resume_id: number;
+  job_id: number | null;
+  job_listing_id: number | null;
+  /** Original resume blocks (from the source resume) */
+  original_blocks: import("@/lib/resume/types").AnyResumeBlock[];
+  /** AI-proposed resume blocks (tailored version) */
+  ai_proposed_blocks: import("@/lib/resume/types").AnyResumeBlock[];
+  /** Job title for context */
+  job_title: string | null;
+  /** Company name for context */
+  company_name: string | null;
+  /** Match score */
+  match_score: number | null;
+  created_at: string;
+}
+
+/**
+ * Request to finalize a tailored resume after user review.
+ */
+export interface TailoringFinalizeRequest {
+  /** The final merged blocks after user has accepted/rejected changes */
+  finalized_blocks: import("@/lib/resume/types").AnyResumeBlock[];
+}
+
 // Block Types (Vault)
 export type BlockType =
   | "achievement"

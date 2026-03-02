@@ -19,6 +19,7 @@ import type {
   TailorRequest,
   QuickMatchRequest,
   TailoredResumeUpdateRequest,
+  TailoringFinalizeRequest,
   BlockCreate,
   BlockUpdate,
   BlockImportRequest,
@@ -330,6 +331,34 @@ export function useUpdateTailoredResume() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: TailoredResumeUpdateRequest }) =>
       tailorApi.update(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tailored.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tailored.all });
+    },
+  });
+}
+
+/**
+ * Hook to fetch comparison data for the diff review UI.
+ * Returns both original and AI-proposed resume blocks.
+ */
+export function useTailoringCompare(id: number) {
+  return useQuery({
+    queryKey: [...queryKeys.tailored.detail(id), "compare"] as const,
+    queryFn: () => tailorApi.compare(id),
+    enabled: !!id,
+  });
+}
+
+/**
+ * Hook to finalize a tailored resume after user review.
+ */
+export function useFinalizeTailoredResume() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: TailoringFinalizeRequest }) =>
+      tailorApi.finalize(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tailored.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.tailored.all });

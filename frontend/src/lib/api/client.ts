@@ -12,6 +12,8 @@ import type {
   TailoredResumeListItem,
   TailoredResumeFullResponse,
   TailoredResumeUpdateRequest,
+  TailoringCompareResponse,
+  TailoringFinalizeRequest,
   UserCreate,
   UserLogin,
   UserResponse,
@@ -328,6 +330,23 @@ export const tailorApi = {
   update: (id: number, data: TailoredResumeUpdateRequest): Promise<TailoredResumeFullResponse> =>
     fetchApi(`/api/tailor/${id}`, {
       method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  /**
+   * Get comparison data for the diff review UI.
+   * Returns both original and AI-proposed resume blocks.
+   */
+  compare: (id: number): Promise<TailoringCompareResponse> =>
+    fetchApi(`/api/tailor/${id}/compare`),
+
+  /**
+   * Finalize the tailored resume with the user's merged draft.
+   * Called after the user has reviewed and accepted/rejected changes.
+   */
+  finalize: (id: number, data: TailoringFinalizeRequest): Promise<TailoredResumeFullResponse> =>
+    fetchApi(`/api/tailor/${id}/finalize`, {
+      method: "POST",
       body: JSON.stringify(data),
     }),
 };
