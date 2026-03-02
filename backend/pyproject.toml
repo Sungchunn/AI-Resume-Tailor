@@ -34,7 +34,6 @@ google-genai = "^1.0.0"
 python-docx = "^1.1.0"
 reportlab = "^4.2.0"
 mammoth = "^1.8.0"  # DOCX to HTML conversion
-weasyprint = "^63.0"  # HTML to PDF conversion
 # Object Storage
 minio = "^7.2.0"
 email-validator = "^2.3.0"
@@ -44,6 +43,7 @@ python-multipart = "^0.0.9"
 greenlet = "^3.3.1"
 # Task scheduling
 apscheduler = "^3.10.0"
+weasyprint = "^68.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
