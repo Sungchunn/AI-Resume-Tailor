@@ -19,8 +19,35 @@ mongodb = MongoDB()
 
 async def connect_mongodb() -> None:
     """Initialize MongoDB connection on application startup."""
-    mongodb.client = AsyncIOMotorClient(settings.mongodb_uri)
+    mongodb.client = AsyncIOMotorClient(
+        settings.mongodb_uri,
+        maxPoolSize=50,
+        minPoolSize=10,
+        serverSelectionTimeoutMS=5000,
+    )
     mongodb.db = mongodb.client[settings.mongodb_database]
+
+    # Create indexes on startup (idempotent operation)
+    await _create_indexes(mongodb.db)
+
+
+async def _create_indexes(db: AsyncIOMotorDatabase) -> None:
+    """Create MongoDB indexes for optimal query performance.
+
+    This is idempotent - MongoDB skips index creation if index already exists.
+    """
+    # resumes collection indexes
+    await db.resumes.create_index("user_id")
+    await db.resumes.create_index([("user_id", 1), ("updated_at", -1)])
+
+    # tailored_resumes collection indexes
+    await db.tailored_resumes.create_index("resume_id")
+    await db.tailored_resumes.create_index("user_id")
+    await db.tailored_resumes.create_index([("job_source.type", 1), ("job_source.id", 1)])
+
+    # resume_builds collection indexes
+    await db.resume_builds.create_index("user_id")
+    await db.resume_builds.create_index([("user_id", 1), ("status", 1)])
 
 
 async def close_mongodb() -> None:
