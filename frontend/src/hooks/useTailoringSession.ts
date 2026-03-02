@@ -32,6 +32,12 @@ import {
 // Types
 // ============================================================================
 
+/** Snapshot of session state for undo history */
+interface SessionSnapshot {
+  activeDraft: AnyResumeBlock[];
+  acceptedChanges: string[];
+}
+
 export interface UseTailoringSessionOptions {
   /** Maximum number of undo states to keep */
   maxHistorySize?: number;
@@ -125,8 +131,8 @@ export function useTailoringSession(
     initializeTailoringSession(sessionId, originalResume, aiProposedResume)
   );
 
-  // Undo history stack
-  const [history, setHistory] = useState<AnyResumeBlock[][]>([]);
+  // Undo history stack - stores full session snapshots
+  const [history, setHistory] = useState<SessionSnapshot[]>([]);
 
   // Compute diffs once (original vs AI - these don't change)
   const diffs = useMemo(
@@ -142,9 +148,13 @@ export function useTailoringSession(
   // ============================================================================
 
   const pushHistory = useCallback(
-    (currentDraft: AnyResumeBlock[]) => {
+    (currentSession: TailoringSession) => {
+      const snapshot: SessionSnapshot = {
+        activeDraft: structuredClone(currentSession.activeDraft),
+        acceptedChanges: Array.from(currentSession.acceptedChanges),
+      };
       setHistory((prev) => {
-        const newHistory = [...prev, structuredClone(currentDraft)];
+        const newHistory = [...prev, snapshot];
         // Limit history size
         if (newHistory.length > maxHistorySize) {
           return newHistory.slice(newHistory.length - maxHistorySize);
@@ -163,11 +173,8 @@ export function useTailoringSession(
     setSession((prev) => {
       const newSession = {
         ...prev,
-        activeDraft: previous,
-        // Note: We don't restore acceptedChanges on undo
-        // This is intentional - the visual state may not match exactly
-        // but the document content is what matters
-        acceptedChanges: new Set<string>(),
+        activeDraft: previous.activeDraft,
+        acceptedChanges: new Set(previous.acceptedChanges),
       };
       onSessionChange?.(newSession);
       return newSession;
@@ -181,7 +188,7 @@ export function useTailoringSession(
   const updateSession = useCallback(
     (updater: (prev: TailoringSession) => TailoringSession) => {
       setSession((prev) => {
-        pushHistory(prev.activeDraft);
+        pushHistory(prev);
         const newSession = updater(prev);
         onSessionChange?.(newSession);
         return newSession;
