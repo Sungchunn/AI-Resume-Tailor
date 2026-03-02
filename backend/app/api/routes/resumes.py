@@ -1,13 +1,23 @@
+"""Resume API endpoints using MongoDB."""
+
 import logging
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from fastapi.responses import Response
-from sqlalchemy.ext.asyncio import AsyncSession
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from app.api.deps import get_db_session, get_current_user_id
-from app.crud import resume_crud
-from app.db.session import AsyncSessionLocal
-from app.schemas import ResumeCreate, ResumeUpdate, ResumeResponse
+from app.api.deps import get_mongo_db, get_current_user_id
+from app.crud.mongo import resume_crud
+from app.db.mongodb import get_mongodb
+from app.models.mongo.resume import (
+    ResumeCreate as MongoResumeCreate,
+    ResumeUpdate as MongoResumeUpdate,
+    OriginalFile,
+    ParsedContent,
+    StyleSettings,
+)
+from app.schemas import ResumeCreate, ResumeUpdate
+from app.schemas.resume import ResumeResponse, OriginalFileInfo
 from app.schemas.export import ResumeExportRequest, ExportTemplatesResponse, ExportTemplateInfo
 from app.schemas.resume import ParseTaskResponse, ParseStatusResponse
 from app.services.core.audit import audit_service
@@ -23,94 +33,131 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _to_response(doc) -> ResumeResponse:
+    """Convert MongoDB document to response model."""
+    return ResumeResponse(
+        id=str(doc.id) if doc.id else "",
+        user_id=doc.user_id,
+        title=doc.title,
+        raw_content=doc.raw_content,
+        html_content=doc.html_content,
+        parsed=doc.parsed.model_dump() if doc.parsed else None,
+        style=doc.style.model_dump() if doc.style else None,
+        original_file=OriginalFileInfo(
+            storage_key=doc.original_file.storage_key,
+            filename=doc.original_file.filename,
+            file_type=doc.original_file.file_type,
+            size_bytes=doc.original_file.size_bytes,
+        ) if doc.original_file else None,
+        created_at=doc.created_at,
+        updated_at=doc.updated_at,
+    )
+
+
 @router.post("", response_model=ResumeResponse, status_code=status.HTTP_201_CREATED)
 async def create_resume(
     resume_in: ResumeCreate,
-    db: AsyncSession = Depends(get_db_session),
+    mongo_db: AsyncIOMotorDatabase = Depends(get_mongo_db),
     current_user_id: int = Depends(get_current_user_id),
 ) -> ResumeResponse:
     """Create a new resume."""
-    resume = await resume_crud.create(db, obj_in=resume_in, owner_id=current_user_id)
-    return resume
+    create_data = MongoResumeCreate(
+        user_id=current_user_id,
+        title=resume_in.title,
+        raw_content=resume_in.raw_content,
+        html_content=resume_in.html_content,
+        original_file=OriginalFile(
+            storage_key=resume_in.original_file_key,
+            filename=resume_in.original_filename,
+            file_type=resume_in.file_type,
+            size_bytes=resume_in.file_size_bytes,
+        ) if resume_in.original_file_key else None,
+    )
+    resume = await resume_crud.create(mongo_db, obj_in=create_data)
+    return _to_response(resume)
 
 
 @router.get("/{resume_id}", response_model=ResumeResponse)
 async def get_resume(
-    resume_id: int,
-    db: AsyncSession = Depends(get_db_session),
+    resume_id: str,
+    mongo_db: AsyncIOMotorDatabase = Depends(get_mongo_db),
     current_user_id: int = Depends(get_current_user_id),
 ) -> ResumeResponse:
     """Get a resume by ID."""
-    resume = await resume_crud.get(db, id=resume_id)
+    resume = await resume_crud.get(mongo_db, id=resume_id)
     if not resume:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Resume not found",
         )
-    if resume.owner_id != current_user_id:
+    if resume.user_id != current_user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this resume",
         )
-    return resume
+    return _to_response(resume)
 
 
 @router.get("", response_model=list[ResumeResponse])
 async def list_resumes(
     skip: int = 0,
     limit: int = 100,
-    db: AsyncSession = Depends(get_db_session),
+    mongo_db: AsyncIOMotorDatabase = Depends(get_mongo_db),
     current_user_id: int = Depends(get_current_user_id),
 ) -> list[ResumeResponse]:
     """List all resumes for the current user."""
-    resumes = await resume_crud.get_by_owner(
-        db, owner_id=current_user_id, skip=skip, limit=limit
+    resumes = await resume_crud.get_by_user(
+        mongo_db, user_id=current_user_id, skip=skip, limit=limit
     )
-    return resumes
+    return [_to_response(r) for r in resumes]
 
 
 @router.put("/{resume_id}", response_model=ResumeResponse)
 async def update_resume(
-    resume_id: int,
+    resume_id: str,
     resume_in: ResumeUpdate,
-    db: AsyncSession = Depends(get_db_session),
+    mongo_db: AsyncIOMotorDatabase = Depends(get_mongo_db),
     current_user_id: int = Depends(get_current_user_id),
 ) -> ResumeResponse:
     """Update a resume."""
-    resume = await resume_crud.get(db, id=resume_id)
-    if not resume:
+    # Verify ownership
+    if not await resume_crud.exists(mongo_db, id=resume_id, user_id=current_user_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume not found or not authorized",
+        )
+
+    # Build update object
+    update_data = MongoResumeUpdate(
+        title=resume_in.title,
+        raw_content=resume_in.raw_content,
+        html_content=resume_in.html_content,
+        parsed=ParsedContent(**resume_in.parsed_content) if resume_in.parsed_content else None,
+        style=StyleSettings(**resume_in.style) if resume_in.style else None,
+    )
+    updated_resume = await resume_crud.update(mongo_db, id=resume_id, obj_in=update_data)
+    if not updated_resume:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Resume not found",
         )
-    if resume.owner_id != current_user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to update this resume",
-        )
-    updated_resume = await resume_crud.update(db, db_obj=resume, obj_in=resume_in)
-    return updated_resume
+    return _to_response(updated_resume)
 
 
 @router.delete("/{resume_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_resume(
-    resume_id: int,
-    db: AsyncSession = Depends(get_db_session),
+    resume_id: str,
+    mongo_db: AsyncIOMotorDatabase = Depends(get_mongo_db),
     current_user_id: int = Depends(get_current_user_id),
 ) -> None:
     """Delete a resume."""
-    resume = await resume_crud.get(db, id=resume_id)
-    if not resume:
+    # Verify ownership
+    if not await resume_crud.exists(mongo_db, id=resume_id, user_id=current_user_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resume not found",
+            detail="Resume not found or not authorized",
         )
-    if resume.owner_id != current_user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to delete this resume",
-        )
-    await resume_crud.delete(db, id=resume_id)
+    await resume_crud.delete(mongo_db, id=resume_id)
 
 
 @router.get("/export/templates", response_model=ExportTemplatesResponse)
@@ -138,9 +185,9 @@ async def get_export_templates() -> ExportTemplatesResponse:
 
 @router.post("/{resume_id}/export")
 async def export_resume(
-    resume_id: int,
+    resume_id: str,
     export_in: ResumeExportRequest,
-    db: AsyncSession = Depends(get_db_session),
+    mongo_db: AsyncIOMotorDatabase = Depends(get_mongo_db),
     current_user_id: int = Depends(get_current_user_id),
 ) -> Response:
     """
@@ -154,13 +201,13 @@ async def export_resume(
     - **modern**: Contemporary design with accent colors
     - **minimal**: Clean, ATS-friendly formatting
     """
-    resume = await resume_crud.get(db, id=resume_id)
+    resume = await resume_crud.get(mongo_db, id=resume_id)
     if not resume:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Resume not found",
         )
-    if resume.owner_id != current_user_id:
+    if resume.user_id != current_user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this resume",
@@ -238,7 +285,7 @@ async def export_resume(
 
 async def run_parse_task(
     task_id: str,
-    resume_id: int,
+    resume_id: str,
     raw_content: str,
     force: bool,
 ) -> None:
@@ -258,17 +305,12 @@ async def run_parse_task(
         # Parse the resume
         parsed_content = await parser.parse(raw_content)
 
-        # Update database
-        async with AsyncSessionLocal() as db:
-            resume = await resume_crud.get(db, id=resume_id)
-            if resume:
-                update_data = ResumeUpdate.model_validate({"parsed_content": parsed_content})
-                await resume_crud.update(
-                    db,
-                    db_obj=resume,
-                    obj_in=update_data,
-                )
-                await db.commit()
+        # Update database (MongoDB)
+        mongo_db = get_mongodb()
+        update_data = MongoResumeUpdate(
+            parsed=ParsedContent(**parsed_content) if parsed_content else None,
+        )
+        await resume_crud.update(mongo_db, id=resume_id, obj_in=update_data)
 
         # Mark task completed
         await task_service.complete_task(task_id, resume_id)
@@ -280,11 +322,11 @@ async def run_parse_task(
 
 @router.post("/{resume_id}/parse", response_model=ParseTaskResponse)
 async def parse_resume(
-    resume_id: int,
+    resume_id: str,
     background_tasks: BackgroundTasks,
     request: Request,
     force: bool = Query(False, description="Force re-parse, bypassing cache"),
-    db: AsyncSession = Depends(get_db_session),
+    mongo_db: AsyncIOMotorDatabase = Depends(get_mongo_db),
     current_user_id: int = Depends(get_current_user_id),
 ) -> ParseTaskResponse:
     """
@@ -297,13 +339,13 @@ async def parse_resume(
     - **force**: If True, bypasses the cache and re-parses the content.
     """
     # Validate resume exists and has raw_content
-    resume = await resume_crud.get(db, id=resume_id)
+    resume = await resume_crud.get(mongo_db, id=resume_id)
     if not resume:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Resume not found",
         )
-    if resume.owner_id != current_user_id:
+    if resume.user_id != current_user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this resume",
@@ -314,16 +356,23 @@ async def parse_resume(
             detail="Resume has no content to parse",
         )
 
-    # Log AI operation
-    await audit_service.log_ai_operation(
-        db=db,
-        user_id=current_user_id,
-        operation="resume_parse",
-        resource_type="resume",
-        resource_id=resume_id,
-        request=request,
-        details={"force": force},
-    )
+    # Log AI operation (still uses PostgreSQL for audit logs)
+    from app.api.deps import get_db_session
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    # Get a fresh Postgres session for audit logging
+    from app.db.session import AsyncSessionLocal
+    async with AsyncSessionLocal() as pg_db:
+        await audit_service.log_ai_operation(
+            db=pg_db,
+            user_id=current_user_id,
+            operation="resume_parse",
+            resource_type="resume",
+            resource_id=resume_id,  # Now a string (MongoDB ObjectId)
+            request=request,
+            details={"force": force},
+        )
+        await pg_db.commit()
 
     # Create task and spawn background worker
     task_service = get_parse_task_service()
@@ -342,9 +391,9 @@ async def parse_resume(
 
 @router.get("/{resume_id}/parse/status", response_model=ParseStatusResponse)
 async def get_parse_status(
-    resume_id: int,
+    resume_id: str,
     task_id: str = Query(..., description="Task ID returned from POST /parse"),
-    db: AsyncSession = Depends(get_db_session),
+    mongo_db: AsyncIOMotorDatabase = Depends(get_mongo_db),
     current_user_id: int = Depends(get_current_user_id),
 ) -> ParseStatusResponse:
     """
@@ -356,16 +405,10 @@ async def get_parse_status(
     - **failed**: Parsing failed (check error field)
     """
     # Verify ownership
-    resume = await resume_crud.get(db, id=resume_id)
-    if not resume:
+    if not await resume_crud.exists(mongo_db, id=resume_id, user_id=current_user_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resume not found",
-        )
-    if resume.owner_id != current_user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to access this resume",
+            detail="Resume not found or not authorized",
         )
 
     task_service = get_parse_task_service()
