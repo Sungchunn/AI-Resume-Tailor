@@ -101,9 +101,9 @@ class RateLimiter:
         minute_ago = now - 60
         hour_ago = now - 3600
 
-        # Keys for minute and hour windows
-        minute_key = f"{self.config.key_prefix}:{identifier}:minute"
-        hour_key = f"{self.config.key_prefix}:{identifier}:hour"
+        # Keys for minute and hour windows (scoped by category)
+        minute_key = f"{self.config.key_prefix}:{identifier}:{endpoint_category}:minute"
+        hour_key = f"{self.config.key_prefix}:{identifier}:{endpoint_category}:hour"
 
         # Use pipeline for atomic operations
         pipe = self.redis.pipeline()
@@ -207,9 +207,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         "/api/v1/blocks/import": "ai",
         "/api/v1/workshops/": "ai",  # Workshop suggestions use AI
         # Auth endpoints (brute force protection)
-        "/api/v1/auth/login": "auth",
-        "/api/v1/auth/register": "auth",
-        "/api/v1/auth/refresh": "auth",
+        "/api/auth/login": "auth",
+        "/api/auth/register": "auth",
+        "/api/auth/refresh": "auth",
         # Export endpoints
         "/api/v1/export": "export",
         # Upload endpoints (dedicated category for file uploads)
