@@ -7,3 +7,5 @@
 export { DiffReviewPanel } from "./DiffReviewPanel";
 export { TextDiffCard, SkillsDiffCard, EntryDiffCard, BulletDiffRow } from "./DiffCard";
 export { TextDiffDisplay, SideBySideDiff } from "./TextDiffDisplay";
+export { VersionHistoryPanel } from "./VersionHistoryPanel";
+export { PreviewDiffLayout } from "./PreviewDiffLayout";

@@ -1,11 +1,40 @@
+/**
+ * Tailored Resume Editor Page
+ *
+ * Phase 6 features:
+ * - Receives activeDraft from TailoringContext (review page handoff)
+ * - Preserves undo history from tailoring review
+ * - Version history sidebar
+ * - Improved loading and error states
+ */
+
 "use client";
 
-import { use, useState, useCallback, useEffect, useRef } from "react";
+import { use, useState, useCallback, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTailoredResume, useUpdateTailoredResume, tokenManager } from "@/lib/api";
+import {
+  ArrowLeft,
+  History,
+  PanelRightClose,
+  PanelRightOpen,
+  Undo2,
+  GitCompare,
+} from "lucide-react";
+import {
+  useTailoredResume,
+  useUpdateTailoredResume,
+  useTailoringCompare,
+} from "@/lib/api";
+import { useTailoringContext } from "@/contexts/TailoringContext";
 import { EditorLayout } from "@/components/editor";
-import type { TailoredContent, Suggestion, ResumeStyle } from "@/lib/api/types";
+import { VersionHistoryPanel } from "@/components/tailoring";
+import type {
+  TailoredContent,
+  Suggestion,
+  ResumeStyle,
+} from "@/lib/api/types";
+import type { AnyResumeBlock, ExperienceBlock, SkillsBlock, SummaryBlock, ProjectsBlock } from "@/lib/resume/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -34,11 +63,88 @@ const DEFAULT_STYLE: ResumeStyle = {
   section_spacing: 1.0,
 };
 
+// ============================================================================
+// Block to Content Converter
+// ============================================================================
+
+/**
+ * Converts AnyResumeBlock[] to TailoredContent for editor.
+ */
+function blocksToContent(blocks: AnyResumeBlock[]): TailoredContent {
+  const content: TailoredContent = {
+    summary: "",
+    experience: [],
+    skills: [],
+    highlights: [],
+  };
+
+  for (const block of blocks) {
+    switch (block.type) {
+      case "summary":
+        content.summary = (block as SummaryBlock).content || "";
+        break;
+
+      case "experience":
+        content.experience = ((block as ExperienceBlock).content || []).map((exp) => ({
+          title: exp.title || "",
+          company: exp.company || "",
+          location: exp.location || "",
+          start_date: exp.startDate || "",
+          end_date: exp.current ? "Present" : exp.endDate || "",
+          bullets: exp.bullets || [],
+        }));
+        break;
+
+      case "skills":
+        content.skills = (block as SkillsBlock).content || [];
+        break;
+
+      case "projects":
+        const projectBlock = block as ProjectsBlock;
+        if (projectBlock.content) {
+          content.highlights = projectBlock.content.map(
+            (p) => p.name + (p.description ? `: ${p.description}` : "")
+          );
+        }
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  return content;
+}
+
+// ============================================================================
+// Main Component
+// ============================================================================
+
 export default function ResumeEditorPage({ params }: PageProps) {
   const { id } = use(params);
   const router = useRouter();
   const tailoredId = parseInt(id, 10);
+
+  // State
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+
+  // Context for session handoff
+  const {
+    sessionData,
+    hasSessionForId,
+    clearSession,
+  } = useTailoringContext();
+
+  // Check if we have a session from the review page
+  const hasActiveSession = hasSessionForId(tailoredId);
+  const fromReviewPage = hasActiveSession && sessionData !== null;
+
+  // Fetch tailored resume data
   const { data: tailored, isLoading, error } = useTailoredResume(tailoredId);
+
+  // Also fetch compare data to get resume_id for version history
+  const { data: compareData } = useTailoringCompare(tailoredId);
+
   const updateTailored = useUpdateTailoredResume();
 
   // Local state for editing
@@ -47,6 +153,7 @@ export default function ResumeEditorPage({ params }: PageProps) {
   const [sectionOrder, setSectionOrder] = useState<string[]>(DEFAULT_SECTION_ORDER);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showFromReviewBanner, setShowFromReviewBanner] = useState(false);
 
   // Track initial state for change detection
   const initialStateRef = useRef<{
@@ -55,31 +162,46 @@ export default function ResumeEditorPage({ params }: PageProps) {
     sectionOrder: string[];
   } | null>(null);
 
-  // Initialize state from fetched data
+  // Initialize state from context session (if coming from review) or fetched data
   useEffect(() => {
-    if (tailored) {
+    if (fromReviewPage && sessionData) {
+      // Initialize from context session (review page handoff)
+      const draftContent = blocksToContent(sessionData.session.activeDraft);
+      setContent(draftContent);
+      setShowFromReviewBanner(true);
+
+      // Store initial state
+      initialStateRef.current = {
+        content: draftContent,
+        styleSettings: DEFAULT_STYLE,
+        sectionOrder: DEFAULT_SECTION_ORDER,
+      };
+
+      // Hide banner after a few seconds
+      setTimeout(() => setShowFromReviewBanner(false), 5000);
+    } else if (tailored) {
+      // Initialize from fetched data (normal flow)
       setContent(tailored.tailored_content);
       setSuggestions(tailored.suggestions);
 
-      // Use existing style settings or defaults
       const loadedStyle = {
         ...DEFAULT_STYLE,
         ...(tailored as unknown as { style_settings?: ResumeStyle }).style_settings,
       };
       setStyleSettings(loadedStyle);
 
-      // Use existing section order or defaults
-      const loadedOrder = (tailored as unknown as { section_order?: string[] }).section_order || DEFAULT_SECTION_ORDER;
+      const loadedOrder =
+        (tailored as unknown as { section_order?: string[] }).section_order ||
+        DEFAULT_SECTION_ORDER;
       setSectionOrder(loadedOrder);
 
-      // Store initial state
       initialStateRef.current = {
         content: tailored.tailored_content,
         styleSettings: loadedStyle,
         sectionOrder: loadedOrder,
       };
     }
-  }, [tailored]);
+  }, [tailored, fromReviewPage, sessionData]);
 
   // Detect changes
   useEffect(() => {
@@ -91,13 +213,27 @@ export default function ResumeEditorPage({ params }: PageProps) {
     const hasContentChanged =
       JSON.stringify(content) !== JSON.stringify(initialStateRef.current.content);
     const hasStyleChanged =
-      JSON.stringify(styleSettings) !== JSON.stringify(initialStateRef.current.styleSettings);
+      JSON.stringify(styleSettings) !==
+      JSON.stringify(initialStateRef.current.styleSettings);
     const hasOrderChanged =
-      JSON.stringify(sectionOrder) !== JSON.stringify(initialStateRef.current.sectionOrder);
+      JSON.stringify(sectionOrder) !==
+      JSON.stringify(initialStateRef.current.sectionOrder);
 
     setHasChanges(hasContentChanged || hasStyleChanged || hasOrderChanged);
   }, [content, styleSettings, sectionOrder]);
 
+  // Session metadata for display
+  const sessionMetadata = useMemo(() => {
+    if (!fromReviewPage || !sessionData) return null;
+    return {
+      acceptedCount: sessionData.session.acceptedChanges.size,
+      jobTitle: sessionData.jobTitle,
+      companyName: sessionData.companyName,
+      matchScore: sessionData.matchScore,
+    };
+  }, [fromReviewPage, sessionData]);
+
+  // Handlers
   const handleContentChange = useCallback((newContent: TailoredContent) => {
     setContent(newContent);
   }, []);
@@ -110,38 +246,35 @@ export default function ResumeEditorPage({ params }: PageProps) {
     setSectionOrder(newOrder);
   }, []);
 
-  const handleSuggestionAccept = useCallback((suggestion: Suggestion) => {
-    if (!content) return;
+  const handleSuggestionAccept = useCallback(
+    (suggestion: Suggestion) => {
+      if (!content) return;
 
-    // Apply the suggestion to the content
-    const newContent = { ...content };
+      const newContent = { ...content };
 
-    switch (suggestion.section) {
-      case "summary":
-        if (suggestion.type === "replace" || suggestion.type === "enhance") {
-          newContent.summary = suggestion.suggested;
-        }
-        break;
-      case "skills":
-        if (suggestion.type === "add") {
-          // Add suggested skill
-          const skillToAdd = suggestion.suggested.trim();
-          if (!newContent.skills.includes(skillToAdd)) {
-            newContent.skills = [...newContent.skills, skillToAdd];
+      switch (suggestion.section) {
+        case "summary":
+          if (suggestion.type === "replace" || suggestion.type === "enhance") {
+            newContent.summary = suggestion.suggested;
           }
-        }
-        break;
-      case "experience":
-        // For experience suggestions, we'd need more complex logic
-        // For now, just mark as accepted
-        break;
-      default:
-        break;
-    }
+          break;
+        case "skills":
+          if (suggestion.type === "add") {
+            const skillToAdd = suggestion.suggested.trim();
+            if (!newContent.skills.includes(skillToAdd)) {
+              newContent.skills = [...newContent.skills, skillToAdd];
+            }
+          }
+          break;
+        default:
+          break;
+      }
 
-    setContent(newContent);
-    setSuggestions((prev) => prev.filter((s) => s !== suggestion));
-  }, [content]);
+      setContent(newContent);
+      setSuggestions((prev) => prev.filter((s) => s !== suggestion));
+    },
+    [content]
+  );
 
   const handleSuggestionReject = useCallback((index: number) => {
     setSuggestions((prev) => prev.filter((_, i) => i !== index));
@@ -160,120 +293,301 @@ export default function ResumeEditorPage({ params }: PageProps) {
         },
       });
 
-      // Update initial state after successful save
       initialStateRef.current = {
         content,
         styleSettings,
         sectionOrder,
       };
       setHasChanges(false);
+
+      // Clear session after successful save
+      if (fromReviewPage) {
+        clearSession();
+      }
     } catch (err) {
       console.error("Failed to save:", err);
       alert("Failed to save changes. Please try again.");
     }
-  }, [content, tailoredId, styleSettings, sectionOrder, tailored, updateTailored]);
+  }, [
+    content,
+    tailoredId,
+    styleSettings,
+    sectionOrder,
+    tailored,
+    updateTailored,
+    fromReviewPage,
+    clearSession,
+  ]);
+
+  const handleBackToReview = useCallback(() => {
+    router.push(`/tailor/review/${tailoredId}`);
+  }, [router, tailoredId]);
 
   // Loading state
-  if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-muted">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading editor...</p>
-        </div>
-      </div>
-    );
+  if (isLoading && !fromReviewPage) {
+    return <LoadingState />;
   }
 
   // Error state
-  if (error || !tailored) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-muted">
-        <div className="text-center max-w-md">
-          <svg
-            className="mx-auto h-12 w-12 text-destructive"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
-          </svg>
-          <h2 className="mt-4 text-lg font-semibold text-foreground">
-            Failed to load resume
-          </h2>
-          <p className="mt-2 text-muted-foreground">
-            The tailored resume could not be loaded. It may have been deleted or you
-            may not have permission to view it.
-          </p>
-          <div className="mt-6 flex gap-3 justify-center">
-            <Link
-              href="/tailor"
-              className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-md"
-            >
-              Back to Tailor
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
+  if (error && !fromReviewPage) {
+    return <ErrorState tailoredId={tailoredId} />;
   }
 
   // Ensure content is loaded before rendering editor
   if (!content) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-muted">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   return (
     <div className="h-screen flex flex-col">
-      {/* Back link */}
+      {/* Header */}
       <div className="flex-shrink-0 bg-card border-b border-border px-4 py-2">
-        <Link
-          href={`/tailor/${tailoredId}`}
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-        >
-          <svg
-            className="mr-1 h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15.75 19.5L8.25 12l7.5-7.5"
-            />
-          </svg>
-          Back to Resume
-        </Link>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/tailor/${tailoredId}`}
+              className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="mr-1 h-4 w-4" />
+              Back to Resume
+            </Link>
+
+            {fromReviewPage && (
+              <button
+                onClick={handleBackToReview}
+                className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80"
+              >
+                <GitCompare className="h-4 w-4" />
+                Back to Review
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Session metadata */}
+            {sessionMetadata && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                {sessionMetadata.jobTitle && (
+                  <span>{sessionMetadata.jobTitle}</span>
+                )}
+                {sessionMetadata.matchScore !== null && (
+                  <span
+                    className={`font-medium ${
+                      sessionMetadata.matchScore >= 80
+                        ? "text-green-600"
+                        : sessionMetadata.matchScore >= 60
+                        ? "text-amber-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {sessionMetadata.matchScore}% match
+                  </span>
+                )}
+                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                  {sessionMetadata.acceptedCount} changes accepted
+                </span>
+              </div>
+            )}
+
+            {/* Version History Toggle */}
+            {compareData?.resume_id && (
+              <button
+                onClick={() => setShowVersionHistory(!showVersionHistory)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md border transition-colors ${
+                  showVersionHistory
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:bg-muted"
+                }`}
+                title="Toggle version history"
+              >
+                {showVersionHistory ? (
+                  <PanelRightClose size={16} />
+                ) : (
+                  <PanelRightOpen size={16} />
+                )}
+                <History size={14} />
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Editor */}
-      <div className="flex-1 overflow-hidden">
-        <EditorLayout
-          content={content}
-          suggestions={suggestions}
-          styleSettings={styleSettings}
-          sectionOrder={sectionOrder}
-          matchScore={tailored.match_score}
-          onContentChange={handleContentChange}
-          onStyleChange={handleStyleChange}
-          onSectionOrderChange={handleSectionOrderChange}
-          onSuggestionAccept={handleSuggestionAccept}
-          onSuggestionReject={handleSuggestionReject}
-          onSave={handleSave}
-          isSaving={updateTailored.isPending}
-          hasChanges={hasChanges}
-        />
+      {/* From Review Banner */}
+      {showFromReviewBanner && sessionMetadata && (
+        <div className="flex-shrink-0 px-4 py-2 bg-primary/10 border-b border-primary/20 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm">
+            <GitCompare className="h-4 w-4 text-primary" />
+            <span>
+              Editing with{" "}
+              <strong>{sessionMetadata.acceptedCount} accepted changes</strong>{" "}
+              from the review page
+            </span>
+          </div>
+          <button
+            onClick={() => setShowFromReviewBanner(false)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-hidden flex">
+        {/* Editor */}
+        <div className="flex-1 overflow-hidden">
+          <EditorLayout
+            content={content}
+            suggestions={suggestions}
+            styleSettings={styleSettings}
+            sectionOrder={sectionOrder}
+            matchScore={
+              sessionMetadata?.matchScore ?? tailored?.match_score ?? 0
+            }
+            onContentChange={handleContentChange}
+            onStyleChange={handleStyleChange}
+            onSectionOrderChange={handleSectionOrderChange}
+            onSuggestionAccept={handleSuggestionAccept}
+            onSuggestionReject={handleSuggestionReject}
+            onSave={handleSave}
+            isSaving={updateTailored.isPending}
+            hasChanges={hasChanges}
+          />
+        </div>
+
+        {/* Version History Sidebar */}
+        {showVersionHistory && compareData?.resume_id && (
+          <aside className="w-80 border-l border-border bg-card overflow-hidden flex-shrink-0">
+            <VersionHistoryPanel
+              resumeId={compareData.resume_id}
+              currentTailoredId={tailoredId}
+              mode="sidebar"
+            />
+          </aside>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Loading State
+// ============================================================================
+
+function LoadingState() {
+  return (
+    <div className="h-screen flex flex-col">
+      {/* Header Skeleton */}
+      <div className="flex-shrink-0 bg-card border-b border-border px-4 py-2">
+        <div className="flex items-center justify-between">
+          <div className="h-8 w-32 bg-muted rounded animate-pulse" />
+          <div className="h-8 w-24 bg-muted rounded animate-pulse" />
+        </div>
+      </div>
+
+      {/* Editor Skeleton */}
+      <div className="flex-1 flex">
+        {/* Left Panel */}
+        <div className="w-64 border-r border-border bg-muted/30 p-4">
+          <div className="space-y-4">
+            <div className="h-6 w-20 bg-muted rounded animate-pulse" />
+            <div className="space-y-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-10 bg-muted rounded animate-pulse" />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Center - Content */}
+        <div className="flex-1 p-4">
+          <div className="max-w-2xl mx-auto space-y-6">
+            <div className="h-8 w-1/2 bg-muted rounded animate-pulse" />
+            <div className="space-y-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className="h-4 bg-muted rounded animate-pulse"
+                  style={{ width: `${100 - i * 10}%` }}
+                />
+              ))}
+            </div>
+            <div className="h-8 w-1/3 bg-muted rounded animate-pulse mt-8" />
+            <div className="space-y-3">
+              {[1, 2].map((i) => (
+                <div key={i} className="border border-border rounded-lg p-4">
+                  <div className="h-5 w-1/3 bg-muted rounded animate-pulse mb-2" />
+                  <div className="h-4 w-1/4 bg-muted rounded animate-pulse mb-3" />
+                  <div className="space-y-2">
+                    {[1, 2, 3].map((j) => (
+                      <div key={j} className="h-4 bg-muted rounded animate-pulse" />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Panel */}
+        <div className="w-80 border-l border-border bg-muted/30 p-4">
+          <div className="h-6 w-32 bg-muted rounded animate-pulse mb-4" />
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="border border-border rounded-lg p-3">
+                <div className="h-4 w-3/4 bg-muted rounded animate-pulse mb-2" />
+                <div className="h-3 w-full bg-muted rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Error State
+// ============================================================================
+
+function ErrorState({ tailoredId }: { tailoredId: number }) {
+  return (
+    <div className="h-screen flex items-center justify-center bg-muted">
+      <div className="text-center max-w-md">
+        <svg
+          className="mx-auto h-12 w-12 text-destructive"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
+        </svg>
+        <h2 className="mt-4 text-lg font-semibold text-foreground">
+          Failed to load resume
+        </h2>
+        <p className="mt-2 text-muted-foreground">
+          The tailored resume could not be loaded. It may have been deleted or
+          you may not have permission to view it.
+        </p>
+        <div className="mt-6 flex gap-3 justify-center">
+          <Link
+            href="/tailor"
+            className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-md"
+          >
+            Back to Tailor
+          </Link>
+          <Link
+            href={`/tailor/review/${tailoredId}`}
+            className="px-4 py-2 text-sm font-medium border border-border hover:bg-muted rounded-md"
+          >
+            Try Review Page
+          </Link>
+        </div>
       </div>
     </div>
   );
