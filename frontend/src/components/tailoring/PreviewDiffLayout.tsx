@@ -10,7 +10,7 @@
 
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Panel,
   Group,
@@ -27,8 +27,8 @@ import {
 import { ResumePreview } from "@/components/workshop/ResumePreview";
 import { DiffReviewPanel } from "./DiffReviewPanel";
 import type { TailoringSession, BlockDiff } from "@/lib/tailoring/types";
-import type { AnyResumeBlock, ExperienceBlock, EducationBlock, SkillsBlock, SummaryBlock, ContactBlock, ProjectsBlock } from "@/lib/resume/types";
-import type { TailoredContent, ResumeStyle } from "@/lib/api/types";
+import type { ResumeStyle } from "@/lib/api/types";
+import { blocksToContent } from "@/lib/tailoring/blocksToContent";
 
 // ============================================================================
 // Types
@@ -85,61 +85,6 @@ interface PreviewDiffLayoutProps {
   sectionOrder?: string[];
   /** Initial layout mode */
   initialMode?: LayoutMode;
-}
-
-// ============================================================================
-// Block to Content Converter
-// ============================================================================
-
-/**
- * Converts AnyResumeBlock[] to TailoredContent for preview rendering.
- */
-function blocksToContent(blocks: AnyResumeBlock[]): TailoredContent {
-  const content: TailoredContent = {
-    summary: "",
-    experience: [],
-    skills: [],
-    highlights: [],
-  };
-
-  for (const block of blocks) {
-    switch (block.type) {
-      case "summary":
-        content.summary = (block as SummaryBlock).content;
-        break;
-
-      case "experience":
-        content.experience = ((block as ExperienceBlock).content || []).map((exp) => ({
-          title: exp.title || "",
-          company: exp.company || "",
-          location: exp.location || "",
-          start_date: exp.startDate || "",
-          end_date: exp.current ? "Present" : exp.endDate || "",
-          bullets: exp.bullets || [],
-        }));
-        break;
-
-      case "skills":
-        content.skills = (block as SkillsBlock).content || [];
-        break;
-
-      case "projects":
-        // Add project highlights to content
-        const projectBlock = block as ProjectsBlock;
-        if (projectBlock.content) {
-          content.highlights = projectBlock.content.map(
-            (p) => p.name + (p.description ? `: ${p.description}` : "")
-          );
-        }
-        break;
-
-      default:
-        // Other block types can be added as needed
-        break;
-    }
-  }
-
-  return content;
 }
 
 // ============================================================================
@@ -220,6 +165,12 @@ export function PreviewDiffLayout({
     },
     []
   );
+
+  // Attach keyboard event listeners
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
   // Track active section based on accepted blocks
   const handleSectionClick = useCallback((section: string) => {

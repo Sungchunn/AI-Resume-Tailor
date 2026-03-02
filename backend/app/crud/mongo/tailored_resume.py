@@ -6,7 +6,7 @@ Two Copies Architecture:
 - finalize() sets the user's final approved version
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Literal
 
 from bson import ObjectId
@@ -47,7 +47,7 @@ class TailoredResumeCRUD:
         obj_in: TailoredResumeCreate,
     ) -> TailoredResumeDocument:
         """Create a new tailored resume document."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         doc = {
             "resume_id": ObjectId(obj_in.resume_id),
             "user_id": obj_in.user_id,
@@ -214,7 +214,7 @@ class TailoredResumeCRUD:
         if not update_data:
             return await self.get(db, id)
 
-        update_data["updated_at"] = datetime.utcnow()
+        update_data["updated_at"] = datetime.now(timezone.utc)
 
         result = await db[self.collection_name].find_one_and_update(
             {"_id": ObjectId(id)},
@@ -238,7 +238,7 @@ class TailoredResumeCRUD:
         if not ObjectId.is_valid(id):
             return None
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         result = await db[self.collection_name].find_one_and_update(
             {"_id": ObjectId(id)},
             {
@@ -267,7 +267,7 @@ class TailoredResumeCRUD:
             {
                 "$set": {
                     "section_order": section_order,
-                    "updated_at": datetime.utcnow(),
+                    "updated_at": datetime.now(timezone.utc),
                 }
             },
             return_document=True,
@@ -286,12 +286,12 @@ class TailoredResumeCRUD:
 
         update_data: dict[str, Any] = {
             "status": status.value,
-            "updated_at": datetime.utcnow(),
+            "updated_at": datetime.now(timezone.utc),
         }
 
         # Set finalized_at if transitioning to finalized
         if status == TailoredResumeStatus.FINALIZED:
-            update_data["finalized_at"] = datetime.utcnow()
+            update_data["finalized_at"] = datetime.now(timezone.utc)
 
         result = await db[self.collection_name].find_one_and_update(
             {"_id": ObjectId(id)},

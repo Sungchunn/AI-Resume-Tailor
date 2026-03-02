@@ -34,7 +34,7 @@ import type {
   Suggestion,
   ResumeStyle,
 } from "@/lib/api/types";
-import type { AnyResumeBlock, ExperienceBlock, SkillsBlock, SummaryBlock, ProjectsBlock } from "@/lib/resume/types";
+import { blocksToContent } from "@/lib/tailoring/blocksToContent";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -62,59 +62,6 @@ const DEFAULT_STYLE: ResumeStyle = {
   line_spacing: 1.15,
   section_spacing: 1.0,
 };
-
-// ============================================================================
-// Block to Content Converter
-// ============================================================================
-
-/**
- * Converts AnyResumeBlock[] to TailoredContent for editor.
- */
-function blocksToContent(blocks: AnyResumeBlock[]): TailoredContent {
-  const content: TailoredContent = {
-    summary: "",
-    experience: [],
-    skills: [],
-    highlights: [],
-  };
-
-  for (const block of blocks) {
-    switch (block.type) {
-      case "summary":
-        content.summary = (block as SummaryBlock).content || "";
-        break;
-
-      case "experience":
-        content.experience = ((block as ExperienceBlock).content || []).map((exp) => ({
-          title: exp.title || "",
-          company: exp.company || "",
-          location: exp.location || "",
-          start_date: exp.startDate || "",
-          end_date: exp.current ? "Present" : exp.endDate || "",
-          bullets: exp.bullets || [],
-        }));
-        break;
-
-      case "skills":
-        content.skills = (block as SkillsBlock).content || [];
-        break;
-
-      case "projects":
-        const projectBlock = block as ProjectsBlock;
-        if (projectBlock.content) {
-          content.highlights = projectBlock.content.map(
-            (p) => p.name + (p.description ? `: ${p.description}` : "")
-          );
-        }
-        break;
-
-      default:
-        break;
-    }
-  }
-
-  return content;
-}
 
 // ============================================================================
 // Main Component
@@ -176,9 +123,6 @@ export default function ResumeEditorPage({ params }: PageProps) {
         styleSettings: DEFAULT_STYLE,
         sectionOrder: DEFAULT_SECTION_ORDER,
       };
-
-      // Hide banner after a few seconds
-      setTimeout(() => setShowFromReviewBanner(false), 5000);
     } else if (tailored) {
       // Initialize from fetched data (normal flow)
       setContent(tailored.tailored_content);
@@ -202,6 +146,13 @@ export default function ResumeEditorPage({ params }: PageProps) {
       };
     }
   }, [tailored, fromReviewPage, sessionData]);
+
+  // Auto-dismiss banner after 5 seconds with proper cleanup
+  useEffect(() => {
+    if (!showFromReviewBanner) return;
+    const timer = setTimeout(() => setShowFromReviewBanner(false), 5000);
+    return () => clearTimeout(timer);
+  }, [showFromReviewBanner]);
 
   // Detect changes
   useEffect(() => {

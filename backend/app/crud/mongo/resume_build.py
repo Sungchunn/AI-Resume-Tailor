@@ -1,6 +1,6 @@
 """MongoDB CRUD operations for ResumeBuild (workshop) documents."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Literal
 
 from bson import ObjectId
@@ -26,7 +26,7 @@ class ResumeBuildCRUD:
         obj_in: ResumeBuildCreate,
     ) -> ResumeBuildDocument:
         """Create a new resume build document."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         doc = {
             "user_id": obj_in.user_id,
             "job": obj_in.job.model_dump(),
@@ -106,7 +106,7 @@ class ResumeBuildCRUD:
         if not update_data:
             return await self.get(db, id)
 
-        update_data["updated_at"] = datetime.utcnow()
+        update_data["updated_at"] = datetime.now(timezone.utc)
 
         result = await db[self.collection_name].find_one_and_update(
             {"_id": ObjectId(id)},
@@ -127,10 +127,10 @@ class ResumeBuildCRUD:
 
         update_data = {
             "status": status,
-            "updated_at": datetime.utcnow(),
+            "updated_at": datetime.now(timezone.utc),
         }
         if status == "exported":
-            update_data["exported_at"] = datetime.utcnow()
+            update_data["exported_at"] = datetime.now(timezone.utc)
 
         result = await db[self.collection_name].find_one_and_update(
             {"_id": ObjectId(id)},
@@ -153,7 +153,7 @@ class ResumeBuildCRUD:
             {
                 "$set": {
                     "sections": sections,
-                    "updated_at": datetime.utcnow(),
+                    "updated_at": datetime.now(timezone.utc),
                 }
             },
             return_document=True,
@@ -174,7 +174,7 @@ class ResumeBuildCRUD:
             {
                 "$set": {
                     "section_order": section_order,
-                    "updated_at": datetime.utcnow(),
+                    "updated_at": datetime.now(timezone.utc),
                 }
             },
             return_document=True,
@@ -194,7 +194,7 @@ class ResumeBuildCRUD:
             {"_id": ObjectId(id)},
             {
                 "$addToSet": {"pulled_block_ids": block_id},
-                "$set": {"updated_at": datetime.utcnow()},
+                "$set": {"updated_at": datetime.now(timezone.utc)},
             },
             return_document=True,
         )
@@ -213,7 +213,7 @@ class ResumeBuildCRUD:
             {"_id": ObjectId(id)},
             {
                 "$pull": {"pulled_block_ids": block_id},
-                "$set": {"updated_at": datetime.utcnow()},
+                "$set": {"updated_at": datetime.now(timezone.utc)},
             },
             return_document=True,
         )
@@ -232,7 +232,7 @@ class ResumeBuildCRUD:
             {"_id": ObjectId(id)},
             {
                 "$push": {"pending_diffs": diff.model_dump()},
-                "$set": {"updated_at": datetime.utcnow()},
+                "$set": {"updated_at": datetime.now(timezone.utc)},
             },
             return_document=True,
         )
@@ -251,7 +251,7 @@ class ResumeBuildCRUD:
             {"_id": ObjectId(id)},
             {
                 "$pull": {"pending_diffs": {"id": diff_id}},
-                "$set": {"updated_at": datetime.utcnow()},
+                "$set": {"updated_at": datetime.now(timezone.utc)},
             },
             return_document=True,
         )
@@ -270,7 +270,7 @@ class ResumeBuildCRUD:
             {
                 "$set": {
                     "pending_diffs": [],
-                    "updated_at": datetime.utcnow(),
+                    "updated_at": datetime.now(timezone.utc),
                 }
             },
             return_document=True,

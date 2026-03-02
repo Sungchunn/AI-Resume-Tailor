@@ -1,6 +1,6 @@
 """MongoDB CRUD operations for Resume documents."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -23,7 +23,7 @@ class ResumeCRUD:
         obj_in: ResumeCreate,
     ) -> ResumeDocument:
         """Create a new resume document."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         doc = {
             "user_id": obj_in.user_id,
             "title": obj_in.title,
@@ -95,7 +95,7 @@ class ResumeCRUD:
             # No fields to update, just return current document
             return await self.get(db, id)
 
-        update_data["updated_at"] = datetime.utcnow()
+        update_data["updated_at"] = datetime.now(timezone.utc)
 
         result = await db[self.collection_name].find_one_and_update(
             {"_id": ObjectId(id)},

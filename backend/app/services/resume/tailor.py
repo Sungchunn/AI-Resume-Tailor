@@ -14,6 +14,7 @@ from typing import Any, TypedDict
 
 from pydantic import ValidationError
 
+from app.core.config import get_settings
 from app.models.mongo.resume import ParsedContent
 from app.services.ai.client import AIClient, AIServiceError
 from app.services.core.cache import CacheService
@@ -328,10 +329,11 @@ Output format (ensure valid JSON):
 
     async def _attempt_tailoring(self, user_prompt: str) -> dict[str, Any]:
         """Make a single tailoring attempt and parse the response."""
+        settings = get_settings()
         response = await self.ai.generate_json(
             system_prompt=TAILORING_SYSTEM_PROMPT,
             user_prompt=user_prompt,
-            max_tokens=8192,
+            max_tokens=settings.ai_max_tokens,
         )
 
         # Parse JSON response
