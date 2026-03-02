@@ -2,10 +2,36 @@
 
 import Link from "next/link";
 import type { JobListingResponse } from "@/lib/api/types";
-import { LinkedInIcon, ExternalLinkIcon } from "@/components/icons";
+import { useSaveJobListing } from "@/lib/api/hooks";
+import { LinkedInIcon, ExternalLinkIcon, BookmarkIcon } from "@/components/icons";
 
 interface JobListingTableProps {
   listings: JobListingResponse[];
+}
+
+function SaveButton({ listing }: { listing: JobListingResponse }) {
+  const saveMutation = useSaveJobListing();
+
+  const handleSave = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    saveMutation.mutate({ id: listing.id, save: !listing.is_saved });
+  };
+
+  return (
+    <button
+      onClick={handleSave}
+      disabled={saveMutation.isPending}
+      className={`p-1.5 rounded transition-colors ${
+        listing.is_saved
+          ? "text-primary bg-primary/10 hover:bg-primary/20"
+          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+      }`}
+      title={listing.is_saved ? "Unsave" : "Save"}
+    >
+      <BookmarkIcon filled={listing.is_saved} className="h-4 w-4" />
+    </button>
+  );
 }
 
 export function JobListingTable({ listings }: JobListingTableProps) {
@@ -30,8 +56,8 @@ export function JobListingTable({ listings }: JobListingTableProps) {
               <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                 Seniority
               </th>
-              <th className="text-center py-3 px-4 font-medium text-muted-foreground w-24">
-                Links
+              <th className="text-center py-3 px-4 font-medium text-muted-foreground w-28">
+                Actions
               </th>
             </tr>
           </thead>
@@ -103,9 +129,10 @@ export function JobListingTable({ listings }: JobListingTableProps) {
                   )}
                 </td>
 
-                {/* Links */}
+                {/* Actions */}
                 <td className="py-3 px-4">
-                  <div className="flex items-center justify-center gap-2">
+                  <div className="flex items-center justify-center gap-1">
+                    <SaveButton listing={listing} />
                     {listing.job_url && (
                       <a
                         href={listing.job_url}
