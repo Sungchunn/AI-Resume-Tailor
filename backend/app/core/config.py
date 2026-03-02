@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     database_url_sync: str | None = None  # Sync URL for Alembic migrations (psycopg2)
 
     # MongoDB
-    mongodb_uri: str = "mongodb://mongouser:mongopass@localhost:27017/resume_tailor?authSource=admin"
+    mongodb_uri: str = ""  # Must be configured via environment variable
     mongodb_database: str = "resume_tailor"
 
     # Redis
@@ -96,6 +96,13 @@ class Settings(BaseSettings):
         env = info.data.get("environment", "development")
         if env != "development" and v == "your-super-secret-key-change-in-production":
             raise ValueError("JWT secret must be changed in production")
+        return v
+
+    @field_validator("mongodb_uri")
+    @classmethod
+    def validate_mongodb_uri(cls, v: str) -> str:
+        if not v:
+            raise ValueError("MONGODB_URI environment variable must be set")
         return v
 
     class Config:
