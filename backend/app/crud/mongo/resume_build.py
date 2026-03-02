@@ -47,11 +47,19 @@ class ResumeBuildCRUD:
         self,
         db: AsyncIOMotorDatabase,
         id: str,
+        projection: dict[str, Any] | None = None,
     ) -> ResumeBuildDocument | None:
-        """Get a resume build by its ObjectId."""
+        """Get a resume build by its ObjectId.
+
+        Args:
+            db: MongoDB database instance
+            id: ResumeBuild ObjectId as string
+            projection: Optional MongoDB projection dict to limit returned fields.
+                       When using projection, non-projected fields will be None.
+        """
         if not ObjectId.is_valid(id):
             return None
-        doc = await db[self.collection_name].find_one({"_id": ObjectId(id)})
+        doc = await db[self.collection_name].find_one({"_id": ObjectId(id)}, projection)
         return ResumeBuildDocument(**doc) if doc else None
 
     async def get_by_user(
@@ -61,14 +69,15 @@ class ResumeBuildCRUD:
         skip: int = 0,
         limit: int = 100,
         status: str | None = None,
+        projection: dict[str, Any] | None = None,
     ) -> list[ResumeBuildDocument]:
         """Get all resume builds for a user, optionally filtered by status."""
-        query = {"user_id": user_id}
+        query: dict[str, Any] = {"user_id": user_id}
         if status:
             query["status"] = status
         cursor = (
             db[self.collection_name]
-            .find(query)
+            .find(query, projection)
             .sort("updated_at", -1)
             .skip(skip)
             .limit(limit)

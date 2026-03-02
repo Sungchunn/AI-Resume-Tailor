@@ -1,6 +1,7 @@
 """MongoDB CRUD operations for Resume documents."""
 
 from datetime import datetime, timezone
+from typing import Any
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -43,11 +44,21 @@ class ResumeCRUD:
         self,
         db: AsyncIOMotorDatabase,
         id: str,
+        projection: dict[str, Any] | None = None,
     ) -> ResumeDocument | None:
-        """Get a resume by its ObjectId."""
+        """Get a resume by its ObjectId.
+
+        Args:
+            db: MongoDB database instance
+            id: Resume ObjectId as string
+            projection: Optional MongoDB projection dict (e.g. {"title": 1, "user_id": 1})
+                       If provided, only specified fields are returned.
+                       Note: When using projection, the returned ResumeDocument may have
+                       None values for non-projected fields.
+        """
         if not ObjectId.is_valid(id):
             return None
-        doc = await db[self.collection_name].find_one({"_id": ObjectId(id)})
+        doc = await db[self.collection_name].find_one({"_id": ObjectId(id)}, projection)
         return ResumeDocument(**doc) if doc else None
 
     async def get_by_user(
@@ -56,11 +67,20 @@ class ResumeCRUD:
         user_id: int,
         skip: int = 0,
         limit: int = 100,
+        projection: dict[str, Any] | None = None,
     ) -> list[ResumeDocument]:
-        """Get all resumes for a user, ordered by updated_at descending."""
+        """Get all resumes for a user, ordered by updated_at descending.
+
+        Args:
+            db: MongoDB database instance
+            user_id: User ID to filter by
+            skip: Number of documents to skip
+            limit: Maximum documents to return
+            projection: Optional MongoDB projection dict to limit returned fields
+        """
         cursor = (
             db[self.collection_name]
-            .find({"user_id": user_id})
+            .find({"user_id": user_id}, projection)
             .sort("updated_at", -1)
             .skip(skip)
             .limit(limit)

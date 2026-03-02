@@ -74,11 +74,19 @@ class TailoredResumeCRUD:
         self,
         db: AsyncIOMotorDatabase,
         id: str,
+        projection: dict[str, Any] | None = None,
     ) -> TailoredResumeDocument | None:
-        """Get a tailored resume by its ObjectId."""
+        """Get a tailored resume by its ObjectId.
+
+        Args:
+            db: MongoDB database instance
+            id: TailoredResume ObjectId as string
+            projection: Optional MongoDB projection dict to limit returned fields.
+                       When using projection, non-projected fields will be None.
+        """
         if not ObjectId.is_valid(id):
             return None
-        doc = await db[self.collection_name].find_one({"_id": ObjectId(id)})
+        doc = await db[self.collection_name].find_one({"_id": ObjectId(id)}, projection)
         return TailoredResumeDocument(**doc) if doc else None
 
     async def get_compare_data(
@@ -127,6 +135,7 @@ class TailoredResumeCRUD:
         status: TailoredResumeStatus | None = None,
         skip: int = 0,
         limit: int = 100,
+        projection: dict[str, Any] | None = None,
     ) -> list[TailoredResumeDocument]:
         """Get all tailored resumes for a base resume, optionally filtered by status."""
         if not ObjectId.is_valid(resume_id):
@@ -138,7 +147,7 @@ class TailoredResumeCRUD:
 
         cursor = (
             db[self.collection_name]
-            .find(query)
+            .find(query, projection)
             .sort("updated_at", -1)
             .skip(skip)
             .limit(limit)
@@ -153,6 +162,7 @@ class TailoredResumeCRUD:
         status: TailoredResumeStatus | None = None,
         skip: int = 0,
         limit: int = 100,
+        projection: dict[str, Any] | None = None,
     ) -> list[TailoredResumeDocument]:
         """Get all tailored resumes for a user, optionally filtered by status."""
         query: dict[str, Any] = {"user_id": user_id}
@@ -161,7 +171,7 @@ class TailoredResumeCRUD:
 
         cursor = (
             db[self.collection_name]
-            .find(query)
+            .find(query, projection)
             .sort("updated_at", -1)
             .skip(skip)
             .limit(limit)
@@ -175,6 +185,7 @@ class TailoredResumeCRUD:
         job_source_type: Literal["user_created", "job_listing"],
         job_source_id: int,
         status: TailoredResumeStatus | None = None,
+        projection: dict[str, Any] | None = None,
     ) -> list[TailoredResumeDocument]:
         """Get all tailored resumes for a specific job."""
         query: dict[str, Any] = {
@@ -184,7 +195,7 @@ class TailoredResumeCRUD:
         if status is not None:
             query["status"] = status.value
 
-        cursor = db[self.collection_name].find(query)
+        cursor = db[self.collection_name].find(query, projection)
         docs = await cursor.to_list(length=100)
         return [TailoredResumeDocument(**doc) for doc in docs]
 
