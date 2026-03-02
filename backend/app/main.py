@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import api_router
 from app.core.config import get_settings
+from app.db.mongodb import close_mongodb, connect_mongodb
 from app.middleware.rate_limiter import RateLimitConfig, RateLimitMiddleware
 from app.services.scraping.scheduler import get_scheduler_service
 
@@ -14,6 +15,9 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifecycle - startup and shutdown events."""
+    # Startup: Initialize MongoDB connection
+    await connect_mongodb()
+
     # Startup: Initialize scheduler
     scheduler = get_scheduler_service()
     scheduler.start()
@@ -25,6 +29,9 @@ async def lifespan(app: FastAPI):
 
     # Shutdown: Stop scheduler gracefully
     scheduler.stop()
+
+    # Shutdown: Close MongoDB connection
+    await close_mongodb()
 
 
 app = FastAPI(

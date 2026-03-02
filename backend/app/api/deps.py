@@ -1,22 +1,47 @@
-from typing import Annotated, AsyncGenerator
+from typing import Annotated, AsyncGenerator, TypedDict
 
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.security import decode_token
 from app.db import get_db
+from app.db.mongodb import get_mongodb
 from app.models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    """Get database session dependency."""
+    """Get PostgreSQL database session dependency."""
     async for session in get_db():
         yield session
+
+
+def get_mongo_db() -> AsyncIOMotorDatabase:
+    """Get MongoDB database dependency."""
+    return get_mongodb()
+
+
+class DatabaseSessions(TypedDict):
+    """Type definition for dual database sessions."""
+
+    pg: AsyncSession
+    mongo: AsyncIOMotorDatabase
+
+
+async def get_databases(
+    pg: Annotated[AsyncSession, Depends(get_db_session)],
+    mongo: Annotated[AsyncIOMotorDatabase, Depends(get_mongo_db)],
+) -> DatabaseSessions:
+    """
+    Get both PostgreSQL and MongoDB sessions for cross-database operations.
+    Use this when you need to query both databases in a single endpoint.
+    """
+    return {"pg": pg, "mongo": mongo}
 
 
 async def get_current_user_id(
