@@ -6,7 +6,7 @@
 
 - **Frontend:** Next.js 15 + Bun (located in `/frontend`)
 - **Backend:** FastAPI + Python (located in `/backend`)
-- **Database:** PostgreSQL + Redis
+- **Database:** PostgreSQL + MongoDB + Redis
 - **Local Dev:** Docker Compose orchestration
 
 ---
@@ -96,7 +96,133 @@ SELECT * FROM users WHERE id = :id
 SELECT id, email, name, created_at FROM users WHERE id = :id
 ```
 
-### 6. API Documentation Synchronization
+### 6. Query Parameterization & Security
+
+**NEVER use string formatting (f-strings) or concatenation for SQL variables.**
+
+- Always use SQLAlchemy's built-in parameter binding or ORM constructs
+- This strictly prevents SQL injection vulnerabilities
+- Ensures the database driver handles type casting safely
+
+```python
+# WRONG - SQL injection vulnerability
+query = f"SELECT id, email FROM users WHERE email = '{email}'"
+query = "SELECT id, email FROM users WHERE email = '" + email + "'"
+
+# CORRECT - Use parameter binding
+query = select(User.id, User.email).where(User.email == email)
+stmt = text("SELECT id, email FROM users WHERE email = :email")
+result = await session.execute(stmt, {"email": email})
+```
+
+### 7. Dual-Database Transaction Safety
+
+**ALWAYS handle PostgreSQL rollbacks if the subsequent MongoDB operation fails.**
+
+- Because we lack native cross-database transactions, PostgreSQL must act as the source of truth
+- Always execute and flush the Postgres operation first, then attempt the MongoDB operation
+- If MongoDB raises an exception, explicitly call `await db.rollback()` on the Postgres session before raising the error
+
+```python
+# CORRECT - Handle rollback on MongoDB failure
+async def create_resume(db: AsyncSession, mongo: AsyncIOMotorDatabase, data: ResumeCreate):
+    # 1. Create Postgres record first (source of truth)
+    resume = Resume(**data.model_dump())
+    db.add(resume)
+    await db.flush()  # Get the ID without committing
+
+    try:
+        # 2. Create MongoDB document
+        await mongo.resumes.insert_one({"postgres_id": resume.id, "content": data.content})
+    except Exception as e:
+        # 3. Rollback Postgres if MongoDB fails
+        await db.rollback()
+        raise e
+
+    # 4. Commit Postgres only after MongoDB succeeds
+    await db.commit()
+    return resume
+```
+
+### 8. MongoDB Explicit Projections
+
+**NEVER fetch entire MongoDB documents if only specific fields are needed.**
+
+- This is the NoSQL equivalent of avoiding `SELECT *`
+- MongoDB documents (especially resumes with large arrays of parsed sections or AI suggestions) can be massive
+- Always use projection dictionaries to limit data transferred over the network and reduce memory overhead
+
+```python
+# WRONG - Fetches entire document including large nested arrays
+document = await mongo.resumes.find_one({"_id": resume_id})
+
+# CORRECT - Only fetch the fields you need
+document = await mongo.resumes.find_one(
+    {"_id": resume_id},
+    {"title": 1, "updated_at": 1, "status": 1}  # Explicit projection
+)
+
+# CORRECT - Exclude specific large fields
+document = await mongo.resumes.find_one(
+    {"_id": resume_id},
+    {"parsed_sections": 0, "ai_suggestions": 0}  # Exclude large fields
+)
+```
+
+### 9. Preventing N+1 Queries in SQLAlchemy
+
+**NEVER loop through ORM objects to access relationships without eager loading.**
+
+- Lazy loading in async SQLAlchemy will raise `MissingGreenlet` errors or cause severe performance bottlenecks (N+1 problem)
+- Always explicitly load relationships using `selectinload` (for collections) or `joinedload` (for many-to-one) in the initial query
+
+```python
+# WRONG - Will cause N+1 queries or MissingGreenlet errors
+users = await session.execute(select(User))
+for user in users.scalars():
+    print(user.resumes)  # Each access triggers a new query!
+
+# CORRECT - Eager load collections with selectinload
+from sqlalchemy.orm import selectinload, joinedload
+
+query = select(User).options(selectinload(User.resumes))
+users = await session.execute(query)
+
+# CORRECT - Eager load many-to-one with joinedload
+query = select(Resume).options(joinedload(Resume.owner))
+resumes = await session.execute(query)
+```
+
+### 10. Database Session Management in FastAPI
+
+**NEVER instantiate database sessions manually inside route functions.**
+
+- Always use FastAPI's `Depends` with a generator (`yield`) for database sessions
+- This ensures connections are cleanly returned to the pool even if the endpoint throws an unhandled exception
+
+```python
+# WRONG - Manual session management
+@router.get("/users/{user_id}")
+async def get_user(user_id: int):
+    session = AsyncSession(engine)  # Don't do this!
+    try:
+        user = await session.get(User, user_id)
+        return user
+    finally:
+        await session.close()
+
+# CORRECT - Use dependency injection
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with async_session_maker() as session:
+        yield session
+
+@router.get("/users/{user_id}")
+async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
+    user = await db.get(User, user_id)
+    return user
+```
+
+### 11. API Documentation Synchronization
 
 **Always update `/docs/api/` when backend API schemas change.**
 
