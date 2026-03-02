@@ -52,7 +52,7 @@ function getUndoableState(state: BlockEditorState): UndoableState {
  */
 export interface BlockEditorProviderProps {
   /** Resume ID for save operations */
-  resumeId: number;
+  resumeId: string;
   /** Initial parsed content from the backend */
   initialParsedContent?: ParsedResumeContent | null;
   /** Initial style settings from the backend */

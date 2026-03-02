@@ -54,16 +54,20 @@ export interface ResumeUpdate {
   style?: ResumeStyle | null;
 }
 
+export interface OriginalFileInfo {
+  storage_key?: string | null;
+  filename?: string | null;
+  file_type?: string | null;
+  size_bytes?: number | null;
+}
+
 export interface ResumeResponse extends ResumeBase {
-  id: number;
-  owner_id: number;
-  parsed_content?: Record<string, unknown> | null;
+  id: string; // MongoDB ObjectId as string
+  user_id: number;
+  parsed?: Record<string, unknown> | null;
   style?: ResumeStyle | null;
   html_content?: string | null;
-  original_file_key?: string | null;
-  original_filename?: string | null;
-  file_type?: "pdf" | "docx" | null;
-  file_size_bytes?: number | null;
+  original_file?: OriginalFileInfo | null;
   created_at: string;
   updated_at?: string | null;
 }
@@ -98,13 +102,13 @@ export interface ApiError {
 
 // Tailor Types
 export interface TailorRequest {
-  resume_id: number;
+  resume_id: string; // MongoDB ObjectId as string
   job_id?: number;
   job_listing_id?: number;
 }
 
 export interface QuickMatchRequest {
-  resume_id: number;
+  resume_id: string; // MongoDB ObjectId as string
   job_id?: number;
   job_listing_id?: number;
 }
@@ -134,7 +138,7 @@ export interface TailoredContent {
 
 export interface TailorResponse {
   id: number;
-  resume_id: number;
+  resume_id: string;
   job_id: number;
   tailored_content: TailoredContent;
   suggestions: Suggestion[];
@@ -147,7 +151,7 @@ export interface TailorResponse {
 
 export interface TailoredResumeFullResponse {
   id: number;
-  resume_id: number;
+  resume_id: string;
   job_id: number | null;
   job_listing_id: number | null;
   tailored_content: TailoredContent;
@@ -177,7 +181,7 @@ export interface QuickMatchResponse {
 
 export interface TailoredResumeListItem {
   id: number;
-  resume_id: number;
+  resume_id: string;
   job_id: number | null;
   job_listing_id: number | null;
   match_score: number | null;
@@ -190,7 +194,7 @@ export interface TailoredResumeListItem {
  */
 export interface TailoringCompareResponse {
   id: number;
-  resume_id: number;
+  resume_id: string;
   job_id: number | null;
   job_listing_id: number | null;
   /** Original resume blocks (from the source resume) */
@@ -833,7 +837,7 @@ export type ParseTaskStatus = "pending" | "completed" | "failed";
 export interface ParseTaskResponse {
   task_id: string;
   status: ParseTaskStatus;
-  resume_id: number;
+  resume_id: string; // MongoDB ObjectId as string
 }
 
 export interface ParseStatusResponse extends ParseTaskResponse {

@@ -5,7 +5,7 @@ import { useExportResume, useExportTemplates } from "@/lib/api/hooks";
 import type { ExportStyleTemplate, ExportFormat } from "@/lib/api/types";
 
 interface ExportDialogProps {
-  resumeId: number;
+  resumeId: string;
   resumeTitle: string;
   onClose: () => void;
 }

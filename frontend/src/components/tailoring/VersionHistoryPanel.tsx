@@ -56,7 +56,7 @@ function formatDistanceToNow(date: Date): string {
 
 interface VersionHistoryPanelProps {
   /** Resume ID to fetch versions for */
-  resumeId: number;
+  resumeId: string;
   /** Currently active tailored resume ID (for highlighting) */
   currentTailoredId?: number;
   /** Optional callback when a version is selected */
@@ -69,7 +69,7 @@ interface VersionHistoryPanelProps {
 
 interface TailoredVersionItem {
   id: number;
-  resume_id: number;
+  resume_id: string;
   job_id: number | null;
   job_listing_id: number | null;
   match_score: number | null;

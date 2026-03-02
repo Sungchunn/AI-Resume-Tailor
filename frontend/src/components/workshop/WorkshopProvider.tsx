@@ -79,7 +79,7 @@ export function WorkshopProvider({ tailoredId, children }: WorkshopProviderProps
     lastUpdated: scoreLastUpdated,
   } = useScoreCalculation({
     content: state.content,
-    resumeId: state.tailoredResume?.resume_id ?? 0,
+    resumeId: state.tailoredResume?.resume_id ?? "",
     jobId: state.tailoredResume?.job_id ?? null,
     jobListingId: state.tailoredResume?.job_listing_id ?? null,
     enabled: !!(state.tailoredResume?.job_id || state.tailoredResume?.job_listing_id) && !state.isLoading,

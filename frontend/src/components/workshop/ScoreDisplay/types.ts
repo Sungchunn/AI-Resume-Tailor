@@ -28,7 +28,7 @@ export type ScoreCalculationStatus =
 
 export interface UseScoreCalculationOptions {
   content: TailoredContent;
-  resumeId: number;
+  resumeId: string;
   jobId: number | null;
   jobListingId?: number | null;
   enabled?: boolean;

@@ -6,7 +6,7 @@ import { useParseResume, useParseStatus } from "@/lib/api";
 
 interface ParseResumeButtonProps {
   /** Resume ID to parse */
-  resumeId: number;
+  resumeId: string;
   /** Whether the resume already has parsed content */
   hasParsedContent: boolean;
   /** Callback when parsing completes successfully */

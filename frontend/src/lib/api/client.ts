@@ -217,7 +217,7 @@ export const resumeApi = {
   list: (skip = 0, limit = 100): Promise<ResumeResponse[]> =>
     fetchApi(`/api/resumes?skip=${skip}&limit=${limit}`),
 
-  get: (id: number): Promise<ResumeResponse> =>
+  get: (id: string): Promise<ResumeResponse> =>
     fetchApi(`/api/resumes/${id}`),
 
   create: (data: ResumeCreate): Promise<ResumeResponse> =>
@@ -226,13 +226,13 @@ export const resumeApi = {
       body: JSON.stringify(data),
     }),
 
-  update: (id: number, data: ResumeUpdate): Promise<ResumeResponse> =>
+  update: (id: string, data: ResumeUpdate): Promise<ResumeResponse> =>
     fetchApi(`/api/resumes/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     }),
 
-  delete: (id: number): Promise<void> =>
+  delete: (id: string): Promise<void> =>
     fetchApi(`/api/resumes/${id}`, {
       method: "DELETE",
     }),
@@ -241,7 +241,7 @@ export const resumeApi = {
   getExportTemplates: (): Promise<ExportTemplatesResponse> =>
     fetchApi("/api/resumes/export/templates"),
 
-  export: async (id: number, data: ResumeExportRequest): Promise<Blob> => {
+  export: async (id: string, data: ResumeExportRequest): Promise<Blob> => {
     const response = await fetch(
       `${API_BASE_URL}/api/resumes/${id}/export`,
       {
@@ -261,12 +261,12 @@ export const resumeApi = {
   },
 
   // Parse operations
-  parse: (id: number, force = false): Promise<ParseTaskResponse> =>
+  parse: (id: string, force = false): Promise<ParseTaskResponse> =>
     fetchApi(`/api/resumes/${id}/parse${force ? "?force=true" : ""}`, {
       method: "POST",
     }),
 
-  getParseStatus: (id: number, taskId: string): Promise<ParseStatusResponse> =>
+  getParseStatus: (id: string, taskId: string): Promise<ParseStatusResponse> =>
     fetchApi(`/api/resumes/${id}/parse/status?task_id=${encodeURIComponent(taskId)}`),
 };
 
@@ -316,7 +316,7 @@ export const tailorApi = {
   list: (): Promise<TailoredResumeListItem[]> =>
     fetchApi("/api/tailor"),
 
-  listByResume: (resumeId: number): Promise<TailoredResumeListItem[]> =>
+  listByResume: (resumeId: string): Promise<TailoredResumeListItem[]> =>
     fetchApi(`/api/tailor?resume_id=${resumeId}`),
 
   listByJob: (jobId: number): Promise<TailoredResumeListItem[]> =>

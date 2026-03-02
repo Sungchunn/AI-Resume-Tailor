@@ -12,8 +12,7 @@ interface PageProps {
 }
 
 export default function ResumeEditPage({ params }: PageProps) {
-  const { id } = use(params);
-  const resumeId = parseInt(id, 10);
+  const { id: resumeId } = use(params);
   const searchParams = useSearchParams();
 
   // Get job context from query params (passed when navigating from job board)
@@ -33,11 +32,11 @@ export default function ResumeEditPage({ params }: PageProps) {
   // Poll for auto-parse completion
   const { data: parseStatus } = useParseStatus(resumeId, autoParseTaskId);
 
-  // Auto-parse effect: trigger parsing when resume has raw_content but no parsed_content
+  // Auto-parse effect: trigger parsing when resume has raw_content but no parsed
   useEffect(() => {
     if (
       resume &&
-      !resume.parsed_content &&
+      !resume.parsed &&
       resume.raw_content &&
       !autoParseAttempted &&
       !autoParseTaskId
@@ -54,7 +53,7 @@ export default function ResumeEditPage({ params }: PageProps) {
   useEffect(() => {
     if (parseStatus?.status === "completed") {
       setAutoParseTaskId(null);
-      refetch(); // Refresh resume data to get new parsed_content
+      refetch(); // Refresh resume data to get new parsed content
     } else if (parseStatus?.status === "failed") {
       setAutoParseTaskId(null);
       console.error("Auto-parse failed:", parseStatus.error);
@@ -140,7 +139,7 @@ export default function ResumeEditPage({ params }: PageProps) {
   return (
     <BlockEditorProvider
       resumeId={resumeId}
-      initialParsedContent={resume.parsed_content as ParsedResumeContent | null}
+      initialParsedContent={resume.parsed as ParsedResumeContent | null}
       initialStyle={resume.style as Record<string, unknown> | null}
       onSave={handleSave}
     >
@@ -148,7 +147,7 @@ export default function ResumeEditPage({ params }: PageProps) {
         resumeId={resumeId}
         title={resume.title}
         hasRawContent={!!resume.raw_content}
-        hasParsedContent={!!resume.parsed_content}
+        hasParsedContent={!!resume.parsed}
         onParseComplete={handleParseComplete}
         jobId={jobId}
         jobListingId={jobListingId}

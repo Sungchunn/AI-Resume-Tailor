@@ -16,19 +16,18 @@ interface PageProps {
 }
 
 export default function ResumeDetailPage({ params }: PageProps) {
-  const { id } = use(params);
-  const resumeId = parseInt(id, 10);
+  const { id: resumeId } = use(params);
   const router = useRouter();
   const { data: resume, isLoading, error } = useResume(resumeId);
   const deleteResume = useDeleteResume();
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showRawContent, setShowRawContent] = useState(false);
 
-  // Convert parsed_content to blocks for preview
+  // Convert parsed to blocks for preview
   const blocks = useMemo(() => {
-    if (!resume?.parsed_content) return [];
-    return parsedContentToBlocks(resume.parsed_content as ParsedResumeContent);
-  }, [resume?.parsed_content]);
+    if (!resume?.parsed) return [];
+    return parsedContentToBlocks(resume.parsed as ParsedResumeContent);
+  }, [resume?.parsed]);
 
   // Get style settings
   const style = useMemo(() => {

@@ -27,7 +27,7 @@ import {
 import { ResumePreview } from "@/components/workshop/ResumePreview";
 import { DiffReviewPanel } from "./DiffReviewPanel";
 import type { TailoringSession, BlockDiff } from "@/lib/tailoring/types";
-import type { ResumeStyle } from "@/lib/api/types";
+import type { ResumeStyle, TailoredContent } from "@/lib/api/types";
 import { blocksToContent } from "@/lib/tailoring/blocksToContent";
 
 // ============================================================================

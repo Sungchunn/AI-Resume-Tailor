@@ -7,7 +7,7 @@ import { ParseResumeButton } from "./ParseResumeButton";
 
 interface EditorHeaderProps {
   /** Resume ID for back navigation */
-  resumeId: number;
+  resumeId: string;
   /** Resume title to display */
   title: string;
   /** Whether the resume has raw content that can be parsed */

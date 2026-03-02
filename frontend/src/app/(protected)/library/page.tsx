@@ -89,7 +89,7 @@ function ResumesTab() {
   const { data: resumes, isLoading, error, refetch } = useResumes();
   const deleteResume = useDeleteResume();
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this resume?")) {
       deleteResume.mutate(id);
     }

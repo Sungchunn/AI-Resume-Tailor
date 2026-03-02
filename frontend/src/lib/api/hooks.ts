@@ -47,8 +47,8 @@ export const queryKeys = {
   resumes: {
     all: ["resumes"] as const,
     list: () => [...queryKeys.resumes.all, "list"] as const,
-    detail: (id: number) => [...queryKeys.resumes.all, "detail", id] as const,
-    parseStatus: (resumeId: number, taskId: string) =>
+    detail: (id: string) => [...queryKeys.resumes.all, "detail", id] as const,
+    parseStatus: (resumeId: string, taskId: string) =>
       [...queryKeys.resumes.all, "parseStatus", resumeId, taskId] as const,
   },
   jobs: {
@@ -60,7 +60,7 @@ export const queryKeys = {
     all: ["tailored"] as const,
     list: () => [...queryKeys.tailored.all, "list"] as const,
     detail: (id: number) => [...queryKeys.tailored.all, "detail", id] as const,
-    byResume: (resumeId: number) =>
+    byResume: (resumeId: string) =>
       [...queryKeys.tailored.all, "resume", resumeId] as const,
     byJob: (jobId: number) =>
       [...queryKeys.tailored.all, "job", jobId] as const,
@@ -119,7 +119,7 @@ export function useResumes() {
   });
 }
 
-export function useResume(id: number) {
+export function useResume(id: string) {
   return useQuery({
     queryKey: queryKeys.resumes.detail(id),
     queryFn: () => resumeApi.get(id),
@@ -142,7 +142,7 @@ export function useUpdateResume() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: ResumeUpdate }) =>
+    mutationFn: ({ id, data }: { id: string; data: ResumeUpdate }) =>
       resumeApi.update(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.resumes.detail(id) });
@@ -155,7 +155,7 @@ export function useDeleteResume() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => resumeApi.delete(id),
+    mutationFn: (id: string) => resumeApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.resumes.all });
     },
@@ -175,7 +175,7 @@ export function useExportResume() {
       resumeId,
       data,
     }: {
-      resumeId: number;
+      resumeId: string;
       data: import("./types").ResumeExportRequest;
     }) => resumeApi.export(resumeId, data),
   });
@@ -184,13 +184,13 @@ export function useExportResume() {
 // Trigger parse mutation
 export function useParseResume() {
   return useMutation({
-    mutationFn: ({ id, force = false }: { id: number; force?: boolean }) =>
+    mutationFn: ({ id, force = false }: { id: string; force?: boolean }) =>
       resumeApi.parse(id, force),
   });
 }
 
 // Poll for parse status (enabled when taskId is set)
-export function useParseStatus(resumeId: number, taskId: string | null) {
+export function useParseStatus(resumeId: string, taskId: string | null) {
   return useQuery({
     queryKey: queryKeys.resumes.parseStatus(resumeId, taskId ?? ""),
     queryFn: () => resumeApi.getParseStatus(resumeId, taskId!),
@@ -291,7 +291,7 @@ export function useTailoredResume(id: number) {
   });
 }
 
-export function useTailoredResumesByResume(resumeId: number) {
+export function useTailoredResumesByResume(resumeId: string) {
   return useQuery({
     queryKey: queryKeys.tailored.byResume(resumeId),
     queryFn: () => tailorApi.listByResume(resumeId),

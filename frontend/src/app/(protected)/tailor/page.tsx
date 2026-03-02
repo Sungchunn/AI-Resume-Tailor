@@ -32,7 +32,7 @@ function TailorPageContent() {
   const quickMatch = useQuickMatch();
 
   const [step, setStep] = useState<TailorStep>("select");
-  const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
+  const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
 
   const selectedResume = resumes?.find((r) => r.id === selectedResumeId);

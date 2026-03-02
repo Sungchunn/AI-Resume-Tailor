@@ -10,7 +10,7 @@ import ExportDialog from "@/components/export/ExportDialog";
 
 interface EditorLayoutProps {
   /** Resume ID */
-  resumeId: number;
+  resumeId: string;
   /** Resume title for display */
   title: string;
   /** Whether the resume has raw content that can be parsed */
