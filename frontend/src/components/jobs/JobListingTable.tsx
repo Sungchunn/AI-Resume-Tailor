@@ -5,6 +5,18 @@ import type { JobListingResponse } from "@/lib/api/types";
 import { useSaveJobListing } from "@/lib/api/hooks";
 import { LinkedInIcon, ExternalLinkIcon, BookmarkIcon } from "@/components/icons";
 
+function formatRelativeDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  return date.toLocaleDateString();
+}
+
 interface JobListingTableProps {
   listings: JobListingResponse[];
 }
@@ -41,6 +53,9 @@ export function JobListingTable({ listings }: JobListingTableProps) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/50">
+              <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                Posted
+              </th>
               <th className="text-left py-3 px-4 font-medium text-muted-foreground w-12">
                 {/* Logo column */}
               </th>
@@ -67,6 +82,11 @@ export function JobListingTable({ listings }: JobListingTableProps) {
                 key={listing.id}
                 className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
               >
+                {/* Date Posted */}
+                <td className="py-3 px-4 text-muted-foreground">
+                  {listing.date_posted ? formatRelativeDate(listing.date_posted) : "—"}
+                </td>
+
                 {/* Company Logo */}
                 <td className="py-3 px-4">
                   {listing.company_logo ? (
