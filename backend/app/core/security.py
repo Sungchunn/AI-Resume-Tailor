@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -11,13 +12,23 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against its hash."""
+    """Verify a password against its hash (synchronous)."""
     return pwd_context.verify(plain_password, hashed_password)
 
 
+async def verify_password_async(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against its hash without blocking the event loop."""
+    return await asyncio.to_thread(pwd_context.verify, plain_password, hashed_password)
+
+
 def get_password_hash(password: str) -> str:
-    """Hash a password."""
+    """Hash a password (synchronous)."""
     return pwd_context.hash(password)
+
+
+async def get_password_hash_async(password: str) -> str:
+    """Hash a password without blocking the event loop."""
+    return await asyncio.to_thread(pwd_context.hash, password)
 
 
 def create_access_token(subject: int | str, expires_delta: timedelta | None = None) -> str:
