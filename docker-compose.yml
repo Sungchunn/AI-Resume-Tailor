@@ -47,6 +47,23 @@ services:
       timeout: 5s
       retries: 5
 
+  mongodb:
+    image: mongo:7.0
+    container_name: resume-tailor-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-mongouser}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mongopass}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-resume_tailor}
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -56,6 +73,8 @@ services:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-resume_tailor}
       DATABASE_URL_SYNC: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-resume_tailor}
       REDIS_URL: redis://redis:6379
+      MONGODB_URI: mongodb://${MONGO_USER:-mongouser}:${MONGO_PASSWORD:-mongopass}@mongodb:27017/${MONGO_DB:-resume_tailor}?authSource=admin
+      MONGODB_DATABASE: ${MONGO_DB:-resume_tailor}
       MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
@@ -77,8 +96,11 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      mongodb:
+        condition: service_healthy
 
 volumes:
   postgres_data:
   redis_data:
   minio_data:
+  mongodb_data:

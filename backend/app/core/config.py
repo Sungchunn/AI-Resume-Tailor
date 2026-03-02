@@ -5,9 +5,13 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # Database
+    # Database (PostgreSQL)
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/resume_tailor"
     database_url_sync: str | None = None  # Sync URL for Alembic migrations (psycopg2)
+
+    # MongoDB
+    mongodb_uri: str = "mongodb://mongouser:mongopass@localhost:27017/resume_tailor?authSource=admin"
+    mongodb_database: str = "resume_tailor"
 
     # Redis
     redis_url: str = "redis://localhost:6379"

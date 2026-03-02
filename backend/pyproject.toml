@@ -12,12 +12,14 @@ fastapi = "^0.109.0"
 uvicorn = {extras = ["standard"], version = "^0.27.0"}
 pydantic = "^2.5.0"
 pydantic-settings = "^2.1.0"
-# Database
+# Database (PostgreSQL)
 sqlalchemy = "^2.0.0"
 asyncpg = "^0.29.0"
 psycopg2-binary = "^2.9.0"  # Sync driver for Alembic migrations
 alembic = "^1.13.0"
 pgvector = "^0.3.0"  # Vector similarity search with PostgreSQL
+# Database (MongoDB)
+motor = "^3.3.0"  # Async MongoDB driver
 # Redis
 redis = "^5.0.0"
 # Security
