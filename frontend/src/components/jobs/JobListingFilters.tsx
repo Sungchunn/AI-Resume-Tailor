@@ -36,7 +36,6 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
   const [isExpanded, setIsExpanded] = useState(true);
   const [filterOptions, setFilterOptions] = useState<{
     countries: FilterOption[];
-    regions: FilterOption[];
     seniorities: FilterOption[];
     cities: FilterOption[];
   } | null>(null);
@@ -144,23 +143,6 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
     });
   };
 
-  const handleRegionChange = (value: string) => {
-    const currentRegions = filters.region?.split(",") || [];
-    let newRegions: string[];
-
-    if (currentRegions.includes(value)) {
-      newRegions = currentRegions.filter((r) => r !== value);
-    } else {
-      newRegions = [...currentRegions, value];
-    }
-
-    onFiltersChange({
-      ...filters,
-      region: newRegions.length > 0 ? newRegions.join(",") : undefined,
-      offset: 0,
-    });
-  };
-
   const handleRemoteOnlyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onFiltersChange({
       ...filters,
@@ -244,7 +226,6 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
 
   const selectedSeniorities = filters.seniority?.split(",") || [];
   const selectedCountries = filters.country?.split(",") || [];
-  const selectedRegions = filters.region?.split(",") || [];
   const selectedCities = filters.city?.split(",") || [];
   const excludedCities = filters.exclude_city?.split(",") || [];
   const excludedCountries = filters.exclude_country?.split(",") || [];
@@ -252,7 +233,6 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
   // Use dynamic options or fallback
   const seniorityOptions = filterOptions?.seniorities || FALLBACK_SENIORITY_OPTIONS;
   const countryOptions = filterOptions?.countries || [];
-  const regionOptions = filterOptions?.regions || [];
   const cityOptions = filterOptions?.cities || [];
 
   const hasActiveFilters =
@@ -262,7 +242,6 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
     filters.country ||
     filters.exclude_city ||
     filters.exclude_country ||
-    filters.region ||
     filters.seniority ||
     filters.is_remote ||
     filters.easy_apply ||
@@ -285,6 +264,33 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
           placeholder="Search jobs..."
           className="w-full px-3 py-2 bg-background text-foreground border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         />
+      </div>
+
+      {/* Sort */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-foreground/80 mb-1">
+          Sort by
+        </label>
+        <div className="flex gap-2">
+          <select
+            value={filters.sort_by || "date_posted"}
+            onChange={handleSortChange}
+            className="flex-1 px-3 py-2 bg-background text-foreground border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          >
+            {SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleSortOrderChange}
+            className="px-3 py-2 border border-input rounded-lg hover:bg-accent"
+            title={filters.sort_order === "asc" ? "Ascending" : "Descending"}
+          >
+            {filters.sort_order === "asc" ? "↑" : "↓"}
+          </button>
+        </div>
       </div>
 
       {/* Collapsible section */}
@@ -406,34 +412,6 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
             </div>
           )}
 
-          {/* Region */}
-          {regionOptions.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-foreground/80 mb-2">
-                Region
-              </label>
-              <div className="space-y-2">
-                {regionOptions.map((option) => (
-                  <label
-                    key={option.value}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedRegions.includes(option.value)}
-                      onChange={() => handleRegionChange(option.value)}
-                      className="h-4 w-4 text-primary border-input rounded focus:ring-primary-500"
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {option.label}
-                      <span className="text-muted-foreground/60 ml-1">({option.count})</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Seniority */}
           {seniorityOptions.length > 0 && (
             <div>
@@ -464,28 +442,6 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
             </div>
           )}
 
-          {/* Remote & Easy Apply Toggles */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.is_remote === true}
-                onChange={handleRemoteOnlyChange}
-                className="h-4 w-4 text-primary border-input rounded focus:ring-primary-500"
-              />
-              <span className="text-sm text-muted-foreground">Remote only</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.easy_apply === true}
-                onChange={handleEasyApplyChange}
-                className="h-4 w-4 text-primary border-input rounded focus:ring-primary-500"
-              />
-              <span className="text-sm text-muted-foreground">Easy Apply only</span>
-            </label>
-          </div>
-
           {/* Applicant Count */}
           <div>
             <label className="block text-sm font-medium text-foreground/80 mb-2">
@@ -514,6 +470,28 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
                 className="h-4 w-4 text-primary border-input rounded focus:ring-primary-500"
               />
               <span className="text-sm text-muted-foreground">Include jobs with unknown applicant count</span>
+            </label>
+          </div>
+
+          {/* Remote & Easy Apply Toggles */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.is_remote === true}
+                onChange={handleRemoteOnlyChange}
+                className="h-4 w-4 text-primary border-input rounded focus:ring-primary-500"
+              />
+              <span className="text-sm text-muted-foreground">Remote only</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.easy_apply === true}
+                onChange={handleEasyApplyChange}
+                className="h-4 w-4 text-primary border-input rounded focus:ring-primary-500"
+              />
+              <span className="text-sm text-muted-foreground">Easy Apply only</span>
             </label>
           </div>
 
@@ -560,33 +538,6 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
               />
               <span className="text-sm text-muted-foreground">Hide hidden jobs</span>
             </label>
-          </div>
-
-          {/* Sort */}
-          <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-1">
-              Sort by
-            </label>
-            <div className="flex gap-2">
-              <select
-                value={filters.sort_by || "date_posted"}
-                onChange={handleSortChange}
-                className="flex-1 px-3 py-2 bg-background text-foreground border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              >
-                {SORT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={handleSortOrderChange}
-                className="px-3 py-2 border border-input rounded-lg hover:bg-accent"
-                title={filters.sort_order === "asc" ? "Ascending" : "Descending"}
-              >
-                {filters.sort_order === "asc" ? "↑" : "↓"}
-              </button>
-            </div>
           </div>
 
           {/* Clear Filters */}
