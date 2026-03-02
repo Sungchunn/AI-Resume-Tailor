@@ -106,8 +106,8 @@ class TailoringService:
 
     async def tailor(
         self,
-        resume_id: int,
-        job_id: int,
+        resume_id: str | int,  # MongoDB ObjectId string or PostgreSQL int
+        job_id: str | int,  # Job source ID (always from PostgreSQL)
         raw_resume: str,
         raw_job: str,
     ) -> TailoringResult:
