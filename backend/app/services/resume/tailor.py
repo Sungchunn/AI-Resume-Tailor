@@ -1,5 +1,14 @@
+"""Resume tailoring service using AI.
+
+Two Copies Architecture:
+- AI generates a COMPLETE tailored resume document (not individual suggestions)
+- Output matches ParsedContent schema from MongoDB resume model
+- IDs are preserved from the original for frontend section-by-section diffing
+"""
+
 import json
-from typing import TypedDict
+import re
+from typing import Any, TypedDict
 
 from app.services.ai.client import AIClient
 from app.services.core.cache import CacheService
@@ -7,69 +16,77 @@ from app.services.resume.parser import ResumeParser, ParsedResume
 from app.services.job.analyzer import JobAnalyzer, ParsedJob
 
 
-class Suggestion(TypedDict):
-    section: str  # "experience", "skills", "summary", etc.
-    type: str  # "rewrite", "add", "remove", "reorder"
-    original: str
-    suggested: str
-    reason: str
-    impact: str  # "high", "medium", "low"
-
-
-class TailoredContent(TypedDict):
-    summary: str
-    experience: list[dict]
-    skills: list[str]
-    highlights: list[str]
-
-
 class TailoringResult(TypedDict):
-    tailored_content: TailoredContent
-    suggestions: list[Suggestion]
+    """Result of tailoring a resume.
+
+    Two Copies Architecture:
+    - tailored_content: Complete tailored resume (same structure as ParsedContent)
+    - No suggestions array - frontend does diffing client-side
+    """
+
+    tailored_content: dict[str, Any]  # Complete tailored resume (ParsedContent structure)
     match_score: float
     skill_matches: list[str]
     skill_gaps: list[str]
     keyword_coverage: float
 
 
-TAILORING_SYSTEM_PROMPT = """You are an expert resume tailoring assistant. Your job is to optimize resumes for specific job descriptions.
+# System prompt for Two Copies architecture
+TAILORING_SYSTEM_PROMPT = """You are an expert resume tailoring assistant. Your job is to create a complete, tailored version of a resume for a specific job description.
 
-Given a parsed resume and parsed job description, generate:
-1. Tailored content that emphasizes relevant experience
-2. Specific suggestions for improvements
-3. A match score between 0-100
+CRITICAL: You must output the ENTIRE resume as a complete JSON object, not just the changed sections. The output structure must exactly match the input structure.
 
-Output the following JSON structure:
+Output the following JSON structure (this is the ParsedContent schema):
 {
-  "tailored_content": {
-    "summary": "A tailored professional summary highlighting relevant experience for this role",
-    "experience": [
-      {
-        "title": "Job Title",
-        "company": "Company",
-        "location": "Location",
-        "start_date": "Start",
-        "end_date": "End",
-        "bullets": [
-          "Rewritten bullet emphasizing relevant skills and achievements"
-        ]
-      }
-    ],
-    "skills": ["Prioritized", "Skills", "List", "Most", "Relevant", "First"],
-    "highlights": [
-      "Key achievement or experience that directly matches job requirements"
-    ]
+  "contact": {
+    "name": "string or null",
+    "email": "string or null",
+    "phone": "string or null",
+    "location": "string or null",
+    "linkedin": "string or null",
+    "github": "string or null",
+    "website": "string or null"
   },
-  "suggestions": [
+  "summary": "A tailored professional summary highlighting relevant experience for this role",
+  "experience": [
     {
-      "section": "experience",
-      "type": "rewrite",
-      "original": "Original bullet point text",
-      "suggested": "Improved bullet point emphasizing relevant skills",
-      "reason": "This change highlights your Python experience which is required",
-      "impact": "high"
+      "id": "PRESERVE FROM ORIGINAL - critical for diffing",
+      "title": "Job Title",
+      "company": "Company",
+      "location": "Location",
+      "start_date": "Start",
+      "end_date": "End",
+      "bullets": [
+        "Rewritten bullet emphasizing relevant skills and achievements"
+      ]
     }
   ],
+  "education": [
+    {
+      "id": "PRESERVE FROM ORIGINAL",
+      "degree": "Degree",
+      "institution": "Institution",
+      "location": "Location",
+      "graduation_date": "Date",
+      "gpa": "GPA or null",
+      "honors": ["Honor 1", "Honor 2"]
+    }
+  ],
+  "skills": ["Prioritized", "Skills", "List", "Most", "Relevant", "First"],
+  "certifications": ["Certification 1", "Certification 2"],
+  "projects": [
+    {
+      "id": "PRESERVE FROM ORIGINAL",
+      "name": "Project Name",
+      "description": "Tailored description emphasizing relevant aspects",
+      "technologies": ["Tech 1", "Tech 2"],
+      "url": "URL or null"
+    }
+  ]
+}
+
+Also include scoring in a separate object:
+{
   "match_score": 75,
   "skill_matches": ["python", "aws", "docker"],
   "skill_gaps": ["kubernetes", "terraform"],
@@ -77,20 +94,28 @@ Output the following JSON structure:
 }
 
 Rules for tailoring:
-1. PRESERVE truthfulness - never invent experience or skills the candidate doesn't have
-2. REWORD bullet points to emphasize relevant keywords and skills
-3. PRIORITIZE experiences most relevant to the job
-4. ADD quantifiable metrics where possible (if the resume has them)
-5. MATCH the language and keywords used in the job description
-6. For the match_score: 0-40 = poor fit, 41-60 = moderate fit, 61-80 = good fit, 81-100 = excellent fit
-7. Suggestions should be actionable and specific
-8. skill_matches are skills from the job that appear in the resume
-9. skill_gaps are required/preferred skills from the job missing from the resume
-10. keyword_coverage is the percentage of job keywords found in the resume (0.0 to 1.0)"""
+1. PRESERVE IDs - Every experience, education, and project entry MUST keep its original ID. This is critical for the frontend to do section-by-section diffing.
+2. PRESERVE TRUTHFULNESS - Never invent experience or skills the candidate doesn't have.
+3. OUTPUT THE ENTIRE RESUME - Include ALL sections, even unchanged ones. Do not omit any fields.
+4. REWORD bullet points to emphasize relevant keywords and skills from the job description.
+5. PRIORITIZE experiences most relevant to the job (can reorder within sections).
+6. MATCH the language and keywords used in the job description where truthful.
+7. For match_score: 0-40 = poor fit, 41-60 = moderate fit, 61-80 = good fit, 81-100 = excellent fit.
+8. skill_matches are skills from the job that appear in the resume.
+9. skill_gaps are required/preferred skills from the job missing from the resume.
+10. keyword_coverage is the percentage of job keywords found in the resume (0.0 to 1.0).
+11. Keep contact information UNCHANGED - never modify contact details.
+12. If a field doesn't exist in the original, keep it null or empty array."""
 
 
 class TailoringService:
-    """Service for tailoring resumes to job descriptions."""
+    """Service for tailoring resumes to job descriptions.
+
+    Two Copies Architecture:
+    - Generates a COMPLETE tailored resume document
+    - Output matches ParsedContent schema
+    - IDs preserved for frontend diffing
+    """
 
     def __init__(
         self,
@@ -110,8 +135,22 @@ class TailoringService:
         job_id: str | int,  # Job source ID (always from PostgreSQL)
         raw_resume: str,
         raw_job: str,
+        original_parsed: dict[str, Any] | None = None,
     ) -> TailoringResult:
-        """Tailor a resume to a specific job description."""
+        """Tailor a resume to a specific job description.
+
+        Two Copies Architecture:
+        - Takes original_parsed (the structured resume data)
+        - Returns complete tailored_content matching the same structure
+        - IDs are preserved for frontend diffing
+
+        Args:
+            resume_id: The resume's ID
+            job_id: The job's ID
+            raw_resume: Raw resume text (for parsing if original_parsed not provided)
+            raw_job: Raw job description text
+            original_parsed: Pre-parsed resume content (preferred - avoids re-parsing)
+        """
         # Get content hashes for caching
         resume_hash = self.resume_parser.get_content_hash(raw_resume)
         job_hash = self.job_analyzer.get_content_hash(raw_job)
@@ -123,8 +162,13 @@ class TailoringService:
         if cached:
             return cached
 
-        # Parse resume and job (these use their own caching)
-        parsed_resume = await self.resume_parser.parse(raw_resume)
+        # Use provided parsed content or parse the resume
+        if original_parsed:
+            parsed_resume = original_parsed
+        else:
+            parsed_resume = await self.resume_parser.parse(raw_resume)
+
+        # Parse the job description
         parsed_job = await self.job_analyzer.analyze(raw_job)
 
         # Generate tailored content
@@ -139,19 +183,46 @@ class TailoringService:
 
     async def _generate_tailoring(
         self,
-        parsed_resume: ParsedResume,
+        parsed_resume: dict[str, Any] | ParsedResume,
         parsed_job: ParsedJob,
     ) -> TailoringResult:
-        """Generate tailored content using AI."""
+        """Generate tailored content using AI.
+
+        Two Copies Architecture:
+        - Outputs complete resume document
+        - Preserves IDs from original
+        """
+        # Convert to dict if ParsedResume TypedDict
+        if not isinstance(parsed_resume, dict):
+            parsed_resume = dict(parsed_resume)
+
+        # Ensure experience/education/projects have IDs for diffing
+        parsed_resume = self._ensure_ids(parsed_resume)
+
         user_prompt = f"""Please tailor the following resume for the job description.
 
-PARSED RESUME:
+IMPORTANT: Output the COMPLETE tailored resume as a JSON object. Preserve ALL IDs exactly as they appear in the original.
+
+ORIGINAL RESUME (ParsedContent structure):
 {json.dumps(parsed_resume, indent=2)}
 
-PARSED JOB DESCRIPTION:
+JOB DESCRIPTION:
 {json.dumps(parsed_job, indent=2)}
 
-Generate a tailored version that emphasizes relevant experience and skills."""
+Generate a complete tailored version that:
+1. Keeps ALL IDs exactly as they are in the original
+2. Rewrites bullets and descriptions to emphasize relevant experience
+3. Prioritizes skills that match the job requirements
+4. Maintains truthfulness - do not invent experience
+
+Output format:
+{{
+  "tailored_content": {{ ... complete ParsedContent ... }},
+  "match_score": number,
+  "skill_matches": ["skill1", "skill2"],
+  "skill_gaps": ["skill1", "skill2"],
+  "keyword_coverage": number
+}}"""
 
         response = await self.ai.generate_json(
             system_prompt=TAILORING_SYSTEM_PROMPT,
@@ -164,20 +235,95 @@ Generate a tailored version that emphasizes relevant experience and skills."""
             result = json.loads(response)
         except json.JSONDecodeError:
             # Try to extract JSON from response if wrapped in markdown
-            import re
             json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', response)
             if json_match:
                 result = json.loads(json_match.group(1))
             else:
                 raise ValueError("Failed to parse AI response as JSON")
 
+        # Validate that required fields exist
+        if "tailored_content" not in result:
+            raise ValueError("AI response missing tailored_content field")
+
+        # Ensure the tailored content has the expected structure
+        tailored = result["tailored_content"]
+
+        # Validate IDs were preserved
+        self._validate_ids_preserved(parsed_resume, tailored)
+
+        return TailoringResult(
+            tailored_content=tailored,
+            match_score=result.get("match_score", 0.0),
+            skill_matches=result.get("skill_matches", []),
+            skill_gaps=result.get("skill_gaps", []),
+            keyword_coverage=result.get("keyword_coverage", 0.0),
+        )
+
+    def _ensure_ids(self, parsed: dict[str, Any]) -> dict[str, Any]:
+        """Ensure all list items have IDs for diffing.
+
+        If items don't have IDs, generate them based on position.
+        """
+        import uuid
+
+        result = dict(parsed)
+
+        # Add IDs to experience entries if missing
+        if "experience" in result and result["experience"]:
+            for i, exp in enumerate(result["experience"]):
+                if isinstance(exp, dict) and not exp.get("id"):
+                    exp["id"] = f"exp-{i}-{uuid.uuid4().hex[:8]}"
+
+        # Add IDs to education entries if missing
+        if "education" in result and result["education"]:
+            for i, edu in enumerate(result["education"]):
+                if isinstance(edu, dict) and not edu.get("id"):
+                    edu["id"] = f"edu-{i}-{uuid.uuid4().hex[:8]}"
+
+        # Add IDs to project entries if missing
+        if "projects" in result and result["projects"]:
+            for i, proj in enumerate(result["projects"]):
+                if isinstance(proj, dict) and not proj.get("id"):
+                    proj["id"] = f"proj-{i}-{uuid.uuid4().hex[:8]}"
+
         return result
+
+    def _validate_ids_preserved(
+        self,
+        original: dict[str, Any],
+        tailored: dict[str, Any],
+    ) -> None:
+        """Validate that IDs from original are preserved in tailored.
+
+        Logs warnings if IDs are missing (doesn't raise - AI might legitimately
+        remove sections in some cases).
+        """
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        def get_ids(data: dict[str, Any], field: str) -> set[str]:
+            items = data.get(field, [])
+            if not items:
+                return set()
+            return {item.get("id") for item in items if isinstance(item, dict) and item.get("id")}
+
+        for field in ["experience", "education", "projects"]:
+            original_ids = get_ids(original, field)
+            tailored_ids = get_ids(tailored, field)
+
+            missing = original_ids - tailored_ids
+            if missing:
+                logger.warning(
+                    f"IDs missing in tailored {field}: {missing}. "
+                    "Frontend diffing may be affected."
+                )
 
     async def get_quick_match_score(
         self,
         raw_resume: str,
         raw_job: str,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Get a quick match score without full tailoring."""
         parsed_resume = await self.resume_parser.parse(raw_resume)
         parsed_job = await self.job_analyzer.analyze(raw_job)

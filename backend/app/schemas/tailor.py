@@ -1,26 +1,90 @@
+"""API schemas for resume tailoring endpoints.
+
+Two Copies Architecture:
+- AI generates complete tailored_data (same structure as ParsedContent)
+- Frontend does client-side diffing between original and tailored
+- User approves/rejects changes to build finalized_data
+"""
+
 from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, model_validator
 
-
-class SuggestionSchema(BaseModel):
-    section: str
-    type: str
-    original: str
-    suggested: str
-    reason: str
-    impact: str
+from app.models.mongo.tailored_resume import TailoredResumeStatus
 
 
-class TailoredContentSchema(BaseModel):
-    summary: str
-    experience: list[dict[str, Any]]
-    skills: list[str]
-    highlights: list[str]
+# =============================================================================
+# Parsed Content Schema (matches MongoDB resume.parsed structure)
+# =============================================================================
+
+
+class ContactInfoSchema(BaseModel):
+    """Contact information in parsed resume."""
+
+    name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    location: str | None = None
+    linkedin: str | None = None
+    github: str | None = None
+    website: str | None = None
+
+
+class ExperienceEntrySchema(BaseModel):
+    """Work experience entry in parsed resume."""
+
+    id: str | None = None  # Unique ID for diffing
+    title: str | None = None
+    company: str | None = None
+    location: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    bullets: list[str] = []
+
+
+class EducationEntrySchema(BaseModel):
+    """Education entry in parsed resume."""
+
+    id: str | None = None  # Unique ID for diffing
+    degree: str | None = None
+    institution: str | None = None
+    location: str | None = None
+    graduation_date: str | None = None
+    gpa: str | None = None
+    honors: list[str] = []
+
+
+class ProjectEntrySchema(BaseModel):
+    """Project entry in parsed resume."""
+
+    id: str | None = None  # Unique ID for diffing
+    name: str | None = None
+    description: str | None = None
+    technologies: list[str] = []
+    url: str | None = None
+
+
+class ParsedContentSchema(BaseModel):
+    """Structured parsed content from resume - used for both original and tailored."""
+
+    contact: ContactInfoSchema | None = None
+    summary: str | None = None
+    experience: list[ExperienceEntrySchema] = []
+    education: list[EducationEntrySchema] = []
+    skills: list[str] = []
+    certifications: list[str] = []
+    projects: list[ProjectEntrySchema] = []
+
+
+# =============================================================================
+# Request Schemas
+# =============================================================================
 
 
 class TailorRequest(BaseModel):
+    """Request to tailor a resume for a job."""
+
     resume_id: str  # MongoDB ObjectId as string
     job_id: int | None = None  # Postgres job_descriptions.id
     job_listing_id: int | None = None  # Postgres job_listings.id
@@ -35,24 +99,9 @@ class TailorRequest(BaseModel):
         return self
 
 
-class TailorResponse(BaseModel):
-    id: str  # MongoDB ObjectId as string
-    resume_id: str  # MongoDB ObjectId as string
-    job_id: int | None = None  # Postgres job_descriptions.id
-    job_listing_id: int | None = None  # Postgres job_listings.id
-    tailored_content: TailoredContentSchema
-    suggestions: list[SuggestionSchema]
-    match_score: float
-    skill_matches: list[str]
-    skill_gaps: list[str]
-    keyword_coverage: float
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
 class QuickMatchRequest(BaseModel):
+    """Request for quick match score without full tailoring."""
+
     resume_id: str  # MongoDB ObjectId as string
     job_id: int | None = None  # Postgres job_descriptions.id
     job_listing_id: int | None = None  # Postgres job_listings.id
@@ -67,23 +116,126 @@ class QuickMatchRequest(BaseModel):
         return self
 
 
+class TailoredResumeFinalizeRequest(BaseModel):
+    """Request to finalize a tailored resume with user's approved changes.
+
+    The finalized_data is the merged document the frontend built by
+    accepting some AI changes and keeping some originals.
+    """
+
+    finalized_data: dict[str, Any]  # ParsedContent structure
+
+
+class TailoredResumeUpdateRequest(BaseModel):
+    """Request to update a tailored resume's content or style."""
+
+    tailored_data: dict[str, Any] | None = None  # ParsedContent structure
+    style_settings: dict[str, Any] | None = None
+    section_order: list[str] | None = None
+
+
+# =============================================================================
+# Response Schemas
+# =============================================================================
+
+
 class QuickMatchResponse(BaseModel):
+    """Response for quick match score."""
+
     match_score: int
     keyword_coverage: float
     skill_matches: list[str]
     skill_gaps: list[str]
 
 
-class TailoredResumeListResponse(BaseModel):
+class TailorResponse(BaseModel):
+    """Response after generating a tailored resume.
+
+    Two Copies Architecture: Returns the complete tailored_data,
+    not individual suggestions. Frontend will fetch the compare
+    endpoint to get both original and tailored for diffing.
+    """
+
     id: str  # MongoDB ObjectId as string
     resume_id: str  # MongoDB ObjectId as string
     job_id: int | None = None  # Postgres job_descriptions.id
     job_listing_id: int | None = None  # Postgres job_listings.id
-    match_score: float | None
+    tailored_data: dict[str, Any]  # Complete tailored resume (ParsedContent structure)
+    status: TailoredResumeStatus
+    match_score: float
+    skill_matches: list[str]
+    skill_gaps: list[str]
+    keyword_coverage: float
+    job_title: str | None = None
+    company_name: str | None = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
+
+
+class TailoredResumeCompareResponse(BaseModel):
+    """Response for the compare endpoint - returns both documents for frontend diffing.
+
+    This is the critical endpoint for the Two Copies architecture.
+    Frontend uses these two documents to compute diffs client-side.
+    """
+
+    id: str  # Tailored resume ID
+    resume_id: str  # Original resume ID
+    original: dict[str, Any]  # Original resume's parsed content
+    tailored: dict[str, Any]  # AI-generated tailored content
+    status: TailoredResumeStatus
+    match_score: float | None
+    job_title: str | None = None
+    company_name: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class TailoredResumeListResponse(BaseModel):
+    """List item response for tailored resumes."""
+
+    id: str  # MongoDB ObjectId as string
+    resume_id: str  # MongoDB ObjectId as string
+    job_id: int | None = None  # Postgres job_descriptions.id
+    job_listing_id: int | None = None  # Postgres job_listings.id
+    status: TailoredResumeStatus
+    match_score: float | None
+    job_title: str | None = None
+    company_name: str | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class TailoredResumeFullResponse(BaseModel):
+    """Full response including all fields."""
+
+    id: str  # MongoDB ObjectId as string
+    resume_id: str  # MongoDB ObjectId as string
+    job_id: int | None  # Postgres job_descriptions.id
+    job_listing_id: int | None  # Postgres job_listings.id
+    tailored_data: dict[str, Any]
+    finalized_data: dict[str, Any] | None
+    status: TailoredResumeStatus
+    match_score: float | None
+    skill_matches: list[str] = []
+    skill_gaps: list[str] = []
+    keyword_coverage: float = 0.0
+    job_title: str | None = None
+    company_name: str | None = None
+    style_settings: dict[str, Any] = {}
+    section_order: list[str]
+    created_at: datetime
+    updated_at: datetime | None
+    finalized_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+# =============================================================================
+# Style Settings (kept for PDF generation)
+# =============================================================================
 
 
 class StyleSettingsSchema(BaseModel):
@@ -99,33 +251,3 @@ class StyleSettingsSchema(BaseModel):
     margin_right: float | None = None
     line_spacing: float | None = None
     section_spacing: float | None = None
-
-
-class TailoredResumeUpdateRequest(BaseModel):
-    """Request to update a tailored resume."""
-
-    tailored_content: TailoredContentSchema | None = None
-    style_settings: StyleSettingsSchema | None = None
-    section_order: list[str] | None = None
-
-
-class TailoredResumeFullResponse(BaseModel):
-    """Full response including style and section order."""
-
-    id: str  # MongoDB ObjectId as string
-    resume_id: str  # MongoDB ObjectId as string
-    job_id: int | None  # Postgres job_descriptions.id
-    job_listing_id: int | None  # Postgres job_listings.id
-    tailored_content: TailoredContentSchema
-    suggestions: list[SuggestionSchema]
-    match_score: float
-    skill_matches: list[str]
-    skill_gaps: list[str]
-    keyword_coverage: float
-    style_settings: dict[str, Any]
-    section_order: list[str]
-    created_at: datetime
-    updated_at: datetime | None
-
-    class Config:
-        from_attributes = True
