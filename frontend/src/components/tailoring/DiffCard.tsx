@@ -33,10 +33,12 @@ import {
   Lightbulb,
   BadgeCheck,
   Building,
+  Undo2,
 } from "lucide-react";
 import { TextDiffDisplay, SideBySideDiff } from "./TextDiffDisplay";
-import type { BlockDiff, EntryDiff, BulletDiff, SkillsDiff, TextDiff } from "@/lib/tailoring/types";
+import type { BlockDiff, EntryDiff, BulletDiff, SkillsDiff, TextDiff, TailoringSession } from "@/lib/tailoring/types";
 import type { ResumeBlockType } from "@/lib/resume/types";
+import { getEntryBulletAcceptanceState } from "@/lib/tailoring/operations";
 
 // ============================================================================
 // Common Types
@@ -374,23 +376,30 @@ export function BulletDiffRow({
 }: BulletDiffRowProps) {
   const { originalText, tailoredText, isNew, isRemoved, isModified } = bulletDiff;
 
-  let changeType: "added" | "removed" | "modified" | "unchanged" = "unchanged";
-  if (isNew) changeType = "added";
-  else if (isRemoved) changeType = "removed";
-  else if (isModified) changeType = "modified";
+  // For removed bullets, semantics are inverted in the UI:
+  // - "Accept" means accept the AI's removal (keep it out)
+  // - "Reject" means reject the removal (restore original)
+  // For new bullets:
+  // - "Accept" means add the new bullet
+  // - "Reject" means don't add it
 
   return (
     <div
       className={`flex items-start gap-3 p-3 rounded-md ${
         isAccepted
-          ? "bg-green-50 dark:bg-green-900/10"
+          ? isRemoved
+            ? "bg-red-50/50 dark:bg-red-900/10" // Accepted removal - subtle red
+            : "bg-green-50 dark:bg-green-900/10" // Accepted addition/modification - green
           : "bg-muted/30"
       }`}
     >
       <div className="flex-1">
         {isNew && (
           <div className="text-sm">
-            <span className="text-xs text-green-600 font-medium">NEW: </span>
+            <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-1.5 py-0.5 rounded font-medium mr-2">
+              <Plus size={10} />
+              NEW
+            </span>
             <span className="text-green-800 dark:text-green-300">
               {tailoredText}
             </span>
@@ -398,10 +407,18 @@ export function BulletDiffRow({
         )}
         {isRemoved && (
           <div className="text-sm">
-            <span className="text-xs text-red-600 font-medium">REMOVED: </span>
-            <span className="text-red-800 line-through dark:text-red-300">
+            <span className="inline-flex items-center gap-1 text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 px-1.5 py-0.5 rounded font-medium mr-2">
+              <Minus size={10} />
+              REMOVE
+            </span>
+            <span className={`${isAccepted ? "text-red-400 line-through" : "text-foreground"}`}>
               {originalText}
             </span>
+            {!isAccepted && (
+              <span className="text-xs text-muted-foreground ml-2">
+                (AI suggests removing)
+              </span>
+            )}
           </div>
         )}
         {isModified && (
@@ -410,12 +427,72 @@ export function BulletDiffRow({
           </div>
         )}
       </div>
-      <ActionButtons
-        isAccepted={isAccepted}
-        onAccept={onAccept}
-        onReject={onReject}
-        size="sm"
-      />
+      {/* Custom action buttons for removed bullets */}
+      {isRemoved ? (
+        <RemovedBulletActions
+          isAccepted={isAccepted}
+          onAccept={onAccept}
+          onReject={onReject}
+        />
+      ) : (
+        <ActionButtons
+          isAccepted={isAccepted}
+          onAccept={onAccept}
+          onReject={onReject}
+          size="sm"
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Custom action buttons for removed bullets with clearer semantics.
+ */
+interface RemovedBulletActionsProps {
+  isAccepted: boolean;
+  onAccept: () => void;
+  onReject: () => void;
+}
+
+function RemovedBulletActions({
+  isAccepted,
+  onAccept,
+  onReject,
+}: RemovedBulletActionsProps) {
+  return (
+    <div className="flex items-center gap-1">
+      {isAccepted ? (
+        // Removal was accepted - show "Restore" button
+        <button
+          onClick={onReject}
+          className="h-6 px-2 flex items-center gap-1 rounded-md bg-green-100 text-green-700 hover:bg-green-200 transition-colors text-xs font-medium"
+          title="Restore this bullet"
+        >
+          <Undo2 size={12} />
+          Restore
+        </button>
+      ) : (
+        <>
+          {/* Primary: Remove (accept AI's suggestion) */}
+          <button
+            onClick={onAccept}
+            className="h-6 px-2 flex items-center gap-1 rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition-colors text-xs font-medium"
+            title="Remove this bullet"
+          >
+            <Minus size={12} />
+            Remove
+          </button>
+          {/* Secondary: Keep (reject the removal) */}
+          <button
+            onClick={onReject}
+            className="h-6 px-2 flex items-center gap-1 rounded-md bg-muted text-muted-foreground hover:bg-muted/80 transition-colors text-xs font-medium"
+            title="Keep this bullet"
+          >
+            Keep
+          </button>
+        </>
+      )}
     </div>
   );
 }
@@ -428,6 +505,8 @@ interface EntryDiffCardProps extends DiffCardBaseProps {
   blockId: string;
   blockType: ResumeBlockType;
   entryDiffs: EntryDiff[];
+  /** Current tailoring session for bullet tracking */
+  session: TailoringSession;
   onAcceptEntry: (entryId: string) => void;
   onRejectEntry: (entryId: string) => void;
   onAcceptBullet: (entryId: string, bulletIndex: number) => void;
@@ -444,6 +523,7 @@ export function EntryDiffCard({
   blockId,
   blockType,
   entryDiffs,
+  session,
   isAccepted,
   onAccept,
   onReject,
@@ -525,11 +605,21 @@ export function EntryDiffCard({
             // Get title/name for display
             const entryTitle = getEntryTitle(displayEntry, blockType);
 
+            // Get bullet acceptance state for this entry
+            const bulletCount = entryDiff.bulletDiffs?.length ?? 0;
+            const bulletState = bulletCount > 0
+              ? getEntryBulletAcceptanceState(session, blockId, entryDiff.entryId, bulletCount)
+              : null;
+
             return (
               <div
                 key={entryDiff.entryId}
                 className={`${
-                  entryAccepted ? "bg-green-50/50 dark:bg-green-900/5" : ""
+                  entryAccepted
+                    ? "bg-green-50/50 dark:bg-green-900/5"
+                    : bulletState?.partiallyAccepted
+                    ? "bg-amber-50/50 dark:bg-amber-900/5"
+                    : ""
                 }`}
               >
                 {/* Entry header */}
@@ -545,6 +635,20 @@ export function EntryDiffCard({
                     )}
                     <span className="font-medium">{entryTitle}</span>
                     <ChangeTypeBadge changeType={entryDiff.changeType} />
+                    {/* Bullet acceptance counter */}
+                    {bulletState && bulletCount > 0 && (
+                      <span
+                        className={`text-xs px-1.5 py-0.5 rounded ${
+                          bulletState.allAccepted
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                            : bulletState.partiallyAccepted
+                            ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {bulletState.acceptedBullets}/{bulletState.totalBullets} bullets
+                      </span>
+                    )}
                   </button>
                   <ActionButtons
                     isAccepted={entryAccepted}

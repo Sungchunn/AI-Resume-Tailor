@@ -452,6 +452,7 @@ function DiffBlockCard({
           blockId={diff.blockId}
           blockType={diff.blockType}
           entryDiffs={diff.entryDiffs}
+          session={session}
           isAccepted={isAccepted}
           onAccept={onAcceptBlock}
           onReject={onRejectBlock}
@@ -474,6 +475,7 @@ function DiffBlockCard({
           blockId={diff.blockId}
           blockType={diff.blockType}
           entryDiffs={diff.entryDiffs}
+          session={session}
           isAccepted={isAccepted}
           onAccept={onAcceptBlock}
           onReject={onRejectBlock}
