@@ -21,9 +21,9 @@ class TailoredContentSchema(BaseModel):
 
 
 class TailorRequest(BaseModel):
-    resume_id: int
-    job_id: int | None = None
-    job_listing_id: int | None = None
+    resume_id: str  # MongoDB ObjectId as string
+    job_id: int | None = None  # Postgres job_descriptions.id
+    job_listing_id: int | None = None  # Postgres job_listings.id
 
     @model_validator(mode="after")
     def validate_job_source(self) -> "TailorRequest":
@@ -36,10 +36,10 @@ class TailorRequest(BaseModel):
 
 
 class TailorResponse(BaseModel):
-    id: int
-    resume_id: int
-    job_id: int | None = None
-    job_listing_id: int | None = None
+    id: str  # MongoDB ObjectId as string
+    resume_id: str  # MongoDB ObjectId as string
+    job_id: int | None = None  # Postgres job_descriptions.id
+    job_listing_id: int | None = None  # Postgres job_listings.id
     tailored_content: TailoredContentSchema
     suggestions: list[SuggestionSchema]
     match_score: float
@@ -53,9 +53,9 @@ class TailorResponse(BaseModel):
 
 
 class QuickMatchRequest(BaseModel):
-    resume_id: int
-    job_id: int | None = None
-    job_listing_id: int | None = None
+    resume_id: str  # MongoDB ObjectId as string
+    job_id: int | None = None  # Postgres job_descriptions.id
+    job_listing_id: int | None = None  # Postgres job_listings.id
 
     @model_validator(mode="after")
     def validate_job_source(self) -> "QuickMatchRequest":
@@ -75,10 +75,10 @@ class QuickMatchResponse(BaseModel):
 
 
 class TailoredResumeListResponse(BaseModel):
-    id: int
-    resume_id: int
-    job_id: int | None = None
-    job_listing_id: int | None = None
+    id: str  # MongoDB ObjectId as string
+    resume_id: str  # MongoDB ObjectId as string
+    job_id: int | None = None  # Postgres job_descriptions.id
+    job_listing_id: int | None = None  # Postgres job_listings.id
     match_score: float | None
     created_at: datetime
 
@@ -112,10 +112,10 @@ class TailoredResumeUpdateRequest(BaseModel):
 class TailoredResumeFullResponse(BaseModel):
     """Full response including style and section order."""
 
-    id: int
-    resume_id: int
-    job_id: int | None
-    job_listing_id: int | None
+    id: str  # MongoDB ObjectId as string
+    resume_id: str  # MongoDB ObjectId as string
+    job_id: int | None  # Postgres job_descriptions.id
+    job_listing_id: int | None  # Postgres job_listings.id
     tailored_content: TailoredContentSchema
     suggestions: list[SuggestionSchema]
     match_score: float

@@ -50,11 +50,12 @@ class ResumeBuildUpdate(BaseModel):
 class ResumeBuildResponse(ResumeBuildBase):
     """Schema for resume build API responses."""
 
-    id: int
+    id: str  # MongoDB ObjectId as string
     user_id: int
     status: str
     sections: dict[str, Any] = Field(default_factory=dict)
-    pulled_block_ids: list[int] = Field(default_factory=list)
+    section_order: list[str] = Field(default_factory=list)
+    pulled_block_ids: list[int] = Field(default_factory=list)  # FK to Postgres blocks
     pending_diffs: list[DiffSuggestion] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime | None = None
