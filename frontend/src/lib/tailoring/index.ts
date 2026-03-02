@@ -34,6 +34,8 @@ export {
 } from "./diff";
 
 // Session operations
+export type { BulletAcceptanceState } from "./operations";
+
 export {
   initializeTailoringSession,
   acceptBlock,
@@ -52,6 +54,7 @@ export {
   hasAcceptedChanges,
   isDraftModified,
   getAcceptedCount,
+  getEntryBulletAcceptanceState,
 } from "./operations";
 
 // Text diff utilities (word-level diffing)

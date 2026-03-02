@@ -499,3 +499,47 @@ export function isDraftModified(session: TailoringSession): boolean {
     JSON.stringify(session.originalResume)
   );
 }
+
+// ============================================================================
+// Bullet Count Tracking
+// ============================================================================
+
+export interface BulletAcceptanceState {
+  /** Total number of changed bullets in the entry */
+  totalBullets: number;
+  /** Number of accepted bullets */
+  acceptedBullets: number;
+  /** Whether all bullets are accepted */
+  allAccepted: boolean;
+  /** Whether some but not all bullets are accepted */
+  partiallyAccepted: boolean;
+  /** Whether no bullets are accepted */
+  noneAccepted: boolean;
+}
+
+/**
+ * Gets the bullet acceptance state for an entry.
+ * Used to show partial acceptance indicators in the UI.
+ */
+export function getEntryBulletAcceptanceState(
+  session: TailoringSession,
+  blockId: string,
+  entryId: string,
+  bulletCount: number
+): BulletAcceptanceState {
+  let acceptedBullets = 0;
+
+  for (let i = 0; i < bulletCount; i++) {
+    if (isBulletAccepted(session, blockId, entryId, i)) {
+      acceptedBullets++;
+    }
+  }
+
+  return {
+    totalBullets: bulletCount,
+    acceptedBullets,
+    allAccepted: bulletCount > 0 && acceptedBullets === bulletCount,
+    partiallyAccepted: acceptedBullets > 0 && acceptedBullets < bulletCount,
+    noneAccepted: acceptedBullets === 0,
+  };
+}
