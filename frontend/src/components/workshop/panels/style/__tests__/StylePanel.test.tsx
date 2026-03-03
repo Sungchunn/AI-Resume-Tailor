@@ -16,7 +16,7 @@ const createMockContextValue = (
   overrides: Partial<WorkshopState> = {}
 ): WorkshopContextValue => {
   const state: WorkshopState = {
-    tailoredId: 1,
+    tailoredId: "1",
     tailoredResume: null,
     jobDescription: null,
     content: {

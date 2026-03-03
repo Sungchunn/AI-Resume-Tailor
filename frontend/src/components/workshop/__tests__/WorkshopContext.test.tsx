@@ -15,8 +15,8 @@ import type { TailoredResumeFullResponse, Suggestion } from "@/lib/api/types";
 
 // Mock data for testing
 const mockTailoredResume: TailoredResumeFullResponse = {
-  id: 1,
-  resume_id: 10,
+  id: "1",
+  resume_id: "10",
   job_id: 20,
   job_listing_id: null,
   tailored_content: {

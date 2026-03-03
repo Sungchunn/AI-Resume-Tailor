@@ -119,9 +119,9 @@ describe("useScoreCalculation", () => {
       expect(result.current.score).toBe(0);
     });
 
-    it("does not calculate when resumeId is 0", async () => {
+    it("does not calculate when resumeId is empty", async () => {
       const { result } = renderHook(
-        () => useScoreCalculation({ ...defaultOptions, resumeId: 0 }),
+        () => useScoreCalculation({ ...defaultOptions, resumeId: "" }),
         { wrapper: createWrapper() }
       );
 

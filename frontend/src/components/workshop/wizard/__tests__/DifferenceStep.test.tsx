@@ -152,8 +152,8 @@ describe("DifferenceStep", () => {
         <TestWrapper
           contextOverrides={{
             tailoredResume: {
-              id: 1,
-              resume_id: 10,
+              id: "1",
+              resume_id: "10",
               job_id: 20,
               job_listing_id: null,
               tailored_content: {
@@ -188,8 +188,8 @@ describe("DifferenceStep", () => {
         <TestWrapper
           contextOverrides={{
             tailoredResume: {
-              id: 1,
-              resume_id: 10,
+              id: "1",
+              resume_id: "10",
               job_id: 20,
               job_listing_id: null,
               tailored_content: {

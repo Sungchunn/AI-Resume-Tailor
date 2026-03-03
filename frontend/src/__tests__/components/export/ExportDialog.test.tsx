@@ -52,7 +52,7 @@ const createWrapper = () => {
 describe("ExportDialog", () => {
   const mockOnClose = vi.fn();
   const defaultProps = {
-    resumeId: 123,
+    resumeId: "123",
     resumeTitle: "Test Resume",
     onClose: mockOnClose,
   };
@@ -457,7 +457,7 @@ describe("ExportDialog with different props", () => {
 
     render(
       <ExportDialog
-        resumeId={1}
+        resumeId="1"
         resumeTitle={longTitle}
         onClose={mockOnClose}
       />,
@@ -473,7 +473,7 @@ describe("ExportDialog with different props", () => {
 
     render(
       <ExportDialog
-        resumeId={1}
+        resumeId="1"
         resumeTitle={specialTitle}
         onClose={mockOnClose}
       />,
@@ -484,10 +484,10 @@ describe("ExportDialog with different props", () => {
     expect(screen.getByText("Export Resume")).toBeInTheDocument();
   });
 
-  it("handles numeric resume ID", () => {
+  it("handles string resume ID", () => {
     render(
       <ExportDialog
-        resumeId={999999}
+        resumeId="999999"
         resumeTitle="Test"
         onClose={mockOnClose}
       />,
@@ -499,7 +499,7 @@ describe("ExportDialog with different props", () => {
 
     expect(mockExportResume).toHaveBeenCalledWith(
       expect.objectContaining({
-        resumeId: 999999,
+        resumeId: "999999",
       }),
       expect.anything()
     );

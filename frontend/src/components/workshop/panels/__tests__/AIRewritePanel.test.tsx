@@ -135,8 +135,8 @@ const createSuggestion = (overrides: Partial<Suggestion> = {}): Suggestion => ({
 const createMockTailoredResume = (
   overrides: Partial<TailoredResumeFullResponse> = {}
 ): TailoredResumeFullResponse => ({
-  id: 1,
-  resume_id: 10,
+  id: "1",
+  resume_id: "10",
   job_id: 20,
   job_listing_id: null,
   tailored_content: {
@@ -170,7 +170,7 @@ const createMockTailoredResume = (
 
 // Helper to create mock workshop state
 const createMockState = (overrides: Partial<WorkshopState> = {}): WorkshopState => ({
-  tailoredId: 1,
+  tailoredId: "1",
   tailoredResume: createMockTailoredResume(),
   jobDescription: "Looking for a developer...",
   content: { summary: "", experience: [], skills: [], highlights: [] },

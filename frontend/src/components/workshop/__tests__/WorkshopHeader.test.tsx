@@ -64,8 +64,8 @@ vi.mock("@/components/export/ExportDialog", () => ({
 
 // Mock tailored resume data
 const mockTailoredResume: TailoredResumeFullResponse = {
-  id: 1,
-  resume_id: 10,
+  id: "1",
+  resume_id: "10",
   job_id: 20,
   job_listing_id: null,
   tailored_content: {
@@ -88,7 +88,7 @@ const mockTailoredResume: TailoredResumeFullResponse = {
 // Helper to create mock context value
 const createMockContextValue = (overrides: Partial<WorkshopState> = {}): WorkshopContextValue => {
   const state: WorkshopState = {
-    tailoredId: 1,
+    tailoredId: "1",
     tailoredResume: mockTailoredResume,
     jobDescription: null,
     content: { summary: "", experience: [], skills: [], highlights: [] },
