@@ -37,24 +37,28 @@ Several features currently using LLM calls (GPT-4/Gemini) would perform equally 
 **The Problem:** Keyword extraction currently uses expensive LLM calls (~$0.01 per extraction, 2-3 second latency) for what is fundamentally a solved NLP problem. Every tailoring, ATS analysis, and semantic matching operation triggers this extraction, making it a high-frequency cost center.
 
 **Current Stack:**
+
 - **Location:** `/backend/app/services/ai/semantic_matcher.py`, `/backend/app/services/job/ats_analyzer.py`
 - **Method:** LLM prompt asking to extract keywords
 - **Cost:** ~$0.01 per extraction
 - **Latency:** 2-3 seconds
 
 **Architecture Trade-offs:**
+
 - RAKE is fast and unsupervised but produces noisy results for domain-specific content
 - KeyBERT uses embeddings for better semantic relevance but requires model loading overhead
 - Hybrid approach (RAKE + domain taxonomy filtering) balances speed and accuracy
 - Skills taxonomy adds maintenance burden but dramatically improves precision for resume domain
 
 **Impact Analysis:**
+
 - High-frequency operation affects every job-resume matching flow
 - Cost reduction compounds significantly at scale (thousands of daily extractions)
 - Latency improvement enables real-time feedback in UI
 - Removing LLM dependency eliminates rate limit concerns for this operation
 
 **Definition of Completion:**
+
 - [ ] Replace `extract_keywords()` in semantic_matcher.py with ML-based extraction
 - [ ] Replace keyword extraction in ats_analyzer.py
 - [ ] Create unified `KeywordExtractor` service with consistent interface
@@ -63,6 +67,7 @@ Several features currently using LLM calls (GPT-4/Gemini) would perform equally 
 - [ ] Latency under 100ms (p95)
 
 **Blindspots:**
+
 - Handling of emerging tech terms not in taxonomy
 - Multi-language keyword extraction requirements
 - Compound skill terms (e.g., "machine learning" as single keyword vs two)
@@ -77,24 +82,28 @@ Several features currently using LLM calls (GPT-4/Gemini) would perform equally 
 **The Problem:** ATS structure analysis uses LLM for deterministic rule-based checks (section detection, contact info validation, date formatting). These are pattern-matching problems that don't require natural language understanding.
 
 **Current Stack:**
+
 - **Location:** `/backend/app/services/job/ats_analyzer.py`
 - **Method:** LLM-based section detection and validation
 - **Cost:** ~$0.01 per analysis
 - **Latency:** 2-3 seconds
 
 **Architecture Trade-offs:**
+
 - Pure regex is fast but brittle with format variations
 - Fuzzy string matching handles variations but may false-positive on similar headers
 - Lightweight classifier adds accuracy but requires training data
 - Rule-based scoring is deterministic and debuggable vs LLM black-box scoring
 
 **Impact Analysis:**
+
 - ATS analysis runs on every resume edit and job targeting action
 - Deterministic rules enable consistent, explainable feedback to users
 - Removing LLM dependency makes this feature work offline/locally
 - Scoring algorithm transparency helps users understand exactly what to fix
 
 **Definition of Completion:**
+
 - [ ] Section header detection via regex + fuzzy matching (Levenshtein)
 - [ ] Contact info extraction via regex patterns (email, phone, LinkedIn)
 - [ ] Date format validation via regex + dateutil parsing
@@ -104,6 +113,7 @@ Several features currently using LLM calls (GPT-4/Gemini) would perform equally 
 - [ ] Accuracy within 5% of LLM baseline
 
 **Blindspots:**
+
 - Non-English resume section headers
 - Creative/design resume formats that break pattern assumptions
 - Multi-column layouts affecting section detection
@@ -118,24 +128,28 @@ Several features currently using LLM calls (GPT-4/Gemini) would perform equally 
 **The Problem:** Block classification (achievement, responsibility, skill, project, etc.) is a text classification problem currently solved with LLM prompts. This is an ideal candidate for a fine-tuned lightweight classifier given the bounded category set.
 
 **Current Stack:**
+
 - **Location:** `/backend/app/services/resume/block_classifier.py`
 - **Method:** LLM classification with prompt
 - **Cost:** ~$0.005 per classification
 - **Latency:** 1-2 seconds
 
 **Architecture Trade-offs:**
+
 - TF-IDF + LogisticRegression is simple, fast, and interpretable but may miss semantic nuance
 - DistilBERT captures semantics better but requires GPU/significant CPU for inference
 - Confidence thresholds enable LLM fallback for edge cases (hybrid approach)
 - Training data quality directly bounds model accuracy
 
 **Impact Analysis:**
+
 - Classification happens during vault block creation and resume parsing
 - Affects tag suggestions and block organization features
 - Model size impacts deployment (DistilBERT ~250MB vs TF-IDF ~10MB)
 - Confidence scores enable graceful degradation to LLM for uncertain cases
 
 **Definition of Completion:**
+
 - [ ] Create labeled training dataset from existing LLM classifications
 - [ ] Train classification model (minimum 6 categories)
 - [ ] Implement tag suggestion based on classification
@@ -145,6 +159,7 @@ Several features currently using LLM calls (GPT-4/Gemini) would perform equally 
 - [ ] Accuracy >= 90% on held-out test set
 
 **Blindspots:**
+
 - Class imbalance in training data (achievements likely overrepresented)
 - Handling multi-label cases (block that's both achievement and skill)
 - Training data drift as writing styles evolve
@@ -159,24 +174,28 @@ Several features currently using LLM calls (GPT-4/Gemini) would perform equally 
 **The Problem:** Full LLM parsing is expensive and slow for extracting structured fields (contact info, dates, skills) that have well-defined patterns. However, understanding nuanced content (achievement descriptions, role responsibilities) still benefits from LLM comprehension.
 
 **Current Stack:**
+
 - **Location:** `/backend/app/services/resume/parser.py`
 - **Method:** Full LLM parsing
 - **Cost:** ~$0.02 per parse
 - **Latency:** 3-5 seconds
 
 **Architecture Trade-offs:**
+
 - Hybrid approach requires orchestration complexity (deciding what goes to ML vs LLM)
 - Section segmentation via ML reduces LLM token usage but may mis-segment unusual formats
 - SpaCy NER is fast but trained on general text (names/orgs), not resume-specific entities
 - Custom NER requires training data and maintenance burden
 
 **Impact Analysis:**
+
 - Parsing is the entry point for all resume content - errors cascade everywhere
 - Partial extraction reduces LLM tokens by ~60-70% per parse
 - Orchestration adds code complexity but enables targeted LLM usage
 - Schema compatibility critical - downstream services expect specific structure
 
 **Definition of Completion:**
+
 - [ ] Section segmentation via ML classifier (contact, summary, experience, education, skills)
 - [ ] Contact extraction via regex + spaCy NER
 - [ ] Date extraction via regex + dateutil
@@ -188,6 +207,7 @@ Several features currently using LLM calls (GPT-4/Gemini) would perform equally 
 - [ ] Cost reduction >= 50%
 
 **Blindspots:**
+
 - Handling PDFs with unusual encoding or embedded fonts
 - Multi-language resumes (mixed English + other language)
 - When to trigger LLM fallback for ambiguous section boundaries
@@ -203,24 +223,28 @@ Several features currently using LLM calls (GPT-4/Gemini) would perform equally 
 **The Problem:** Job description analysis extracts structured data (skills, requirements, salary) from unstructured text. Many fields follow patterns (salary formats, location strings) while others require understanding (importance categorization, soft skill detection).
 
 **Current Stack:**
+
 - **Location:** `/backend/app/services/job/analyzer.py`
 - **Method:** Full LLM analysis
 - **Cost:** ~$0.02 per analysis
 - **Latency:** 3-5 seconds
 
 **Architecture Trade-offs:**
+
 - Skill extraction via NER + taxonomy handles known skills but misses novel technologies
 - Salary regex works for standard formats but job postings vary wildly
 - Required vs preferred classification is subjective - LLM may be necessary
 - Structured extraction enables caching (same patterns yield same results)
 
 **Impact Analysis:**
+
 - Job analysis feeds tailoring and ATS matching - accuracy is critical
 - Missed skills lead to poor match recommendations
 - Importance categorization directly affects tailoring priorities
 - Lower priority than resume parsing (jobs analyzed less frequently than resumes parsed)
 
 **Definition of Completion:**
+
 - [ ] Skill extraction via spaCy NER + skills taxonomy
 - [ ] Salary extraction via comprehensive regex patterns
 - [ ] Location/remote detection via keyword matching
@@ -231,6 +255,7 @@ Several features currently using LLM calls (GPT-4/Gemini) would perform equally 
 - [ ] Cost reduction >= 50%
 
 **Blindspots:**
+
 - Poorly written or vague job descriptions with minimal structure
 - Salary formats across currencies and regions (USD, EUR, yearly vs hourly)
 - Job postings that mix requirements and responsibilities
@@ -246,24 +271,28 @@ Several features currently using LLM calls (GPT-4/Gemini) would perform equally 
 **The Problem:** Keyword matching between resume and job description may use LLM for semantic similarity when traditional text matching techniques (fuzzy matching, synonym expansion, lightweight embeddings) can achieve comparable results at zero cost.
 
 **Current Stack:**
+
 - **Location:** `/backend/app/services/job/ats_analyzer.py`
 - **Method:** Possibly LLM-based comparison
 - **Cost:** Variable
 - **Latency:** 1-2 seconds
 
 **Architecture Trade-offs:**
+
 - Exact matching with lemmatization catches inflections but misses synonyms
 - Fuzzy matching handles typos but may false-match unrelated terms
 - WordNet synonyms are comprehensive but may be too broad for technical terms
 - Sentence-transformers embeddings balance semantic understanding and speed
 
 **Impact Analysis:**
+
 - Match scoring directly affects user-facing ATS scores
 - False positives (claiming matches that aren't) erode user trust
 - False negatives (missing valid matches) cause unnecessary "gaps" warnings
 - Matching quality affects tailoring recommendations
 
 **Definition of Completion:**
+
 - [ ] Exact match with lemmatization (spaCy)
 - [ ] Fuzzy matching with configurable threshold (Levenshtein/RapidFuzz)
 - [ ] Synonym expansion via WordNet or skills taxonomy
@@ -273,6 +302,7 @@ Several features currently using LLM calls (GPT-4/Gemini) would perform equally 
 - [ ] Precision/recall within 5% of LLM baseline
 
 **Blindspots:**
+
 - Fuzzy match threshold tuning (too low = false positives, too high = misses)
 - Synonym expansion scope (should "Python" match "programming language"?)
 - Embedding model selection and size tradeoffs
@@ -289,12 +319,14 @@ Several features currently using LLM calls (GPT-4/Gemini) would perform equally 
 **Current Stack:** No shared ML infrastructure exists - each AI feature calls LLM directly.
 
 **Architecture Trade-offs:**
+
 - Shared services reduce duplication but create coupling between features
 - Model loading at startup adds memory overhead but avoids per-request latency
 - Lazy model loading saves memory but first-request latency spike
 - Centralized taxonomy requires maintenance but ensures consistency
 
 **Impact Analysis:**
+
 - Infrastructure decisions affect all downstream phases
 - Model loading strategy impacts cold start and memory usage
 - Taxonomy quality bounds extraction accuracy across features
@@ -331,6 +363,7 @@ sentence-transformers = "^2.5"  # lightweight embeddings
 - Models: spaCy en_core_web_md, DistilBERT (if used)
 
 **Blindspots:**
+
 - Model versioning and updates without breaking existing behavior
 - Memory footprint of loading multiple models concurrently
 - CI/CD pipeline for model download and caching
