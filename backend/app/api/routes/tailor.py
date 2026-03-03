@@ -107,8 +107,8 @@ async def tailor_resume(
         raw_job = job.raw_content
         job_source_type = "user_created"
         job_source_id = request.job_id
-        job_title = job.title
-        company_name = job.company
+        job_title = job.title  # type: ignore[assignment]
+        company_name = job.company  # type: ignore[assignment]
     else:
         # System-wide job listing from scraper
         job_listing = await job_listing_repository.get(pg, id=request.job_listing_id)
@@ -120,8 +120,8 @@ async def tailor_resume(
         raw_job = job_listing.job_description
         job_source_type = "job_listing"
         job_source_id = request.job_listing_id
-        job_title = job_listing.title
-        company_name = job_listing.company
+        job_title = job_listing.job_title  # type: ignore[assignment]
+        company_name = job_listing.company_name  # type: ignore[assignment]
 
     # Run tailoring - now returns complete tailored document
     service = get_tailoring_service()
