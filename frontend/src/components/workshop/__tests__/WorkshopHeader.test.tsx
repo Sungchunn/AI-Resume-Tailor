@@ -68,21 +68,25 @@ const mockTailoredResume: TailoredResumeFullResponse = {
   resume_id: "10",
   job_id: 20,
   job_listing_id: null,
-  tailored_content: {
+  tailored_data: {
     summary: "Test summary",
     experience: [],
     skills: ["React"],
     highlights: [],
   },
-  suggestions: [],
+  finalized_data: null,
+  status: "draft",
   match_score: 85,
   skill_matches: ["React"],
   skill_gaps: [],
   keyword_coverage: 80,
+  job_title: "Software Engineer",
+  company_name: "Tech Corp",
   style_settings: DEFAULT_STYLE,
   section_order: DEFAULT_SECTION_ORDER,
   created_at: "2026-02-25T00:00:00Z",
   updated_at: null,
+  finalized_at: null,
 };
 
 // Helper to create mock context value

@@ -139,17 +139,20 @@ const createMockTailoredResume = (
   resume_id: "10",
   job_id: 20,
   job_listing_id: null,
-  tailored_content: {
+  tailored_data: {
     summary: "Test summary",
     experience: [],
     skills: ["React"],
     highlights: [],
   },
-  suggestions: [createSuggestion()],
+  finalized_data: null,
+  status: "draft",
   match_score: 75,
   skill_matches: ["React", "TypeScript"],
   skill_gaps: ["Python"],
   keyword_coverage: 80,
+  job_title: "Software Engineer",
+  company_name: "Tech Corp",
   style_settings: {
     font_family: "Arial",
     font_size_body: 11,
@@ -165,6 +168,7 @@ const createMockTailoredResume = (
   section_order: ["summary", "experience", "skills", "highlights"],
   created_at: "2026-02-25T00:00:00Z",
   updated_at: null,
+  finalized_at: null,
   ...overrides,
 });
 
@@ -297,9 +301,7 @@ describe("AIRewritePanel", () => {
     it("shows empty state when no suggestions", () => {
       const state = createMockState({
         suggestions: [],
-        tailoredResume: createMockTailoredResume({
-          suggestions: [], // No original suggestions either
-        }),
+        tailoredResume: createMockTailoredResume(),
       });
       renderWithContext(state);
 
@@ -310,9 +312,7 @@ describe("AIRewritePanel", () => {
     it("shows success message when all suggestions applied", () => {
       const state = createMockState({
         suggestions: [],
-        tailoredResume: createMockTailoredResume({
-          suggestions: [createSuggestion()],
-        }),
+        tailoredResume: createMockTailoredResume(),
       });
       renderWithContext(state);
 
@@ -495,20 +495,15 @@ describe("AIRewritePanel", () => {
     });
 
     it("calculates accepted count correctly", () => {
+      // Note: acceptedCount is now always 0 since suggestions are managed through workshop state
       const state = createMockState({
-        suggestions: [createSuggestion()], // 1 remaining
-        tailoredResume: createMockTailoredResume({
-          suggestions: [
-            createSuggestion({ section: "summary" }),
-            createSuggestion({ section: "experience" }),
-            createSuggestion({ section: "skills" }),
-          ], // 3 original
-        }),
+        suggestions: [createSuggestion()], // 1 suggestion in current state
+        tailoredResume: createMockTailoredResume(),
       });
       renderWithContext(state);
 
-      // 3 original - 1 remaining = 2 accepted
-      expect(screen.getByTestId("accepted-count")).toHaveTextContent("2");
+      // With the new architecture, accepted count is always 0
+      expect(screen.getByTestId("accepted-count")).toHaveTextContent("0");
     });
   });
 

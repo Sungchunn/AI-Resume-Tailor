@@ -19,7 +19,7 @@ const mockTailoredResume: TailoredResumeFullResponse = {
   resume_id: "10",
   job_id: 20,
   job_listing_id: null,
-  tailored_content: {
+  tailored_data: {
     summary: "Experienced software engineer",
     experience: [
       {
@@ -34,20 +34,14 @@ const mockTailoredResume: TailoredResumeFullResponse = {
     skills: ["React", "TypeScript"],
     highlights: ["Increased revenue"],
   },
-  suggestions: [
-    {
-      section: "summary",
-      type: "rewrite",
-      original: "Old summary",
-      suggested: "New improved summary",
-      reason: "More impactful",
-      impact: "high",
-    },
-  ],
+  finalized_data: null,
+  status: "draft",
   match_score: 85,
   skill_matches: ["React", "TypeScript"],
   skill_gaps: ["Python"],
   keyword_coverage: 75,
+  job_title: "Software Engineer",
+  company_name: "Tech Corp",
   style_settings: {
     font_family: "Inter",
     font_size_body: 10,
@@ -63,6 +57,7 @@ const mockTailoredResume: TailoredResumeFullResponse = {
   section_order: ["experience", "skills", "summary", "highlights"],
   created_at: "2026-02-25T00:00:00Z",
   updated_at: null,
+  finalized_at: null,
 };
 
 describe("workshopReducer", () => {
@@ -75,10 +70,10 @@ describe("workshopReducer", () => {
 
       expect(state.tailoredResume).toEqual(mockTailoredResume);
       expect(state.tailoredId).toBe(1);
-      expect(state.content).toEqual(mockTailoredResume.tailored_content);
+      expect(state.content).toEqual(mockTailoredResume.tailored_data);
       expect(state.styleSettings).toEqual(mockTailoredResume.style_settings);
       expect(state.sectionOrder).toEqual(mockTailoredResume.section_order);
-      expect(state.suggestions).toEqual(mockTailoredResume.suggestions);
+      expect(state.suggestions).toEqual([]); // Suggestions are now managed through state, not API response
       expect(state.isLoading).toBe(false);
       expect(state.hasChanges).toBe(false);
     });
@@ -467,7 +462,7 @@ describe("workshopReducer", () => {
 
       const state = workshopReducer(modifiedState, { type: "RESET_CHANGES" });
 
-      expect(state.content).toEqual(mockTailoredResume.tailored_content);
+      expect(state.content).toEqual(mockTailoredResume.tailored_data);
       expect(state.styleSettings).toEqual(mockTailoredResume.style_settings);
       expect(state.sectionOrder).toEqual(mockTailoredResume.section_order);
       expect(state.hasChanges).toBe(false);
