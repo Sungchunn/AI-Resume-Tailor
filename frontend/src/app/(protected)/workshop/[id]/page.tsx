@@ -10,9 +10,8 @@ interface WorkshopPageProps {
 
 export default function WorkshopPage({ params }: WorkshopPageProps) {
   const { id } = use(params);
-  const tailoredId = parseInt(id, 10);
 
-  if (isNaN(tailoredId)) {
+  if (!id) {
     return (
       <div className="h-screen flex items-center justify-center">
         <p className="text-red-600">Invalid workshop ID</p>
@@ -21,7 +20,7 @@ export default function WorkshopPage({ params }: WorkshopPageProps) {
   }
 
   return (
-    <WorkshopProvider tailoredId={tailoredId}>
+    <WorkshopProvider tailoredId={id}>
       <WorkshopLayout />
     </WorkshopProvider>
   );
