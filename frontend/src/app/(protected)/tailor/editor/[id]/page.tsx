@@ -124,22 +124,21 @@ export default function ResumeEditorPage({ params }: PageProps) {
       };
     } else if (tailored) {
       // Initialize from fetched data (normal flow)
-      setContent(tailored.tailored_content);
-      setSuggestions(tailored.suggestions);
+      // Use finalized_data if available, otherwise use tailored_data
+      setContent(tailored.finalized_data ?? tailored.tailored_data);
 
       const loadedStyle = {
         ...DEFAULT_STYLE,
-        ...(tailored as unknown as { style_settings?: ResumeStyle }).style_settings,
+        ...tailored.style_settings,
       };
       setStyleSettings(loadedStyle);
 
-      const loadedOrder =
-        (tailored as unknown as { section_order?: string[] }).section_order ||
-        DEFAULT_SECTION_ORDER;
+      const loadedOrder = tailored.section_order || DEFAULT_SECTION_ORDER;
       setSectionOrder(loadedOrder);
 
+      const contentToUse = tailored.finalized_data ?? tailored.tailored_data;
       initialStateRef.current = {
-        content: tailored.tailored_content,
+        content: contentToUse,
         styleSettings: loadedStyle,
         sectionOrder: loadedOrder,
       };
@@ -237,7 +236,7 @@ export default function ResumeEditorPage({ params }: PageProps) {
       await updateTailored.mutateAsync({
         id: id,
         data: {
-          tailored_content: content,
+          tailored_data: content,
           style_settings: styleSettings,
           section_order: sectionOrder,
         },
