@@ -321,9 +321,10 @@ describe("ResumeEditor", () => {
 
   describe("loading state", () => {
     it("shows skeleton while editor initializes", async () => {
-      // Mock useEditor to return null initially
+      // Mock useEditor to return null initially (editor not yet initialized)
       const { useEditor } = await import("@tiptap/react");
-      vi.mocked(useEditor).mockReturnValueOnce(null);
+      // useEditor returns Editor | null, but vi.mocked doesn't infer the union type
+      vi.mocked(useEditor).mockReturnValueOnce(null as unknown as ReturnType<typeof useEditor>);
 
       const { container } = render(<ResumeEditor {...defaultProps} />);
 
