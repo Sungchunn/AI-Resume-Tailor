@@ -137,7 +137,7 @@ export interface TailoredContent {
 }
 
 export interface TailorResponse {
-  id: number;
+  id: string;
   resume_id: string;
   job_id: number;
   tailored_content: TailoredContent;
@@ -150,7 +150,7 @@ export interface TailorResponse {
 }
 
 export interface TailoredResumeFullResponse {
-  id: number;
+  id: string;
   resume_id: string;
   job_id: number | null;
   job_listing_id: number | null;
@@ -180,7 +180,7 @@ export interface QuickMatchResponse {
 }
 
 export interface TailoredResumeListItem {
-  id: number;
+  id: string;
   resume_id: string;
   job_id: number | null;
   job_listing_id: number | null;
@@ -193,7 +193,7 @@ export interface TailoredResumeListItem {
  * Contains both original and AI-proposed resume blocks.
  */
 export interface TailoringCompareResponse {
-  id: number;
+  id: string;
   resume_id: string;
   job_id: number | null;
   job_listing_id: number | null;

@@ -2757,9 +2757,9 @@ export interface components {
         /** TailorResponse */
         TailorResponse: {
             /** Id */
-            id: number;
+            id: string;
             /** Resume Id */
-            resume_id: number;
+            resume_id: string;
             /** Job Id */
             job_id?: number | null;
             /** Job Listing Id */
@@ -2800,9 +2800,9 @@ export interface components {
          */
         TailoredResumeFullResponse: {
             /** Id */
-            id: number;
+            id: string;
             /** Resume Id */
-            resume_id: number;
+            resume_id: string;
             /** Job Id */
             job_id: number | null;
             /** Job Listing Id */
@@ -2835,9 +2835,9 @@ export interface components {
         /** TailoredResumeListResponse */
         TailoredResumeListResponse: {
             /** Id */
-            id: number;
+            id: string;
             /** Resume Id */
-            resume_id: number;
+            resume_id: string;
             /** Job Id */
             job_id?: number | null;
             /** Job Listing Id */

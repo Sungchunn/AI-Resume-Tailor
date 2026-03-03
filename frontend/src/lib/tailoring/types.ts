@@ -24,7 +24,7 @@ import type {
  */
 export interface TailoringSession {
   /** Session identifier (matches backend tailored_resumes.id) */
-  id: number;
+  id: string;
 
   /** READ-ONLY: The user's original resume blocks, never mutated. */
   originalResume: AnyResumeBlock[];
@@ -48,7 +48,7 @@ export interface TailoringSession {
  * Set<string> is converted to string[] for JSON compatibility.
  */
 export interface SerializableTailoringSession {
-  id: number;
+  id: string;
   originalResume: AnyResumeBlock[];
   aiProposedResume: AnyResumeBlock[];
   activeDraft: AnyResumeBlock[];

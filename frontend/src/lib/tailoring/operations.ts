@@ -23,7 +23,7 @@ import { createAcceptKey } from "./types";
  * @returns Initialized TailoringSession
  */
 export function initializeTailoringSession(
-  id: number,
+  id: string,
   original: AnyResumeBlock[],
   aiProposed: AnyResumeBlock[]
 ): TailoringSession {
