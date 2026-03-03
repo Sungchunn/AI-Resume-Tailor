@@ -58,9 +58,9 @@ interface VersionHistoryPanelProps {
   /** Resume ID to fetch versions for */
   resumeId: string;
   /** Currently active tailored resume ID (for highlighting) */
-  currentTailoredId?: number;
+  currentTailoredId?: string;
   /** Optional callback when a version is selected */
-  onVersionSelect?: (tailoredId: number) => void;
+  onVersionSelect?: (tailoredId: string) => void;
   /** Display mode: 'sidebar' for compact, 'full' for expanded */
   mode?: "sidebar" | "full";
   /** Optional className for styling */
@@ -68,7 +68,7 @@ interface VersionHistoryPanelProps {
 }
 
 interface TailoredVersionItem {
-  id: number;
+  id: string;
   resume_id: string;
   job_id: number | null;
   job_listing_id: number | null;
@@ -163,7 +163,7 @@ export function VersionHistoryPanel({
 interface VersionItemProps {
   version: TailoredVersionItem;
   isActive: boolean;
-  onSelect?: (id: number) => void;
+  onSelect?: (id: string) => void;
   mode: "sidebar" | "full";
 }
 

@@ -31,7 +31,7 @@ function getUndoableState(state: WorkshopState): UndoableState {
 }
 
 interface WorkshopProviderProps {
-  tailoredId: number;
+  tailoredId: string;
   children: ReactNode;
 }
 
