@@ -35,7 +35,7 @@ class AuditLog(Base):
     # What
     action = Column(String(50), nullable=False, index=True)  # create, read, update, delete, login, export
     resource_type = Column(String(50), nullable=True, index=True)  # resume, job, block, workshop
-    resource_id = Column(Integer, nullable=True)  # ID of affected resource
+    resource_id = Column(String(50), nullable=True)  # Supports both int IDs and MongoDB ObjectId strings
 
     # Where
     endpoint = Column(String(255), nullable=True)  # API endpoint path

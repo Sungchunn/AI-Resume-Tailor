@@ -67,7 +67,7 @@ class TestAuditService:
         assert result.action == AuditAction.CREATE
         assert result.user_id == 1
         assert result.resource_type == "resume"
-        assert result.resource_id == 123
+        assert result.resource_id == "123"  # Stored as string to support MongoDB ObjectIds
         assert result.new_value == {"title": "My Resume"}
         assert result.status == "success"
         mock_db.add.assert_called_once()
@@ -87,7 +87,7 @@ class TestAuditService:
         assert result.action == AuditAction.READ
         assert result.user_id == 2
         assert result.resource_type == "job"
-        assert result.resource_id == 456
+        assert result.resource_id == "456"  # Stored as string to support MongoDB ObjectIds
 
     @pytest.mark.asyncio
     async def test_log_update(self, service, mock_db):

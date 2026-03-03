@@ -87,7 +87,7 @@ class AuditService:
         action: str,
         user_id: int | None = None,
         resource_type: str | None = None,
-        resource_id: int | None = None,
+        resource_id: str | int | None = None,
         details: dict[str, Any] | None = None,
         old_value: dict[str, Any] | None = None,
         new_value: dict[str, Any] | None = None,
@@ -143,7 +143,7 @@ class AuditService:
                 user_agent=user_agent,
                 action=action,
                 resource_type=resource_type,
-                resource_id=resource_id,
+                resource_id=str(resource_id) if resource_id is not None else None,
                 endpoint=endpoint,
                 http_method=http_method,
                 details=details,
@@ -172,7 +172,7 @@ class AuditService:
         db: AsyncSession,
         user_id: int,
         resource_type: str,
-        resource_id: int,
+        resource_id: str | int,
         new_value: dict[str, Any] | None = None,
         request: Request | None = None,
         details: dict[str, Any] | None = None,
@@ -194,7 +194,7 @@ class AuditService:
         db: AsyncSession,
         user_id: int,
         resource_type: str,
-        resource_id: int | None = None,
+        resource_id: str | int | None = None,
         request: Request | None = None,
         details: dict[str, Any] | None = None,
     ) -> AuditLog | None:
@@ -214,7 +214,7 @@ class AuditService:
         db: AsyncSession,
         user_id: int,
         resource_type: str,
-        resource_id: int,
+        resource_id: str | int,
         old_value: dict[str, Any] | None = None,
         new_value: dict[str, Any] | None = None,
         request: Request | None = None,
@@ -238,7 +238,7 @@ class AuditService:
         db: AsyncSession,
         user_id: int,
         resource_type: str,
-        resource_id: int,
+        resource_id: str | int,
         old_value: dict[str, Any] | None = None,
         request: Request | None = None,
         details: dict[str, Any] | None = None,
@@ -278,7 +278,7 @@ class AuditService:
         db: AsyncSession,
         user_id: int,
         resource_type: str,
-        resource_id: int,
+        resource_id: str | int,
         export_format: str,
         request: Request | None = None,
     ) -> AuditLog | None:
@@ -299,7 +299,7 @@ class AuditService:
         user_id: int,
         operation: str,
         resource_type: str | None = None,
-        resource_id: int | None = None,
+        resource_id: str | int | None = None,
         request: Request | None = None,
         details: dict[str, Any] | None = None,
     ) -> AuditLog | None:
@@ -362,7 +362,7 @@ class AuditService:
         self,
         db: AsyncSession,
         resource_type: str,
-        resource_id: int,
+        resource_id: str | int,
         limit: int = 50,
     ) -> list[AuditLog]:
         """
@@ -371,7 +371,7 @@ class AuditService:
         Args:
             db: Database session
             resource_type: Type of resource
-            resource_id: ID of resource
+            resource_id: ID of resource (int or MongoDB ObjectId string)
             limit: Maximum results
 
         Returns:
@@ -380,7 +380,7 @@ class AuditService:
         query = (
             select(AuditLog)
             .where(AuditLog.resource_type == resource_type)
-            .where(AuditLog.resource_id == resource_id)
+            .where(AuditLog.resource_id == str(resource_id))
             .order_by(AuditLog.created_at.desc())
             .limit(limit)
         )
