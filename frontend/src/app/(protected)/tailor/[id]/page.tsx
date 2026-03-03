@@ -244,14 +244,14 @@ export default function TailoredResumePage({ params }: PageProps) {
           <div className="text-center p-4 bg-muted rounded-lg">
             <div
               className={`text-3xl font-bold ${
-                tailored.match_score >= 70
+                (tailored.match_score ?? 0) >= 70
                   ? "text-green-600"
-                  : tailored.match_score >= 40
+                  : (tailored.match_score ?? 0) >= 40
                   ? "text-yellow-600"
                   : "text-destructive"
               }`}
             >
-              {Math.round(tailored.match_score)}%
+              {Math.round(tailored.match_score ?? 0)}%
             </div>
             <div className="text-sm text-muted-foreground">Match Score</div>
           </div>
@@ -338,7 +338,7 @@ export default function TailoredResumePage({ params }: PageProps) {
                 : "border-transparent text-muted-foreground hover:text-foreground/80"
             }`}
           >
-            AI Suggestions ({tailored.suggestions?.length ?? 0})
+            AI Suggestions (0)
           </button>
         </nav>
       </div>
@@ -346,22 +346,22 @@ export default function TailoredResumePage({ params }: PageProps) {
       {/* Tab Content */}
       {activeTab === "content" && (
         <div className="card">
-          {tailored.tailored_content ? (
+          {tailored.tailored_data ? (
             <>
               {/* Summary */}
               <section className="mb-8">
                 <h2 className="text-lg font-semibold text-foreground mb-3">Professional Summary</h2>
                 <p className="text-foreground/80 whitespace-pre-wrap">
-                  {tailored.tailored_content.summary || "No summary available"}
+                  {tailored.tailored_data.summary || "No summary available"}
                 </p>
               </section>
 
               {/* Highlights */}
-              {tailored.tailored_content.highlights && tailored.tailored_content.highlights.length > 0 && (
+              {tailored.tailored_data.highlights && tailored.tailored_data.highlights.length > 0 && (
                 <section className="mb-8">
                   <h2 className="text-lg font-semibold text-foreground mb-3">Key Highlights</h2>
                   <ul className="list-disc list-inside space-y-1 text-foreground/80">
-                    {tailored.tailored_content.highlights.map((highlight, i) => (
+                    {tailored.tailored_data.highlights.map((highlight, i) => (
                       <li key={i}>{highlight}</li>
                     ))}
                   </ul>
@@ -369,11 +369,11 @@ export default function TailoredResumePage({ params }: PageProps) {
               )}
 
               {/* Experience */}
-              {tailored.tailored_content.experience && tailored.tailored_content.experience.length > 0 && (
+              {tailored.tailored_data.experience && tailored.tailored_data.experience.length > 0 && (
                 <section className="mb-8">
                   <h2 className="text-lg font-semibold text-foreground mb-3">Experience</h2>
                   <div className="space-y-6">
-                    {tailored.tailored_content.experience.map((exp, i) => (
+                    {tailored.tailored_data.experience.map((exp, i) => (
                       <div key={i} className="border-l-2 border-border pl-4">
                         <div className="font-medium text-foreground">{exp.title}</div>
                         <div className="text-sm text-muted-foreground">
@@ -394,11 +394,11 @@ export default function TailoredResumePage({ params }: PageProps) {
               )}
 
               {/* Skills */}
-              {tailored.tailored_content.skills && tailored.tailored_content.skills.length > 0 && (
+              {tailored.tailored_data.skills && tailored.tailored_data.skills.length > 0 && (
                 <section>
                   <h2 className="text-lg font-semibold text-foreground mb-3">Skills</h2>
                   <div className="flex flex-wrap gap-2">
-                    {tailored.tailored_content.skills.map((skill, i) => (
+                    {tailored.tailored_data.skills.map((skill, i) => (
                       <span
                         key={i}
                         className="px-3 py-1 bg-muted text-foreground/80 text-sm rounded-full"
@@ -419,59 +419,10 @@ export default function TailoredResumePage({ params }: PageProps) {
       )}
 
       {activeTab === "suggestions" && (
-        <div className="space-y-4">
-          {!tailored.suggestions || tailored.suggestions.length === 0 ? (
-            <div className="card text-center py-8">
-              <p className="text-muted-foreground">No suggestions available</p>
-            </div>
-          ) : (
-            tailored.suggestions.map((suggestion, i) => (
-              <div key={i} className="card">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-1 bg-muted text-foreground/80 text-xs rounded font-medium uppercase">
-                      {suggestion.section}
-                    </span>
-                    <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded font-medium">
-                      {suggestion.type}
-                    </span>
-                    <span
-                      className={`px-2 py-1 text-xs rounded font-medium ${
-                        suggestion.impact === "high"
-                          ? "bg-destructive/10 text-destructive"
-                          : suggestion.impact === "medium"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-muted text-foreground/80"
-                      }`}
-                    >
-                      {suggestion.impact} impact
-                    </span>
-                  </div>
-                </div>
-
-                {suggestion.original && (
-                  <div className="mb-3">
-                    <div className="text-xs font-medium text-muted-foreground mb-1">Original</div>
-                    <p className="text-sm text-muted-foreground bg-destructive/10 p-2 rounded">
-                      {suggestion.original}
-                    </p>
-                  </div>
-                )}
-
-                <div className="mb-3">
-                  <div className="text-xs font-medium text-muted-foreground mb-1">Suggested</div>
-                  <p className="text-sm text-foreground bg-green-50 p-2 rounded">
-                    {suggestion.suggested}
-                  </p>
-                </div>
-
-                <div>
-                  <div className="text-xs font-medium text-muted-foreground mb-1">Reason</div>
-                  <p className="text-sm text-muted-foreground">{suggestion.reason}</p>
-                </div>
-              </div>
-            ))
-          )}
+        <div className="card text-center py-8">
+          <p className="text-muted-foreground">
+            Suggestions are available in the review page. Click &quot;Edit in Workshop&quot; to review AI changes.
+          </p>
         </div>
       )}
 
