@@ -30,6 +30,7 @@ bcrypt = "^4.2.0"  # Pin to 4.x for passlib compatibility
 httpx = "^0.26.0"
 # AI
 google-genai = "^1.0.0"
+openai = "^1.0.0"
 # Document generation
 python-docx = "^1.1.0"
 reportlab = "^4.2.0"
@@ -50,6 +51,7 @@ pytest = "^7.4.0"
 pytest-asyncio = "^0.23.0"
 aiosqlite = "^0.19.0"
 ruff = "^0.2.0"
+python-dotenv = "^1.0.0"  # For test scripts to load .env files
 
 [build-system]
 requires = ["poetry-core"]

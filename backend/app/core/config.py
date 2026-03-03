@@ -22,9 +22,20 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
 
-    # AI Provider (Gemini)
+    # AI Provider Selection
+    # Options: "gemini" or "openai"
+    ai_provider: str = "gemini"
+
+    # Gemini Configuration
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.0-flash"
+
+    # OpenAI Configuration
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"  # Default to cost-effective model
+    openai_embedding_model: str = "text-embedding-3-small"
+
+    # AI Generation Settings
     ai_max_tokens: int = 8192  # Max tokens for AI generation (tailoring, parsing, etc.)
 
     # Environment

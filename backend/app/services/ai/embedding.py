@@ -1,11 +1,12 @@
 """
-Gemini Embedding Service - Optimized for text-embedding-004
+Embedding Service - Provider-agnostic wrapper for text embeddings.
 
-This service handles embedding generation with proper task_type separation
-for optimal retrieval quality with Google's Gemini embedding models.
+Supports:
+- Google Gemini (default) - text-embedding-004
+- OpenAI - text-embedding-3-small
 
-CRITICAL: Task Type Separation
-------------------------------
+Task Type Separation (Gemini-specific)
+--------------------------------------
 Google's embedding API produces different vector representations based on task_type:
 
 1. RETRIEVAL_DOCUMENT - Use when SAVING/INGESTING content
@@ -16,33 +17,29 @@ Google's embedding API produces different vector representations based on task_t
    - Optimized for finding relevant documents
    - Use for: job description matching, semantic search queries
 
-Mixing these up will significantly degrade retrieval quality!
-
-Available task types (for reference):
-- RETRIEVAL_QUERY: Query for semantic search
-- RETRIEVAL_DOCUMENT: Document for semantic search
-- SEMANTIC_SIMILARITY: Text similarity comparison
-- CLASSIFICATION: Text classification
-- CLUSTERING: Clustering similar texts
+OpenAI embeddings don't have task types but work well for both retrieval and queries.
 
 See: https://ai.google.dev/gemini-api/docs/embeddings
 """
 
 import asyncio
+from abc import ABC, abstractmethod
 from enum import Enum
 from functools import lru_cache
 import hashlib
-
-from google import genai
-from google.genai import types
 
 from app.core.config import get_settings
 from app.services.core.pii_stripper import get_pii_stripper
 
 
+# Default embedding dimensions (Gemini text-embedding-004)
+# Use get_embedding_service().dimensions for the actual configured provider's dimensions
+EMBEDDING_DIMENSIONS = 768
+
+
 class EmbeddingTaskType(str, Enum):
     """
-    Gemini embedding task types for optimized retrieval.
+    Embedding task types for optimized retrieval.
 
     IMPORTANT: Always use the correct task type for your use case:
     - RETRIEVAL_DOCUMENT when storing/indexing content
@@ -55,43 +52,55 @@ class EmbeddingTaskType(str, Enum):
     CLUSTERING = "CLUSTERING"
 
 
-# Model configuration
-EMBEDDING_MODEL = "text-embedding-004"
-EMBEDDING_DIMENSIONS = 768  # Native output, do not truncate/pad
+class BaseEmbeddingService(ABC):
+    """Abstract base class for embedding services."""
 
-
-class EmbeddingService:
-    """
-    Service for generating embeddings using Google's Gemini API.
-
-    Optimized for the Vault & Workshop architecture:
-    - Uses text-embedding-004 with 768 native dimensions
-    - Proper task_type separation for asymmetric retrieval
-    - Content hashing for lazy updates (don't re-embed unchanged content)
-
-    Usage:
-        service = get_embedding_service()
-
-        # When SAVING experience blocks to the Vault:
-        doc_embedding = await service.embed_document("Built Redis caching layer...")
-
-        # When SEARCHING (job matching, semantic search):
-        query_embedding = await service.embed_query("Python backend experience")
-    """
-
-    def __init__(self, api_key: str, strip_pii: bool = True):
-        """Initialize the embedding service with Gemini API key.
+    def __init__(self, strip_pii: bool = True):
+        """Initialize the embedding service.
 
         Args:
-            api_key: Gemini API key
             strip_pii: Whether to strip PII before embedding (default: True)
                        SECURITY: Should always be True in production.
         """
-        self.client = genai.Client(api_key=api_key)
-        self.model = EMBEDDING_MODEL
-        self.dimensions = EMBEDDING_DIMENSIONS
         self.strip_pii = strip_pii
         self._pii_stripper = get_pii_stripper() if strip_pii else None
+
+    @property
+    @abstractmethod
+    def dimensions(self) -> int:
+        """Return the embedding dimensions."""
+        pass
+
+    @abstractmethod
+    async def _embed_impl(
+        self,
+        text: str,
+        task_type: EmbeddingTaskType,
+        title: str | None = None,
+    ) -> list[float]:
+        """Internal implementation of embedding generation."""
+        pass
+
+    async def _embed(
+        self,
+        text: str,
+        task_type: EmbeddingTaskType,
+        title: str | None = None,
+    ) -> list[float]:
+        """
+        Generate embeddings with PII stripping.
+
+        SECURITY: PII is automatically stripped before embedding when
+        strip_pii=True (default). This prevents PII from being stored
+        in vector databases.
+        """
+        # Strip PII before embedding (security measure)
+        if self._pii_stripper:
+            text = self._pii_stripper.strip(text)
+            if title:
+                title = self._pii_stripper.strip(title)
+
+        return await self._embed_impl(text, task_type, title)
 
     async def embed_document(self, content: str, title: str | None = None) -> list[float]:
         """
@@ -108,13 +117,7 @@ class EmbeddingService:
             title: Optional title for additional context
 
         Returns:
-            768-dimensional embedding vector
-
-        Example:
-            embedding = await service.embed_document(
-                content="Reduced API latency by 40% through Redis caching",
-                title="Backend Achievement"
-            )
+            Embedding vector
         """
         return await self._embed(
             text=content,
@@ -136,15 +139,7 @@ class EmbeddingService:
             query: The search query text
 
         Returns:
-            768-dimensional embedding vector
-
-        Example:
-            embedding = await service.embed_query("Python microservices experience")
-            results = await ExperienceBlock.search_experience(
-                db=db,
-                query_vector=embedding,
-                user_id=user.id,
-            )
+            Embedding vector
         """
         return await self._embed(
             text=query,
@@ -157,12 +152,6 @@ class EmbeddingService:
 
         Use when comparing two texts for semantic similarity
         (e.g., duplicate detection, content matching).
-
-        Args:
-            text: Text to embed for similarity comparison
-
-        Returns:
-            768-dimensional embedding vector
         """
         return await self._embed(
             text=text,
@@ -179,13 +168,6 @@ class EmbeddingService:
 
         More efficient than individual calls for bulk operations
         like initial resume parsing or migration.
-
-        Args:
-            contents: List of text contents to embed
-            titles: Optional list of titles (must match contents length)
-
-        Returns:
-            List of 768-dimensional embedding vectors
         """
         if titles and len(titles) != len(contents):
             raise ValueError("titles must have same length as contents")
@@ -198,69 +180,12 @@ class EmbeddingService:
 
         return embeddings
 
-    async def _embed(
-        self,
-        text: str,
-        task_type: EmbeddingTaskType,
-        title: str | None = None,
-    ) -> list[float]:
-        """
-        Internal method to generate embeddings with specified task type.
-
-        SECURITY: PII is automatically stripped before embedding when
-        strip_pii=True (default). This prevents PII from being stored
-        in vector databases.
-
-        Args:
-            text: Text to embed
-            task_type: Gemini task type for optimal retrieval
-            title: Optional title (only used with RETRIEVAL_DOCUMENT)
-
-        Returns:
-            768-dimensional embedding vector
-        """
-        # Strip PII before embedding (security measure)
-        if self._pii_stripper:
-            text = self._pii_stripper.strip(text)
-            if title:
-                title = self._pii_stripper.strip(title)
-
-        # Prepare content - include title if provided for document embeddings
-        content = text
-        if title and task_type == EmbeddingTaskType.RETRIEVAL_DOCUMENT:
-            content = f"{title}\n\n{text}"
-
-        # Configure embedding request
-        config = types.EmbedContentConfig(
-            task_type=task_type.value,
-            output_dimensionality=self.dimensions,
-        )
-
-        # Generate embedding (non-blocking)
-        result = await asyncio.to_thread(
-            self.client.models.embed_content,
-            model=self.model,
-            contents=content,
-            config=config,
-        )
-
-        # Return the embedding vector
-        return result.embeddings[0].values
-
     @staticmethod
     def compute_content_hash(content: str) -> str:
         """
         Compute SHA-256 hash for content change detection.
 
-        Use this to check if content needs re-embedding:
-
-            stored_hash = block.content_hash
-            new_hash = service.compute_content_hash(new_content)
-            if stored_hash != new_hash:
-                # Content changed, re-embed
-                embedding = await service.embed_document(new_content)
-                block.embedding = embedding
-                block.content_hash = new_hash
+        Use this to check if content needs re-embedding.
         """
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
@@ -277,14 +202,6 @@ class EmbeddingService:
         - No existing embedding
         - No existing hash
         - Content has changed (hash mismatch)
-
-        Args:
-            new_content: The current/new content
-            current_hash: Stored content hash (or None)
-            current_embedding: Stored embedding (or None)
-
-        Returns:
-            True if embedding is needed
         """
         if current_embedding is None:
             return True
@@ -295,8 +212,117 @@ class EmbeddingService:
         return new_hash != current_hash
 
 
+class GeminiEmbeddingService(BaseEmbeddingService):
+    """
+    Embedding service using Google's Gemini API.
+
+    Uses text-embedding-004 with 768 native dimensions.
+    Supports task_type separation for optimal retrieval quality.
+    """
+
+    EMBEDDING_MODEL = "text-embedding-004"
+    EMBEDDING_DIMENSIONS = 768
+
+    def __init__(self, api_key: str, strip_pii: bool = True):
+        super().__init__(strip_pii)
+        from google import genai
+
+        self.client = genai.Client(api_key=api_key)
+        self.model = self.EMBEDDING_MODEL
+
+    @property
+    def dimensions(self) -> int:
+        return self.EMBEDDING_DIMENSIONS
+
+    async def _embed_impl(
+        self,
+        text: str,
+        task_type: EmbeddingTaskType,
+        title: str | None = None,
+    ) -> list[float]:
+        from google.genai import types
+
+        # Prepare content - include title if provided for document embeddings
+        content = text
+        if title and task_type == EmbeddingTaskType.RETRIEVAL_DOCUMENT:
+            content = f"{title}\n\n{text}"
+
+        # Configure embedding request
+        config = types.EmbedContentConfig(
+            task_type=task_type.value,
+            output_dimensionality=self.EMBEDDING_DIMENSIONS,
+        )
+
+        # Generate embedding (non-blocking)
+        result = await asyncio.to_thread(
+            self.client.models.embed_content,
+            model=self.model,
+            contents=content,
+            config=config,
+        )
+
+        return result.embeddings[0].values
+
+
+class OpenAIEmbeddingService(BaseEmbeddingService):
+    """
+    Embedding service using OpenAI's API.
+
+    Uses text-embedding-3-small with 1536 dimensions.
+    OpenAI embeddings don't have task_type but work well for both use cases.
+    """
+
+    EMBEDDING_DIMENSIONS = 1536
+
+    def __init__(self, api_key: str, model: str = "text-embedding-3-small", strip_pii: bool = True):
+        super().__init__(strip_pii)
+        from openai import OpenAI
+
+        self.client = OpenAI(api_key=api_key)
+        self.model = model
+
+    @property
+    def dimensions(self) -> int:
+        return self.EMBEDDING_DIMENSIONS
+
+    async def _embed_impl(
+        self,
+        text: str,
+        task_type: EmbeddingTaskType,
+        title: str | None = None,
+    ) -> list[float]:
+        # OpenAI doesn't have task_type, but we can still prepend title for context
+        content = text
+        if title and task_type == EmbeddingTaskType.RETRIEVAL_DOCUMENT:
+            content = f"{title}\n\n{text}"
+
+        # Generate embedding (non-blocking)
+        result = await asyncio.to_thread(
+            self.client.embeddings.create,
+            model=self.model,
+            input=content,
+        )
+
+        return result.data[0].embedding
+
+
+# Type alias for the service interface
+EmbeddingService = BaseEmbeddingService
+
+
 @lru_cache
 def get_embedding_service() -> EmbeddingService:
-    """Get a singleton embedding service instance."""
+    """Get a singleton embedding service instance based on configured provider."""
     settings = get_settings()
-    return EmbeddingService(api_key=settings.gemini_api_key)
+    provider = settings.ai_provider.lower()
+
+    if provider == "openai":
+        return OpenAIEmbeddingService(
+            api_key=settings.openai_api_key,
+            model=settings.openai_embedding_model,
+        )
+    elif provider == "gemini":
+        return GeminiEmbeddingService(api_key=settings.gemini_api_key)
+    else:
+        # Default to Gemini for unknown providers
+        return GeminiEmbeddingService(api_key=settings.gemini_api_key)
