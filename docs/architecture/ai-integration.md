@@ -1,298 +1,358 @@
 # AI Integration Architecture
 
-This document provides a comprehensive overview of all AI-integrated features and services in the Resume Builder application.
-
----
-
-## Table of Contents
-
-1. [Overview](#overview)
-2. [AI Infrastructure](#ai-infrastructure)
-3. [Core AI Features](#core-ai-features)
-4. [Supporting AI Services](#supporting-ai-services)
-5. [Frontend AI Components](#frontend-ai-components)
-6. [API Endpoints](#api-endpoints)
-7. [Configuration](#configuration)
-8. [Security Considerations](#security-considerations)
-
----
-
-## Overview
-
-The Resume Builder uses AI throughout the application to help users create optimized, job-targeted resumes. AI powers everything from parsing uploaded resumes to generating tailored versions for specific job applications.
+This document provides a phase-by-phase overview of AI-integrated features in the Resume Builder application. Each phase follows a structured analysis format for clarity and planning purposes.
 
 **Supported AI Providers:**
 
 - Google Gemini (default) - `gemini-2.0-flash`
 - OpenAI - `gpt-4o`
 
-Provider selection is configurable via the `AI_PROVIDER` environment variable.
+---
+
+## Table of Contents
+
+1. [Phase 1: AI Infrastructure](#phase-1-ai-infrastructure)
+2. [Phase 2: Resume Parsing](#phase-2-resume-parsing)
+3. [Phase 3: Job Description Analysis](#phase-3-job-description-analysis)
+4. [Phase 4: Semantic Matching & Embeddings](#phase-4-semantic-matching--embeddings)
+5. [Phase 5: Resume Tailoring](#phase-5-resume-tailoring)
+6. [Phase 6: ATS Analysis](#phase-6-ats-analysis)
+7. [Phase 7: AI Chat & Section Improvement](#phase-7-ai-chat--section-improvement)
+8. [Phase 8: Frontend AI Components](#phase-8-frontend-ai-components)
+9. [Configuration Reference](#configuration-reference)
 
 ---
 
-## AI Infrastructure
+## Phase 1: AI Infrastructure
 
-### AI Client Service
+### Context - Infrastructure
 
-**Location:** `/backend/app/services/ai/client.py`
+**Phase/Feature:** Foundation layer providing provider-agnostic AI access
 
-Provider-agnostic wrapper for LLM text generation.
+**The Problem:** The application needs to call multiple AI providers (Gemini, OpenAI) for text generation without coupling business logic to a specific vendor. Must handle rate limits, errors, and structured output parsing consistently.
 
-| Method | Purpose |
-| ------ | ------- |
-| `generate()` | Basic text generation with temperature control |
-| `generate_json()` | Structured JSON output for deterministic responses |
+**Current Stack:**
 
-Features:
+- Location: `/backend/app/services/ai/client.py`
+- Methods: `generate()`, `generate_json()`
+- Providers: Google Gemini, OpenAI (switchable via `AI_PROVIDER` env var)
 
+### Task - Infrastructure
+
+**Architecture Trade-offs:**
+
+- Provider abstraction adds indirection but enables easy switching during outages or cost changes
+- `generate_json()` relies on provider-specific JSON mode capabilities (not all models support it equally)
+
+**Impact Analysis:**
+
+- Every AI feature depends on this layer - a bug here cascades everywhere
+- Rate limit handling here protects downstream services from retry storms
+
+**Definition of Completion:**
+
+- Both providers work interchangeably for all AI features
 - Automatic error handling for rate limits and connection failures
-- Configurable model selection per provider
+- Temperature and token limits configurable per-call
 
-### Embedding Service
+**Blindspots:**
 
-**Location:** `/backend/app/services/ai/embedding.py`
-
-Converts text to vector embeddings for semantic search operations.
-
-| Method | Purpose |
-| -------- | --------- |
-| `embed_document()` | Embeds content for storage (RETRIEVAL_DOCUMENT task) |
-| `embed_query()` | Embeds search queries (RETRIEVAL_QUERY task) |
-| `embed_for_similarity()` | Embeds for similarity comparison |
-| `embed_batch_documents()` | Batch embedding for efficiency |
-
-**Embedding Dimensions:**
-
-- Google Gemini: 768 dimensions (`text-embedding-004`)
-- OpenAI: 1536 dimensions (`text-embedding-3-small`)
-
-**Security:** Automatic PII stripping before embedding to protect user privacy.
+- No retry logic with exponential backoff currently documented
+- Token usage tracking for cost monitoring not specified
+- Streaming responses not addressed (needed for chat UX)
 
 ---
 
-## Core AI Features
+## Phase 2: Resume Parsing
 
-### 1. Resume Tailoring
+### Context - Parsing
 
-**Location:** `/backend/app/services/resume/tailor.py`
+**Phase/Feature:** Extract structured data from uploaded resume text/PDFs
 
-The primary AI feature - generates a fully customized resume for a specific job description.
+**The Problem:** Users upload resumes in various formats with inconsistent layouts. The system needs to extract contact info, work history, skills, education, etc. into a consistent schema for downstream processing.
 
-**Architecture:** "Two Copies" pattern
+**Current Stack:**
 
-- Input: Original resume (parsed) + job description
-- Output: Complete tailored resume with preserved IDs for frontend diffing
+- Location: `/backend/app/services/resume/parser.py`
+- Caching: Content hash-based (prevents re-parsing unchanged content)
 
-**Capabilities:**
+### Task - Parsing
 
-- `tailor()` - Generate complete tailored resume
-- `get_quick_match_score()` - Fast compatibility check without full tailoring
+**Architecture Trade-offs:**
 
-**Output includes:**
+- AI parsing is flexible but non-deterministic - same resume may parse slightly differently
+- Content hashing trades storage for compute savings
 
-- Match score (0-100)
-- Skill matches (skills you have that match the job)
-- Skill gaps (required skills you're missing)
-- Keyword coverage percentage
+**Impact Analysis:**
 
-**Caching:** Results cached by `resume_hash + job_hash` to avoid redundant AI calls.
+- Parsing quality directly affects tailoring and matching accuracy
+- Poor extraction = poor tailored output (garbage in, garbage out)
 
----
+**Definition of Completion:**
 
-### 2. ATS (Applicant Tracking System) Analysis
+- Reliable extraction of: contact info, summary, work experience (with achievements), education, skills, certifications, projects
+- Hash-based caching prevents redundant AI calls
+- Structured output matches expected schema for all downstream consumers
 
-**Location:** `/backend/app/services/job/ats_analyzer.py`
+**Blindspots:**
 
-Analyzes resumes for ATS compatibility and keyword optimization.
-
-**Capabilities:**
-
-| Method | Purpose |
-| ------ | ------- |
-| `analyze_structure()` | Check for standard sections, contact info, formatting issues |
-| `analyze_keywords()` | Compare resume keywords vs job description |
-| `analyze_keywords_detailed()` | Importance-based keyword analysis (required/preferred/nice-to-have) |
-
-**Output includes:**
-
-- Format score
-- Sections found/missing
-- Keyword coverage by importance level
-- Vault availability for missing keywords
-- Actionable suggestions
+- Multi-language resume support not addressed
+- Handling of non-standard resume formats (creative/design resumes)
+- Confidence scores for parsed fields not specified
 
 ---
 
-### 3. Semantic Matching
+## Phase 3: Job Description Analysis
 
-**Location:** `/backend/app/services/ai/semantic_matcher.py`
+### Context - Job Analysis
 
-Uses vector similarity to find relevant experience blocks from the user's vault.
+**Phase/Feature:** Parse job postings into structured, actionable data
 
-**Capabilities:**
+**The Problem:** Job descriptions vary wildly in structure. Need to extract requirements, responsibilities, and skills while categorizing by importance level for accurate matching.
 
-| Method | Purpose |
-| ------ | ------- |
-| `match()` | Find relevant experience blocks using vector similarity |
-| `extract_keywords()` | AI-powered keyword extraction from job descriptions |
-| `analyze_gaps()` | Identify skill gaps between job requirements and user experience |
-| `find_best_blocks_for_keywords()` | Find blocks matching specific keywords |
+**Current Stack:**
 
----
+- Location: `/backend/app/services/job/analyzer.py`
+- Output: Title, company, location, remote type, responsibilities, requirements, categorized skills, benefits, salary, keywords
 
-### 4. AI Section Improvement & Chat
+### Task - Job Analysis
 
-**Location:** `/backend/app/api/routes/ai.py`
+**Architecture Trade-offs:**
 
-Interactive AI assistance for improving resume content.
+- AI extraction handles unstructured input but may hallucinate missing fields
+- Skill categorization (required/preferred/nice-to-have) is subjective and model-dependent
 
-**Endpoints:**
+**Impact Analysis:**
 
-- `POST /api/v1/ai/improve-section` - Improve a specific section with instructions
-- `POST /api/v1/ai/chat` - Multi-turn conversational assistance
+- Incorrect skill importance ranking = misleading match scores
+- Missing keyword extraction = poor tailoring recommendations
 
-**Chat Response Types:**
+**Definition of Completion:**
 
-- `advice` - General guidance without content changes
-- `improvement` - Suggested content modification
-- `question` - Clarifying question to the user
+- Consistent extraction of core fields across varied job posting formats
+- Skills categorized by importance (Required, Preferred, Nice-to-have) and type (Technical, Soft skill, Domain knowledge)
+- Keyword extraction feeds semantic matching and ATS analysis
 
----
+**Blindspots:**
 
-## Supporting AI Services
-
-### Resume Parser
-
-**Location:** `/backend/app/services/resume/parser.py`
-
-Extracts structured data from uploaded resume text.
-
-**Extracted Fields:**
-
-- Contact information
-- Professional summary
-- Work experience (with achievements)
-- Education
-- Skills
-- Certifications
-- Projects
-
-**Caching:** Content hash-based caching prevents re-parsing unchanged content.
+- Handling of poorly written or vague job descriptions
+- Salary parsing across different formats/currencies
+- Detection of unrealistic or "purple squirrel" job requirements
 
 ---
 
-### Job Description Analyzer
+## Phase 4: Semantic Matching & Embeddings
 
-**Location:** `/backend/app/services/job/analyzer.py`
+### Context - Embeddings
 
-Parses job postings into structured, actionable data.
+**Phase/Feature:** Vector-based similarity search to find relevant experience blocks
 
-**Extracted Fields:**
+**The Problem:** Users have a vault of experience blocks. When targeting a job, the system needs to find which blocks best match the job requirements using semantic understanding, not just keyword overlap.
 
-- Title, company, location, remote type
-- Responsibilities and requirements
-- Skills (categorized by importance and type)
-- Benefits and salary information
-- Keywords for matching
+**Current Stack:**
 
-**Skill Categorization:**
+- Location: `/backend/app/services/ai/embedding.py`, `/backend/app/services/ai/semantic_matcher.py`
+- Embedding dimensions: Gemini (768), OpenAI (1536)
+- Methods: `embed_document()`, `embed_query()`, `embed_for_similarity()`, `embed_batch_documents()`
+- Matcher methods: `match()`, `extract_keywords()`, `analyze_gaps()`, `find_best_blocks_for_keywords()`
 
-- **Importance:** Required, Preferred, Nice-to-have
-- **Type:** Technical, Soft skill, Domain knowledge
+### Task - Embeddings
+
+**Architecture Trade-offs:**
+
+- Different embedding dimensions between providers complicates switching (re-embedding required)
+- Task-specific embedding types (RETRIEVAL_DOCUMENT vs RETRIEVAL_QUERY) improve accuracy but add complexity
+
+**Impact Analysis:**
+
+- Embedding quality determines match relevance
+- PII stripping before embedding protects privacy but may lose context
+
+**Definition of Completion:**
+
+- Relevant blocks surfaced for job requirements using vector similarity
+- Gap analysis identifies skills user lacks vs job requirements
+- Automatic PII stripping before embedding storage
+
+**Blindspots:**
+
+- Re-embedding cost when switching providers not planned
+- Embedding drift over time as models update
+- Performance at scale (thousands of vault blocks)
 
 ---
 
-### Block Classifier
+## Phase 5: Resume Tailoring
 
-**Location:** `/backend/app/services/resume/block_classifier.py`
+### Context - Tailoring
 
-Classifies and tags experience content for organization.
+**Phase/Feature:** Generate a fully customized resume for a specific job description
 
-**Capabilities:**
+**The Problem:** Users need job-specific resumes but manually rewriting is tedious. The AI should rewrite/reorganize content to match job requirements while preserving the user's authentic experience.
 
-- `classify()` - Determine block type (achievement, responsibility, skill, project, etc.)
-- `suggest_tags()` - Generate taxonomy tags from content
-- `batch_classify()` - Efficient batch classification
+**Current Stack:**
+
+- Location: `/backend/app/services/resume/tailor.py`
+- Architecture: "Two Copies" pattern (original preserved, tailored version created)
+- Methods: `tailor()`, `get_quick_match_score()`
+- Caching: `resume_hash + job_hash` based
+
+### Task - Tailoring
+
+**Architecture Trade-offs:**
+
+- Two Copies pattern preserves originals but doubles storage
+- ID preservation enables frontend diffing but constrains AI output structure
+- Full regeneration vs incremental updates (current: full regeneration)
+
+**Impact Analysis:**
+
+- This is the core AI feature - user-perceived value depends heavily on output quality
+- Caching prevents redundant AI calls but means users don't see improvements without content changes
+
+**Definition of Completion:**
+
+- Complete tailored resume generated with preserved section IDs
+- Match score (0-100) reflects job fit accuracy
+- Skill matches and gaps identified
+- Keyword coverage percentage calculated
+- Results cached to avoid redundant AI calls
+
+**Blindspots:**
+
+- User feedback loop for tailoring quality not specified
+- Handling when AI over-embellishes or fabricates experience
+- Partial re-tailoring (only changed sections) for efficiency
 
 ---
 
-## Frontend AI Components
+## Phase 6: ATS Analysis
 
-### AI Rewrite Panel
+### Context - ATS
 
-**Location:** `/frontend/src/components/workshop/panels/AIRewritePanel.tsx`
+**Phase/Feature:** Analyze resumes for Applicant Tracking System compatibility
 
-Main UI for displaying and managing AI-generated suggestions.
+**The Problem:** Many resumes get filtered by ATS before humans see them. Users need feedback on formatting issues and keyword coverage to pass automated screening.
 
-**Features:**
+**Current Stack:**
 
-- Suggestions grouped by section (summary, experience, skills, education)
-- Filter by impact level (high/medium/low) or section
+- Location: `/backend/app/services/job/ats_analyzer.py`
+- Methods: `analyze_structure()`, `analyze_keywords()`, `analyze_keywords_detailed()`
+
+### Task - ATS
+
+**Architecture Trade-offs:**
+
+- Keyword matching can be exact or semantic (semantic catches synonyms but may over-match)
+- Structure analysis is rule-based while keyword analysis is AI-powered (hybrid approach)
+
+**Impact Analysis:**
+
+- ATS feedback influences user editing decisions
+- False positives (saying something's wrong when it isn't) erode trust
+
+**Definition of Completion:**
+
+- Format score reflects ATS-friendliness
+- Sections found/missing clearly identified
+- Keyword coverage broken down by importance level
+- Vault availability shown for missing keywords
+- Actionable suggestions provided
+
+**Blindspots:**
+
+- Different ATS systems have different requirements (no universal standard)
+- Parsing accuracy of user's resume affects analysis accuracy
+- Testing against actual ATS systems for validation
+
+---
+
+## Phase 7: AI Chat & Section Improvement
+
+### Context - Chat
+
+**Phase/Feature:** Interactive AI assistance for improving resume content
+
+**The Problem:** Users want to iterate on specific sections with AI guidance. Need conversational interface for back-and-forth refinement rather than one-shot generation.
+
+**Current Stack:**
+
+- Location: `/backend/app/api/routes/ai.py`
+- Endpoints: `POST /api/v1/ai/improve-section`, `POST /api/v1/ai/chat`
+- Response types: `advice`, `improvement`, `question`
+
+### Task - Chat
+
+**Architecture Trade-offs:**
+
+- Multi-turn conversation requires context management (token costs scale with history)
+- Typed responses (advice/improvement/question) structure output but may feel rigid
+
+**Impact Analysis:**
+
+- Chat quality affects user perception of AI helpfulness
+- Context window limits constrain conversation length
+
+**Definition of Completion:**
+
+- Section improvement with custom instructions works reliably
+- Multi-turn chat maintains context appropriately
+- Response types correctly categorize AI output
+- Suggested improvements are actionable and specific
+
+**Blindspots:**
+
+- Conversation history storage and retrieval
+- Maximum context length handling (truncation strategy)
+- Streaming responses for better UX (typing indicator)
+
+---
+
+## Phase 8: Frontend AI Components
+
+### Context - Frontend
+
+**Phase/Feature:** UI components for displaying and managing AI suggestions
+
+**The Problem:** AI generates suggestions, but users need intuitive interfaces to review, accept, reject, and understand changes. Must make AI output transparent and controllable.
+
+**Current Stack:**
+
+- `AIRewritePanel.tsx` - Main suggestion display/management
+- `AIPromptInput.tsx` - Free-form AI instructions with quick actions
+- `SuggestionCard.tsx` - Individual suggestion with before/after and accept/reject
+
+### Task - Frontend
+
+**Architecture Trade-offs:**
+
+- Grouped suggestions by section vs flat list (grouped chosen for clarity)
+- Bulk actions (Accept All) vs individual review (both supported)
+- Quick actions vs free-form input (both provided)
+
+**Impact Analysis:**
+
+- UI clarity determines whether users trust and use AI features
+- Poor diffing display makes it hard to understand what changed
+
+**Definition of Completion:**
+
+- Suggestions grouped by section with clear visual hierarchy
+- Filter by impact level and section type
 - "See What's Changed" summary with impact breakdown
-- Accept/Reject individual suggestions
-- Bulk Accept All / Reject All actions
+- Accept/Reject individual and bulk actions
+- Quick action presets (concise, metrics, verbs, keywords)
 
-### AI Prompt Input
+**Blindspots:**
 
-**Location:** `/frontend/src/components/workshop/panels/AIPromptInput.tsx`
-
-Free-form input for custom AI instructions.
-
-**Quick Actions:**
-
-- "More concise"
-- "Add metrics"
-- "Stronger verbs"
-- "Match keywords"
-
-### Suggestion Card
-
-**Location:** `/frontend/src/components/workshop/panels/SuggestionCard.tsx`
-
-Individual suggestion display with before/after content and accept/reject controls.
+- Undo/redo after accepting suggestions
+- Mobile responsiveness of suggestion cards
+- Loading states and error handling during AI calls
+- Accessibility (screen reader support for diff display)
 
 ---
 
-## API Endpoints
-
-### Tailoring Endpoints
-
-| Method | Endpoint | Purpose |
-| ------ | -------- | ------- |
-| POST | `/api/tailor` | Create AI-tailored resume |
-| POST | `/api/tailor/quick-match` | Quick match scoring |
-| GET | `/api/tailor/{id}` | Retrieve tailored resume |
-| GET | `/api/tailor/{id}/compare` | Get original + tailored for diffing |
-| POST | `/api/tailor/{id}/finalize` | Finalize user-approved version |
-| PATCH | `/api/tailor/{id}` | Update tailored content/styling |
-
-### Semantic Matching Endpoints
-
-| Method | Endpoint | Purpose |
-| ------ | -------- | ------- |
-| POST | `/v1/match` | Semantic search for matching blocks |
-| POST | `/v1/match/analyze` | Gap analysis |
-| GET | `/v1/match/job/{job_id}` | Cached match results |
-
-### ATS Analysis Endpoints
-
-| Method | Endpoint | Purpose |
-| ------ | -------- | ------- |
-| POST | `/v1/ats/structure` | Analyze resume structure |
-| POST | `/v1/ats/keywords` | Analyze keyword coverage |
-| POST | `/v1/ats/keywords/detailed` | Detailed keyword analysis |
-| GET | `/v1/ats/tips` | General ATS optimization tips |
-
-### AI Chat Endpoints
-
-| Method | Endpoint | Purpose |
-| ------ | -------- | ------- |
-| POST | `/api/v1/ai/improve-section` | Improve resume section |
-| POST | `/api/v1/ai/chat` | Conversational AI assistance |
-
----
-
-## Configuration
+## Configuration Reference
 
 ### Environment Variables
 
@@ -319,25 +379,8 @@ Individual suggestion display with before/after content and accept/reject contro
 
 ---
 
-## Security Considerations
-
-1. **PII Protection:** Embeddings automatically strip personally identifiable information before storage in the vector database.
-
-2. **Rate Limiting:** AI endpoints have stricter rate limits than standard endpoints to prevent abuse and control costs.
-
-3. **Two Copies Architecture:** Tailoring generates a complete document copy rather than modifying the original, preserving user data integrity.
-
-4. **ID Preservation:** Original IDs are maintained in tailored content to enable accurate section-by-section diffing without data loss.
-
-5. **Content Hashing:** Hash-based caching prevents unnecessary AI calls while ensuring changes are detected.
-
-6. **Provider Flexibility:** Easy switching between AI providers allows responding to service outages or cost changes without code modifications.
-
----
-
 ## Related Documentation
 
 - `/docs/api/tailor-match.md` - Tailoring and semantic matching API details
 - `/docs/api/ats.md` - ATS analysis API documentation
-- `/docs/api/ai-chat.md` - AI chat API documentation
 - `/docs/planning/250226_phase-e-ai-rewrite-summary.md` - Phase E implementation details
