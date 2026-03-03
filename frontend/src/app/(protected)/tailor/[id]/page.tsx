@@ -263,13 +263,13 @@ export default function TailoredResumePage({ params }: PageProps) {
           </div>
           <div className="text-center p-4 bg-muted rounded-lg">
             <div className="text-3xl font-bold text-green-600">
-              {tailored.skill_matches.length}
+              {tailored.skill_matches?.length ?? 0}
             </div>
             <div className="text-sm text-muted-foreground">Skills Matched</div>
           </div>
           <div className="text-center p-4 bg-muted rounded-lg">
             <div className="text-3xl font-bold text-yellow-600">
-              {tailored.skill_gaps.length}
+              {tailored.skill_gaps?.length ?? 0}
             </div>
             <div className="text-sm text-muted-foreground">Skills to Add</div>
           </div>
@@ -283,7 +283,7 @@ export default function TailoredResumePage({ params }: PageProps) {
           <div>
             <h3 className="text-sm font-medium text-foreground/80 mb-2">Matching Skills</h3>
             <div className="flex flex-wrap gap-2">
-              {tailored.skill_matches.length > 0 ? (
+              {tailored.skill_matches && tailored.skill_matches.length > 0 ? (
                 tailored.skill_matches.map((skill) => (
                   <span
                     key={skill}
@@ -300,7 +300,7 @@ export default function TailoredResumePage({ params }: PageProps) {
           <div>
             <h3 className="text-sm font-medium text-foreground/80 mb-2">Skills to Consider Adding</h3>
             <div className="flex flex-wrap gap-2">
-              {tailored.skill_gaps.length > 0 ? (
+              {tailored.skill_gaps && tailored.skill_gaps.length > 0 ? (
                 tailored.skill_gaps.map((skill) => (
                   <span
                     key={skill}
@@ -338,7 +338,7 @@ export default function TailoredResumePage({ params }: PageProps) {
                 : "border-transparent text-muted-foreground hover:text-foreground/80"
             }`}
           >
-            AI Suggestions ({tailored.suggestions.length})
+            AI Suggestions ({tailored.suggestions?.length ?? 0})
           </button>
         </nav>
       </div>
@@ -346,69 +346,81 @@ export default function TailoredResumePage({ params }: PageProps) {
       {/* Tab Content */}
       {activeTab === "content" && (
         <div className="card">
-          {/* Summary */}
-          <section className="mb-8">
-            <h2 className="text-lg font-semibold text-foreground mb-3">Professional Summary</h2>
-            <p className="text-foreground/80 whitespace-pre-wrap">
-              {tailored.tailored_content.summary}
-            </p>
-          </section>
+          {tailored.tailored_content ? (
+            <>
+              {/* Summary */}
+              <section className="mb-8">
+                <h2 className="text-lg font-semibold text-foreground mb-3">Professional Summary</h2>
+                <p className="text-foreground/80 whitespace-pre-wrap">
+                  {tailored.tailored_content.summary || "No summary available"}
+                </p>
+              </section>
 
-          {/* Highlights */}
-          {tailored.tailored_content.highlights.length > 0 && (
-            <section className="mb-8">
-              <h2 className="text-lg font-semibold text-foreground mb-3">Key Highlights</h2>
-              <ul className="list-disc list-inside space-y-1 text-foreground/80">
-                {tailored.tailored_content.highlights.map((highlight, i) => (
-                  <li key={i}>{highlight}</li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {/* Experience */}
-          <section className="mb-8">
-            <h2 className="text-lg font-semibold text-foreground mb-3">Experience</h2>
-            <div className="space-y-6">
-              {tailored.tailored_content.experience.map((exp, i) => (
-                <div key={i} className="border-l-2 border-border pl-4">
-                  <div className="font-medium text-foreground">{exp.title}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {exp.company} | {exp.location}
-                  </div>
-                  <div className="text-sm text-muted-foreground mb-2">
-                    {exp.start_date} - {exp.end_date}
-                  </div>
-                  <ul className="list-disc list-inside space-y-1 text-foreground/80 text-sm">
-                    {exp.bullets.map((bullet, j) => (
-                      <li key={j}>{bullet}</li>
+              {/* Highlights */}
+              {tailored.tailored_content.highlights && tailored.tailored_content.highlights.length > 0 && (
+                <section className="mb-8">
+                  <h2 className="text-lg font-semibold text-foreground mb-3">Key Highlights</h2>
+                  <ul className="list-disc list-inside space-y-1 text-foreground/80">
+                    {tailored.tailored_content.highlights.map((highlight, i) => (
+                      <li key={i}>{highlight}</li>
                     ))}
                   </ul>
-                </div>
-              ))}
-            </div>
-          </section>
+                </section>
+              )}
 
-          {/* Skills */}
-          <section>
-            <h2 className="text-lg font-semibold text-foreground mb-3">Skills</h2>
-            <div className="flex flex-wrap gap-2">
-              {tailored.tailored_content.skills.map((skill, i) => (
-                <span
-                  key={i}
-                  className="px-3 py-1 bg-muted text-foreground/80 text-sm rounded-full"
-                >
-                  {skill}
-                </span>
-              ))}
+              {/* Experience */}
+              {tailored.tailored_content.experience && tailored.tailored_content.experience.length > 0 && (
+                <section className="mb-8">
+                  <h2 className="text-lg font-semibold text-foreground mb-3">Experience</h2>
+                  <div className="space-y-6">
+                    {tailored.tailored_content.experience.map((exp, i) => (
+                      <div key={i} className="border-l-2 border-border pl-4">
+                        <div className="font-medium text-foreground">{exp.title}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {exp.company} | {exp.location}
+                        </div>
+                        <div className="text-sm text-muted-foreground mb-2">
+                          {exp.start_date} - {exp.end_date}
+                        </div>
+                        <ul className="list-disc list-inside space-y-1 text-foreground/80 text-sm">
+                          {exp.bullets?.map((bullet, j) => (
+                            <li key={j}>{bullet}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Skills */}
+              {tailored.tailored_content.skills && tailored.tailored_content.skills.length > 0 && (
+                <section>
+                  <h2 className="text-lg font-semibold text-foreground mb-3">Skills</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {tailored.tailored_content.skills.map((skill, i) => (
+                      <span
+                        key={i}
+                        className="px-3 py-1 bg-muted text-foreground/80 text-sm rounded-full"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Tailored content is being generated...</p>
             </div>
-          </section>
+          )}
         </div>
       )}
 
       {activeTab === "suggestions" && (
         <div className="space-y-4">
-          {tailored.suggestions.length === 0 ? (
+          {!tailored.suggestions || tailored.suggestions.length === 0 ? (
             <div className="card text-center py-8">
               <p className="text-muted-foreground">No suggestions available</p>
             </div>
