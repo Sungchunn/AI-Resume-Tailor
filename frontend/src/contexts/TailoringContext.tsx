@@ -73,7 +73,7 @@ interface TailoringContextValue {
 
   /** Initialize a new tailoring session */
   initializeSession: (
-    sessionId: number,
+    sessionId: string,
     originalResume: AnyResumeBlock[],
     aiProposedResume: AnyResumeBlock[],
     metadata?: {
@@ -93,7 +93,7 @@ interface TailoringContextValue {
   clearSession: () => void;
 
   /** Check if we have an active session for a given ID */
-  hasSessionForId: (sessionId: number) => boolean;
+  hasSessionForId: (sessionId: string) => boolean;
 
   /** Get the active draft for editor initialization */
   getActiveDraft: () => AnyResumeBlock[] | null;
@@ -188,7 +188,7 @@ export function TailoringProvider({ children }: TailoringProviderProps) {
 
   const initializeSession = useCallback(
     (
-      sessionId: number,
+      sessionId: string,
       originalResume: AnyResumeBlock[],
       aiProposedResume: AnyResumeBlock[],
       metadata?: {
@@ -244,7 +244,7 @@ export function TailoringProvider({ children }: TailoringProviderProps) {
   }, []);
 
   const hasSessionForId = useCallback(
-    (sessionId: number) => {
+    (sessionId: string) => {
       return sessionData?.session.id === sessionId;
     },
     [sessionData]

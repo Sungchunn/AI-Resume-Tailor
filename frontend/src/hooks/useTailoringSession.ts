@@ -119,7 +119,7 @@ export interface UseTailoringSessionReturn {
  * @param options - Configuration options
  */
 export function useTailoringSession(
-  sessionId: number,
+  sessionId: string,
   originalResume: AnyResumeBlock[],
   aiProposedResume: AnyResumeBlock[],
   options: UseTailoringSessionOptions = {}

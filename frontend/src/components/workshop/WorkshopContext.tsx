@@ -13,7 +13,7 @@ export type WorkshopTab = "ai-rewrite" | "editor" | "style";
 
 export interface WorkshopState {
   // Data
-  tailoredId: number;
+  tailoredId: string;
   tailoredResume: TailoredResumeFullResponse | null;
   jobDescription: string | null;
 
@@ -106,7 +106,7 @@ export const DEFAULT_SECTION_ORDER = [
 ];
 
 export const initialState: WorkshopState = {
-  tailoredId: 0,
+  tailoredId: "",
   tailoredResume: null,
   jobDescription: null,
   content: { summary: "", experience: [], skills: [], highlights: [] },
