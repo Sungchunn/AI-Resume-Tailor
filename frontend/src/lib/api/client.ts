@@ -310,7 +310,7 @@ export const tailorApi = {
       body: JSON.stringify(data),
     }),
 
-  get: (id: number): Promise<TailorResponse> =>
+  get: (id: string): Promise<TailorResponse> =>
     fetchApi(`/api/tailor/${id}`),
 
   list: (): Promise<TailoredResumeListItem[]> =>
@@ -322,12 +322,12 @@ export const tailorApi = {
   listByJob: (jobId: number): Promise<TailoredResumeListItem[]> =>
     fetchApi(`/api/tailor?job_id=${jobId}`),
 
-  delete: (id: number): Promise<void> =>
+  delete: (id: string): Promise<void> =>
     fetchApi(`/api/tailor/${id}`, {
       method: "DELETE",
     }),
 
-  update: (id: number, data: TailoredResumeUpdateRequest): Promise<TailoredResumeFullResponse> =>
+  update: (id: string, data: TailoredResumeUpdateRequest): Promise<TailoredResumeFullResponse> =>
     fetchApi(`/api/tailor/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
@@ -337,14 +337,14 @@ export const tailorApi = {
    * Get comparison data for the diff review UI.
    * Returns both original and AI-proposed resume blocks.
    */
-  compare: (id: number): Promise<TailoringCompareResponse> =>
+  compare: (id: string): Promise<TailoringCompareResponse> =>
     fetchApi(`/api/tailor/${id}/compare`),
 
   /**
    * Finalize the tailored resume with the user's merged draft.
    * Called after the user has reviewed and accepted/rejected changes.
    */
-  finalize: (id: number, data: TailoringFinalizeRequest): Promise<TailoredResumeFullResponse> =>
+  finalize: (id: string, data: TailoringFinalizeRequest): Promise<TailoredResumeFullResponse> =>
     fetchApi(`/api/tailor/${id}/finalize`, {
       method: "POST",
       body: JSON.stringify(data),

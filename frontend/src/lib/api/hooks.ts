@@ -59,7 +59,7 @@ export const queryKeys = {
   tailored: {
     all: ["tailored"] as const,
     list: () => [...queryKeys.tailored.all, "list"] as const,
-    detail: (id: number) => [...queryKeys.tailored.all, "detail", id] as const,
+    detail: (id: string) => [...queryKeys.tailored.all, "detail", id] as const,
     byResume: (resumeId: string) =>
       [...queryKeys.tailored.all, "resume", resumeId] as const,
     byJob: (jobId: number) =>
@@ -283,7 +283,7 @@ export function useQuickMatch() {
   });
 }
 
-export function useTailoredResume(id: number) {
+export function useTailoredResume(id: string) {
   return useQuery({
     queryKey: queryKeys.tailored.detail(id),
     queryFn: () => tailorApi.get(id),
@@ -318,7 +318,7 @@ export function useDeleteTailoredResume() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => tailorApi.delete(id),
+    mutationFn: (id: string) => tailorApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tailored.all });
     },
@@ -329,7 +329,7 @@ export function useUpdateTailoredResume() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: TailoredResumeUpdateRequest }) =>
+    mutationFn: ({ id, data }: { id: string; data: TailoredResumeUpdateRequest }) =>
       tailorApi.update(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tailored.detail(id) });
@@ -342,7 +342,7 @@ export function useUpdateTailoredResume() {
  * Hook to fetch comparison data for the diff review UI.
  * Returns both original and AI-proposed resume blocks.
  */
-export function useTailoringCompare(id: number) {
+export function useTailoringCompare(id: string) {
   return useQuery({
     queryKey: [...queryKeys.tailored.detail(id), "compare"] as const,
     queryFn: () => tailorApi.compare(id),
@@ -357,7 +357,7 @@ export function useFinalizeTailoredResume() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: TailoringFinalizeRequest }) =>
+    mutationFn: ({ id, data }: { id: string; data: TailoringFinalizeRequest }) =>
       tailorApi.finalize(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tailored.detail(id) });
