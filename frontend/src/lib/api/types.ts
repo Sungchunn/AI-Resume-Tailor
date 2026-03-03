@@ -139,13 +139,16 @@ export interface TailoredContent {
 export interface TailorResponse {
   id: string;
   resume_id: string;
-  job_id: number;
-  tailored_content: TailoredContent;
-  suggestions: Suggestion[];
+  job_id: number | null;
+  job_listing_id: number | null;
+  tailored_data: TailoredContent;
+  status: string;
   match_score: number;
   skill_matches: string[];
   skill_gaps: string[];
   keyword_coverage: number;
+  job_title: string | null;
+  company_name: string | null;
   created_at: string;
 }
 
@@ -154,20 +157,24 @@ export interface TailoredResumeFullResponse {
   resume_id: string;
   job_id: number | null;
   job_listing_id: number | null;
-  tailored_content: TailoredContent;
-  suggestions: Suggestion[];
-  match_score: number;
+  tailored_data: TailoredContent;
+  finalized_data: TailoredContent | null;
+  status: string;
+  match_score: number | null;
   skill_matches: string[];
   skill_gaps: string[];
   keyword_coverage: number;
+  job_title: string | null;
+  company_name: string | null;
   style_settings: ResumeStyle;
   section_order: string[];
   created_at: string;
   updated_at: string | null;
+  finalized_at: string | null;
 }
 
 export interface TailoredResumeUpdateRequest {
-  tailored_content?: TailoredContent;
+  tailored_data?: TailoredContent;
   style_settings?: ResumeStyle;
   section_order?: string[];
 }
