@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     # AI Provider Selection
     # Options: "gemini" or "openai"
-    ai_provider: str = "gemini"
+    ai_provider: str = "openai"
 
     # Gemini Configuration
     gemini_api_key: str = ""

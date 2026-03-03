@@ -2,8 +2,8 @@
 AI Client - Provider-agnostic wrapper for text generation.
 
 Supports:
-- Google Gemini (default)
-- OpenAI
+- OpenAI (default)
+- Google Gemini
 
 The provider is selected via AI_PROVIDER environment variable.
 """
