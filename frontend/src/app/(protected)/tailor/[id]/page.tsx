@@ -16,8 +16,7 @@ type ExportFormat = "pdf" | "docx" | "txt";
 export default function TailoredResumePage({ params }: PageProps) {
   const { id } = use(params);
   const router = useRouter();
-  const tailoredId = parseInt(id, 10);
-  const { data: tailored, isLoading, error } = useTailoredResume(tailoredId);
+  const { data: tailored, isLoading, error } = useTailoredResume(id);
   const deleteTailored = useDeleteTailoredResume();
   const [activeTab, setActiveTab] = useState<"content" | "suggestions">("content");
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -37,7 +36,7 @@ export default function TailoredResumePage({ params }: PageProps) {
 
   const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this tailored resume?")) {
-      await deleteTailored.mutateAsync(tailoredId);
+      await deleteTailored.mutateAsync(id);
       router.push("/tailor");
     }
   };
@@ -139,7 +138,7 @@ export default function TailoredResumePage({ params }: PageProps) {
           </div>
           <div className="flex items-center gap-2">
             <Link
-              href={`/tailor/editor/${tailoredId}`}
+              href={`/tailor/editor/${id}`}
               className="btn-primary inline-flex items-center gap-2"
             >
               <svg

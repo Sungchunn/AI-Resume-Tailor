@@ -70,7 +70,6 @@ const DEFAULT_STYLE: ResumeStyle = {
 export default function ResumeEditorPage({ params }: PageProps) {
   const { id } = use(params);
   const router = useRouter();
-  const tailoredId = parseInt(id, 10);
 
   // State
   const [showVersionHistory, setShowVersionHistory] = useState(false);
@@ -83,14 +82,14 @@ export default function ResumeEditorPage({ params }: PageProps) {
   } = useTailoringContext();
 
   // Check if we have a session from the review page
-  const hasActiveSession = hasSessionForId(tailoredId);
+  const hasActiveSession = hasSessionForId(id);
   const fromReviewPage = hasActiveSession && sessionData !== null;
 
   // Fetch tailored resume data
-  const { data: tailored, isLoading, error } = useTailoredResume(tailoredId);
+  const { data: tailored, isLoading, error } = useTailoredResume(id);
 
   // Also fetch compare data to get resume_id for version history
-  const { data: compareData } = useTailoringCompare(tailoredId);
+  const { data: compareData } = useTailoringCompare(id);
 
   const updateTailored = useUpdateTailoredResume();
 
@@ -236,7 +235,7 @@ export default function ResumeEditorPage({ params }: PageProps) {
 
     try {
       await updateTailored.mutateAsync({
-        id: tailoredId,
+        id: id,
         data: {
           tailored_content: content,
           style_settings: styleSettings,
@@ -261,7 +260,7 @@ export default function ResumeEditorPage({ params }: PageProps) {
     }
   }, [
     content,
-    tailoredId,
+    id,
     styleSettings,
     sectionOrder,
     tailored,
@@ -271,8 +270,8 @@ export default function ResumeEditorPage({ params }: PageProps) {
   ]);
 
   const handleBackToReview = useCallback(() => {
-    router.push(`/tailor/review/${tailoredId}`);
-  }, [router, tailoredId]);
+    router.push(`/tailor/review/${id}`);
+  }, [router, id]);
 
   // Loading state
   if (isLoading && !fromReviewPage) {
@@ -281,7 +280,7 @@ export default function ResumeEditorPage({ params }: PageProps) {
 
   // Error state
   if (error && !fromReviewPage) {
-    return <ErrorState tailoredId={tailoredId} />;
+    return <ErrorState id={id} />;
   }
 
   // Ensure content is loaded before rendering editor
@@ -296,7 +295,7 @@ export default function ResumeEditorPage({ params }: PageProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
-              href={`/tailor/${tailoredId}`}
+              href={`/tailor/${id}`}
               className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="mr-1 h-4 w-4" />
@@ -411,7 +410,7 @@ export default function ResumeEditorPage({ params }: PageProps) {
           <aside className="w-80 border-l border-border bg-card overflow-hidden flex-shrink-0">
             <VersionHistoryPanel
               resumeId={compareData.resume_id}
-              currentTailoredId={tailoredId}
+              currentTailoredId={id}
               mode="sidebar"
             />
           </aside>
@@ -501,7 +500,7 @@ function LoadingState() {
 // Error State
 // ============================================================================
 
-function ErrorState({ tailoredId }: { tailoredId: number }) {
+function ErrorState({ id }: { id: string }) {
   return (
     <div className="h-screen flex items-center justify-center bg-muted">
       <div className="text-center max-w-md">
@@ -533,7 +532,7 @@ function ErrorState({ tailoredId }: { tailoredId: number }) {
             Back to Tailor
           </Link>
           <Link
-            href={`/tailor/review/${tailoredId}`}
+            href={`/tailor/review/${id}`}
             className="px-4 py-2 text-sm font-medium border border-border hover:bg-muted rounded-md"
           >
             Try Review Page

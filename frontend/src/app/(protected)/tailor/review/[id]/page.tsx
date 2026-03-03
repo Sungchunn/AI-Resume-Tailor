@@ -44,7 +44,6 @@ interface PageProps {
 export default function TailoringReviewPage({ params }: PageProps) {
   const { id } = use(params);
   const router = useRouter();
-  const tailoredId = parseInt(id, 10);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
 
   // Tailoring context for session sharing
@@ -59,14 +58,14 @@ export default function TailoringReviewPage({ params }: PageProps) {
     data: compareData,
     isLoading,
     error,
-  } = useTailoringCompare(tailoredId);
+  } = useTailoringCompare(id);
 
   // Finalize mutation
   const finalizeMutation = useFinalizeTailoredResume();
 
   // Initialize tailoring session once we have the data
   const sessionHook = useTailoringSession(
-    tailoredId,
+    id,
     compareData?.original_blocks ?? [],
     compareData?.ai_proposed_blocks ?? [],
     {
@@ -79,9 +78,9 @@ export default function TailoringReviewPage({ params }: PageProps) {
 
   // Initialize context when data loads
   useEffect(() => {
-    if (compareData && !hasSessionForId(tailoredId)) {
+    if (compareData && !hasSessionForId(id)) {
       initializeSession(
-        tailoredId,
+        id,
         compareData.original_blocks,
         compareData.ai_proposed_blocks,
         {
@@ -93,7 +92,7 @@ export default function TailoringReviewPage({ params }: PageProps) {
     }
   }, [
     compareData,
-    tailoredId,
+    id,
     hasSessionForId,
     initializeSession,
   ]);
@@ -104,27 +103,27 @@ export default function TailoringReviewPage({ params }: PageProps) {
 
     try {
       await finalizeMutation.mutateAsync({
-        id: tailoredId,
+        id,
         data: {
           finalized_blocks: sessionHook.getActiveDraft(),
         },
       });
 
       // Redirect to the tailored resume view
-      router.push(`/tailor/${tailoredId}`);
+      router.push(`/tailor/${id}`);
     } catch (err) {
       console.error("Failed to finalize:", err);
       alert("Failed to save your changes. Please try again.");
     }
-  }, [compareData, finalizeMutation, tailoredId, sessionHook, router]);
+  }, [compareData, finalizeMutation, id, sessionHook, router]);
 
   // Handle "Continue to Editor" - context already has the session
   const handleContinueToEditor = useCallback(() => {
     // Update context with latest session state
     updateSession(sessionHook.session);
     // Navigate to editor
-    router.push(`/tailor/editor/${tailoredId}`);
-  }, [sessionHook.session, updateSession, tailoredId, router]);
+    router.push(`/tailor/editor/${id}`);
+  }, [sessionHook.session, updateSession, id, router]);
 
   // Loading state
   if (isLoading) {
@@ -144,7 +143,7 @@ export default function TailoringReviewPage({ params }: PageProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
-                href={`/tailor/${tailoredId}`}
+                href={`/tailor/${id}`}
                 className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ArrowLeft size={16} />
@@ -256,7 +255,7 @@ export default function TailoringReviewPage({ params }: PageProps) {
           <aside className="w-80 border-l border-border bg-card overflow-hidden flex-shrink-0">
             <VersionHistoryPanel
               resumeId={compareData.resume_id}
-              currentTailoredId={tailoredId}
+              currentTailoredId={id}
               mode="sidebar"
             />
           </aside>
