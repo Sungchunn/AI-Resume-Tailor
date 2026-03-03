@@ -47,7 +47,7 @@ const defaultContent: TailoredContent = {
 
 const defaultOptions = {
   content: defaultContent,
-  resumeId: 1,
+  resumeId: "1",
   jobId: 10,
   enabled: true,
   debounceMs: 10, // Very short debounce for testing

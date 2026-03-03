@@ -15,10 +15,10 @@ import type { ReactNode } from "react";
 const createMockState = (
   overrides: Partial<WorkshopState> = {}
 ): WorkshopState => ({
-  tailoredId: 1,
+  tailoredId: "1",
   tailoredResume: {
-    id: 1,
-    resume_id: 10,
+    id: "1",
+    resume_id: "10",
     job_id: 20,
     job_listing_id: null,
     tailored_content: {
