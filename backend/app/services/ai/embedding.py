@@ -261,7 +261,9 @@ class GeminiEmbeddingService(BaseEmbeddingService):
             config=config,
         )
 
-        return result.embeddings[0].values
+        if not result.embeddings:
+            raise ValueError("Gemini API returned no embeddings")
+        return list(result.embeddings[0].values)
 
 
 class OpenAIEmbeddingService(BaseEmbeddingService):
