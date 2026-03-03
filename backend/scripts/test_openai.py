@@ -30,7 +30,8 @@ def load_env():
 
     for env_path in [backend_dir / ".env", root_dir / ".env"]:
         if env_path.exists():
-            load_dotenv(env_path)
+            # override=True ensures .env values take precedence over existing env vars
+            load_dotenv(env_path, override=True)
             print(f"Loaded: {env_path}")
             return
 
