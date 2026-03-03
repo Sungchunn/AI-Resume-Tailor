@@ -109,11 +109,11 @@ export function AIRewritePanel() {
 
   // Show score summary if we have match data
   const tailored = state.tailoredResume;
-  const showScoreSummary = tailored && tailored.match_score > 0;
+  const showScoreSummary = tailored && (tailored.match_score ?? 0) > 0;
 
-  // Track accepted suggestions (from original count minus current)
-  const originalSuggestionCount = tailored?.suggestions?.length ?? 0;
-  const acceptedCount = Math.max(0, originalSuggestionCount - state.suggestions.length);
+  // Track accepted suggestions (from state which is managed by the workshop)
+  const originalSuggestionCount = state.suggestions.length;
+  const acceptedCount = 0; // Suggestions are managed through the workshop context
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -121,7 +121,7 @@ export function AIRewritePanel() {
       {showScoreSummary && (
         <div className="flex-shrink-0 p-4 border-b border-border">
           <ScoreSummary
-            matchScore={tailored.match_score}
+            matchScore={tailored.match_score ?? 0}
             skillMatches={tailored.skill_matches || []}
             skillGaps={tailored.skill_gaps || []}
             keywordCoverage={tailored.keyword_coverage || 0}

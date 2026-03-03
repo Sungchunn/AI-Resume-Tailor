@@ -169,10 +169,10 @@ export function workshopReducer(
         ...state,
         tailoredResume: action.payload,
         tailoredId: action.payload.id,
-        content: action.payload.tailored_content,
+        content: action.payload.finalized_data ?? action.payload.tailored_data,
         styleSettings: action.payload.style_settings ?? DEFAULT_STYLE,
         sectionOrder: action.payload.section_order ?? DEFAULT_SECTION_ORDER,
-        suggestions: action.payload.suggestions ?? [],
+        suggestions: [],
         isLoading: false,
         hasChanges: false,
         matchScore: action.payload.match_score ?? 0,
@@ -252,7 +252,7 @@ export function workshopReducer(
     case "RESET_CHANGES":
       return {
         ...state,
-        content: state.tailoredResume?.tailored_content ?? state.content,
+        content: state.tailoredResume?.finalized_data ?? state.tailoredResume?.tailored_data ?? state.content,
         styleSettings: state.tailoredResume?.style_settings ?? DEFAULT_STYLE,
         sectionOrder:
           state.tailoredResume?.section_order ?? DEFAULT_SECTION_ORDER,

@@ -190,7 +190,7 @@ export function WorkshopProvider({ tailoredId, children }: WorkshopProviderProps
       const result = await updateMutation.mutateAsync({
         id: tailoredId,
         data: {
-          tailored_content: state.content,
+          tailored_data: state.content,
           style_settings: state.styleSettings,
           section_order: state.sectionOrder,
         },

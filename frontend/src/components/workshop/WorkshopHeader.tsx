@@ -18,7 +18,7 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
   const wizard = useWizardOptional();
   const [showExportDialog, setShowExportDialog] = useState(false);
 
-  const title = state.tailoredResume?.tailored_content
+  const title = state.tailoredResume?.tailored_data
     ? `Tailored Resume #${state.tailoredId}`
     : "Resume Workshop";
   const hasJobId = !!state.tailoredResume?.job_id;
