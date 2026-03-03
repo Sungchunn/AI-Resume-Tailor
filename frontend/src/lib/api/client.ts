@@ -310,7 +310,7 @@ export const tailorApi = {
       body: JSON.stringify(data),
     }),
 
-  get: (id: string): Promise<TailorResponse> =>
+  get: (id: string): Promise<TailoredResumeFullResponse> =>
     fetchApi(`/api/tailor/${id}`),
 
   list: (): Promise<TailoredResumeListItem[]> =>
