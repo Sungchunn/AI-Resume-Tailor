@@ -20,14 +20,12 @@ RUN python -m venv $POETRY_VENV \
 
 ENV PATH="${POETRY_VENV}/bin:${PATH}"
 
-# Configure Poetry to not create a virtual environment inside container
-RUN poetry config virtualenvs.create false
-
 # Copy dependency files
 COPY pyproject.toml poetry.lock* ./
 
-# Install dependencies (without dev dependencies for production)
-RUN poetry install --no-interaction --no-ansi --only main
+# Export requirements and install with pip (faster/more reliable than poetry install)
+RUN poetry export -f requirements.txt --only main --output requirements.txt && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
