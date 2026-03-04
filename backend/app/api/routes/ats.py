@@ -25,6 +25,12 @@ from app.services.job.ats_analyzer import (
     BlockTypeAnalysis,
     QuantificationAnalysis,
     ActionVerbAnalysis,
+    # Stage 4: Role Proximity
+    TitleMatchResult,
+    TrajectoryResult,
+    IndustryAlignmentResult,
+    RoleProximityResult,
+    TrajectoryType,
 )
 from app.services.resume.parser import ResumeParser
 from app.services.job.analyzer import JobAnalyzer
@@ -680,6 +686,140 @@ class ContentQualityResponse(BaseModel):
     )
 
 
+# ============================================================
+# Stage 4: Role Proximity Models
+# ============================================================
+
+
+class RoleProximityRequest(BaseModel):
+    """Request for Stage 4 role proximity analysis."""
+
+    resume_id: int | None = Field(
+        None, description="Resume ID to analyze (uses parsed_content from database)"
+    )
+    job_id: int | None = Field(
+        None, description="Job description ID to analyze against"
+    )
+    resume_content: dict | None = Field(
+        None, description="Parsed resume content as dictionary (fallback if resume_id not provided)"
+    )
+    job_content: dict | None = Field(
+        None, description="Parsed job content as dictionary (fallback if job_id not provided)"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "resume_id": 123,
+                    "job_id": 456,
+                },
+                {
+                    "resume_content": {
+                        "experience": [
+                            {"title": "Senior Software Engineer", "company": "TechCorp"},
+                            {"title": "Software Engineer", "company": "StartupInc"},
+                        ]
+                    },
+                    "job_content": {
+                        "title": "Staff Software Engineer",
+                        "company": "BigTech",
+                    },
+                },
+            ]
+        }
+    }
+
+
+class TitleMatchResponse(BaseModel):
+    """Title similarity analysis result."""
+
+    resume_title: str = Field(..., description="Most recent job title from resume")
+    job_title: str = Field(..., description="Target job title")
+    normalized_resume_title: str = Field(..., description="Normalized resume title")
+    normalized_job_title: str = Field(..., description="Normalized job title")
+    similarity_score: float = Field(
+        ..., ge=0, le=1, description="Semantic similarity (0-1)"
+    )
+    title_score: float = Field(
+        ..., ge=0, le=100, description="Title match score (0-100)"
+    )
+    resume_level: int = Field(..., description="Extracted seniority level from resume")
+    job_level: int = Field(..., description="Extracted seniority level from job")
+    level_gap: int = Field(..., description="Gap between job and resume level")
+    resume_function: str = Field(..., description="Functional category of resume title")
+    job_function: str = Field(..., description="Functional category of job title")
+    function_match: bool = Field(..., description="Whether functions match")
+
+
+class TrajectoryResponse(BaseModel):
+    """Career trajectory analysis result."""
+
+    trajectory_type: TrajectoryType = Field(
+        ..., description="Type of career trajectory"
+    )
+    modifier: int = Field(..., description="Score modifier (-20 to +20)")
+    current_level: int = Field(..., description="Current seniority level")
+    target_level: int = Field(..., description="Target job seniority level")
+    level_gap: int = Field(..., description="Gap between target and current")
+    level_progression: list[int] = Field(
+        ..., description="Historical level progression (oldest to newest)"
+    )
+    is_ascending: bool = Field(..., description="Whether career is progressing upward")
+    function_match: bool = Field(..., description="Whether moving in same function")
+    explanation: str = Field(..., description="Human-readable explanation")
+
+
+class IndustryAlignmentResponse(BaseModel):
+    """Industry alignment analysis result."""
+
+    resume_industries: list[str] = Field(
+        ..., description="Industries detected from resume"
+    )
+    most_recent_industry: str = Field(..., description="Most recent industry")
+    target_industry: str = Field(..., description="Target job industry")
+    alignment_type: Literal["same", "adjacent", "unrelated"] = Field(
+        ..., description="Type of alignment"
+    )
+    modifier: int = Field(..., description="Score modifier (0 to +10)")
+
+
+class RoleProximityResponse(BaseModel):
+    """Response for Stage 4 role proximity analysis."""
+
+    # Overall score
+    role_proximity_score: float = Field(
+        ..., ge=0, le=100,
+        description="Overall role proximity score (0-100)"
+    )
+
+    # Component results
+    title_match: TitleMatchResponse = Field(
+        ..., description="Title similarity analysis"
+    )
+    trajectory: TrajectoryResponse = Field(
+        ..., description="Career trajectory analysis"
+    )
+    industry_alignment: IndustryAlignmentResponse = Field(
+        ..., description="Industry alignment analysis"
+    )
+
+    # Human-readable summary
+    explanation: str = Field(
+        ..., description="Human-readable summary of the analysis"
+    )
+
+    # Actionable insights
+    concerns: list[str] = Field(
+        default_factory=list,
+        description="Potential concerns about role fit"
+    )
+    strengths: list[str] = Field(
+        default_factory=list,
+        description="Strengths for this role"
+    )
+
+
 @router.post("/knockout-check", response_model=KnockoutCheckResponse)
 async def perform_knockout_check(
     request: KnockoutCheckRequest,
@@ -1258,4 +1398,155 @@ async def analyze_content_quality(
         low_quality_bullets=result.low_quality_bullets,
         suggestions=result.suggestions,
         warnings=result.warnings,
+    )
+
+
+@router.post("/role-proximity", response_model=RoleProximityResponse)
+async def analyze_role_proximity(
+    request: RoleProximityRequest,
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Perform Stage 4 role proximity analysis.
+
+    This endpoint analyzes how closely the candidate's career trajectory
+    aligns with the target role, providing insights beyond keyword matching.
+
+    **Why This Matters:**
+
+    A candidate can have 95% keyword match but still be wrong for the role
+    if there's a significant level mismatch or function change. Role proximity
+    explains why high keyword scores don't always translate to ATS success.
+
+    **Components Analyzed:**
+
+    **Title Match (Base Score 0-100):**
+    - Semantic similarity between current and target titles
+    - Seniority level extraction and comparison
+    - Functional category matching (engineering, product, design, etc.)
+
+    **Career Trajectory (Modifier -20 to +20):**
+    - Level progression analysis across career history
+    - Whether target role is a logical next step
+    - Trajectory types: progressing_toward (+20), lateral (+10), step_down (-10),
+      large_gap (-15), career_change (-5)
+
+    **Industry Alignment (Modifier 0 to +10):**
+    - Industry detection from company and context
+    - Same industry (+10), adjacent (+5), unrelated (0)
+
+    **Score Interpretation:**
+    - 80-100: Strong fit - title, trajectory, and industry align
+    - 60-79: Good fit - minor gaps in level or function
+    - 40-59: Moderate fit - career change or level jump
+    - 20-39: Weak fit - significant mismatch
+    - 0-19: Poor fit - very different role type
+
+    **Usage:**
+    Provide either database IDs (resume_id, job_id) or raw parsed content.
+    IDs take precedence if both are provided.
+    """
+    analyzer = get_ats_analyzer()
+    ai_client = get_ai_client()
+    cache = get_cache_service()
+    resume_parser = ResumeParser(ai_client, cache)
+    job_analyzer = JobAnalyzer(ai_client, cache)
+
+    parsed_resume = None
+    parsed_job = None
+
+    # Get parsed resume
+    if request.resume_id:
+        resume_repo = ResumeRepository(db)
+        resume = await resume_repo.get(request.resume_id, user_id)
+        if not resume:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Resume with id {request.resume_id} not found"
+            )
+        if resume.parsed_content:
+            parsed_resume = resume.parsed_content
+        elif resume.raw_content:
+            parsed_resume = await resume_parser.parse(resume.raw_content)
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Resume has no content to analyze"
+            )
+    elif request.resume_content:
+        parsed_resume = request.resume_content
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Either resume_id or resume_content must be provided"
+        )
+
+    # Get parsed job
+    if request.job_id:
+        job_repo = JobDescriptionRepository(db)
+        job = await job_repo.get(request.job_id, user_id)
+        if not job:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Job description with id {request.job_id} not found"
+            )
+        if job.parsed_content:
+            parsed_job = job.parsed_content
+        elif job.raw_content:
+            parsed_job = await job_analyzer.analyze(job.raw_content)
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Job description has no content to analyze"
+            )
+    elif request.job_content:
+        parsed_job = request.job_content
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Either job_id or job_content must be provided"
+        )
+
+    # Perform role proximity analysis
+    result = await analyzer.calculate_role_proximity_score(parsed_resume, parsed_job)
+
+    # Convert dataclasses to response models
+    return RoleProximityResponse(
+        role_proximity_score=result.role_proximity_score,
+        title_match=TitleMatchResponse(
+            resume_title=result.title_match.resume_title,
+            job_title=result.title_match.job_title,
+            normalized_resume_title=result.title_match.normalized_resume_title,
+            normalized_job_title=result.title_match.normalized_job_title,
+            similarity_score=result.title_match.similarity_score,
+            title_score=result.title_match.title_score,
+            resume_level=result.title_match.resume_level,
+            job_level=result.title_match.job_level,
+            level_gap=result.title_match.level_gap,
+            resume_function=result.title_match.resume_function,
+            job_function=result.title_match.job_function,
+            function_match=result.title_match.function_match,
+        ),
+        trajectory=TrajectoryResponse(
+            trajectory_type=result.trajectory.trajectory_type,
+            modifier=result.trajectory.modifier,
+            current_level=result.trajectory.current_level,
+            target_level=result.trajectory.target_level,
+            level_gap=result.trajectory.level_gap,
+            level_progression=result.trajectory.level_progression,
+            is_ascending=result.trajectory.is_ascending,
+            function_match=result.trajectory.function_match,
+            explanation=result.trajectory.explanation,
+        ),
+        industry_alignment=IndustryAlignmentResponse(
+            resume_industries=result.industry_alignment.resume_industries,
+            most_recent_industry=result.industry_alignment.most_recent_industry,
+            target_industry=result.industry_alignment.target_industry,
+            alignment_type=result.industry_alignment.alignment_type,
+            modifier=result.industry_alignment.modifier,
+        ),
+        explanation=result.explanation,
+        concerns=result.concerns,
+        strengths=result.strengths,
     )
