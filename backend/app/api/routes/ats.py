@@ -11,8 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_id, get_db
 from app.crud.block import BlockRepository
-from app.crud.resume import ResumeRepository
-from app.crud.job import JobDescriptionRepository
+from app.crud.resume import ResumeCRUD
+from app.crud.job import JobCRUD
 from app.services.job.ats_analyzer import (
     get_ats_analyzer,
     KnockoutRiskType,
@@ -860,9 +860,9 @@ async def perform_knockout_check(
 
     # Get parsed resume
     if request.resume_id:
-        resume_repo = ResumeRepository(db)
-        resume = await resume_repo.get(request.resume_id, user_id)
-        if not resume:
+        resume_repo = ResumeCRUD()
+        resume = await resume_repo.get(db, id=request.resume_id)
+        if not resume or resume.owner_id != user_id:
             raise HTTPException(
                 status_code=404,
                 detail=f"Resume with id {request.resume_id} not found"
@@ -886,9 +886,9 @@ async def perform_knockout_check(
 
     # Get parsed job
     if request.job_id:
-        job_repo = JobDescriptionRepository(db)
-        job = await job_repo.get(request.job_id, user_id)
-        if not job:
+        job_repo = JobCRUD()
+        job = await job_repo.get(db, id=request.job_id)
+        if not job or job.owner_id != user_id:
             raise HTTPException(
                 status_code=404,
                 detail=f"Job description with id {request.job_id} not found"
@@ -1165,9 +1165,9 @@ async def analyze_keywords_enhanced(
     parsed_resume = None
 
     if request.resume_id:
-        resume_repo = ResumeRepository(db)
-        resume = await resume_repo.get(request.resume_id, user_id)
-        if not resume:
+        resume_repo = ResumeCRUD()
+        resume = await resume_repo.get(db, id=request.resume_id)
+        if not resume or resume.owner_id != user_id:
             raise HTTPException(
                 status_code=404,
                 detail=f"Resume with id {request.resume_id} not found"
@@ -1328,9 +1328,9 @@ async def analyze_content_quality(
 
     # Get parsed resume
     if request.resume_id:
-        resume_repo = ResumeRepository(db)
-        resume = await resume_repo.get(request.resume_id, user_id)
-        if not resume:
+        resume_repo = ResumeCRUD()
+        resume = await resume_repo.get(db, id=request.resume_id)
+        if not resume or resume.owner_id != user_id:
             raise HTTPException(
                 status_code=404,
                 detail=f"Resume with id {request.resume_id} not found"
@@ -1458,9 +1458,9 @@ async def analyze_role_proximity(
 
     # Get parsed resume
     if request.resume_id:
-        resume_repo = ResumeRepository(db)
-        resume = await resume_repo.get(request.resume_id, user_id)
-        if not resume:
+        resume_repo = ResumeCRUD()
+        resume = await resume_repo.get(db, id=request.resume_id)
+        if not resume or resume.owner_id != user_id:
             raise HTTPException(
                 status_code=404,
                 detail=f"Resume with id {request.resume_id} not found"
@@ -1484,9 +1484,9 @@ async def analyze_role_proximity(
 
     # Get parsed job
     if request.job_id:
-        job_repo = JobDescriptionRepository(db)
-        job = await job_repo.get(request.job_id, user_id)
-        if not job:
+        job_repo = JobCRUD()
+        job = await job_repo.get(db, id=request.job_id)
+        if not job or job.owner_id != user_id:
             raise HTTPException(
                 status_code=404,
                 detail=f"Job description with id {request.job_id} not found"
