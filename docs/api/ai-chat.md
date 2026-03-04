@@ -191,10 +191,10 @@ or
 
 AI endpoints are subject to stricter rate limits due to the cost of AI operations:
 
-| Limit Type | Requests |
-|------------|----------|
+| Limit Type | Requests                                  |
+| ---------- | ----------------------------------------- |
 | Per Minute | Configured via `RATE_LIMIT_AI_PER_MINUTE` |
-| Per Hour | Configured via `RATE_LIMIT_AI_PER_HOUR` |
+| Per Hour   | Configured via `RATE_LIMIT_AI_PER_HOUR`   |
 
 See [Errors & Rate Limits](errors-rate-limits.md) for details.
 

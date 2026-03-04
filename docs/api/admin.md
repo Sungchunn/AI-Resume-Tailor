@@ -413,12 +413,12 @@ PATCH /api/admin/scraper/presets/{preset_id}
 
 All fields optional:
 
-| Field      | Type    | Description                |
-| ---------- | ------- | -------------------------- |
-| `name`     | string  | Preset name                |
-| `url`      | string  | LinkedIn job search URL    |
-| `count`    | integer | Max jobs to scrape         |
-| `is_active` | boolean | Whether preset is active   |
+| Field       | Type    | Description              |
+| ----------- | ------- | ------------------------ |
+| `name`      | string  | Preset name              |
+| `url`       | string  | LinkedIn job search URL  |
+| `count`     | integer | Max jobs to scrape       |
+| `is_active` | boolean | Whether preset is active |
 
 **Response (200 OK):**
 
