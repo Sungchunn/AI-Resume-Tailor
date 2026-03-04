@@ -11,7 +11,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_id, get_db
 from app.crud.block import BlockRepository
-from app.services.job.ats_analyzer import get_ats_analyzer
+from app.crud.resume import ResumeRepository
+from app.crud.job import JobDescriptionRepository
+from app.services.job.ats_analyzer import get_ats_analyzer, KnockoutRiskType, KnockoutSeverity
+from app.services.resume.parser import ResumeParser
+from app.services.job.analyzer import JobAnalyzer
+from app.services.ai.client import get_ai_client
+from app.services.core.cache import get_cache_service
 from app.core.protocols import ATSReportData
 
 router = APIRouter()
@@ -159,6 +165,199 @@ class ATSKeywordDetailedResponse(BaseModel):
     # Suggestions and warnings
     suggestions: list[str] = Field(..., description="Actionable suggestions")
     warnings: list[str] = Field(..., description="Important warnings")
+
+
+# ============================================================
+# Knockout Check Models (Stage 0)
+# ============================================================
+
+
+class KnockoutCheckRequest(BaseModel):
+    """Request for knockout check analysis."""
+
+    resume_id: int | None = Field(
+        None, description="Resume ID to analyze (uses parsed_content from database)"
+    )
+    job_id: int | None = Field(
+        None, description="Job description ID to analyze against"
+    )
+    resume_content: str | None = Field(
+        None, description="Raw resume text (fallback if resume_id not provided)"
+    )
+    job_description: str | None = Field(
+        None, description="Raw job description text (fallback if job_id not provided)"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "resume_id": 123,
+                    "job_id": 456,
+                },
+                {
+                    "resume_content": "John Doe\nSoftware Engineer...",
+                    "job_description": "We are looking for a Senior Engineer with 5+ years...",
+                },
+            ]
+        }
+    }
+
+
+class KnockoutRiskResponse(BaseModel):
+    """A single knockout risk detected."""
+
+    risk_type: KnockoutRiskType = Field(
+        ..., description="Type of knockout risk"
+    )
+    severity: KnockoutSeverity = Field(
+        ..., description="Severity level: critical, warning, or info"
+    )
+    description: str = Field(
+        ..., description="Human-readable description of the risk"
+    )
+    job_requires: str = Field(
+        ..., description="What the job posting requires"
+    )
+    user_has: str | None = Field(
+        None, description="What the user's resume shows (if determinable)"
+    )
+
+
+class KnockoutCheckResponse(BaseModel):
+    """Response for knockout check analysis."""
+
+    passes_all_checks: bool = Field(
+        ..., description="True if no knockout risks detected"
+    )
+    risks: list[KnockoutRiskResponse] = Field(
+        default_factory=list,
+        description="List of knockout risks detected"
+    )
+    summary: str = Field(
+        ..., description="Summary of the knockout check results"
+    )
+    recommendation: str = Field(
+        ..., description="Recommended action for the user"
+    )
+    analysis: dict = Field(
+        default_factory=dict,
+        description="Detailed breakdown of each check (for debugging/advanced users)"
+    )
+
+
+@router.post("/knockout-check", response_model=KnockoutCheckResponse)
+async def perform_knockout_check(
+    request: KnockoutCheckRequest,
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Perform knockout check to identify binary disqualifiers.
+
+    This is Stage 0 of the ATS scoring pipeline. It identifies hard
+    disqualifiers that would cause automatic rejection by most ATS systems
+    BEFORE calculating the actual match score.
+
+    **What it checks:**
+    - **Years of experience** vs. job requirement
+    - **Education level** vs. job requirement
+    - **Required certifications** presence on resume
+    - **Location/work authorization** compatibility
+
+    **Usage:**
+    Provide either database IDs (resume_id, job_id) or raw text content.
+    If both are provided, IDs take precedence.
+
+    **Response interpretation:**
+    - `passes_all_checks: true` - No knockout risks, proceed to keyword analysis
+    - `passes_all_checks: false` - Review the risks before applying
+    - `severity: critical` - Likely auto-rejection by ATS
+    - `severity: warning` - May affect application, worth addressing
+    """
+    analyzer = get_ats_analyzer()
+    ai_client = get_ai_client()
+    cache = get_cache_service()
+    resume_parser = ResumeParser(ai_client, cache)
+    job_analyzer = JobAnalyzer(ai_client, cache)
+
+    parsed_resume = None
+    parsed_job = None
+
+    # Get parsed resume
+    if request.resume_id:
+        resume_repo = ResumeRepository(db)
+        resume = await resume_repo.get(request.resume_id, user_id)
+        if not resume:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Resume with id {request.resume_id} not found"
+            )
+        if resume.parsed_content:
+            parsed_resume = resume.parsed_content
+        elif resume.raw_content:
+            parsed_resume = await resume_parser.parse(resume.raw_content)
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Resume has no content to analyze"
+            )
+    elif request.resume_content:
+        parsed_resume = await resume_parser.parse(request.resume_content)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Either resume_id or resume_content must be provided"
+        )
+
+    # Get parsed job
+    if request.job_id:
+        job_repo = JobDescriptionRepository(db)
+        job = await job_repo.get(request.job_id, user_id)
+        if not job:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Job description with id {request.job_id} not found"
+            )
+        if job.parsed_content:
+            parsed_job = job.parsed_content
+        elif job.raw_content:
+            parsed_job = await job_analyzer.analyze(job.raw_content)
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Job description has no content to analyze"
+            )
+    elif request.job_description:
+        parsed_job = await job_analyzer.analyze(request.job_description)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Either job_id or job_description must be provided"
+        )
+
+    # Perform knockout check
+    result = analyzer.perform_knockout_check(parsed_resume, parsed_job)
+
+    # Convert dataclass to response model
+    risks = [
+        KnockoutRiskResponse(
+            risk_type=risk.risk_type,
+            severity=risk.severity,
+            description=risk.description,
+            job_requires=risk.job_requires,
+            user_has=risk.user_has,
+        )
+        for risk in result.risks
+    ]
+
+    return KnockoutCheckResponse(
+        passes_all_checks=result.passes_all_checks,
+        risks=risks,
+        summary=result.summary,
+        recommendation=result.recommendation,
+        analysis=result.analysis,
+    )
 
 
 @router.post("/structure", response_model=ATSStructureResponse)
