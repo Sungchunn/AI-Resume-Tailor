@@ -131,6 +131,17 @@ Rules:
 - `/docs/PROJECT_MASTER_PLAN.md` - Project vision doc
 - Proposal/decision docs within feature subdirs (e.g., `ats-scoring-proposal.md`)
 
+#### Markdown Formatting Rules
+
+**Follow `/docs/MARKDOWN_STYLE_GUIDE.md` to avoid linting errors.**
+
+Key rules:
+
+- **Tables:** Use spaces in separators: `| ----- | ----- |` not `|-----|-----|`
+- **Bold headers:** End with colon: `**Error Responses:**` not `**Error Responses**`
+- **Code blocks:** Always specify language: ` ```json ` or ` ```text `, never bare ` ``` `
+- **Headers:** Always include blank line after `#`, `##`, `###` before body text
+
 ### 4. Context Management
 
 **Clear session context between phases to avoid context rot.**
