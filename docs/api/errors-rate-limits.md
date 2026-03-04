@@ -60,6 +60,8 @@ Validation errors include detailed field-level information:
 }
 ```
 
+
+
 ---
 
 ## Common Error Scenarios
@@ -83,6 +85,8 @@ Validation errors include detailed field-level information:
 }
 ```
 
+
+
 ### Authorization Errors (403)
 
 ```json
@@ -102,6 +106,8 @@ Validation errors include detailed field-level information:
 }
 ```
 
+
+
 ### Resource Errors (404)
 
 ```json
@@ -120,6 +126,8 @@ Validation errors include detailed field-level information:
   "detail": "Preset not found"
 }
 ```
+
+
 
 ### Validation Errors (400/422)
 
@@ -145,6 +153,8 @@ Validation errors include detailed field-level information:
 }
 ```
 
+
+
 ### Conflict Errors (409)
 
 ```json
@@ -158,6 +168,8 @@ Validation errors include detailed field-level information:
   "detail": "Cleanup is already running on another instance"
 }
 ```
+
+
 
 ---
 
@@ -209,6 +221,8 @@ async function apiRequest(endpoint: string, options: RequestInit) {
   return response.json();
 }
 ```
+
+
 
 ---
 
@@ -350,11 +364,14 @@ function sleep(ms: number) {
 }
 ```
 
+
+
 ### Best Practices
 
 1. **Check headers proactively** - Monitor `X-RateLimit-Remaining` and slow down before hitting limits
 
 2. **Implement exponential backoff** - When retrying after rate limits:
+
    ```typescript
    const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
    ```

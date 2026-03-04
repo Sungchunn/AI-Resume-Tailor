@@ -21,12 +21,14 @@ POST /v1/ats/structure
 ```
 
 **What it checks:**
+
 - Standard section headers (Experience, Education, Skills, etc.)
 - Contact information presence
 - **Section order validation** - Some ATS systems like Taleo penalize non-standard section ordering
 - Formatting issues that may cause parsing problems
 
 **Section Order Scoring:**
+
 - **100 (standard):** Contact → Summary → Experience → Education → Skills → Certifications
 - **95 (minor):** Skills before Education
 - **85 (major):** Education before Experience, or Contact not first
@@ -96,7 +98,7 @@ POST /v1/ats/keywords
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ------ | ------ | -------- | ----------- |
 | `resume_content` | string | Yes | Resume content |
 | `job_description` | string | Yes | Job description to match against |
 | `include_vault` | boolean | No | Check vault for missing keywords |
@@ -182,7 +184,7 @@ POST /v1/ats/keywords/detailed
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ------ | ------ | -------- | ----------- |
 | `job_description` | string | Yes | Job description to match against (min 50 chars) |
 | `resume_content` | string | No | Resume text content to analyze |
 | `resume_block_ids` | number[] | No | Block IDs to use for resume content |
@@ -243,6 +245,7 @@ curl -X POST http://localhost:8000/v1/ats/keywords/detailed \
 ```
 
 **Notes:**
+
 - If neither `resume_content` nor `resume_block_ids` is provided, all vault blocks are used
 - Keywords are categorized by importance: `required`, `preferred`, `nice_to_have`
 - Missing keywords are checked against the user's vault for availability
@@ -260,6 +263,7 @@ POST /v1/ats/knockout-check
 ```
 
 **What it checks:**
+
 - **Years of experience** vs. job requirement
 - **Education level** vs. job requirement
 - **Required certifications** presence on resume
@@ -268,7 +272,7 @@ POST /v1/ats/knockout-check
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ------ | ------ | -------- | ----------- |
 | `resume_id` | number | No | Resume ID to analyze (uses parsed_content from database) |
 | `job_id` | number | No | Job description ID to analyze against |
 | `resume_content` | string | No | Raw resume text (fallback if resume_id not provided) |
@@ -375,7 +379,7 @@ curl -X POST http://localhost:8000/v1/ats/knockout-check \
 **Risk Types:**
 
 | Type | Description |
-|------|-------------|
+| --------- | ----------- |
 | `experience_years` | User's years of experience don't meet job requirement |
 | `education_level` | User's education level is below job requirement |
 | `certification` | Required/preferred certification not found on resume |
@@ -385,12 +389,13 @@ curl -X POST http://localhost:8000/v1/ats/knockout-check \
 **Severity Levels:**
 
 | Severity | Description |
-|----------|-------------|
+| -------- | ----------- |
 | `critical` | Likely auto-rejection by ATS. Large gaps in requirements. |
 | `warning` | May affect application. Small gaps or preferred requirements. |
 | `info` | Informational note, unlikely to cause rejection. |
 
 **Response Interpretation:**
+
 - `passes_all_checks: true` - No knockout risks, proceed to keyword analysis
 - `passes_all_checks: false` - Review the risks before applying
 - `severity: critical` - Likely auto-rejection by ATS
@@ -489,7 +494,7 @@ curl http://localhost:8000/v1/ats/tips \
 **Section Order Scoring:**
 
 | Deviation Type | Score | Example |
-|---------------|-------|---------|
+| -------------- | ----- | ------- |
 | `standard` | 100 | Contact → Summary → Experience → Education → Skills |
 | `minor` | 95 | Skills appearing before Education |
 | `major` | 85 | Education appearing before Experience, or Contact not first |
@@ -657,7 +662,7 @@ curl http://localhost:8000/v1/ats/tips \
 ### Format Score
 
 | Score | Rating | Description |
-|-------|--------|-------------|
+| ------- | --------- | ----------- |
 | 90-100 | Excellent | ATS-optimized, all sections present |
 | 75-89 | Good | Minor improvements needed |
 | 60-74 | Fair | Several issues to address |
@@ -666,7 +671,7 @@ curl http://localhost:8000/v1/ats/tips \
 ### Keyword Coverage
 
 | Coverage | Rating | Description |
-|----------|--------|-------------|
+| -------- | --------- | ----------- |
 | 75%+ | Excellent | High match rate |
 | 60-74% | Good | Competitive match |
 | 45-59% | Fair | May be filtered out |

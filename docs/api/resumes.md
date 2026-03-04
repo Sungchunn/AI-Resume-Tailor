@@ -289,6 +289,8 @@ When a resume is processed, the `parsed_content` field contains extracted inform
 }
 ```
 
+
+
 ---
 
 ## AI Parsing
@@ -319,6 +321,8 @@ POST /api/resumes/{resume_id}/parse
 curl -X POST "http://localhost:8000/api/resumes/1/parse?force=true" \
   -H "Authorization: Bearer <token>"
 ```
+
+
 
 **Response (200 OK):**
 

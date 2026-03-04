@@ -322,6 +322,8 @@ When a job is processed, the `parsed_content` field contains extracted informati
 }
 ```
 
+
+
 ## Usage Notes
 
 - Jobs are automatically parsed when created to extract keywords and requirements

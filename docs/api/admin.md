@@ -80,7 +80,7 @@ POST /api/admin/scraper/trigger
 **Error Responses:**
 
 | Status | Condition |
-|--------|-----------|
+| ------ | --------- |
 | 409 | Scraper is already running on another instance |
 | 503 | Scraper is disabled via configuration |
 
@@ -274,7 +274,7 @@ POST /api/admin/jobs/cleanup
 **Error Responses:**
 
 | Status | Condition |
-|--------|-----------|
+| ------ | --------- |
 | 409 | Cleanup is already running on another instance |
 
 ---
@@ -389,7 +389,7 @@ Returns a single `ScraperPresetResponse`.
 **Error Responses:**
 
 | Status | Condition |
-|--------|-----------|
+| ------ | --------- |
 | 404 | Preset not found |
 
 ---
@@ -440,7 +440,7 @@ No response body.
 **Error Responses:**
 
 | Status | Condition |
-|--------|-----------|
+| ------ | --------- |
 | 404 | Preset not found |
 
 ---

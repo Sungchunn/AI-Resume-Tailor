@@ -73,6 +73,8 @@ curl -X POST http://localhost:8000/api/tailor \
 }
 ```
 
+
+
 ---
 
 ### Quick Match
@@ -118,6 +120,8 @@ curl -X POST http://localhost:8000/api/tailor/quick-match \
   ]
 }
 ```
+
+
 
 ---
 
@@ -201,6 +205,8 @@ GET /api/tailor
   }
 ]
 ```
+
+
 
 ---
 
@@ -289,6 +295,8 @@ curl -X POST http://localhost:8000/v1/match \
 }
 ```
 
+
+
 ---
 
 ### Gap Analysis
@@ -336,6 +344,8 @@ curl -X POST http://localhost:8000/v1/match/analyze \
   ]
 }
 ```
+
+
 
 ---
 

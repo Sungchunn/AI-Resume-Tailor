@@ -71,6 +71,8 @@ curl -X POST "http://localhost:8000/api/upload/extract?store_file=false" \
 }
 ```
 
+
+
 **Response with Warnings:**
 
 ```json
@@ -88,6 +90,8 @@ curl -X POST "http://localhost:8000/api/upload/extract?store_file=false" \
   ]
 }
 ```
+
+
 
 **Error Responses:**
 
@@ -170,7 +174,7 @@ curl "http://localhost:8000/api/export/aa0e8400-e29b-41d4-a716-446655440000?form
 
 Binary file with appropriate headers:
 
-```
+```text
 Content-Type: application/pdf
 Content-Disposition: attachment; filename="tailored_resume.pdf"
 ```
@@ -286,7 +290,7 @@ curl -X POST http://localhost:8000/api/resumes/123/export \
 
 Binary file with appropriate headers:
 
-```
+```text
 Content-Type: application/pdf
 Content-Disposition: attachment; filename="My_Resume.pdf"
 ```

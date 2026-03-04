@@ -6,7 +6,7 @@ The AI Resume Tailor API is a RESTful API built with FastAPI that provides AI-po
 
 ## Base URL
 
-```
+```text
 http://localhost:8000
 ```
 
@@ -38,6 +38,7 @@ curl http://localhost:8000/health
 ```
 
 **Response:**
+
 ```json
 {"status": "healthy"}
 ```
@@ -59,6 +60,7 @@ curl -X POST http://localhost:8000/api/auth/login \
 ```
 
 **Response:**
+
 ```json
 {
   "access_token": "eyJ...",
@@ -98,7 +100,7 @@ curl http://localhost:8000/api/resumes \
 
 All requests and responses use JSON format:
 
-```
+```text
 Content-Type: application/json
 ```
 
@@ -108,7 +110,7 @@ Content-Type: application/json
 
 All timestamps are returned in ISO 8601 format:
 
-```
+```text
 2026-02-18T14:30:00.000000
 ```
 
@@ -122,6 +124,7 @@ List endpoints support pagination with query parameters:
 | `limit` | integer | 10-100 | Maximum records to return |
 
 **Example:**
+
 ```bash
 curl "http://localhost:8000/api/resumes?skip=0&limit=20" \
   -H "Authorization: Bearer <token>"

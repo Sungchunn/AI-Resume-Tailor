@@ -31,7 +31,7 @@ POST /api/v1/ai/improve-section
 #### Request Body
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ------- | ------ | ---------- | ------------- |
 | `section_type` | string | Yes | Type of section being improved (see Section Types) |
 | `section_content` | string | Yes | Current content (JSON string or plain text) |
 | `instruction` | string | Yes | User instruction for improvement |
@@ -84,7 +84,7 @@ curl -X POST http://localhost:8000/api/v1/ai/improve-section \
 #### Response Fields
 
 | Field | Type | Description |
-|-------|------|-------------|
+| ------- | ------ | ------------- |
 | `improved_content` | string | The AI-improved section content |
 | `changes_summary` | string | Brief explanation of changes made |
 | `suggestions` | string[] | Additional improvement suggestions |
@@ -102,7 +102,7 @@ POST /api/v1/ai/chat
 #### Request Body
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ------- | ------ | ---------- | ------------- |
 | `message` | string | Yes | The user's message |
 | `section_type` | string | No | Optional section type for context |
 | `section_content` | string | No | Optional current section content |
@@ -146,7 +146,7 @@ curl -X POST http://localhost:8000/api/v1/ai/chat \
 #### Response Fields
 
 | Field | Type | Description |
-|-------|------|-------------|
+| ------- | ------ | ------------- |
 | `message` | string | The assistant's response message |
 | `improved_content` | string or null | Improved content if applicable |
 | `action_type` | string | Response type: "advice", "improvement", or "question" |
@@ -154,7 +154,7 @@ curl -X POST http://localhost:8000/api/v1/ai/chat \
 #### Action Types
 
 | Type | Description |
-|------|-------------|
+| ------ | ------------- |
 | `advice` | General tips and recommendations |
 | `improvement` | Response includes concrete content improvements |
 | `question` | Clarifying question from the assistant |
