@@ -231,6 +231,155 @@ curl -X POST http://localhost:8000/v1/ats/keywords/detailed \
 
 ---
 
+### Knockout Check (Stage 0)
+
+Perform knockout check to identify binary disqualifiers before scoring.
+
+This is Stage 0 of the ATS scoring pipeline. It identifies hard disqualifiers that would cause automatic rejection by most ATS systems BEFORE calculating the actual match score.
+
+```http
+POST /v1/ats/knockout-check
+```
+
+**What it checks:**
+- **Years of experience** vs. job requirement
+- **Education level** vs. job requirement
+- **Required certifications** presence on resume
+- **Location/work authorization** compatibility
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `resume_id` | number | No | Resume ID to analyze (uses parsed_content from database) |
+| `job_id` | number | No | Job description ID to analyze against |
+| `resume_content` | string | No | Raw resume text (fallback if resume_id not provided) |
+| `job_description` | string | No | Raw job description text (fallback if job_id not provided) |
+
+**Note:** Either `resume_id` or `resume_content` must be provided. Either `job_id` or `job_description` must be provided. If both ID and content are provided, IDs take precedence.
+
+**Example Request (Using IDs):**
+
+```bash
+curl -X POST http://localhost:8000/v1/ats/knockout-check \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resume_id": 123,
+    "job_id": 456
+  }'
+```
+
+**Example Request (Using Raw Content):**
+
+```bash
+curl -X POST http://localhost:8000/v1/ats/knockout-check \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resume_content": "John Doe\nSoftware Engineer\n\nExperience:\nStartupInc (Jan 2023 - Present)...\n\nEducation:\nBachelor'\''s in CS...",
+    "job_description": "Senior Software Engineer\n\nRequirements:\n- 5+ years of experience\n- Bachelor'\''s degree in Computer Science\n- AWS Certified Solutions Architect required..."
+  }'
+```
+
+**Response (200 OK) - No Risks:**
+
+```json
+{
+  "passes_all_checks": true,
+  "risks": [],
+  "summary": "No knockout risks detected. You meet the basic qualifications.",
+  "recommendation": "Proceed with optimizing your resume for keyword matching.",
+  "analysis": {
+    "experience": {
+      "user_years": 7.5,
+      "required_years": 5,
+      "risk": null
+    },
+    "education": {
+      "user_level": "bachelors",
+      "required_level": "bachelors",
+      "risk": null
+    },
+    "certifications": {
+      "user_certifications": ["AWS Certified Solutions Architect"],
+      "required_certifications": [{"name": "AWS Certified Solutions Architect", "importance": "required"}],
+      "matched": ["AWS Certified Solutions Architect"],
+      "missing": [],
+      "risks": []
+    },
+    "location": {
+      "user_location": "San Francisco, CA",
+      "job_location": "San Francisco, CA",
+      "remote_type": "hybrid",
+      "risk": null
+    }
+  }
+}
+```
+
+**Response (200 OK) - With Risks:**
+
+```json
+{
+  "passes_all_checks": false,
+  "risks": [
+    {
+      "risk_type": "experience_years",
+      "severity": "critical",
+      "description": "Role requires 5+ years of experience, your resume shows ~1.2 years.",
+      "job_requires": "5+ years",
+      "user_has": "~1.2 years"
+    },
+    {
+      "risk_type": "certification",
+      "severity": "critical",
+      "description": "AWS Certified Solutions Architect is listed as required but not found on your resume.",
+      "job_requires": "AWS Certified Solutions Architect (required)",
+      "user_has": null
+    }
+  ],
+  "summary": "2 potential knockout risk(s) detected (2 critical).",
+  "recommendation": "Address the critical risks before applying, or consider roles better matched to your current qualifications.",
+  "analysis": {
+    "experience": {
+      "user_years": 1.2,
+      "required_years": 5,
+      "risk": {...}
+    },
+    "education": {...},
+    "certifications": {...},
+    "location": {...}
+  }
+}
+```
+
+**Risk Types:**
+
+| Type | Description |
+|------|-------------|
+| `experience_years` | User's years of experience don't meet job requirement |
+| `education_level` | User's education level is below job requirement |
+| `certification` | Required/preferred certification not found on resume |
+| `location` | Location mismatch for on-site roles |
+| `work_authorization` | Work authorization issues detected |
+
+**Severity Levels:**
+
+| Severity | Description |
+|----------|-------------|
+| `critical` | Likely auto-rejection by ATS. Large gaps in requirements. |
+| `warning` | May affect application. Small gaps or preferred requirements. |
+| `info` | Informational note, unlikely to cause rejection. |
+
+**Response Interpretation:**
+- `passes_all_checks: true` - No knockout risks, proceed to keyword analysis
+- `passes_all_checks: false` - Review the risks before applying
+- `severity: critical` - Likely auto-rejection by ATS
+- `severity: warning` - May affect application, worth addressing
+
+---
+
 ### Get ATS Tips
 
 Get general ATS optimization tips and best practices.
@@ -423,6 +572,46 @@ curl http://localhost:8000/v1/ats/tips \
 }
 ```
 
+### KnockoutCheckRequest
+
+```typescript
+{
+  resume_id?: number;           // Resume ID from database
+  job_id?: number;              // Job description ID from database
+  resume_content?: string;      // Raw resume text (fallback)
+  job_description?: string;     // Raw job description (fallback)
+}
+```
+
+### KnockoutCheckResponse
+
+```typescript
+{
+  passes_all_checks: boolean;   // True if no knockout risks detected
+  risks: KnockoutRisk[];        // List of detected risks
+  summary: string;              // Human-readable summary
+  recommendation: string;       // Recommended action
+  analysis: {                   // Detailed breakdown
+    experience: ExperienceAnalysis;
+    education: EducationAnalysis;
+    certifications: CertificationAnalysis;
+    location: LocationAnalysis;
+  };
+}
+```
+
+### KnockoutRisk
+
+```typescript
+{
+  risk_type: "experience_years" | "education_level" | "certification" | "location" | "work_authorization";
+  severity: "critical" | "warning" | "info";
+  description: string;          // Human-readable description
+  job_requires: string;         // What the job posting requires
+  user_has: string | null;      // What the user's resume shows
+}
+```
+
 ## Scoring Guide
 
 ### Format Score
@@ -445,10 +634,18 @@ curl http://localhost:8000/v1/ats/tips \
 
 ## Usage Notes
 
-- Run structure analysis first to identify formatting issues
+- **Start with Knockout Check** - Run `/knockout-check` first to identify hard disqualifiers before investing time in keyword optimization
+- Run structure analysis to identify formatting issues
 - Keyword analysis should be done against specific job descriptions
 - Use vault checking to find missing content you already have
 - Tips endpoint is useful for general guidance without specific analysis
+
+### Recommended Workflow
+
+1. **Knockout Check** (`/knockout-check`) - Identify deal-breakers first
+2. **Structure Analysis** (`/structure`) - Ensure ATS-parseable format
+3. **Keyword Analysis** (`/keywords/detailed`) - Optimize for specific job
+4. **Apply fixes** and re-run checks as needed
 
 ## Related Endpoints
 
