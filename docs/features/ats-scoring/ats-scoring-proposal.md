@@ -93,7 +93,7 @@ The gap: you weight block types for scoring but the **density of quantification*
                                ▼  (only if no hard knockouts)
 ┌────────────────────────────────────────────────────────────────────┐
 │                    STAGE 1: STRUCTURAL SCORE (P2)                  │
-│                    Weight: 15%                                      │
+│                    Weight: 15%                                     │
 │                                                                    │
 │  • Section detection (regex + fuzzy)                               │
 │  • Contact info parsability                                        │
@@ -106,7 +106,7 @@ The gap: you weight block types for scoring but the **density of quantification*
                                ▼
 ┌────────────────────────────────────────────────────────────────────┐
 │                    STAGE 2: KEYWORD SCORE (P6)                     │
-│                    Weight: 40%                                      │
+│                    Weight: 40%                                     │
 │                                                                    │
 │  Layered matching (your existing design is correct):               │
 │  Layer 1: Exact → Layer 2: Lemma → Layer 3: Abbrev →               │
@@ -118,13 +118,13 @@ The gap: you weight block types for scoring but the **density of quantification*
 │  • Keyword recency: last 2 roles weighted 2x                       │
 │  • Required vs. preferred: required keywords weighted 3x           │
 │                                                                    │
-│  Output: 0-100 keyword score + gap list with importance tier        │
+│  Output: 0-100 keyword score + gap list with importance tier       │
 └────────────────────────────────────────────────────────────────────┘
                                │
                                ▼
 ┌────────────────────────────────────────────────────────────────────┐
 │                    STAGE 3: CONTENT QUALITY SCORE (P3 + new)       │
-│                    Weight: 25%                                      │
+│                    Weight: 25%                                     │
 │                                                                    │
 │  Block classification (your existing P3):                          │
 │  • Achievement/Responsibility ratio                                │
@@ -140,7 +140,7 @@ The gap: you weight block types for scoring but the **density of quantification*
                                ▼
 ┌────────────────────────────────────────────────────────────────────┐
 │                    STAGE 4: ROLE PROXIMITY SCORE (new)             │
-│                    Weight: 20%                                      │
+│                    Weight: 20%                                     │
 │                                                                    │
 │  • Title match: most recent title vs. target title                 │
 │  • Career trajectory: are they moving toward this role?            │
@@ -155,7 +155,7 @@ The gap: you weight block types for scoring but the **density of quantification*
 │                                                                    │
 │  Structural:      15%  ×  P2 score                                 │
 │  Keywords:        40%  ×  P6 score                                 │
-│  Content Quality: 25%  ×  P3 + quantification score               │
+│  Content Quality: 25%  ×  P3 + quantification score                │
 │  Role Proximity:  20%  ×  title + trajectory score                 │
 │                                                                    │
 │  Output: 0-100 ATS score                                           │

@@ -40,25 +40,78 @@
 
 **All `.md` documentation files must be placed under `/docs`.**
 
+Keep the root directory clean - only `README.md` and `CLAUDE.md` at project root.
+
+#### Directory Purposes
+
 ```text
 /docs
-├── /planning          # Project plans and phases
-├── /features          # Feature-specific documentation
-│   └── /feature-name  # Subdirectory per feature
-├── /architecture      # System design docs
-└── /api               # API documentation
+├── PROJECT_MASTER_PLAN.md     # High-level project vision (entry point)
+│
+├── /planning                  # Project-level plans and milestones
+│   ├── implementation-plan.md     # Development phases and roadmap
+│   ├── project-assessment.md      # Status reviews and retrospectives
+│   └── security-refactor.md       # Cross-cutting technical initiatives
+│
+├── /features                  # Feature-specific documentation
+│   ├── /feature-name/             # Subdirectory for multi-doc features
+│   │   ├── master-plan.md             # Entry point for the feature
+│   │   ├── phase-1-*.md               # Phase breakdowns
+│   │   └── proposal.md                # Architectural proposals
+│   └── single-feature.md          # Single-doc features (no subdir)
+│
+├── /architecture              # System design and technical decisions
+│   ├── system-architecture.md     # Overall system design
+│   ├── backend-architecture.md    # Backend-specific design
+│   ├── database-rules.md          # Database conventions
+│   └── ai-integration.md          # AI/ML integration design
+│
+└── /api                       # API reference documentation
+    ├── overview.md                # API introduction
+    └── [endpoint].md              # Per-endpoint documentation
 ```
 
-- Create a new subdirectory for each new feature or project implementation
-- Keep the root directory clean - only `README.md` and `CLAUDE.md` at root
+| Directory | Purpose | When to Add Here |
+|-----------|---------|------------------|
+| `/planning` | Project-level roadmaps, milestones, assessments | Implementation plans, phase breakdowns, project reviews |
+| `/features` | Feature-specific implementation docs | New feature plans, proposals, phase docs |
+| `/architecture` | System design, technical decisions | Tech stack choices, design patterns, cross-cutting concerns |
+| `/api` | API reference for consumers | Endpoint docs, schemas, error codes |
 
-#### Documentation File Naming Convention
+#### Feature Documentation: Subdirectory Convention
 
-All new documentation files in `/docs/architecture`, `/docs/features`, and `/docs/planning` must include a date prefix for tracking purposes.
+**Multi-document features MUST have their own subdirectory under `/docs/features/`.**
 
-Format: `DDMMYY_name.md`
+Create a subdirectory when:
 
-Examples:
+- Feature has **3+ related documentation files**
+- Feature has **distinct phases** or implementation stages
+- Feature has **separate proposal/analysis documents**
+
+```text
+/docs/features
+├── /ats-scoring/                             # Multi-doc feature
+│   ├── 030326_master-plan.md                     # Entry point
+│   ├── 030326_phase1-keyword-extraction.md
+│   ├── 030326_phase2-ats-structure-analysis.md
+│   └── ats-scoring-proposal.md
+│
+├── /resume-workshop/                         # Multi-doc feature
+│   ├── 250226_resume-workshop-master-plan.md     # Entry point
+│   ├── 250226_phase-a-pdf-preview.md
+│   ├── 250226_phase-b-workshop-layout.md
+│   └── ...
+│
+└── 190226_n8n-linkedin-scraper-integration.md  # Single-doc (no subdir)
+```
+
+**Single-document features** remain directly in `/docs/features/` with proper date prefix.
+
+#### File Naming Convention
+
+All documentation files in `/docs/planning`, `/docs/features`, and `/docs/architecture` MUST include a **date prefix** for tracking.
+
+**Format:** `DDMMYY_name.md`
 
 ```text
 180226_api-design.md           # Created Feb 18, 2026
@@ -66,9 +119,17 @@ Examples:
 010326_deployment-guide.md     # Created Mar 1, 2026
 ```
 
-- Use lowercase with hyphens for the name portion
-- The date represents the creation date of the document
-- This helps track document age and maintain chronological context
+Rules:
+
+- Use **lowercase with hyphens** for the name portion
+- Date represents the **creation date** of the document
+- Helps track document age and maintain chronological context
+
+**Exceptions (no date prefix):**
+
+- `/docs/api/*` - Permanent API reference docs
+- `/docs/PROJECT_MASTER_PLAN.md` - Project vision doc
+- Proposal/decision docs within feature subdirs (e.g., `ats-scoring-proposal.md`)
 
 ### 4. Context Management
 
