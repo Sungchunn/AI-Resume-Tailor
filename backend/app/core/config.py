@@ -116,6 +116,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # Gracefully ignore unknown fields from .env
 
 
 @lru_cache
