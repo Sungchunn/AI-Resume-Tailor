@@ -315,6 +315,19 @@ When modifying the backend API (adding endpoints, changing request/response sche
 
 **Note:** API docs in `/docs/api/` are permanent documentation and do NOT use date prefixes.
 
+### 12. Architecture Documentation Synchronization
+
+**Always update `/docs/architecture/` when system design or technical decisions change.**
+
+When making architectural changes (modifying system design, changing design patterns, updating data flow, modifying service interactions, etc.), you MUST update the corresponding documentation in `/docs/architecture/`:
+
+- `system-architecture.md` - Overall system design, component interactions, deployment architecture
+- `backend-architecture.md` - Backend service structure, API design patterns, request/response flows
+- `database-rules.md` - Database conventions, schema design patterns, relationship patterns
+- `ai-integration.md` - AI/ML integration design, model usage patterns, prompt strategies
+
+**Note:** Architecture docs in `/docs/architecture/` use date prefixes to track when design decisions were made and help maintain chronological context of architectural evolution.
+
 ---
 
 ## Development Workflow
@@ -330,7 +343,9 @@ When modifying the backend API (adding endpoints, changing request/response sche
 
 1. Run `git diff` to review changes
 2. Verify NO secrets or credentials in diff
-3. Ensure documentation is updated in `/docs/` if needed
+3. Ensure documentation is updated in `/docs/` if needed:
+   - **API changes:** Update `/docs/api/` for any endpoint, schema, or error code changes
+   - **Architecture changes:** Update `/docs/architecture/` for any system design, pattern, or data flow changes
 4. Use clear, descriptive commit messages with scope prefix
 
 ### Commit Message Format

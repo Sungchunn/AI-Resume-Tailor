@@ -44,14 +44,27 @@ An AI-powered application that tailors resumes to specific job descriptions.
    docker-compose up -d
    ```
 4. Access:
-   - Frontend: http://localhost:3000
-   - Backend: http://localhost:8000
-   - API Docs: http://localhost:8000/docs
+   - Frontend: <http://localhost:3000>
+   - Backend: <http://localhost:8000>
+   - API Docs: <http://localhost:8000/docs>
 
 ## Documentation
 
-- [Implementation Plan](./docs/planning/implementation-plan.md)
-- [Claude AI Guidelines](./CLAUDE.md)
+### Project Documentation
+
+- **[Implementation Plan](./docs/planning/implementation-plan.md)** - Development phases and roadmap
+- **[API Documentation](./docs/api/overview.md)** - API endpoints, schemas, and error handling
+- **[System Architecture](./docs/architecture/system-architecture.md)** - Overall system design and component interactions
+- **[Backend Architecture](./docs/architecture/backend-architecture.md)** - API design patterns and request/response flows
+- **[Database Rules](./docs/architecture/database-rules.md)** - Database conventions and schema patterns
+
+### Development Guidelines
+
+- **[Claude AI Guidelines](./CLAUDE.md)** - Rules, best practices, and workflows for development
+  - Security, credentials management, and git collaboration rules
+  - Documentation requirements (always update `/docs/api/` for API changes and `/docs/architecture/` for design changes)
+  - Database query patterns and transaction safety
+  - Code quality standards
 
 ## License
 
