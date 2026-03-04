@@ -8,12 +8,14 @@
 
 **Status:** ✅ COMPLETE (as of 2026-03-04)
 
-> **Enhancement Implemented:**
-> ✅ Added **Section Order Validation** - detects non-standard section ordering and scores accordingly.
-> - Scores: 100 (standard), 95 (minor deviation), 85 (major deviation), 75 (non-standard)
-> - Major deviations: Education before Experience, Contact not first
-> - Minor deviations: Skills before Education, Summary after Experience
-> - See `ATSAnalyzer.validate_section_order()` in `app/services/job/ats_analyzer.py`
+**Enhancement Implemented:**
+
+✅ Added **Section Order Validation** - detects non-standard section ordering and scores accordingly.
+
+- Scores: 100 (standard), 95 (minor deviation), 85 (major deviation), 75 (non-standard)
+- Major deviations: Education before Experience, Contact not first
+- Minor deviations: Skills before Education, Summary after Experience
+- See `ATSAnalyzer.validate_section_order()` in `app/services/job/ats_analyzer.py`
 
 ---
 
@@ -36,6 +38,8 @@ ATS (Applicant Tracking System) structure analysis serves as a **pre-flight chec
 3. **"Is the contact information machine-readable?"** - Data extraction validation
 4. **"Are dates formatted consistently?"** - Temporal data parsing
 
+---
+
 ### Why This Matters for Users
 
 The feature exists because:
@@ -44,6 +48,8 @@ The feature exists because:
 - ATS software uses pattern-based parsing, not AI comprehension
 - A "great" resume that fails ATS parsing never reaches recruiters
 - Users need actionable, deterministic feedback on structural issues
+
+---
 
 ### The Fundamental Insight
 
@@ -94,6 +100,8 @@ This is the critical realization that justifies Phase 2's approach. We're using 
 | Contact info extraction | Good | Excellent (regex) | Rule-Based |
 | Date format detection | Good | Excellent (dateutil) | Rule-Based |
 | Understanding context | Excellent | Poor | LLM |
+
+---
 
 **Verdict:** Rule-based wins for this feature because ATS structure analysis is fundamentally about **pattern matching, not comprehension**. The LLM's superior "understanding" is wasted on deterministic checks.
 

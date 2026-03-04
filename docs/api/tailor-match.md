@@ -73,8 +73,6 @@ curl -X POST http://localhost:8000/api/tailor \
 }
 ```
 
-
-
 ---
 
 ### Quick Match
@@ -244,12 +242,12 @@ POST /v1/match
 
 **Request Body:**
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `job_description` | string | Required | Job description text |
-| `limit` | integer | 10 | Max results (1-100) |
-| `block_types` | string[] | All | Filter by block types |
-| `tags` | string[] | None | Filter by tags |
+| Field             | Type      | Default  | Description                |
+| ----------------- | --------- | -------- | -------------------------- |
+| `job_description` | string    | Required | Job description text       |
+| `limit`           | integer   | 10       | Max results (1-100)        |
+| `block_types`     | string[]  | All      | Filter by block types      |
+| `tags`            | string[]  | None     | Filter by tags             |
 
 **Example Request:**
 
@@ -294,8 +292,6 @@ curl -X POST http://localhost:8000/v1/match \
   "total_vault_blocks": 47
 }
 ```
-
-
 
 ---
 
@@ -345,8 +341,6 @@ curl -X POST http://localhost:8000/v1/match/analyze \
 }
 ```
 
-
-
 ---
 
 ### Match by Job ID
@@ -365,9 +359,9 @@ GET /v1/match/job/{job_id}
 
 **Query Parameters:**
 
-| Parameter | Type | Default |
-|-----------|------|---------|
-| `limit` | integer | 10 |
+| Parameter | Type    | Default |
+| --------- | ------- | ------- |
+| `limit`   | integer | 10      |
 
 **Response (200 OK):**
 

@@ -12,7 +12,7 @@ The Resume Builds API (formerly Workshops) provides a workspace for building tai
 
 ## Resume Build Lifecycle
 
-```
+```text
 ┌──────────┐     Create      ┌───────────┐     Pull Blocks    ┌─────────────┐
 │  DRAFT   │ ──────────────► │IN_PROGRESS│ ─────────────────► │ IN_PROGRESS │
 └──────────┘                 └───────────┘                    └─────────────┘
@@ -195,9 +195,9 @@ POST /v1/resume-builds/{build_id}/pull
 
 **Request Body:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `block_ids` | UUID[] | Yes | Block IDs to pull (min 1) |
+| Field       | Type   | Required | Description                |
+| ----------- | ------ | -------- | -------------------------- |
+| `block_ids` | UUID[] | Yes      | Block IDs to pull (min 1)  |
 
 **Example Request:**
 
@@ -274,10 +274,10 @@ POST /v1/resume-builds/{build_id}/suggest
 
 **Request Body:**
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `max_suggestions` | integer | 10 | Maximum suggestions (1-50) |
-| `focus_sections` | string[] | All | Sections to focus on |
+| Field              | Type      | Default | Description                |
+| ------------------ | --------- | ------- | -------------------------- |
+| `max_suggestions`  | integer   | 10      | Maximum suggestions (1-50) |
+| `focus_sections`   | string[]  | All     | Sections to focus on       |
 
 **Example Request:**
 
@@ -337,9 +337,9 @@ POST /v1/resume-builds/{build_id}/diffs/accept
 
 **Request Body:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `diff_index` | integer | Yes | Index of diff to accept |
+| Field        | Type    | Required | Description              |
+| ------------ | ------- | -------- | ------------------------ |
+| `diff_index` | integer | Yes      | Index of diff to accept  |
 
 **Example Request:**
 
@@ -372,9 +372,9 @@ POST /v1/resume-builds/{build_id}/diffs/reject
 
 **Request Body:**
 
-| Field | Type | Required |
-|-------|------|----------|
-| `diff_index` | integer | Yes |
+| Field        | Type    | Required |
+| ------------ | ------- | -------- |
+| `diff_index` | integer | Yes      |
 
 **Response (200 OK):**
 
@@ -412,9 +412,9 @@ PATCH /v1/resume-builds/{build_id}/sections
 
 **Request Body:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `sections` | object | Yes | Section key-value pairs |
+| Field      | Type   | Required | Description             |
+| ---------- | ------ | -------- | ----------------------- |
+| `sections` | object | Yes      | Section key-value pairs |
 
 **Example Request:**
 
@@ -443,8 +443,8 @@ PATCH /v1/resume-builds/{build_id}/status
 
 **Request Body:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| Field  | Type   | Required | Description          |
+| ------ | ------ | -------- | -------------------- |
 | `status` | string | Yes | New status (enum) |
 
 ---
@@ -459,11 +459,11 @@ POST /v1/resume-builds/{build_id}/writeback/preview
 
 **Request Body:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `edited_content` | string | Yes | Content to write back |
-| `source_block_id` | UUID | No | Original block ID (for updates) |
-| `create_new` | boolean | No | Force create new block |
+| Field             | Type    | Required | Description                        |
+| ----------------- | ------- | -------- | ---------------------------------- |
+| `edited_content`  | string  | Yes      | Content to write back              |
+| `source_block_id` | UUID    | No       | Original block ID (for updates)    |
+| `create_new`      | boolean | No       | Force create new block             |
 
 **Response (200 OK):**
 
@@ -514,10 +514,10 @@ POST /v1/resume-builds/{build_id}/export
 
 **Request Body:**
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `format` | string | "pdf" | pdf, docx, txt, json |
-| `template` | string | None | Template name |
+| Field      | Type   | Default | Description         |
+| ---------- | ------ | ------- | -------------------- |
+| `format`   | string | "pdf"   | pdf, docx, txt, json |
+| `template` | string | None    | Template name        |
 
 **Example Request:**
 

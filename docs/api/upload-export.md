@@ -41,6 +41,8 @@ POST /api/upload/extract
 - Maximum file size: 10MB (configurable)
 - Supported formats: PDF, DOCX
 
+---
+
 **Example Request:**
 
 ```bash
@@ -71,7 +73,7 @@ curl -X POST "http://localhost:8000/api/upload/extract?store_file=false" \
 }
 ```
 
-
+---
 
 **Response with Warnings:**
 
@@ -91,7 +93,7 @@ curl -X POST "http://localhost:8000/api/upload/extract?store_file=false" \
 }
 ```
 
-
+---
 
 **Error Responses:**
 
@@ -335,11 +337,11 @@ Ultra-clean ATS-optimized design:
 
 ## Supported Formats
 
-| Format | MIME Type | Description |
-| -------- | ----------- |-------------|
-| `pdf` | `application/pdf` | PDF document (default) |
-| `docx` | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` | Microsoft Word document |
-| `txt` | `text/plain` | Plain text |
+| Format | MIME Type                                                                    | Description              |
+| ------ | ---------------------------------------------------------------------------- | ------------------------ |
+| `pdf`  | `application/pdf`                                                          | PDF document (default)   |
+| `docx` | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` | Microsoft Word document  |
+| `txt`  | `text/plain`                                                               | Plain text               |
 
 ## Rate Limiting
 
@@ -359,12 +361,16 @@ Export endpoints have specific rate limits to prevent abuse:
 - Very large files may take longer to process
 - Check the `warnings` array for potential extraction issues
 
+---
+
 ### Export Tips
 
 - PDF format is most widely accepted by ATS systems
 - DOCX allows further editing in word processors
 - TXT is useful for plain-text job applications
 - Exported files use sensible filenames based on content
+
+---
 
 ## Related Endpoints
 

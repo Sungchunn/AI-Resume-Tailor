@@ -159,8 +159,6 @@ Validation errors include detailed field-level information:
 }
 ```
 
-
-
 ---
 
 ## Error Handling Best Practices
@@ -212,8 +210,6 @@ async function apiRequest(endpoint: string, options: RequestInit) {
 }
 ```
 
-
-
 ---
 
 ## Rate Limiting
@@ -221,6 +217,8 @@ async function apiRequest(endpoint: string, options: RequestInit) {
 ### Overview
 
 The API implements rate limiting using a Redis-based sliding window algorithm. Limits are applied per-user (authenticated) or per-IP (unauthenticated).
+
+---
 
 ## Rate Limit Categories
 
@@ -290,7 +288,7 @@ All responses include rate limit information:
 
 **Example Response Headers:**
 
-```
+```text
 X-RateLimit-Limit: 60
 X-RateLimit-Remaining: 45
 X-RateLimit-Reset: 1708257000
@@ -306,7 +304,7 @@ When rate limited, the API returns:
 
 **Headers:**
 
-```
+```text
 Retry-After: 45
 X-RateLimit-Limit: 60
 X-RateLimit-Remaining: 0
@@ -390,7 +388,7 @@ Rate limits can be configured via environment variables:
 
 ---
 
-## Identifier Resolution
+## Identifier Resolution:
 
 Rate limits are tracked per unique identifier:
 

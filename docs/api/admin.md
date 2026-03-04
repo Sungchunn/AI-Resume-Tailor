@@ -379,9 +379,9 @@ GET /api/admin/scraper/presets/{preset_id}
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `preset_id` | integer | Preset identifier |
+| Parameter    | Type    | Description        |
+| ------------ | ------- | ------------------ |
+| `preset_id`  | integer | Preset identifier  |
 
 **Response (200 OK):**
 
@@ -405,20 +405,20 @@ PATCH /api/admin/scraper/presets/{preset_id}
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `preset_id` | integer | Preset identifier |
+| Parameter    | Type    | Description        |
+| ------------ | ------- | ------------------ |
+| `preset_id`  | integer | Preset identifier  |
 
 **Request Body:**
 
 All fields optional:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Preset name |
-| `url` | string | LinkedIn job search URL |
-| `count` | integer | Max jobs to scrape |
-| `is_active` | boolean | Whether preset is active |
+| Field      | Type    | Description                |
+| ---------- | ------- | -------------------------- |
+| `name`     | string  | Preset name                |
+| `url`      | string  | LinkedIn job search URL    |
+| `count`    | integer | Max jobs to scrape         |
+| `is_active` | boolean | Whether preset is active   |
 
 **Response (200 OK):**
 
@@ -489,6 +489,8 @@ GET /api/admin/scraper/schedule
 
 ---
 
+---
+
 ### Update Schedule Settings
 
 Update the schedule configuration.
@@ -501,13 +503,13 @@ PATCH /api/admin/scraper/schedule
 
 All fields optional:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `is_enabled` | boolean | Enable/disable scheduling |
-| `schedule_type` | string | `daily` or `weekly` |
-| `schedule_hour` | integer | Hour to run (0-23) |
-| `schedule_minute` | integer | Minute to run (0-59) |
-| `schedule_day_of_week` | integer | Day of week for weekly schedule (0=Mon, 6=Sun) |
+| Field                  | Type    | Description                                        |
+| ---------------------- | ------- | -------------------------------------------------- |
+| `is_enabled`           | boolean | Enable/disable scheduling                          |
+| `schedule_type`        | string  | `daily` or `weekly`                                |
+| `schedule_hour`        | integer | Hour to run (0-23)                                 |
+| `schedule_minute`      | integer | Minute to run (0-59)                               |
+| `schedule_day_of_week` | integer | Day of week for weekly schedule (0=Mon, 6=Sun)   |
 
 **Example Request:**
 

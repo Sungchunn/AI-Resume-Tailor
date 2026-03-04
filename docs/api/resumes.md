@@ -114,10 +114,10 @@ GET /api/resumes
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Constraints |
-| --------- | ------ | --------- | ------------- |
-| `skip` | integer | 0 | >= 0 |
-| `limit` | integer | 10 | 1-100 |
+| Parameter | Type    | Default | Constraints |
+| --------- | ------- | ------- | ----------- |
+| `skip`    | integer | 0       | >= 0        |
+| `limit`   | integer | 10      | 1-100       |
 
 **Example Request:**
 
@@ -289,8 +289,6 @@ When a resume is processed, the `parsed_content` field contains extracted inform
 }
 ```
 
-
-
 ---
 
 ## AI Parsing
@@ -305,15 +303,15 @@ POST /api/resumes/{resume_id}/parse
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-| --------- | ------ | ------------- |
-| `resume_id` | integer | Resume identifier |
+| Parameter | Type    | Description        |
+| --------- | ------- | ------------------ |
+| `resume_id` | integer | Resume identifier  |
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-| --------- | ------ | --------- | ------------- |
-| `force` | boolean | false | Bypass cache and re-parse |
+| Parameter | Type    | Default | Description                |
+| --------- | ------- | ------- | -------------------------- |
+| `force`   | boolean | false   | Bypass cache and re-parse  |
 
 **Example Request:**
 
@@ -360,9 +358,9 @@ GET /api/resumes/{resume_id}/parse/status
 
 **Query Parameters:**
 
-| Parameter | Type | Required | Description |
-| --------- | ------ | ---------- |-------------|
-| `task_id` | string | Yes | Task ID returned from POST /parse |
+| Parameter | Type   | Required | Description                           |
+| --------- | ------ | -------- | ------------------------------------- |
+| `task_id` | string | Yes      | Task ID returned from POST /parse     |
 
 **Example Request:**
 
