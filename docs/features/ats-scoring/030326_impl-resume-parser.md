@@ -1,4 +1,18 @@
-# Phase 4: Resume Parser Hybrid - Deep Analysis
+# Resume Parser Implementation Guide
+
+**Parent Document:** `040326_revised-master-plan.md`
+
+**Role:** Shared Infrastructure - feeds into all stages (Knockout, Keywords, Content Quality, Role Proximity)
+
+> **Enhancement Required:**
+> The Resume Parser must extract additional data for the Knockout Check (Stage 0):
+>
+> - Total years of experience (calculated from experience dates)
+> - Highest education level detected
+> - List of certifications found
+> - Location information from contact section
+>
+> See `040326_knockout-check.md` for the `ResumeQualifications` schema.
 
 **Purpose:** Critical examination of the hybrid ML/LLM resume parsing approach, analyzing tradeoffs across accuracy, cost, effectiveness, correctness, and robustness within the context of a resume tailoring application.
 

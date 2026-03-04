@@ -1,8 +1,14 @@
-# Phase 2: ATS Structure Analysis - Deep Dive
+# Structural Analysis Implementation Guide
 
-**Parent Document:** `030326_ml-nlp-optimization-master-plan.md`
-**Phase Priority:** High
-**Phase Complexity:** Low
+**Parent Document:** `040326_revised-master-plan.md`
+
+**Stage:** 1 - Structural Score (Weight: 15%)
+
+**Priority:** High (core), LOW for new enhancements
+
+> **Enhancement Required:**
+> Add **Section Order Validation** - some ATS systems (Taleo notably) penalize non-standard section ordering.
+> See master plan Stage 1 for implementation details.
 
 ---
 

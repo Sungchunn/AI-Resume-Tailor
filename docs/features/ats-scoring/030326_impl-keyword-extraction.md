@@ -1,6 +1,8 @@
-# Phase 1: Keyword Extraction - Deep Analysis
+# Keyword Extraction Implementation Guide
 
-**Parent Document:** `030326_ml-nlp-optimization-master-plan.md`
+**Parent Document:** `040326_revised-master-plan.md`
+
+**Role:** Shared Infrastructure - feeds into Stage 2 (Keyword Scoring) and all matching operations
 
 **Purpose:** This document provides an in-depth analysis of migrating keyword extraction from LLM-based to traditional ML/NLP approaches, with careful examination of tradeoffs specific to a resume tailoring application.
 

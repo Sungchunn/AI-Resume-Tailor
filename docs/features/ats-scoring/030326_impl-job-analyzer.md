@@ -1,4 +1,25 @@
-# Phase 5: Job Analyzer (Hybrid) - Deep Analysis
+# Job Analyzer Implementation Guide
+
+**Parent Document:** `040326_revised-master-plan.md`
+
+**Role:** Shared Infrastructure - feeds into Stage 0 (Knockout Check) and Stage 2 (Keyword Scoring)
+
+> **Enhancement Required:**
+> This component must extract **hard requirements** for the Knockout Check (Stage 0):
+>
+> - `required_years_experience: int | None`
+> - `required_education: Literal["none", "bachelors", "masters", "phd"] | None`
+> - `required_certifications: list[str]`
+> - `location_requirements: LocationRequirement`
+>
+> Additionally, for Stage 2 enhanced keyword scoring, extract **importance tiers** per skill:
+>
+> - Required (3x weight): "must have", "required", "mandatory"
+> - Strongly Preferred (2x): "strongly preferred", "ideal candidate"
+> - Preferred (1.5x): "nice to have", "bonus", "plus"
+> - Mentioned (1x): No qualifier
+>
+> See `040326_knockout-check.md` and `040326_keyword-scoring.md` for details.
 
 ## Overview
 

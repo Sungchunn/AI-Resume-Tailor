@@ -1,8 +1,16 @@
-# Phase 3: Block Classification - Deep Analysis
+# Content Quality Implementation Guide
 
-**Purpose:** Critical evaluation of the block classification migration from LLM to traditional ML, examining tradeoffs across accuracy, cost, effectiveness, correctness, and robustness.
+**Parent Document:** `040326_revised-master-plan.md`
 
-**Related Document:** `030326_ml-nlp-optimization-master-plan.md`
+**Stage:** 3 - Content Quality Score (Weight: 25%)
+
+> **Enhancement Required:**
+> Add **Quantification Density** as a separate signal. A bullet with "Increased revenue by 40%"
+> outscores "Responsible for revenue growth" not just because of block type, but because of the numeric metric.
+>
+> Detection via regex patterns: `\d+%`, `\$[\d,]+[KMB]?`, `\d+ (users|customers|projects)`, `\d+[xX] improvement`
+>
+> See master plan Stage 3 for implementation details.
 
 ---
 
