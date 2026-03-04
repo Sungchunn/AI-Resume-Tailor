@@ -143,6 +143,196 @@ QUANTIFICATION_TARGET = 0.5       # 50% of achievement bullets should be quantif
 ACHIEVEMENT_RATIO_TARGET = 0.6    # 60% achievement vs responsibility ratio target
 ACTION_VERB_THRESHOLD = 0.8       # 80% of bullets should start with action verbs
 
+# ============================================================
+# Stage 4: Role Proximity Score Constants
+# ============================================================
+
+# Title abbreviation expansions for normalization
+TITLE_ABBREVIATIONS = {
+    "sr.": "senior",
+    "sr": "senior",
+    "jr.": "junior",
+    "jr": "junior",
+    "swe": "software engineer",
+    "sde": "software development engineer",
+    "pm": "product manager",
+    "eng": "engineer",
+    "engr": "engineer",
+    "mgr": "manager",
+    "vp": "vice president",
+    "dir": "director",
+    "cto": "chief technology officer",
+    "ceo": "chief executive officer",
+    "cfo": "chief financial officer",
+    "coo": "chief operating officer",
+    "svp": "senior vice president",
+    "evp": "executive vice president",
+    "avp": "assistant vice president",
+    "assoc": "associate",
+    "asst": "assistant",
+    "dev": "developer",
+    "devops": "devops engineer",
+    "sre": "site reliability engineer",
+    "qa": "quality assurance",
+    "ml": "machine learning",
+    "ai": "artificial intelligence",
+    "ux": "user experience",
+    "ui": "user interface",
+    "fe": "frontend",
+    "be": "backend",
+}
+
+# Seniority level hierarchy (higher number = more senior)
+LEVEL_HIERARCHY = {
+    "intern": 0,
+    "junior": 1,
+    "associate": 1,
+    "entry": 1,
+    "mid": 2,
+    "senior": 3,
+    "staff": 4,
+    "principal": 5,
+    "lead": 4,
+    "manager": 5,
+    "director": 6,
+    "vp": 7,
+    "vice president": 7,
+    "c-level": 8,
+    "chief": 8,
+    "head": 6,
+    "fellow": 5,
+    "distinguished": 5,
+}
+
+# Roman numeral and numeric level mappings
+NUMERIC_LEVEL_MAP = {
+    "i": 1, "1": 1,
+    "ii": 2, "2": 2,
+    "iii": 3, "3": 3,
+    "iv": 4, "4": 4,
+    "v": 5, "5": 5,
+}
+
+# Functional categories for title classification
+FUNCTION_CATEGORIES = {
+    "engineering": [
+        "engineer", "developer", "programmer", "architect", "swe", "sde",
+        "coder", "software", "backend", "frontend", "fullstack", "full-stack",
+        "full stack", "devops", "platform", "infrastructure", "embedded",
+    ],
+    "product": [
+        "product manager", "product owner", "pm", "product lead",
+        "product director", "product analyst",
+    ],
+    "design": [
+        "designer", "ux", "ui", "visual", "creative", "graphic",
+        "user experience", "user interface", "interaction",
+    ],
+    "data": [
+        "data scientist", "data analyst", "data engineer", "ml engineer",
+        "machine learning", "analytics", "bi ", "business intelligence",
+        "statistician", "quantitative",
+    ],
+    "devops": [
+        "devops", "sre", "site reliability", "infrastructure",
+        "platform engineer", "cloud engineer", "systems engineer",
+    ],
+    "management": [
+        "manager", "director", "vp", "vice president", "head of",
+        "chief", "lead", "supervisor", "team lead",
+    ],
+    "qa": [
+        "qa", "quality", "test", "sdet", "automation engineer",
+        "quality assurance", "testing",
+    ],
+    "security": [
+        "security", "infosec", "appsec", "cybersecurity", "penetration",
+        "vulnerability", "compliance",
+    ],
+    "sales": [
+        "sales", "account executive", "business development", "bdr", "sdr",
+        "account manager", "revenue",
+    ],
+    "marketing": [
+        "marketing", "growth", "brand", "content", "seo", "sem",
+        "demand generation", "campaign",
+    ],
+    "support": [
+        "support", "customer success", "customer service", "help desk",
+        "technical support", "solutions engineer",
+    ],
+}
+
+# Industry taxonomy with adjacencies
+INDUSTRY_TAXONOMY = {
+    "tech": {
+        "names": ["technology", "software", "saas", "tech", "startup", "digital"],
+        "adjacent": ["fintech", "healthtech", "edtech", "media", "telecom"],
+    },
+    "fintech": {
+        "names": ["fintech", "financial technology"],
+        "adjacent": ["tech", "finance", "banking"],
+    },
+    "finance": {
+        "names": ["finance", "banking", "investment", "financial services", "wealth management"],
+        "adjacent": ["fintech", "insurance", "consulting", "accounting"],
+    },
+    "healthcare": {
+        "names": ["healthcare", "health", "medical", "pharma", "biotech", "life sciences"],
+        "adjacent": ["healthtech", "insurance", "research"],
+    },
+    "healthtech": {
+        "names": ["healthtech", "health tech", "digital health"],
+        "adjacent": ["healthcare", "tech"],
+    },
+    "retail": {
+        "names": ["retail", "ecommerce", "e-commerce", "consumer goods", "cpg"],
+        "adjacent": ["logistics", "marketing", "tech"],
+    },
+    "media": {
+        "names": ["media", "entertainment", "streaming", "gaming", "publishing"],
+        "adjacent": ["tech", "marketing", "advertising"],
+    },
+    "consulting": {
+        "names": ["consulting", "professional services", "advisory"],
+        "adjacent": ["finance", "tech", "management"],
+    },
+    "manufacturing": {
+        "names": ["manufacturing", "industrial", "automotive", "aerospace"],
+        "adjacent": ["logistics", "engineering"],
+    },
+    "education": {
+        "names": ["education", "edtech", "academic", "university", "school"],
+        "adjacent": ["tech", "research", "nonprofit"],
+    },
+    "government": {
+        "names": ["government", "public sector", "federal", "state", "municipal"],
+        "adjacent": ["defense", "consulting", "nonprofit"],
+    },
+}
+
+# Trajectory type score modifiers
+TRAJECTORY_MODIFIERS = {
+    "progressing_toward": 20,    # Natural next step up
+    "lateral": 10,               # Same level, same function
+    "slight_stretch": 5,         # One level up, achievable
+    "step_down": -10,            # Moving to lower level
+    "large_gap": -15,            # 3+ level jump
+    "career_change": -5,         # Different function
+    "unclear": 0,                # Cannot determine
+}
+
+# Trajectory type (used for typing)
+TrajectoryType = Literal[
+    "progressing_toward",
+    "lateral",
+    "slight_stretch",
+    "step_down",
+    "large_gap",
+    "career_change",
+    "unclear",
+]
+
 # Severity levels for knockout risks
 KnockoutSeverity = Literal["critical", "warning", "info"]
 
@@ -434,6 +624,78 @@ class ContentQualityResult:
     total_bullets_analyzed: int
     high_quality_bullets: int  # Score > 0.7
     low_quality_bullets: int   # Score < 0.4
+
+
+# ============================================================
+# Stage 4: Role Proximity Score Dataclasses
+# ============================================================
+
+
+@dataclass
+class TitleMatchResult:
+    """Result of title similarity analysis."""
+    resume_title: str  # Most recent job title from resume
+    job_title: str  # Target job title
+    normalized_resume_title: str  # After normalization
+    normalized_job_title: str  # After normalization
+    similarity_score: float  # 0-1 semantic similarity
+    title_score: float  # 0-100 converted score
+    resume_level: int  # Extracted seniority level
+    job_level: int  # Extracted seniority level
+    level_gap: int  # job_level - resume_level
+    resume_function: str  # Functional category
+    job_function: str  # Functional category
+    function_match: bool  # Whether functions match
+
+
+@dataclass
+class TrajectoryResult:
+    """Result of career trajectory analysis."""
+    trajectory_type: TrajectoryType
+    modifier: int  # Score modifier (-20 to +20)
+    current_level: int  # Most recent role level
+    target_level: int  # Target job level
+    level_gap: int  # target - current
+    level_progression: list[int]  # Historical levels from oldest to newest
+    is_ascending: bool  # Whether career has been progressing upward
+    function_match: bool  # Whether moving in same function
+    explanation: str  # Human-readable explanation
+
+
+@dataclass
+class IndustryAlignmentResult:
+    """Result of industry alignment analysis."""
+    resume_industries: list[str]  # Industries detected from resume
+    most_recent_industry: str  # Industry from most recent role
+    target_industry: str  # Industry of target job
+    alignment_type: Literal["same", "adjacent", "unrelated"]
+    modifier: int  # Score modifier (0 to +10)
+
+
+@dataclass
+class RoleProximityResult:
+    """
+    Result of Stage 4 Role Proximity Score analysis.
+
+    Combines:
+    - Title similarity (semantic + structural)
+    - Career trajectory analysis
+    - Industry alignment
+    """
+    # Overall score (0-100)
+    role_proximity_score: float
+
+    # Component results
+    title_match: TitleMatchResult
+    trajectory: TrajectoryResult
+    industry_alignment: IndustryAlignmentResult
+
+    # Human-readable summary
+    explanation: str
+
+    # Actionable insights
+    concerns: list[str]  # e.g., ["Large level gap: Junior → Staff"]
+    strengths: list[str]  # e.g., ["Same industry", "Clear progression"]
 
 
 class ATSAnalyzer:
@@ -3006,6 +3268,586 @@ Do not include common generic words like "experience", "ability", "skills".
             total_bullets_analyzed=len(bullet_analyses),
             high_quality_bullets=high_quality,
             low_quality_bullets=low_quality,
+        )
+
+    # ============================================================
+    # Stage 4: Role Proximity Score Methods
+    # ============================================================
+
+    def _normalize_title(self, title: str) -> str:
+        """
+        Normalize a job title for comparison.
+
+        Expands abbreviations, removes special characters, and
+        converts to lowercase for consistent matching.
+
+        Examples:
+            "Sr. Software Engineer" → "senior software engineer"
+            "SWE III" → "software engineer iii"
+            "Full-Stack Developer" → "full stack developer"
+        """
+        if not title:
+            return ""
+
+        title = title.lower().strip()
+
+        # Expand abbreviations (sort by length descending to avoid partial matches)
+        sorted_abbrevs = sorted(
+            TITLE_ABBREVIATIONS.items(),
+            key=lambda x: len(x[0]),
+            reverse=True
+        )
+        for abbrev, full in sorted_abbrevs:
+            # Use word boundary matching to avoid partial replacements
+            title = re.sub(rf'\b{re.escape(abbrev)}\b', full, title)
+
+        # Remove special characters but keep spaces
+        title = re.sub(r'[^\w\s]', ' ', title)
+
+        # Collapse multiple spaces
+        title = re.sub(r'\s+', ' ', title)
+
+        return title.strip()
+
+    def _extract_level(self, title: str) -> int:
+        """
+        Extract seniority level from a job title.
+
+        Returns an integer representing seniority (0=intern, 8=c-level).
+        Default is 2 (mid-level) if no level indicators found.
+
+        Args:
+            title: Job title (original or normalized)
+
+        Returns:
+            Integer seniority level (0-8)
+        """
+        if not title:
+            return 2  # Default to mid-level
+
+        title_lower = title.lower()
+
+        # Check for explicit level keywords
+        for level_name, level_rank in LEVEL_HIERARCHY.items():
+            if level_name in title_lower:
+                return level_rank
+
+        # Check for numeric levels (I, II, III, IV, V or 1, 2, 3, 4, 5)
+        # Look for patterns like "Engineer II" or "Level 3"
+        numeric_match = re.search(r'\b(?:level\s*)?([iv]+|\d)\b', title_lower)
+        if numeric_match:
+            level_str = numeric_match.group(1).lower()
+            if level_str in NUMERIC_LEVEL_MAP:
+                numeric_level = NUMERIC_LEVEL_MAP[level_str]
+                # Map numeric levels: 1=junior, 2=mid, 3=senior, 4=staff, 5=principal
+                level_mapping = {1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
+                return level_mapping.get(numeric_level, 2)
+
+        # Default to mid-level if no indicators found
+        return 2
+
+    def _extract_function(self, title: str) -> str:
+        """
+        Extract functional category from a job title.
+
+        Returns a category string like "engineering", "product", "design".
+        Returns "other" if no category matches.
+
+        Args:
+            title: Job title (original or normalized)
+
+        Returns:
+            Functional category string
+        """
+        if not title:
+            return "other"
+
+        title_lower = title.lower()
+
+        # Check against function categories (order matters for priority)
+        # Check more specific categories first
+        category_priority = [
+            "product", "design", "data", "devops", "security",
+            "qa", "sales", "marketing", "support", "engineering", "management"
+        ]
+
+        for category in category_priority:
+            if category in FUNCTION_CATEGORIES:
+                for keyword in FUNCTION_CATEGORIES[category]:
+                    if keyword in title_lower:
+                        return category
+
+        return "other"
+
+    def _extract_industry(self, company: str, context: str = "") -> str:
+        """
+        Infer industry from company name and context.
+
+        This is a heuristic-based approach that looks for industry
+        keywords in the company name and any additional context.
+
+        Args:
+            company: Company name
+            context: Additional context (role description, job posting text)
+
+        Returns:
+            Industry identifier string
+        """
+        combined = f"{company} {context}".lower()
+
+        for industry, data in INDUSTRY_TAXONOMY.items():
+            for name in data["names"]:
+                if name in combined:
+                    return industry
+
+        return "other"
+
+    async def _calculate_title_similarity(
+        self,
+        resume_title: str,
+        job_title: str,
+    ) -> float:
+        """
+        Calculate semantic similarity between two job titles.
+
+        Uses embeddings to compute cosine similarity, which captures
+        semantic meaning beyond exact string matching.
+
+        Args:
+            resume_title: Candidate's job title (normalized)
+            job_title: Target job title (normalized)
+
+        Returns:
+            Similarity score 0-1
+        """
+        from app.services.ai.embedding import get_embedding_service
+        import numpy as np
+
+        embedding_service = get_embedding_service()
+
+        # Get embeddings for both titles
+        try:
+            resume_embedding = await embedding_service.embed_for_similarity(resume_title)
+            job_embedding = await embedding_service.embed_for_similarity(job_title)
+
+            # Calculate cosine similarity
+            resume_vec = np.array(resume_embedding)
+            job_vec = np.array(job_embedding)
+
+            # Cosine similarity = dot(A, B) / (norm(A) * norm(B))
+            dot_product = np.dot(resume_vec, job_vec)
+            norm_resume = np.linalg.norm(resume_vec)
+            norm_job = np.linalg.norm(job_vec)
+
+            if norm_resume == 0 or norm_job == 0:
+                return 0.0
+
+            similarity = dot_product / (norm_resume * norm_job)
+
+            # Clamp to 0-1 range
+            return max(0.0, min(1.0, float(similarity)))
+
+        except Exception:
+            # Fallback to basic string matching if embeddings fail
+            return self._basic_title_similarity(resume_title, job_title)
+
+    def _basic_title_similarity(self, title1: str, title2: str) -> float:
+        """
+        Basic title similarity using word overlap.
+
+        Used as fallback when embedding service is unavailable.
+        """
+        words1 = set(title1.lower().split())
+        words2 = set(title2.lower().split())
+
+        if not words1 or not words2:
+            return 0.0
+
+        intersection = words1 & words2
+        union = words1 | words2
+
+        # Jaccard similarity
+        return len(intersection) / len(union)
+
+    def _calculate_trajectory_score(
+        self,
+        experience_entries: list[dict[str, Any]],
+        target_title: str,
+        target_level: int,
+        target_function: str,
+    ) -> TrajectoryResult:
+        """
+        Analyze career trajectory relative to target role.
+
+        Examines:
+        - Level progression over career history
+        - Whether candidate is moving toward or away from target
+        - Function alignment (same career track)
+
+        Args:
+            experience_entries: List of experience entries with 'title' key
+            target_title: Target job title
+            target_level: Extracted level from target title
+            target_function: Functional category of target role
+
+        Returns:
+            TrajectoryResult with analysis and modifier
+        """
+        if not experience_entries:
+            return TrajectoryResult(
+                trajectory_type="unclear",
+                modifier=0,
+                current_level=2,
+                target_level=target_level,
+                level_gap=target_level - 2,
+                level_progression=[],
+                is_ascending=False,
+                function_match=False,
+                explanation="Unable to analyze trajectory: no experience entries found",
+            )
+
+        # Extract levels from all experience entries
+        # Assume entries are ordered most recent first, so reverse for chronological
+        levels: list[int] = []
+        functions: list[str] = []
+
+        for entry in reversed(experience_entries):
+            title = entry.get("title", "")
+            if title:
+                normalized = self._normalize_title(title)
+                levels.append(self._extract_level(normalized))
+                functions.append(self._extract_function(normalized))
+
+        if not levels:
+            return TrajectoryResult(
+                trajectory_type="unclear",
+                modifier=0,
+                current_level=2,
+                target_level=target_level,
+                level_gap=target_level - 2,
+                level_progression=[],
+                is_ascending=False,
+                function_match=False,
+                explanation="Unable to analyze trajectory: no titles found in experience",
+            )
+
+        # Get current (most recent) level and function
+        current_level = levels[-1]
+        current_function = functions[-1] if functions else "other"
+
+        # Check if levels are generally ascending
+        is_ascending = True
+        for i in range(len(levels) - 1):
+            if levels[i + 1] < levels[i]:
+                is_ascending = False
+                break
+
+        # Calculate level gap
+        level_gap = target_level - current_level
+
+        # Determine function match
+        function_match = current_function == target_function
+
+        # Determine trajectory type and modifier
+        if level_gap == 1 and function_match:
+            # Perfect: one level up in same function
+            trajectory_type: TrajectoryType = "progressing_toward"
+            modifier = TRAJECTORY_MODIFIERS["progressing_toward"]
+            explanation = "This role is a natural next step in your career progression"
+        elif level_gap == 0 and function_match:
+            # Lateral move in same function
+            trajectory_type = "lateral"
+            modifier = TRAJECTORY_MODIFIERS["lateral"]
+            explanation = "This is a lateral move at your current level"
+        elif level_gap == 2 and function_match:
+            # Slight stretch
+            trajectory_type = "slight_stretch"
+            modifier = TRAJECTORY_MODIFIERS["slight_stretch"]
+            explanation = "This role is a stretch but achievable with your experience"
+        elif level_gap < 0:
+            # Step down
+            trajectory_type = "step_down"
+            modifier = TRAJECTORY_MODIFIERS["step_down"]
+            explanation = f"This role is at a lower level than your current position (level {current_level} → {target_level})"
+        elif level_gap > 2:
+            # Too big a jump
+            trajectory_type = "large_gap"
+            modifier = TRAJECTORY_MODIFIERS["large_gap"]
+            explanation = f"This role represents a significant level jump ({level_gap} levels) that may be difficult to achieve directly"
+        elif not function_match and level_gap >= 0:
+            # Career change
+            trajectory_type = "career_change"
+            modifier = TRAJECTORY_MODIFIERS["career_change"]
+            explanation = f"This represents a career change from {current_function} to {target_function}"
+        else:
+            trajectory_type = "unclear"
+            modifier = TRAJECTORY_MODIFIERS["unclear"]
+            explanation = "Career trajectory is unclear based on available information"
+
+        return TrajectoryResult(
+            trajectory_type=trajectory_type,
+            modifier=modifier,
+            current_level=current_level,
+            target_level=target_level,
+            level_gap=level_gap,
+            level_progression=levels,
+            is_ascending=is_ascending,
+            function_match=function_match,
+            explanation=explanation,
+        )
+
+    def _calculate_industry_alignment(
+        self,
+        experience_entries: list[dict[str, Any]],
+        target_company: str,
+        target_context: str = "",
+    ) -> IndustryAlignmentResult:
+        """
+        Calculate industry alignment between candidate and target role.
+
+        Args:
+            experience_entries: List of experience entries with 'company' key
+            target_company: Target company name
+            target_context: Additional context about target role
+
+        Returns:
+            IndustryAlignmentResult with alignment score
+        """
+        # Extract industries from experience
+        resume_industries: list[str] = []
+        for entry in experience_entries:
+            company = entry.get("company", "")
+            description = entry.get("description", "")
+            if company:
+                industry = self._extract_industry(company, description)
+                if industry not in resume_industries:
+                    resume_industries.append(industry)
+
+        # Get most recent industry
+        most_recent_industry = resume_industries[0] if resume_industries else "other"
+
+        # Get target industry
+        target_industry = self._extract_industry(target_company, target_context)
+
+        # Determine alignment
+        if most_recent_industry == target_industry:
+            alignment_type: Literal["same", "adjacent", "unrelated"] = "same"
+            modifier = 10
+        elif target_industry in INDUSTRY_TAXONOMY:
+            adjacent = INDUSTRY_TAXONOMY[target_industry].get("adjacent", [])
+            if most_recent_industry in adjacent:
+                alignment_type = "adjacent"
+                modifier = 5
+            else:
+                alignment_type = "unrelated"
+                modifier = 0
+        else:
+            alignment_type = "unrelated"
+            modifier = 0
+
+        return IndustryAlignmentResult(
+            resume_industries=resume_industries,
+            most_recent_industry=most_recent_industry,
+            target_industry=target_industry,
+            alignment_type=alignment_type,
+            modifier=modifier,
+        )
+
+    def _generate_role_proximity_explanation(
+        self,
+        title_match: TitleMatchResult,
+        trajectory: TrajectoryResult,
+        industry_alignment: IndustryAlignmentResult,
+    ) -> str:
+        """Generate a human-readable explanation of role proximity analysis."""
+        parts = []
+
+        # Title match explanation
+        if title_match.title_score >= 80:
+            parts.append(
+                f"Your title '{title_match.resume_title}' closely matches "
+                f"the target role '{title_match.job_title}'"
+            )
+        elif title_match.title_score >= 50:
+            parts.append(
+                f"Your title '{title_match.resume_title}' is somewhat related "
+                f"to the target role"
+            )
+        else:
+            parts.append(
+                f"Your title '{title_match.resume_title}' differs significantly "
+                f"from '{title_match.job_title}'"
+            )
+
+        # Trajectory explanation
+        parts.append(trajectory.explanation)
+
+        # Industry explanation
+        if industry_alignment.alignment_type == "same":
+            parts.append("You have direct industry experience")
+        elif industry_alignment.alignment_type == "adjacent":
+            parts.append("You have experience in a related industry")
+
+        return ". ".join(parts) + "."
+
+    def _generate_role_proximity_insights(
+        self,
+        title_match: TitleMatchResult,
+        trajectory: TrajectoryResult,
+        industry_alignment: IndustryAlignmentResult,
+    ) -> tuple[list[str], list[str]]:
+        """Generate concerns and strengths for role proximity."""
+        concerns: list[str] = []
+        strengths: list[str] = []
+
+        # Title-related insights
+        if not title_match.function_match:
+            concerns.append(
+                f"Function mismatch: {title_match.resume_function} → {title_match.job_function}"
+            )
+        elif title_match.title_score >= 80:
+            strengths.append("Strong title alignment with target role")
+
+        # Level-related insights
+        if title_match.level_gap > 2:
+            concerns.append(
+                f"Large level gap: {title_match.level_gap} levels between current and target"
+            )
+        elif title_match.level_gap == 1:
+            strengths.append("Target role is a natural next step (one level up)")
+        elif title_match.level_gap == 0:
+            strengths.append("Target role is at same seniority level")
+        elif title_match.level_gap < 0:
+            concerns.append(
+                f"Step down: target role is {abs(title_match.level_gap)} level(s) below current"
+            )
+
+        # Trajectory insights
+        if trajectory.is_ascending:
+            strengths.append("Career shows clear upward progression")
+        if trajectory.trajectory_type == "career_change":
+            concerns.append(
+                f"Career change from {trajectory.function_match} may require additional positioning"
+            )
+
+        # Industry insights
+        if industry_alignment.alignment_type == "same":
+            strengths.append(f"Direct {industry_alignment.most_recent_industry} industry experience")
+        elif industry_alignment.alignment_type == "adjacent":
+            strengths.append("Experience in adjacent industry")
+        elif industry_alignment.most_recent_industry != "other":
+            concerns.append(
+                f"Moving from {industry_alignment.most_recent_industry} to "
+                f"{industry_alignment.target_industry} industry"
+            )
+
+        return concerns, strengths
+
+    async def calculate_role_proximity_score(
+        self,
+        parsed_resume: dict[str, Any],
+        parsed_job: dict[str, Any],
+    ) -> RoleProximityResult:
+        """
+        Calculate the Stage 4 Role Proximity Score.
+
+        This score measures how closely the candidate's career trajectory
+        aligns with the target role, combining:
+        - Title similarity (semantic and structural)
+        - Career trajectory analysis
+        - Industry alignment
+
+        Args:
+            parsed_resume: Structured resume content with 'experience' key
+            parsed_job: Parsed job content with 'title' and 'company' keys
+
+        Returns:
+            RoleProximityResult with score and detailed breakdown
+        """
+        # Extract experience entries
+        experience_entries = parsed_resume.get("experience", [])
+
+        # Get target job info
+        target_title = parsed_job.get("title", "")
+        target_company = parsed_job.get("company", "")
+        job_summary = parsed_job.get("summary", "")
+
+        # Get most recent job title from resume
+        resume_title = ""
+        if experience_entries:
+            resume_title = experience_entries[0].get("title", "")
+
+        # Normalize titles
+        normalized_resume_title = self._normalize_title(resume_title)
+        normalized_job_title = self._normalize_title(target_title)
+
+        # Calculate title similarity (async - uses embeddings)
+        similarity_score = await self._calculate_title_similarity(
+            normalized_resume_title,
+            normalized_job_title,
+        )
+        title_score = similarity_score * 100
+
+        # Extract levels and functions
+        resume_level = self._extract_level(normalized_resume_title)
+        job_level = self._extract_level(normalized_job_title)
+        resume_function = self._extract_function(normalized_resume_title)
+        job_function = self._extract_function(normalized_job_title)
+
+        # Build title match result
+        title_match = TitleMatchResult(
+            resume_title=resume_title,
+            job_title=target_title,
+            normalized_resume_title=normalized_resume_title,
+            normalized_job_title=normalized_job_title,
+            similarity_score=similarity_score,
+            title_score=round(title_score, 1),
+            resume_level=resume_level,
+            job_level=job_level,
+            level_gap=job_level - resume_level,
+            resume_function=resume_function,
+            job_function=job_function,
+            function_match=resume_function == job_function,
+        )
+
+        # Calculate trajectory score
+        trajectory = self._calculate_trajectory_score(
+            experience_entries,
+            target_title,
+            job_level,
+            job_function,
+        )
+
+        # Calculate industry alignment
+        industry_alignment = self._calculate_industry_alignment(
+            experience_entries,
+            target_company,
+            job_summary,
+        )
+
+        # Combine scores
+        # Title similarity is the base, modifiers adjust
+        raw_score = title_score + trajectory.modifier + industry_alignment.modifier
+
+        # Clamp to 0-100
+        role_proximity_score = max(0.0, min(100.0, raw_score))
+
+        # Generate explanation and insights
+        explanation = self._generate_role_proximity_explanation(
+            title_match, trajectory, industry_alignment
+        )
+        concerns, strengths = self._generate_role_proximity_insights(
+            title_match, trajectory, industry_alignment
+        )
+
+        return RoleProximityResult(
+            role_proximity_score=round(role_proximity_score, 1),
+            title_match=title_match,
+            trajectory=trajectory,
+            industry_alignment=industry_alignment,
+            explanation=explanation,
+            concerns=concerns,
+            strengths=strengths,
         )
 
 
