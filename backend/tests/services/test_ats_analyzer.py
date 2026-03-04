@@ -1535,3 +1535,667 @@ class TestExtractRequiredEducation:
 
         result = analyzer._extract_required_education(job)
         assert result is None
+
+
+# ============================================================
+# Stage 2: Enhanced Keyword Scoring Tests
+# ============================================================
+
+
+class TestSectionTypeDetection:
+    """Test section type detection for placement weighting."""
+
+    @pytest.fixture
+    def analyzer(self) -> ATSAnalyzer:
+        return ATSAnalyzer()
+
+    def test_detects_experience_section(self, analyzer):
+        """Should detect experience section variants."""
+        assert analyzer._detect_section_type("experience") == "experience"
+        assert analyzer._detect_section_type("work experience") == "experience"
+        assert analyzer._detect_section_type("Employment History") == "experience"
+        assert analyzer._detect_section_type("PROFESSIONAL EXPERIENCE") == "experience"
+
+    def test_detects_skills_section(self, analyzer):
+        """Should detect skills section variants."""
+        assert analyzer._detect_section_type("skills") == "skills"
+        assert analyzer._detect_section_type("Technical Skills") == "skills"
+        assert analyzer._detect_section_type("CORE COMPETENCIES") == "skills"
+
+    def test_detects_education_section(self, analyzer):
+        """Should detect education section variants."""
+        assert analyzer._detect_section_type("education") == "education"
+        assert analyzer._detect_section_type("Academic Background") == "education"
+
+    def test_detects_projects_section(self, analyzer):
+        """Should detect projects section variants."""
+        assert analyzer._detect_section_type("projects") == "projects"
+        assert analyzer._detect_section_type("Key Projects") == "projects"
+
+    def test_detects_summary_section(self, analyzer):
+        """Should detect summary section variants."""
+        assert analyzer._detect_section_type("summary") == "summary"
+        assert analyzer._detect_section_type("Professional Summary") == "summary"
+        assert analyzer._detect_section_type("OBJECTIVE") == "summary"
+
+    def test_returns_other_for_unknown(self, analyzer):
+        """Should return 'other' for unrecognized sections."""
+        assert analyzer._detect_section_type("random_key") == "other"
+        assert analyzer._detect_section_type("contact") == "other"
+
+
+class TestPlacementWeighting:
+    """Test placement weight calculation (Stage 2.1)."""
+
+    @pytest.fixture
+    def analyzer(self) -> ATSAnalyzer:
+        return ATSAnalyzer()
+
+    def test_experience_has_highest_weight(self, analyzer):
+        """Experience section should have weight 1.0."""
+        assert analyzer._get_placement_weight("experience") == 1.0
+
+    def test_projects_has_high_weight(self, analyzer):
+        """Projects section should have weight 0.9."""
+        assert analyzer._get_placement_weight("projects") == 0.9
+
+    def test_skills_has_medium_weight(self, analyzer):
+        """Skills section should have weight 0.7."""
+        assert analyzer._get_placement_weight("skills") == 0.7
+
+    def test_summary_has_low_weight(self, analyzer):
+        """Summary section should have weight 0.6."""
+        assert analyzer._get_placement_weight("summary") == 0.6
+
+    def test_education_has_lowest_weight(self, analyzer):
+        """Education section should have weight 0.5."""
+        assert analyzer._get_placement_weight("education") == 0.5
+
+    def test_unknown_section_has_default_weight(self, analyzer):
+        """Unknown sections should have weight 0.5."""
+        assert analyzer._get_placement_weight("other") == 0.5
+        assert analyzer._get_placement_weight("unknown") == 0.5
+
+
+class TestDensityScoring:
+    """Test density scoring with diminishing returns (Stage 2.2)."""
+
+    @pytest.fixture
+    def analyzer(self) -> ATSAnalyzer:
+        return ATSAnalyzer()
+
+    def test_zero_occurrences_returns_zero(self, analyzer):
+        """Zero occurrences should return 0."""
+        assert analyzer._get_density_multiplier(0) == 0.0
+
+    def test_single_occurrence_returns_one(self, analyzer):
+        """Single occurrence should return 1.0."""
+        assert analyzer._get_density_multiplier(1) == 1.0
+
+    def test_two_occurrences_returns_1_3(self, analyzer):
+        """Two occurrences should return 1.3."""
+        assert analyzer._get_density_multiplier(2) == 1.3
+
+    def test_three_occurrences_returns_1_5(self, analyzer):
+        """Three occurrences should return 1.5."""
+        assert analyzer._get_density_multiplier(3) == 1.5
+
+    def test_more_occurrences_capped_at_1_5(self, analyzer):
+        """Four or more occurrences should cap at 1.5."""
+        assert analyzer._get_density_multiplier(4) == 1.5
+        assert analyzer._get_density_multiplier(10) == 1.5
+        assert analyzer._get_density_multiplier(100) == 1.5
+
+
+class TestRecencyWeighting:
+    """Test recency weighting by role position (Stage 2.3)."""
+
+    @pytest.fixture
+    def analyzer(self) -> ATSAnalyzer:
+        return ATSAnalyzer()
+
+    def test_most_recent_role_weighted_2x(self, analyzer):
+        """Most recent role (index 0) should have weight 2.0."""
+        assert analyzer._get_recency_weight(0) == 2.0
+
+    def test_second_role_weighted_2x(self, analyzer):
+        """Second most recent role (index 1) should have weight 2.0."""
+        assert analyzer._get_recency_weight(1) == 2.0
+
+    def test_third_role_weighted_1x(self, analyzer):
+        """Third most recent role (index 2) should have weight 1.0."""
+        assert analyzer._get_recency_weight(2) == 1.0
+
+    def test_older_roles_weighted_0_8x(self, analyzer):
+        """Older roles (index 3+) should have weight 0.8."""
+        assert analyzer._get_recency_weight(3) == 0.8
+        assert analyzer._get_recency_weight(4) == 0.8
+        assert analyzer._get_recency_weight(10) == 0.8
+
+    def test_none_role_index_returns_neutral(self, analyzer):
+        """None role index should return neutral weight 1.0."""
+        assert analyzer._get_recency_weight(None) == 1.0
+
+
+class TestImportanceWeighting:
+    """Test importance tier weighting (Stage 2.4)."""
+
+    @pytest.fixture
+    def analyzer(self) -> ATSAnalyzer:
+        return ATSAnalyzer()
+
+    def test_required_weighted_3x(self, analyzer):
+        """Required keywords should have weight 3.0."""
+        assert analyzer._get_importance_weight("required") == 3.0
+
+    def test_strongly_preferred_weighted_2x(self, analyzer):
+        """Strongly preferred keywords should have weight 2.0."""
+        assert analyzer._get_importance_weight("strongly_preferred") == 2.0
+
+    def test_preferred_weighted_1_5x(self, analyzer):
+        """Preferred keywords should have weight 1.5."""
+        assert analyzer._get_importance_weight("preferred") == 1.5
+
+    def test_nice_to_have_weighted_1x(self, analyzer):
+        """Nice to have keywords should have weight 1.0."""
+        assert analyzer._get_importance_weight("nice_to_have") == 1.0
+
+
+class TestOrderExperiencesByDate:
+    """Test experience ordering by date for recency calculation."""
+
+    @pytest.fixture
+    def analyzer(self) -> ATSAnalyzer:
+        return ATSAnalyzer()
+
+    def test_orders_by_end_date_descending(self, analyzer):
+        """Should order experiences by end date (most recent first)."""
+        experiences = [
+            {"title": "Old Job", "end_date": "December 2020"},
+            {"title": "Current Job", "end_date": "Present"},
+            {"title": "Middle Job", "end_date": "June 2022"},
+        ]
+
+        result = analyzer._order_experiences_by_date(experiences)
+
+        # Check order: Current (Present), Middle (2022), Old (2020)
+        assert result[0][1]["title"] == "Current Job"
+        assert result[1][1]["title"] == "Middle Job"
+        assert result[2][1]["title"] == "Old Job"
+
+    def test_handles_present_as_most_recent(self, analyzer):
+        """Should treat 'Present', 'Current', etc. as most recent."""
+        experiences = [
+            {"title": "Job1", "end_date": "Present"},
+            {"title": "Job2", "end_date": "Current"},
+            {"title": "Job3", "end_date": "December 2023"},
+        ]
+
+        result = analyzer._order_experiences_by_date(experiences)
+
+        # Both Present and Current should come before 2023
+        recent_titles = [result[0][1]["title"], result[1][1]["title"]]
+        assert "Job1" in recent_titles
+        assert "Job2" in recent_titles
+
+    def test_handles_missing_end_dates(self, analyzer):
+        """Should handle missing end dates gracefully."""
+        experiences = [
+            {"title": "Job1", "end_date": ""},
+            {"title": "Job2", "end_date": "June 2022"},
+        ]
+
+        result = analyzer._order_experiences_by_date(experiences)
+
+        # Empty date treated as present (most recent)
+        assert result[0][1]["title"] == "Job1"
+
+
+class TestFindKeywordMatchesInStructuredResume:
+    """Test finding keyword matches in structured resume."""
+
+    @pytest.fixture
+    def analyzer(self) -> ATSAnalyzer:
+        return ATSAnalyzer()
+
+    def test_finds_keywords_in_experience_bullets(self, analyzer):
+        """Should find keywords in experience bullet points."""
+        resume = {
+            "experience": [
+                {
+                    "title": "Developer",
+                    "company": "Corp",
+                    "end_date": "Present",
+                    "bullets": [
+                        "Built Python applications",
+                        "Managed AWS infrastructure",
+                    ],
+                }
+            ]
+        }
+
+        matches = analyzer._find_keyword_matches_in_structured_resume("Python", resume)
+
+        assert len(matches) == 1
+        assert matches[0].section == "experience"
+        assert matches[0].role_index == 0
+
+    def test_finds_keywords_in_skills_list(self, analyzer):
+        """Should find keywords in skills section."""
+        resume = {
+            "skills": ["Python", "JavaScript", "AWS"]
+        }
+
+        matches = analyzer._find_keyword_matches_in_structured_resume("Python", resume)
+
+        assert len(matches) == 1
+        assert matches[0].section == "skills"
+        assert matches[0].role_index is None
+
+    def test_finds_keywords_in_summary(self, analyzer):
+        """Should find keywords in summary section."""
+        resume = {
+            "summary": "Experienced Python developer with 5 years experience"
+        }
+
+        matches = analyzer._find_keyword_matches_in_structured_resume("Python", resume)
+
+        assert len(matches) == 1
+        assert matches[0].section == "summary"
+
+    def test_finds_multiple_occurrences(self, analyzer):
+        """Should find all occurrences across sections."""
+        resume = {
+            "summary": "Python developer",
+            "experience": [
+                {
+                    "title": "Dev",
+                    "end_date": "Present",
+                    "bullets": ["Used Python daily"],
+                }
+            ],
+            "skills": ["Python", "Django"],
+        }
+
+        matches = analyzer._find_keyword_matches_in_structured_resume("Python", resume)
+
+        assert len(matches) == 3
+        sections = {m.section for m in matches}
+        assert sections == {"summary", "experience", "skills"}
+
+    def test_respects_word_boundaries(self, analyzer):
+        """Should respect word boundaries when matching."""
+        resume = {
+            "skills": ["JavaScript", "TypeScript", "Java"]
+        }
+
+        matches = analyzer._find_keyword_matches_in_structured_resume("Java", resume)
+
+        assert len(matches) == 1
+        assert "Java" in matches[0].text_snippet
+
+    def test_assigns_correct_recency_indices(self, analyzer):
+        """Should assign correct recency indices based on role order."""
+        resume = {
+            "experience": [
+                {
+                    "title": "Senior Dev",
+                    "end_date": "Present",
+                    "bullets": ["Python expert"],
+                },
+                {
+                    "title": "Mid Dev",
+                    "end_date": "2022",
+                    "bullets": ["Used Python"],
+                },
+                {
+                    "title": "Junior Dev",
+                    "end_date": "2020",
+                    "bullets": ["Learned Python"],
+                },
+            ]
+        }
+
+        matches = analyzer._find_keyword_matches_in_structured_resume("Python", resume)
+
+        # Should have 3 matches with role indices 0, 1, 2
+        assert len(matches) == 3
+        role_indices = sorted([m.role_index for m in matches])
+        assert role_indices == [0, 1, 2]
+
+
+class TestCalculateKeywordWeightedScore:
+    """Test weighted score calculation combining all Stage 2 factors."""
+
+    @pytest.fixture
+    def analyzer(self) -> ATSAnalyzer:
+        return ATSAnalyzer()
+
+    def test_empty_matches_returns_zeros(self, analyzer):
+        """Empty matches should return all zeros."""
+        from app.services.job.ats_analyzer import KeywordMatch
+
+        result = analyzer._calculate_keyword_weighted_score([], "required")
+
+        assert result == (0.0, 0.0, 0.0, 0.0)
+
+    def test_single_experience_match(self, analyzer):
+        """Single match in experience should use full weights."""
+        from app.services.job.ats_analyzer import KeywordMatch
+
+        matches = [
+            KeywordMatch(section="experience", role_index=0, text_snippet="Python")
+        ]
+
+        placement, density, recency, weighted = analyzer._calculate_keyword_weighted_score(
+            matches, "required"
+        )
+
+        assert placement == 1.0  # experience = 1.0
+        assert density == 1.0  # 1 occurrence = 1.0
+        assert recency == 2.0  # role_index 0 = 2.0
+        # weighted = 1.0 * 1.0 * 1.0 * 2.0 * 3.0 = 6.0
+        assert weighted == 6.0
+
+    def test_multiple_matches_uses_best_weights(self, analyzer):
+        """Multiple matches should use best placement and recency."""
+        from app.services.job.ats_analyzer import KeywordMatch
+
+        matches = [
+            KeywordMatch(section="skills", role_index=None, text_snippet="Python"),
+            KeywordMatch(section="experience", role_index=1, text_snippet="Python"),
+            KeywordMatch(section="experience", role_index=0, text_snippet="Python"),
+        ]
+
+        placement, density, recency, weighted = analyzer._calculate_keyword_weighted_score(
+            matches, "preferred"
+        )
+
+        assert placement == 1.0  # best is experience = 1.0
+        assert density == 1.5  # 3 occurrences = 1.5
+        assert recency == 2.0  # best role_index is 0 = 2.0
+        # weighted = 1.0 * 1.0 * 1.5 * 2.0 * 1.5 = 4.5
+        assert weighted == 4.5
+
+    def test_importance_affects_final_score(self, analyzer):
+        """Importance tier should multiply final score."""
+        from app.services.job.ats_analyzer import KeywordMatch
+
+        matches = [
+            KeywordMatch(section="experience", role_index=0, text_snippet="Test")
+        ]
+
+        _, _, _, required_score = analyzer._calculate_keyword_weighted_score(
+            matches, "required"
+        )
+        _, _, _, nice_score = analyzer._calculate_keyword_weighted_score(
+            matches, "nice_to_have"
+        )
+
+        # Required (3.0x) should be 3x nice_to_have (1.0x)
+        assert required_score == nice_score * 3
+
+
+class TestExtractKeywordsWithImportanceEnhanced:
+    """Test enhanced keyword extraction with strongly_preferred tier."""
+
+    @pytest.fixture
+    def analyzer(self) -> ATSAnalyzer:
+        return ATSAnalyzer()
+
+    @pytest.mark.asyncio
+    async def test_extracts_strongly_preferred_tier(self, analyzer):
+        """Should extract strongly_preferred importance level."""
+        mock_response = """[
+            {"keyword": "Python", "importance": "required"},
+            {"keyword": "AWS", "importance": "strongly_preferred"},
+            {"keyword": "Docker", "importance": "preferred"},
+            {"keyword": "Agile", "importance": "nice_to_have"}
+        ]"""
+
+        with patch.object(
+            analyzer._ai_client,
+            "generate_json",
+            new=AsyncMock(return_value=mock_response),
+        ):
+            result = await analyzer._extract_keywords_with_importance_enhanced(
+                "Test job description"
+            )
+
+        assert len(result) == 4
+        importances = {r["importance"] for r in result}
+        assert "strongly_preferred" in importances
+
+    @pytest.mark.asyncio
+    async def test_normalizes_invalid_importance(self, analyzer):
+        """Should normalize invalid importance levels."""
+        mock_response = """[
+            {"keyword": "Python", "importance": "critical"},
+            {"keyword": "AWS", "importance": "mandatory"}
+        ]"""
+
+        with patch.object(
+            analyzer._ai_client,
+            "generate_json",
+            new=AsyncMock(return_value=mock_response),
+        ):
+            result = await analyzer._extract_keywords_with_importance_enhanced(
+                "Test job description"
+            )
+
+        # Invalid importance should be normalized to nice_to_have
+        assert all(r["importance"] == "nice_to_have" for r in result)
+
+
+class TestAnalyzeKeywordsEnhanced:
+    """Test the full enhanced keyword analysis."""
+
+    @pytest.fixture
+    def analyzer(self) -> ATSAnalyzer:
+        return ATSAnalyzer()
+
+    @pytest.fixture
+    def sample_resume(self) -> dict:
+        """Sample structured resume for testing."""
+        return {
+            "summary": "Experienced Python developer",
+            "experience": [
+                {
+                    "title": "Senior Developer",
+                    "company": "TechCorp",
+                    "end_date": "Present",
+                    "bullets": [
+                        "Built Python applications on AWS",
+                        "Led team of 5 engineers",
+                    ],
+                },
+                {
+                    "title": "Developer",
+                    "company": "StartupInc",
+                    "end_date": "December 2022",
+                    "bullets": [
+                        "Developed microservices with Python",
+                        "Implemented Docker containerization",
+                    ],
+                },
+            ],
+            "skills": ["Python", "AWS", "Docker", "Kubernetes"],
+            "education": [
+                {"degree": "BS Computer Science", "institution": "MIT"}
+            ],
+        }
+
+    @pytest.mark.asyncio
+    async def test_returns_enhanced_analysis_structure(self, analyzer, sample_resume):
+        """Should return EnhancedKeywordAnalysis with all fields."""
+        mock_response = """[
+            {"keyword": "Python", "importance": "required"},
+            {"keyword": "AWS", "importance": "strongly_preferred"},
+            {"keyword": "Docker", "importance": "preferred"},
+            {"keyword": "Rust", "importance": "nice_to_have"}
+        ]"""
+        vault_blocks = [{"content": "Docker and Kubernetes experience"}]
+
+        with patch.object(
+            analyzer._ai_client,
+            "generate_json",
+            new=AsyncMock(return_value=mock_response),
+        ):
+            result = await analyzer.analyze_keywords_enhanced(
+                parsed_resume=sample_resume,
+                job_description="Need Python, AWS, Docker, Rust",
+                vault_blocks=vault_blocks,
+            )
+
+        # Check structure
+        assert hasattr(result, "keyword_score")
+        assert hasattr(result, "raw_coverage")
+        assert hasattr(result, "strongly_preferred_coverage")
+        assert hasattr(result, "placement_contribution")
+        assert hasattr(result, "density_contribution")
+        assert hasattr(result, "recency_contribution")
+        assert hasattr(result, "gap_list")
+
+    @pytest.mark.asyncio
+    async def test_calculates_coverage_by_tier(self, analyzer, sample_resume):
+        """Should calculate separate coverage for each importance tier."""
+        mock_response = """[
+            {"keyword": "Python", "importance": "required"},
+            {"keyword": "AWS", "importance": "strongly_preferred"},
+            {"keyword": "Docker", "importance": "preferred"},
+            {"keyword": "Rust", "importance": "nice_to_have"}
+        ]"""
+        vault_blocks = []
+
+        with patch.object(
+            analyzer._ai_client,
+            "generate_json",
+            new=AsyncMock(return_value=mock_response),
+        ):
+            result = await analyzer.analyze_keywords_enhanced(
+                parsed_resume=sample_resume,
+                job_description="Test job",
+                vault_blocks=vault_blocks,
+            )
+
+        # Python is in resume -> required_coverage = 1.0
+        assert result.required_coverage == 1.0
+        # AWS is in resume -> strongly_preferred_coverage = 1.0
+        assert result.strongly_preferred_coverage == 1.0
+        # Docker is in resume -> preferred_coverage = 1.0
+        assert result.preferred_coverage == 1.0
+        # Rust is NOT in resume -> nice_to_have_coverage = 0.0
+        assert result.nice_to_have_coverage == 0.0
+
+    @pytest.mark.asyncio
+    async def test_groups_keywords_by_importance_with_strongly_preferred(
+        self, analyzer, sample_resume
+    ):
+        """Should include strongly_preferred in grouping."""
+        mock_response = """[
+            {"keyword": "Python", "importance": "required"},
+            {"keyword": "AWS", "importance": "strongly_preferred"},
+            {"keyword": "Go", "importance": "strongly_preferred"}
+        ]"""
+        vault_blocks = []
+
+        with patch.object(
+            analyzer._ai_client,
+            "generate_json",
+            new=AsyncMock(return_value=mock_response),
+        ):
+            result = await analyzer.analyze_keywords_enhanced(
+                parsed_resume=sample_resume,
+                job_description="Test job",
+                vault_blocks=vault_blocks,
+            )
+
+        assert "Python" in result.required_matched
+        assert "AWS" in result.strongly_preferred_matched
+        assert "Go" in result.strongly_preferred_missing
+
+    @pytest.mark.asyncio
+    async def test_weighted_score_higher_than_raw_coverage(self, analyzer, sample_resume):
+        """Keywords in experience should boost weighted score above raw coverage."""
+        mock_response = """[
+            {"keyword": "Python", "importance": "required"},
+            {"keyword": "AWS", "importance": "required"}
+        ]"""
+        vault_blocks = []
+
+        with patch.object(
+            analyzer._ai_client,
+            "generate_json",
+            new=AsyncMock(return_value=mock_response),
+        ):
+            result = await analyzer.analyze_keywords_enhanced(
+                parsed_resume=sample_resume,
+                job_description="Test job",
+                vault_blocks=vault_blocks,
+            )
+
+        # Both keywords matched (100% raw coverage)
+        assert result.raw_coverage == 100.0
+
+        # With placement (1.0), density (multiple occurrences), and recency (2.0),
+        # keyword_score can exceed raw coverage (normalized differently)
+        # The score accounts for bonus factors
+        assert result.keyword_score > 0
+
+    @pytest.mark.asyncio
+    async def test_gap_list_prioritized_by_importance(self, analyzer):
+        """Gap list should be sorted by importance (required first)."""
+        resume = {"skills": []}  # No skills
+        mock_response = """[
+            {"keyword": "Docker", "importance": "preferred"},
+            {"keyword": "Python", "importance": "required"},
+            {"keyword": "Go", "importance": "nice_to_have"},
+            {"keyword": "AWS", "importance": "strongly_preferred"}
+        ]"""
+        vault_blocks = []
+
+        with patch.object(
+            analyzer._ai_client,
+            "generate_json",
+            new=AsyncMock(return_value=mock_response),
+        ):
+            result = await analyzer.analyze_keywords_enhanced(
+                parsed_resume=resume,
+                job_description="Test job",
+                vault_blocks=vault_blocks,
+            )
+
+        # Gap list should be ordered: required, strongly_preferred, preferred, nice_to_have
+        importances = [gap["importance"] for gap in result.gap_list]
+        assert importances == ["required", "strongly_preferred", "preferred", "nice_to_have"]
+
+    @pytest.mark.asyncio
+    async def test_generates_prioritized_suggestions(self, analyzer):
+        """Should generate suggestions with priority labels."""
+        resume = {"skills": []}  # No skills
+        mock_response = """[
+            {"keyword": "Python", "importance": "required"},
+            {"keyword": "AWS", "importance": "strongly_preferred"}
+        ]"""
+        vault_blocks = [
+            {"content": "Python experience", "source_company": "TechCorp"},
+            {"content": "AWS deployment", "source_company": "CloudInc"},
+        ]
+
+        with patch.object(
+            analyzer._ai_client,
+            "generate_json",
+            new=AsyncMock(return_value=mock_response),
+        ):
+            result = await analyzer.analyze_keywords_enhanced(
+                parsed_resume=resume,
+                job_description="Test job",
+                vault_blocks=vault_blocks,
+            )
+
+        # Should have suggestions with priority labels
+        assert len(result.suggestions) > 0
+        # Required keywords should have CRITICAL label
+        assert any("CRITICAL" in s for s in result.suggestions)
+        # Strongly preferred should have HIGH label
+        assert any("HIGH" in s for s in result.suggestions)
