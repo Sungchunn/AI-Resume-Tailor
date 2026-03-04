@@ -470,7 +470,7 @@ Based on impact analysis from the proposal:
 | `040326_revised-master-plan.md` | **Active** | This document - overall architecture |
 | `040326_knockout-check.md` | Pending | Stage 0: Knockout check design |
 | `040326_keyword-scoring.md` | Pending | Stage 2: Enhanced keyword scoring |
-| `040326_role-proximity.md` | Pending | Stage 4: Role proximity scoring |
+| `040326_role-proximity.md` | ✅ Complete | Stage 4: Role proximity scoring |
 
 ### Implementation Documents (How to Build)
 
@@ -519,5 +519,6 @@ Based on impact analysis from the proposal:
 
 | Date | Change |
 | ---- | ------ |
+| 2026-03-04 | Stage 4 Role Proximity implemented: title normalization/similarity, level extraction, function categorization, trajectory analysis, industry alignment |
 | 2026-03-04 | Stage 3 Content Quality implemented: quantification density, action verb analysis, block type classification |
 | 2026-03-04 | Initial creation, superseding 030326_ml-nlp-optimization-master-plan.md |

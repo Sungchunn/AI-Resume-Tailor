@@ -717,6 +717,177 @@ curl -X POST http://localhost:8000/v1/ats/content-quality \
 
 ---
 
+### Analyze Role Proximity (Stage 4)
+
+Analyze how closely the candidate's career trajectory aligns with the target role.
+
+This is Stage 4 of the ATS scoring pipeline. It goes beyond keyword matching to assess whether the candidate is a realistic fit based on their career progression.
+
+```http
+POST /v1/ats/role-proximity
+```
+
+**Why This Matters:**
+
+A candidate can have 95% keyword match but still be wrong for the role if there's a significant level mismatch or function change. Role proximity explains why high keyword scores don't always translate to ATS success.
+
+**What it analyzes:**
+
+- **Title Match (Base Score 0-100):** Semantic similarity between current and target job titles
+- **Career Trajectory (Modifier -20 to +20):** Is this a logical next step in the candidate's career?
+- **Industry Alignment (Modifier 0 to +10):** Same industry, adjacent, or unrelated?
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+| ------ | ------ | -------- | ----------- |
+| `resume_id` | number | No | Resume ID (uses parsed_content from database) |
+| `job_id` | number | No | Job description ID to analyze against |
+| `resume_content` | object | No | Parsed resume content (fallback if resume_id not provided) |
+| `job_content` | object | No | Parsed job content (fallback if job_id not provided) |
+
+**Note:** Either `resume_id` or `resume_content` must be provided. Either `job_id` or `job_content` must be provided.
+
+**Example Request (Using IDs):**
+
+```bash
+curl -X POST http://localhost:8000/v1/ats/role-proximity \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resume_id": 123,
+    "job_id": 456
+  }'
+```
+
+**Example Request (Using Content):**
+
+```bash
+curl -X POST http://localhost:8000/v1/ats/role-proximity \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resume_content": {
+      "experience": [
+        {"title": "Senior Software Engineer", "company": "TechCorp"},
+        {"title": "Software Engineer", "company": "StartupInc"}
+      ]
+    },
+    "job_content": {
+      "title": "Staff Software Engineer",
+      "company": "BigTech"
+    }
+  }'
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "role_proximity_score": 95.2,
+  "title_match": {
+    "resume_title": "Senior Software Engineer",
+    "job_title": "Staff Software Engineer",
+    "normalized_resume_title": "senior software engineer",
+    "normalized_job_title": "staff software engineer",
+    "similarity_score": 0.85,
+    "title_score": 85.0,
+    "resume_level": 3,
+    "job_level": 4,
+    "level_gap": 1,
+    "resume_function": "engineering",
+    "job_function": "engineering",
+    "function_match": true
+  },
+  "trajectory": {
+    "trajectory_type": "progressing_toward",
+    "modifier": 20,
+    "current_level": 3,
+    "target_level": 4,
+    "level_gap": 1,
+    "level_progression": [1, 2, 3],
+    "is_ascending": true,
+    "function_match": true,
+    "explanation": "This role is a natural next step in your career progression"
+  },
+  "industry_alignment": {
+    "resume_industries": ["tech"],
+    "most_recent_industry": "tech",
+    "target_industry": "tech",
+    "alignment_type": "same",
+    "modifier": 10
+  },
+  "explanation": "Your title 'Senior Software Engineer' closely matches the target role 'Staff Software Engineer'. This role is a natural next step in your career progression. You have direct industry experience.",
+  "concerns": [],
+  "strengths": [
+    "Strong title alignment with target role",
+    "Target role is a natural next step (one level up)",
+    "Career shows clear upward progression",
+    "Direct tech industry experience"
+  ]
+}
+```
+
+**Trajectory Types:**
+
+| Type | Modifier | Description |
+| ---- | -------- | ----------- |
+| `progressing_toward` | +20 | Natural next step up in the same function |
+| `lateral` | +10 | Same level move in same function |
+| `slight_stretch` | +5 | Two level jump, achievable with experience |
+| `step_down` | -10 | Moving to lower level |
+| `large_gap` | -15 | 3+ level jump, likely unrealistic |
+| `career_change` | -5 | Different function (engineering → product) |
+| `unclear` | 0 | Unable to determine trajectory |
+
+**Level Hierarchy:**
+
+| Level | Value | Examples |
+| ----- | ----- | -------- |
+| Intern | 0 | Intern Developer |
+| Junior | 1 | Junior Engineer, Associate |
+| Mid | 2 | Software Engineer, Developer |
+| Senior | 3 | Senior Engineer, Senior Developer |
+| Staff/Lead | 4 | Staff Engineer, Tech Lead |
+| Principal/Manager | 5 | Principal Engineer, Engineering Manager |
+| Director | 6 | Engineering Director, Head of Engineering |
+| VP | 7 | VP of Engineering |
+| C-Level | 8 | CTO, Chief Technology Officer |
+
+**Function Categories:**
+
+- `engineering` - Software Engineer, Developer, Architect
+- `product` - Product Manager, Product Owner
+- `design` - UX Designer, UI Designer
+- `data` - Data Scientist, ML Engineer, Data Analyst
+- `devops` - DevOps Engineer, SRE, Platform Engineer
+- `qa` - QA Engineer, SDET, Automation Engineer
+- `security` - Security Engineer, InfoSec, AppSec
+- `management` - Manager, Director, VP
+- `sales` - Sales, Account Executive, BDR
+- `marketing` - Marketing, Growth, Content
+- `support` - Customer Success, Solutions Engineer
+
+**Industry Alignment:**
+
+| Alignment | Modifier | Description |
+| --------- | -------- | ----------- |
+| `same` | +10 | Candidate has direct industry experience |
+| `adjacent` | +5 | Related industry (fintech → finance) |
+| `unrelated` | +0 | No industry overlap |
+
+**Score Interpretation:**
+
+| Score | Rating | Description |
+| ----- | ------ | ----------- |
+| 80-100 | Strong Fit | Title, trajectory, and industry align well |
+| 60-79 | Good Fit | Minor gaps in level or function |
+| 40-59 | Moderate Fit | Career change or level jump |
+| 20-39 | Weak Fit | Significant mismatch |
+| 0-19 | Poor Fit | Very different role type |
+
+---
+
 ### Get ATS Tips
 
 Get general ATS optimization tips and best practices.
@@ -1162,6 +1333,86 @@ curl http://localhost:8000/v1/ats/tips \
 }
 ```
 
+### RoleProximityRequest
+
+```typescript
+{
+  resume_id?: number;           // Resume ID from database
+  job_id?: number;              // Job description ID from database
+  resume_content?: object;      // Parsed resume content (fallback)
+  job_content?: object;         // Parsed job content (fallback)
+}
+```
+
+### RoleProximityResponse
+
+```typescript
+{
+  // Overall score
+  role_proximity_score: number;    // 0-100 combined score
+
+  // Component results
+  title_match: TitleMatchResult;
+  trajectory: TrajectoryResult;
+  industry_alignment: IndustryAlignmentResult;
+
+  // Human-readable summary
+  explanation: string;
+
+  // Actionable insights
+  concerns: string[];              // e.g., ["Large level gap: 3 levels"]
+  strengths: string[];             // e.g., ["Direct industry experience"]
+}
+```
+
+### TitleMatchResult
+
+```typescript
+{
+  resume_title: string;            // Most recent job title from resume
+  job_title: string;               // Target job title
+  normalized_resume_title: string; // Normalized resume title
+  normalized_job_title: string;    // Normalized job title
+  similarity_score: number;        // 0-1 semantic similarity
+  title_score: number;             // 0-100 converted score
+  resume_level: number;            // Extracted seniority level (0-8)
+  job_level: number;               // Extracted seniority level (0-8)
+  level_gap: number;               // job_level - resume_level
+  resume_function: string;         // Functional category
+  job_function: string;            // Functional category
+  function_match: boolean;         // Whether functions match
+}
+```
+
+### TrajectoryResult
+
+```typescript
+{
+  trajectory_type: "progressing_toward" | "lateral" | "slight_stretch" |
+                   "step_down" | "large_gap" | "career_change" | "unclear";
+  modifier: number;                // Score modifier (-20 to +20)
+  current_level: number;           // Most recent role level
+  target_level: number;            // Target job level
+  level_gap: number;               // target - current
+  level_progression: number[];     // Historical levels (oldest to newest)
+  is_ascending: boolean;           // Whether career is progressing upward
+  function_match: boolean;         // Whether moving in same function
+  explanation: string;             // Human-readable explanation
+}
+```
+
+### IndustryAlignmentResult
+
+```typescript
+{
+  resume_industries: string[];     // Industries detected from resume
+  most_recent_industry: string;    // Industry from most recent role
+  target_industry: string;         // Industry of target job
+  alignment_type: "same" | "adjacent" | "unrelated";
+  modifier: number;                // Score modifier (0 to +10)
+}
+```
+
 ## Scoring Guide
 
 ### Format Score
@@ -1196,7 +1447,8 @@ curl http://localhost:8000/v1/ats/tips \
 2. **Structure Analysis** (`/structure`) - Stage 1: Ensure ATS-parseable format
 3. **Enhanced Keyword Analysis** (`/keywords/enhanced`) - Stage 2: Get comprehensive scoring with placement, density, and recency factors
 4. **Content Quality Analysis** (`/content-quality`) - Stage 3: Evaluate achievement ratio, quantification density, and action verb usage
-5. **Apply fixes** using prioritized gap analysis and re-run checks as needed
+5. **Role Proximity Analysis** (`/role-proximity`) - Stage 4: Assess career trajectory alignment with target role
+6. **Apply fixes** using prioritized gap analysis and re-run checks as needed
 
 **Alternative:** Use `/keywords/detailed` for simpler analysis without Stage 2 weighting factors.
 
