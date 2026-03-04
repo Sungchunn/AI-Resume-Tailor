@@ -45,6 +45,7 @@ greenlet = "^3.3.1"
 # Task scheduling
 apscheduler = "^3.10.0"
 weasyprint = "^68.1"
+python-dateutil = "^2.9.0.post0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"

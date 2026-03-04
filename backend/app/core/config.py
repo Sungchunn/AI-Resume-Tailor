@@ -98,6 +98,9 @@ class Settings(BaseSettings):
     job_retention_days: int = 21  # Delete jobs older than this many days
     job_cleanup_enabled: bool = True  # Enable automatic job cleanup
 
+    # Webhook Authentication (for n8n job listing ingestion)
+    n8n_webhook_api_key: str = "your-webhook-api-key-change-in-production"
+
     @field_validator("jwt_secret_key")
     @classmethod
     def validate_jwt_secret(cls, v: str, info) -> str:
