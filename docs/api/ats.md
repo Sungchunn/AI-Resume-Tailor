@@ -20,12 +20,23 @@ Analyze resume structure for ATS compatibility.
 POST /v1/ats/structure
 ```
 
+**What it checks:**
+- Standard section headers (Experience, Education, Skills, etc.)
+- Contact information presence
+- **Section order validation** - Some ATS systems like Taleo penalize non-standard section ordering
+- Formatting issues that may cause parsing problems
+
+**Section Order Scoring:**
+- **100 (standard):** Contact → Summary → Experience → Education → Skills → Certifications
+- **95 (minor):** Skills before Education
+- **85 (major):** Education before Experience, or Contact not first
+- **75 (non_standard):** Completely non-standard ordering
+
 **Request Body:**
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `content` | string | Yes | Resume content to analyze |
-| `format` | string | No | Content format (text, html, markdown) |
+| `resume_content` | object | Yes | Parsed resume content as dictionary |
 
 **Example Request:**
 
@@ -52,6 +63,13 @@ curl -X POST http://localhost:8000/v1/ats/structure \
     "education",
     "summary"
   ],
+  "section_order_score": 100,
+  "section_order_details": {
+    "detected_order": ["contact", "experience", "skills"],
+    "expected_order": ["contact", "experience", "skills"],
+    "deviation_type": "standard",
+    "issues": []
+  },
   "warnings": [
     "No education section found - many ATS systems filter by education",
     "Consider adding a professional summary at the top"
@@ -447,13 +465,35 @@ curl http://localhost:8000/v1/ats/tips \
 
 ```typescript
 {
-  format_score: number;           // 0-100 score
+  format_score: number;           // 0-100 score (incorporates section order)
   sections_found: string[];       // Detected sections
   sections_missing: string[];     // Missing recommended sections
+  section_order_score: number;    // 75-100 score for section ordering
+  section_order_details: SectionOrderDetails;  // Detailed order analysis
   warnings: string[];             // Potential issues
   suggestions: string[];          // Improvement suggestions
 }
 ```
+
+### SectionOrderDetails
+
+```typescript
+{
+  detected_order: string[];       // Sections in order they appear
+  expected_order: string[];       // Expected standard order for detected sections
+  deviation_type: "standard" | "minor" | "major" | "non_standard";
+  issues: string[];               // Specific order issues found
+}
+```
+
+**Section Order Scoring:**
+
+| Deviation Type | Score | Example |
+|---------------|-------|---------|
+| `standard` | 100 | Contact → Summary → Experience → Education → Skills |
+| `minor` | 95 | Skills appearing before Education |
+| `major` | 85 | Education appearing before Experience, or Contact not first |
+| `non_standard` | 75 | Completely non-standard ordering |
 
 ### ATSKeywordRequest
 

@@ -477,7 +477,7 @@ Based on impact analysis from the proposal:
 | Document | Status | Purpose |
 | -------- | ------ | ------- |
 | `030326_impl-keyword-extraction.md` | Active | Shared infra: ML/NLP keyword extraction |
-| `030326_impl-structural-analysis.md` | Update Pending | Stage 1: Structural score implementation |
+| `030326_impl-structural-analysis.md` | ✅ Complete | Stage 1: Structural score with section order validation |
 | `030326_impl-content-quality.md` | Update Pending | Stage 3: Content quality implementation |
 | `030326_impl-resume-parser.md` | Active | Shared infra: Resume parser (feeds all stages) |
 | `030326_impl-job-analyzer.md` | Update Pending | Shared infra: Job analyzer (feeds Stage 0 + 2) |

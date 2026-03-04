@@ -6,9 +6,14 @@
 
 **Priority:** High (core), LOW for new enhancements
 
-> **Enhancement Required:**
-> Add **Section Order Validation** - some ATS systems (Taleo notably) penalize non-standard section ordering.
-> See master plan Stage 1 for implementation details.
+**Status:** ✅ COMPLETE (as of 2026-03-04)
+
+> **Enhancement Implemented:**
+> ✅ Added **Section Order Validation** - detects non-standard section ordering and scores accordingly.
+> - Scores: 100 (standard), 95 (minor deviation), 85 (major deviation), 75 (non-standard)
+> - Major deviations: Education before Experience, Contact not first
+> - Minor deviations: Skills before Education, Summary after Experience
+> - See `ATSAnalyzer.validate_section_order()` in `app/services/job/ats_analyzer.py`
 
 ---
 
