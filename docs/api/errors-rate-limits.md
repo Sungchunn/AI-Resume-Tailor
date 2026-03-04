@@ -214,7 +214,7 @@ async function apiRequest(endpoint: string, options: RequestInit) {
 
 ## Rate Limiting
 
-### Overview
+### How Rate Limiting Works
 
 The API implements rate limiting using a Redis-based sliding window algorithm. Limits are applied per-user (authenticated) or per-IP (unauthenticated).
 
@@ -352,8 +352,6 @@ function sleep(ms: number) {
 }
 ```
 
-
-
 ### Best Practices
 
 1. **Check headers proactively** - Monitor `X-RateLimit-Remaining` and slow down before hitting limits
@@ -388,7 +386,7 @@ Rate limits can be configured via environment variables:
 
 ---
 
-## Identifier Resolution:
+## Identifier Resolution
 
 Rate limits are tracked per unique identifier:
 

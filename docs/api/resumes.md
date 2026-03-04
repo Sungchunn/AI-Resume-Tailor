@@ -303,9 +303,9 @@ POST /api/resumes/{resume_id}/parse
 
 **Path Parameters:**
 
-| Parameter | Type    | Description        |
-| --------- | ------- | ------------------ |
-| `resume_id` | integer | Resume identifier  |
+| Parameter | Type | Description |
+| --------- | ------- | ----------- |
+| `resume_id` | integer | Resume identifier |
 
 **Query Parameters:**
 
@@ -319,8 +319,6 @@ POST /api/resumes/{resume_id}/parse
 curl -X POST "http://localhost:8000/api/resumes/1/parse?force=true" \
   -H "Authorization: Bearer <token>"
 ```
-
-
 
 **Response (200 OK):**
 
@@ -412,14 +410,14 @@ curl "http://localhost:8000/api/resumes/1/parse/status?task_id=550e8400-e29b-41d
 **Status Values:**
 
 | Status | Description |
-|--------|-------------|
+| ------ | ----------- |
 | `pending` | Task is still running |
 | `completed` | Parsing finished, resume.parsed_content updated |
 | `failed` | Parsing failed, check error field |
 
 ---
 
-## Data Models
+## Parse API Data Models
 
 ### ParseTaskResponse
 

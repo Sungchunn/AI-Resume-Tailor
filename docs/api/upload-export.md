@@ -131,8 +131,6 @@ curl -X POST "http://localhost:8000/api/upload/extract?store_file=false" \
 
 **Authentication:** All endpoints require authentication.
 
-## Endpoints
-
 ### Export Tailored Resume (Legacy)
 
 Export a tailored resume to a downloadable file.
@@ -260,7 +258,7 @@ POST /api/resumes/{resume_id}/export
 **Request Fields:**
 
 | Field | Type | Required | Default | Description |
-| ----- | ------ | ---------- |---------|-------------|
+| ----- | ------ | ---------- | --------- | ----------- |
 | `format` | string | Yes | - | `pdf` or `docx` |
 | `template` | string | No | `classic` | Style template: `classic`, `modern`, `minimal` |
 | `font_family` | string | No | `Arial` | Font family name |
@@ -312,6 +310,7 @@ Content-Disposition: attachment; filename="My_Resume.pdf"
 ### Classic
 
 Traditional professional style ideal for conservative industries:
+
 - Serif-inspired typography
 - Section dividers with borders
 - Black and gray color scheme
@@ -320,6 +319,7 @@ Traditional professional style ideal for conservative industries:
 ### Modern
 
 Contemporary design for tech and creative roles:
+
 - Sans-serif typography
 - Blue accent colors
 - Clean section headers
@@ -328,6 +328,7 @@ Contemporary design for tech and creative roles:
 ### Minimal
 
 Ultra-clean ATS-optimized design:
+
 - System font stack
 - Minimal decorative elements
 - High content density
@@ -337,18 +338,18 @@ Ultra-clean ATS-optimized design:
 
 ## Supported Formats
 
-| Format | MIME Type                                                                    | Description              |
-| ------ | ---------------------------------------------------------------------------- | ------------------------ |
-| `pdf`  | `application/pdf`                                                          | PDF document (default)   |
-| `docx` | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` | Microsoft Word document  |
-| `txt`  | `text/plain`                                                               | Plain text               |
+| Format | MIME Type | Description |
+| ------ | --------- | ----------- |
+| `pdf` | `application/pdf` | PDF document (default) |
+| `docx` | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` | Microsoft Word document |
+| `txt` | `text/plain` | Plain text |
 
 ## Rate Limiting
 
 Export endpoints have specific rate limits to prevent abuse:
 
 | Endpoint | Per Minute | Per Hour |
-|----------|-----------|----------|
+| -------- | ---------- | -------- |
 | `/api/upload/extract` | 10 | 100 |
 | `/api/export/*` | 5 | 30 |
 

@@ -119,8 +119,6 @@ curl -X POST http://localhost:8000/api/tailor/quick-match \
 }
 ```
 
-
-
 ---
 
 ### Get Tailored Resume
@@ -204,8 +202,6 @@ GET /api/tailor
 ]
 ```
 
-
-
 ---
 
 ### Delete Tailored Resume
@@ -229,8 +225,6 @@ No response body.
 **Authentication:** All endpoints require authentication.
 
 The Semantic Match API uses vector embeddings to find the most relevant content blocks from your vault that match job requirements.
-
-## Endpoints
 
 ### Semantic Search
 
@@ -489,7 +483,7 @@ Match results are cached with a 15-minute TTL to improve performance:
 AI-powered endpoints have specific rate limits:
 
 | Endpoint | Per Minute | Per Hour |
-|----------|-----------|----------|
+| -------- | ---------- | -------- |
 | `/api/tailor` | 10 | 100 |
 | `/api/tailor/quick-match` | 10 | 100 |
 | `/v1/match` | 10 | 100 |

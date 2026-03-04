@@ -178,7 +178,7 @@ GET /api/admin/scraper/health
 **Query Parameters:**
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
+| --------- | ------- | --------- | ----------- |
 | `days` | integer | 7 | Number of days to analyze (1-30) |
 
 **Response (200 OK):**
@@ -207,7 +207,7 @@ GET /api/admin/scraper/history
 **Query Parameters:**
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
+| --------- | ------- | --------- | ----------- |
 | `limit` | integer | 10 | Number of runs to return (1-100) |
 | `offset` | integer | 0 | Pagination offset |
 
@@ -295,7 +295,7 @@ POST /api/admin/scraper/presets
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ----- | ------ | -------- | ----------- |
 | `name` | string | Yes | Preset name (1-100 characters) |
 | `url` | string | Yes | LinkedIn job search URL |
 | `count` | integer | No | Max jobs to scrape (1-500, default 100) |
@@ -503,13 +503,13 @@ PATCH /api/admin/scraper/schedule
 
 All fields optional:
 
-| Field                  | Type    | Description                                        |
-| ---------------------- | ------- | -------------------------------------------------- |
-| `is_enabled`           | boolean | Enable/disable scheduling                          |
-| `schedule_type`        | string  | `daily` or `weekly`                                |
-| `schedule_hour`        | integer | Hour to run (0-23)                                 |
-| `schedule_minute`      | integer | Minute to run (0-59)                               |
-| `schedule_day_of_week` | integer | Day of week for weekly schedule (0=Mon, 6=Sun)   |
+| Field | Type | Description |
+| ----- | ------- | ----------- |
+| `is_enabled` | boolean | Enable/disable scheduling |
+| `schedule_type` | string | `daily` or `weekly` |
+| `schedule_hour` | integer | Hour to run (0-23) |
+| `schedule_minute` | integer | Minute to run (0-59) |
+| `schedule_day_of_week` | integer | Day of week for weekly schedule (0=Mon, 6=Sun) |
 
 **Example Request:**
 

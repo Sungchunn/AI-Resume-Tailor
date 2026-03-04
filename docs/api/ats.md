@@ -549,6 +549,174 @@ curl -X POST http://localhost:8000/v1/ats/knockout-check \
 
 ---
 
+### Analyze Content Quality (Stage 3)
+
+Perform content quality analysis on resume bullets.
+
+This is Stage 3 of the ATS scoring pipeline. It analyzes the quality of resume content across three dimensions: block type distribution, quantification density, and action verb usage.
+
+```http
+POST /v1/ats/content-quality
+```
+
+**What it analyzes:**
+
+- **Block Type Distribution (40% weight):** Ratio of achievement-oriented vs responsibility-oriented bullets
+- **Quantification Density (35% weight):** Percentage of bullets containing measurable metrics
+- **Action Verb Usage (25% weight):** Strong action verbs vs weak/passive phrases
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+| ------ | ------ | -------- | ----------- |
+| `resume_id` | number | No | Resume ID to analyze (uses parsed_content from database) |
+| `resume_content` | object | No | Parsed resume content as dictionary (fallback) |
+
+**Note:** Either `resume_id` or `resume_content` must be provided. `resume_id` takes precedence.
+
+**Example Request (Using Resume ID):**
+
+```bash
+curl -X POST http://localhost:8000/v1/ats/content-quality \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resume_id": 123
+  }'
+```
+
+**Example Request (Using Content):**
+
+```bash
+curl -X POST http://localhost:8000/v1/ats/content-quality \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resume_content": {
+      "experience": [
+        {
+          "title": "Senior Software Engineer",
+          "company": "TechCorp",
+          "bullets": [
+            "Led team of 5 engineers to deliver ML pipeline, reducing inference latency by 60%",
+            "Built microservices architecture serving 1M+ daily requests",
+            "Responsible for backend maintenance"
+          ]
+        }
+      ]
+    }
+  }'
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "content_quality_score": 78.5,
+  "block_type_score": 85.0,
+  "quantification_score": 72.0,
+  "action_verb_score": 80.0,
+  "block_type_weight": 0.4,
+  "quantification_weight": 0.35,
+  "action_verb_weight": 0.25,
+  "block_type_analysis": {
+    "total_bullets": 6,
+    "achievement_count": 3,
+    "responsibility_count": 2,
+    "project_count": 1,
+    "other_count": 0,
+    "achievement_ratio": 0.67,
+    "quality_score": 100.0
+  },
+  "quantification_analysis": {
+    "total_bullets": 6,
+    "quantified_bullets": 3,
+    "quantification_density": 0.5,
+    "quality_score": 100.0,
+    "metrics_found": ["60%", "1m+", "5"],
+    "bullets_needing_metrics": [
+      "Built new authentication system..."
+    ]
+  },
+  "action_verb_analysis": {
+    "total_bullets": 6,
+    "bullets_with_action_verbs": 5,
+    "bullets_with_weak_phrases": 1,
+    "action_verb_coverage": 0.833,
+    "weak_phrase_ratio": 0.167,
+    "quality_score": 87.0,
+    "verb_category_distribution": {
+      "leadership": 2,
+      "creation": 2,
+      "improvement": 1
+    }
+  },
+  "total_bullets_analyzed": 6,
+  "high_quality_bullets": 4,
+  "low_quality_bullets": 1,
+  "suggestions": [
+    "Your achievement/responsibility ratio is excellent.",
+    "Strong quantification: 3/6 bullets contain measurable metrics."
+  ],
+  "warnings": [
+    "17% of your bullets contain weak phrases like 'Responsible for' or 'Assisted with'. Replace with action-oriented language."
+  ]
+}
+```
+
+**Quantification Patterns Detected:**
+
+| Pattern | Examples |
+| ------- | -------- |
+| Percentages | `40%`, `40 percent` |
+| Currency | `$50K`, `$1.2M`, `$50,000` |
+| User counts | `100K users`, `1M customers` |
+| Multiples | `3x improvement`, `2x faster` |
+| Time metrics | `2 hours`, `15 minutes` |
+| Rankings | `top 5`, `#1 ranking` |
+| Fractions | `4 out of 5`, `8 to 10` |
+
+**Action Verb Categories:**
+
+| Category | Examples |
+| -------- | -------- |
+| Leadership | Led, Managed, Directed, Mentored |
+| Achievement | Achieved, Delivered, Exceeded, Won |
+| Creation | Built, Created, Designed, Launched |
+| Improvement | Improved, Optimized, Increased, Reduced |
+| Analysis | Analyzed, Evaluated, Researched, Identified |
+| Influence | Negotiated, Collaborated, Presented |
+
+**Weak Phrases to Avoid:**
+
+- "Responsible for..."
+- "Duties included..."
+- "Assisted with..."
+- "Helped with..."
+- "Worked on..."
+- "Involved in..."
+- "Participated in..."
+
+**Scoring Thresholds:**
+
+| Metric | Target | Description |
+| ------ | ------ | ----------- |
+| Achievement Ratio | 60%+ | High-value bullets (achievements + projects) |
+| Quantification Density | 50%+ | Bullets with measurable metrics |
+| Action Verb Coverage | 80%+ | Bullets with strong action verbs |
+| Weak Phrase Ratio | <20% | Bullets with weak/passive phrases |
+
+**Score Interpretation:**
+
+| Score | Rating | Description |
+| ----- | ------ | ----------- |
+| 85+ | Excellent | Strong, achievement-oriented content with metrics |
+| 70-84 | Good | Solid content with some room for improvement |
+| 50-69 | Fair | Needs more quantification or achievement focus |
+| < 50 | Poor | Responsibility-heavy content lacking metrics |
+
+---
+
 ### Get ATS Tips
 
 Get general ATS optimization tips and best practices.
@@ -904,6 +1072,96 @@ curl http://localhost:8000/v1/ats/tips \
 }
 ```
 
+### ContentQualityRequest
+
+```typescript
+{
+  resume_id?: number;           // Resume ID from database
+  resume_content?: object;      // Parsed resume content as dictionary
+}
+```
+
+### ContentQualityResponse
+
+```typescript
+{
+  // Overall score
+  content_quality_score: number;   // 0-100 weighted score
+
+  // Component scores
+  block_type_score: number;        // 0-100 block type distribution
+  quantification_score: number;    // 0-100 quantification density
+  action_verb_score: number;       // 0-100 action verb usage
+
+  // Component weights
+  block_type_weight: number;       // Weight applied (default 0.4)
+  quantification_weight: number;   // Weight applied (default 0.35)
+  action_verb_weight: number;      // Weight applied (default 0.25)
+
+  // Detailed analyses
+  block_type_analysis: BlockTypeAnalysis;
+  quantification_analysis: QuantificationAnalysis;
+  action_verb_analysis: ActionVerbAnalysis;
+
+  // Summary stats
+  total_bullets_analyzed: number;
+  high_quality_bullets: number;    // Score > 0.7
+  low_quality_bullets: number;     // Score < 0.4
+
+  // Suggestions and warnings
+  suggestions: string[];
+  warnings: string[];
+}
+```
+
+### BlockTypeAnalysis
+
+```typescript
+{
+  total_bullets: number;
+  achievement_count: number;       // Bullets with metrics/outcomes
+  responsibility_count: number;    // Duty-focused bullets
+  project_count: number;           // Creation-focused bullets
+  other_count: number;
+  achievement_ratio: number;       // 0-1 ratio of high-value bullets
+  quality_score: number;           // 0-100 score
+}
+```
+
+### QuantificationAnalysis
+
+```typescript
+{
+  total_bullets: number;
+  quantified_bullets: number;      // Bullets with metrics
+  quantification_density: number;  // 0-1 ratio
+  quality_score: number;           // 0-100 score
+  metrics_found: string[];         // Extracted metrics (e.g., "40%", "$1M")
+  bullets_needing_metrics: string[];  // Bullets to improve
+}
+```
+
+### ActionVerbAnalysis
+
+```typescript
+{
+  total_bullets: number;
+  bullets_with_action_verbs: number;
+  bullets_with_weak_phrases: number;
+  action_verb_coverage: number;    // 0-1 ratio
+  weak_phrase_ratio: number;       // 0-1 ratio (lower is better)
+  quality_score: number;           // 0-100 score
+  verb_category_distribution: {    // Count by category
+    leadership?: number;
+    achievement?: number;
+    creation?: number;
+    improvement?: number;
+    analysis?: number;
+    influence?: number;
+  };
+}
+```
+
 ## Scoring Guide
 
 ### Format Score
@@ -934,10 +1192,11 @@ curl http://localhost:8000/v1/ats/tips \
 
 ### Recommended Workflow
 
-1. **Knockout Check** (`/knockout-check`) - Identify deal-breakers first
-2. **Structure Analysis** (`/structure`) - Ensure ATS-parseable format
-3. **Enhanced Keyword Analysis** (`/keywords/enhanced`) - Get comprehensive scoring with placement, density, and recency factors (Stage 2)
-4. **Apply fixes** using prioritized gap analysis and re-run checks as needed
+1. **Knockout Check** (`/knockout-check`) - Stage 0: Identify deal-breakers first
+2. **Structure Analysis** (`/structure`) - Stage 1: Ensure ATS-parseable format
+3. **Enhanced Keyword Analysis** (`/keywords/enhanced`) - Stage 2: Get comprehensive scoring with placement, density, and recency factors
+4. **Content Quality Analysis** (`/content-quality`) - Stage 3: Evaluate achievement ratio, quantification density, and action verb usage
+5. **Apply fixes** using prioritized gap analysis and re-run checks as needed
 
 **Alternative:** Use `/keywords/detailed` for simpler analysis without Stage 2 weighting factors.
 

@@ -36,7 +36,7 @@ The Resume Builds API (formerly Workshops) provides a workspace for building tai
 ## Status Values
 
 | Status | Description |
-|--------|-------------|
+| ------ | ----------- |
 | `draft` | Initial state, job details entered |
 | `in_progress` | Actively building the resume |
 | `exported` | Resume has been exported |
@@ -57,7 +57,7 @@ POST /v1/resume-builds
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ----- | ------ | -------- | ----------- |
 | `job_title` | string | Yes | Target job title |
 | `job_company` | string | No | Target company |
 | `job_description` | string | Yes | Full job description |
@@ -106,7 +106,7 @@ GET /v1/resume-builds
 **Query Parameters:**
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
+| --------- | ------ | --------- | ----------- |
 | `status` | string | None | Filter by status |
 | `limit` | integer | 50 | Maximum results (1-100) |
 | `offset` | integer | 0 | Pagination offset |
@@ -164,7 +164,7 @@ PATCH /v1/resume-builds/{build_id}
 **Request Body:**
 
 | Field | Type | Description |
-|-------|------|-------------|
+| ----- | ------ | ----------- |
 | `job_title` | string | Updated job title |
 | `job_company` | string | Updated company |
 | `job_description` | string | Updated job description |
@@ -443,8 +443,8 @@ PATCH /v1/resume-builds/{build_id}/status
 
 **Request Body:**
 
-| Field  | Type   | Required | Description          |
-| ------ | ------ | -------- | -------------------- |
+| Field | Type | Required | Description |
+| ----- | ------ | -------- | ----------- |
 | `status` | string | Yes | New status (enum) |
 
 ---
@@ -514,10 +514,10 @@ POST /v1/resume-builds/{build_id}/export
 
 **Request Body:**
 
-| Field      | Type   | Default | Description         |
-| ---------- | ------ | ------- | -------------------- |
-| `format`   | string | "pdf"   | pdf, docx, txt, json |
-| `template` | string | None    | Template name        |
+| Field | Type | Default | Description |
+| ----- | ------ | --------- | ----------- |
+| `format` | string | "pdf" | pdf, docx, txt, json |
+| `template` | string | None | Template name |
 
 **Example Request:**
 

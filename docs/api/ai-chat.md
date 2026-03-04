@@ -83,8 +83,8 @@ curl -X POST http://localhost:8000/api/v1/ai/improve-section \
 
 #### Response Fields
 
-| Field | Type      | Description                            |
-| ------- | --------- | -------------------------------------- |
+| Field | Type | Description |
+| ----- | ------ | ----------- |
 | `improved_content` | string | The AI-improved section content |
 | `changes_summary` | string | Brief explanation of changes made |
 | `suggestions` | string[] | Additional improvement suggestions |
@@ -95,11 +95,9 @@ curl -X POST http://localhost:8000/api/v1/ai/improve-section \
 
 Conversational AI chat for resume improvement with multi-turn support.
 
-```
+```http
 POST /api/v1/ai/chat
 ```
-
-#### Request Body
 
 | Field | Type | Required | Description |
 | ------- | ------ | ---------- | ------------- |
@@ -116,7 +114,7 @@ POST /api/v1/ai/chat
 | `role` | string | "user" or "assistant" |
 | `content` | string | The message content |
 
-#### Example Request
+#### Chat Example Request
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/ai/chat \
@@ -145,8 +143,8 @@ curl -X POST http://localhost:8000/api/v1/ai/chat \
 
 #### Chat Response Fields
 
-| Field | Type              | Description                                       |
-| ------- | ----------------  | ------------------------------------------------- |
+| Field | Type | Description |
+| ----- | ------ | ----------- |
 | `message` | string | The assistant's response message |
 | `improved_content` | string or null | Improved content if applicable |
 | `action_type` | string | Response type: "advice", "improvement", or "question" |
