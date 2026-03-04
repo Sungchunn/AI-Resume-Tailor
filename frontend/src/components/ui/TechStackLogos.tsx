@@ -116,6 +116,23 @@ const PostgreSQLIcon = () => (
   </svg>
 );
 
+const MongoDBIcon = () => (
+  <svg viewBox="0 0 256 549" fill="none" className="h-full w-auto">
+    <path
+      fill="#00ED64"
+      d="M175.622 61.108C152.612 33.807 132.797 6.078 128.749.32a1.03 1.03 0 00-1.492 0c-4.048 5.759-23.863 33.487-46.873 60.788-197.542 251.896 31.064 421.839 31.064 421.839l1.89 1.143c.846 14.448 2.757 38.018 2.757 38.018h25.814s1.912-23.57 2.758-38.018l1.89-1.143c-.001 0 228.607-169.943 31.065-421.839"
+    />
+    <path
+      fill="#00684A"
+      d="M128.076 481.673s-38.353-25.058-42.674-74.095c0 0-.508-9.062 3.831-13.1 6.14-5.71 8.47-5.13 10.383-11.342.968-3.139.577-9.885.577-9.885s17.368 109.303 24.263 124.4c-1.088-.003 3.62-15.978 3.62-15.978"
+    />
+    <path
+      fill="#001E2B"
+      d="M135.996 485.654c-.005-4.706.648-109.782 4.07-166.358.156-2.584-4.214-4.058-5.353-1.684-15.753 32.835-10.061 144.027-9.57 167.99.019.904.645 1.7 1.544 1.85 4.293.72 9.327.095 9.309-1.798"
+    />
+  </svg>
+);
+
 const RedisIcon = () => (
   <svg viewBox="0 0 256 220" fill="none" className="h-full w-auto">
     <path
@@ -209,6 +226,7 @@ const techStackLogos: LogoItem[] = [
   { node: <PythonIcon />, title: 'Python', ariaLabel: 'Python' },
   { node: <FastAPIIcon />, title: 'FastAPI', ariaLabel: 'FastAPI' },
   { node: <PostgreSQLIcon />, title: 'PostgreSQL', ariaLabel: 'PostgreSQL' },
+  { node: <MongoDBIcon />, title: 'MongoDB', ariaLabel: 'MongoDB' },
   { node: <RedisIcon />, title: 'Redis', ariaLabel: 'Redis' },
   { node: <DockerIcon />, title: 'Docker', ariaLabel: 'Docker' },
   { node: <AnthropicIcon />, title: 'Anthropic Claude AI', ariaLabel: 'Anthropic Claude AI' },
