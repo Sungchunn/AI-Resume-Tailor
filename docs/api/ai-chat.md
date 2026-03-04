@@ -4,7 +4,7 @@ The AI Chat API provides AI-powered resume section improvements through a conver
 
 ## Base URL
 
-```
+```text
 /api/v1/ai
 ```
 
@@ -12,7 +12,7 @@ The AI Chat API provides AI-powered resume section improvements through a conver
 
 All endpoints require authentication via Bearer token.
 
-```
+```text
 Authorization: Bearer <access_token>
 ```
 
@@ -24,7 +24,7 @@ Authorization: Bearer <access_token>
 
 Improve a specific resume section using AI based on user instructions.
 
-```
+```text
 POST /api/v1/ai/improve-section
 ```
 
@@ -112,7 +112,7 @@ POST /api/v1/ai/chat
 #### ChatMessage Object
 
 | Field | Type | Description |
-|-------|------|-------------|
+| ----- | ------ | ----------- |
 | `role` | string | "user" or "assistant" |
 | `content` | string | The message content |
 
@@ -133,7 +133,7 @@ curl -X POST http://localhost:8000/api/v1/ai/chat \
   }'
 ```
 
-#### Response
+#### Chat Response
 
 ```json
 {
@@ -143,7 +143,7 @@ curl -X POST http://localhost:8000/api/v1/ai/chat \
 }
 ```
 
-#### Response Fields
+#### Chat Response Fields
 
 | Field | Type | Description |
 | ------- | ------ | ------------- |

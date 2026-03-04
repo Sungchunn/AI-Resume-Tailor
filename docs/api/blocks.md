@@ -13,7 +13,7 @@ The Blocks API (also known as the Vault) provides management for individual cont
 ## Block Types
 
 | Type | Description |
-|------|-------------|
+| ------ | ------------- |
 | `ACHIEVEMENT` | Quantified accomplishments and results |
 | `RESPONSIBILITY` | Job duties and responsibilities |
 | `SKILL` | Technical or soft skills |
@@ -38,7 +38,7 @@ POST /v1/blocks
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ----- | ------ | ---------- | ------------- |
 | `content` | string | Yes | The block content text |
 | `block_type` | string | Yes | One of the block type enums |
 | `tags` | string[] | No | Categorization tags |
@@ -97,7 +97,7 @@ GET /v1/blocks
 **Query Parameters:**
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
+| --------- | ------ | --------- | ------------- |
 | `block_types` | string[] | All | Filter by block types |
 | `tags` | string[] | None | Filter by tags |
 | `verified_only` | boolean | false | Only return verified blocks |
@@ -146,7 +146,7 @@ GET /v1/blocks/{block_id}
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `block_id` | UUID | Block identifier |
 
 **Example Request:**
@@ -189,7 +189,7 @@ PATCH /v1/blocks/{block_id}
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `block_id` | UUID | Block identifier |
 
 **Request Body:**
@@ -197,7 +197,7 @@ PATCH /v1/blocks/{block_id}
 All fields are optional:
 
 | Field | Type | Description |
-|-------|------|-------------|
+| ----- | ------ | ------------- |
 | `content` | string | Updated content |
 | `block_type` | string | Updated block type |
 | `tags` | string[] | Updated tags |
@@ -234,7 +234,7 @@ DELETE /v1/blocks/{block_id}
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `block_id` | UUID | Block identifier |
 
 **Example Request:**
@@ -261,13 +261,13 @@ POST /v1/blocks/{block_id}/verify
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `block_id` | UUID | Block identifier |
 
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ----- | ------ | ---------- | ------------- |
 | `verified` | boolean | Yes | Verification status |
 
 **Example Request:**
@@ -296,7 +296,7 @@ POST /v1/blocks/import
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ----- | ------ | ---------- | ------------- |
 | `raw_content` | string | Yes | Resume text to parse |
 | `source_company` | string | No | Company context |
 | `source_role` | string | No | Role context |
@@ -355,7 +355,7 @@ POST /v1/blocks/embed
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ----- | ------ | ---------- | ------------- |
 | `block_ids` | UUID[] | No | Specific blocks to embed (all if omitted) |
 
 **Example Request:**
@@ -397,7 +397,7 @@ POST /v1/blocks/{block_id}/embed
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `block_id` | UUID | Block identifier |
 
 **Example Request:**

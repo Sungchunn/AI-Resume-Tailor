@@ -37,7 +37,7 @@ POST /v1/ats/structure
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ----- | ------ | ---------- | ------------- |
 | `resume_content` | object | Yes | Parsed resume content as dictionary |
 
 **Example Request:**
@@ -249,6 +249,152 @@ curl -X POST http://localhost:8000/v1/ats/keywords/detailed \
 - If neither `resume_content` nor `resume_block_ids` is provided, all vault blocks are used
 - Keywords are categorized by importance: `required`, `preferred`, `nice_to_have`
 - Missing keywords are checked against the user's vault for availability
+
+---
+
+### Analyze Keywords (Enhanced - Stage 2)
+
+Perform comprehensive keyword analysis with weighted scoring based on placement, density, recency, and importance tiers.
+
+This is the most sophisticated keyword analysis endpoint, implementing the full Stage 2 scoring pipeline.
+
+```http
+POST /v1/ats/keywords/enhanced
+```
+
+**Scoring Factors:**
+
+| Factor | Description | Weights |
+| ------ | ----------- | ------- |
+| **Placement (2.1)** | Where keywords appear in resume | Experience: 1.0x, Projects: 0.9x, Skills: 0.7x, Summary: 0.6x, Education: 0.5x |
+| **Density (2.2)** | Repetition with diminishing returns | 1 occ: 1.0x, 2 occ: 1.3x, 3+ occ: 1.5x (capped) |
+| **Recency (2.3)** | Recent roles weighted higher | Recent 2 roles: 2.0x, Third: 1.0x, Older: 0.8x |
+| **Importance (2.4)** | Keyword importance tier | Required: 3.0x, Strongly Preferred: 2.0x, Preferred: 1.5x, Nice to Have: 1.0x |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+| ------ | ------ | -------- | ----------- |
+| `job_description` | string | Yes | Job description to match against (min 50 chars) |
+| `resume_id` | number | No | Resume ID (uses parsed_content from database) |
+| `resume_content` | object | No | Parsed resume content as dictionary (fallback) |
+
+**Note:** Either `resume_id` or `resume_content` must be provided.
+
+**Example Request:**
+
+```bash
+curl -X POST http://localhost:8000/v1/ats/keywords/enhanced \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "job_description": "Looking for a Senior Engineer with Python, AWS, Kubernetes. Required: 5+ years Python, AWS certification strongly preferred. Nice to have: Go, Terraform.",
+    "resume_id": 123
+  }'
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "keyword_score": 78.5,
+  "raw_coverage": 65.0,
+  "required_coverage": 0.80,
+  "strongly_preferred_coverage": 1.00,
+  "preferred_coverage": 0.50,
+  "nice_to_have_coverage": 0.00,
+  "placement_contribution": 5.2,
+  "density_contribution": 8.3,
+  "recency_contribution": 12.1,
+  "required_matched": ["Python", "AWS", "Senior"],
+  "required_missing": ["Kubernetes"],
+  "strongly_preferred_matched": ["AWS certification"],
+  "strongly_preferred_missing": [],
+  "preferred_matched": [],
+  "preferred_missing": ["team leadership"],
+  "nice_to_have_matched": [],
+  "nice_to_have_missing": ["Go", "Terraform"],
+  "missing_available_in_vault": ["Kubernetes", "team leadership"],
+  "missing_not_in_vault": ["Go", "Terraform"],
+  "gap_list": [
+    {
+      "keyword": "Kubernetes",
+      "importance": "required",
+      "in_vault": true,
+      "suggestion": "Add 'Kubernetes' from your vault"
+    },
+    {
+      "keyword": "team leadership",
+      "importance": "preferred",
+      "in_vault": true,
+      "suggestion": "Add 'team leadership' from your vault"
+    },
+    {
+      "keyword": "Go",
+      "importance": "nice_to_have",
+      "in_vault": false,
+      "suggestion": "Consider gaining experience with 'Go'"
+    }
+  ],
+  "all_keywords": [
+    {
+      "keyword": "Python",
+      "importance": "required",
+      "found_in_resume": true,
+      "found_in_vault": true,
+      "frequency_in_job": 2,
+      "context": "...5+ years Python experience...",
+      "matches": [
+        {
+          "section": "experience",
+          "role_index": 0,
+          "text_snippet": "Built Python applications on AWS"
+        },
+        {
+          "section": "skills",
+          "role_index": null,
+          "text_snippet": "Python"
+        }
+      ],
+      "occurrence_count": 4,
+      "base_score": 1.0,
+      "placement_score": 1.0,
+      "density_score": 1.5,
+      "recency_score": 2.0,
+      "importance_weight": 3.0,
+      "weighted_score": 9.0
+    }
+  ],
+  "suggestions": [
+    "CRITICAL: Add 'Kubernetes' (required) from your TechCorp experience",
+    "Add 'team leadership' (preferred) from your vault"
+  ],
+  "warnings": [
+    "Missing 1 required keywords. Focus on adding these to your resume.",
+    "2 keywords not found in your vault. Consider if you have transferable skills."
+  ]
+}
+```
+
+**Score Interpretation:**
+
+| Score | Rating | Description |
+| ----- | ------ | ----------- |
+| 90+ | Excellent | Strong match with bonus from placement, density, and recency |
+| 75-89 | Good | Solid match, minor gaps |
+| 60-74 | Fair | Missing important keywords or poor placement |
+| < 60 | Poor | Significant gaps, especially in required keywords |
+
+**Key Differences from `/keywords/detailed`:**
+
+| Feature | `/keywords/detailed` | `/keywords/enhanced` |
+| ------- | -------------------- | -------------------- |
+| Importance Tiers | 3 (required, preferred, nice_to_have) | 4 (adds strongly_preferred) |
+| Placement Weighting | No | Yes (experience > skills) |
+| Density Scoring | No | Yes (diminishing returns) |
+| Recency Weighting | No | Yes (recent roles weighted higher) |
+| Score Range | 0-1 coverage | 0-100+ weighted score |
+| Gap Analysis | Basic | Prioritized with suggestions |
 
 ---
 
@@ -606,6 +752,107 @@ curl http://localhost:8000/v1/ats/tips \
 }
 ```
 
+### ATSKeywordEnhancedRequest
+
+```typescript
+{
+  job_description: string;        // Job description (min 50 chars)
+  resume_id?: number;             // Resume ID from database
+  resume_content?: object;        // Parsed resume content as dictionary
+}
+```
+
+### ATSKeywordEnhancedResponse
+
+```typescript
+{
+  // Overall scores
+  keyword_score: number;          // 0-100+ weighted score
+  raw_coverage: number;           // 0-100 simple coverage percentage
+
+  // Coverage by importance tier (0-1)
+  required_coverage: number;
+  strongly_preferred_coverage: number;
+  preferred_coverage: number;
+  nice_to_have_coverage: number;
+
+  // Score breakdown - how much each factor contributed
+  placement_contribution: number;   // Percentage from placement weighting
+  density_contribution: number;     // Percentage from density scoring
+  recency_contribution: number;     // Percentage from recency weighting
+
+  // Grouped by importance
+  required_matched: string[];
+  required_missing: string[];
+  strongly_preferred_matched: string[];
+  strongly_preferred_missing: string[];
+  preferred_matched: string[];
+  preferred_missing: string[];
+  nice_to_have_matched: string[];
+  nice_to_have_missing: string[];
+
+  // Vault availability
+  missing_available_in_vault: string[];
+  missing_not_in_vault: string[];
+
+  // Gap analysis prioritized by importance
+  gap_list: GapAnalysisItem[];
+
+  // Full keyword details
+  all_keywords: EnhancedKeywordDetail[];
+
+  // Suggestions and warnings
+  suggestions: string[];
+  warnings: string[];
+}
+```
+
+### EnhancedKeywordDetail
+
+```typescript
+{
+  keyword: string;
+  importance: "required" | "strongly_preferred" | "preferred" | "nice_to_have";
+  found_in_resume: boolean;
+  found_in_vault: boolean;
+  frequency_in_job: number;
+  context: string | null;
+
+  // Match details
+  matches: KeywordMatchDetail[];
+  occurrence_count: number;
+
+  // Stage 2 scoring components
+  base_score: number;             // 0 or 1 (presence)
+  placement_score: number;        // Section weight (0.5-1.0)
+  density_score: number;          // Occurrence multiplier (1.0-1.5)
+  recency_score: number;          // Role position weight (0.8-2.0)
+  importance_weight: number;      // Importance tier multiplier (1.0-3.0)
+  weighted_score: number;         // Final combined score
+}
+```
+
+### KeywordMatchDetail
+
+```typescript
+{
+  section: string;                // Where match was found (experience, skills, etc.)
+  role_index: number | null;      // Role position (0 = most recent) if in experience
+  text_snippet: string | null;    // Text context around the match
+}
+```
+
+### GapAnalysisItem
+
+```typescript
+{
+  keyword: string;
+  importance: "required" | "strongly_preferred" | "preferred" | "nice_to_have";
+  in_vault: boolean;
+  suggestion: string;
+}
+```
+
 ### ATSTipsResponse
 
 ```typescript
@@ -689,8 +936,10 @@ curl http://localhost:8000/v1/ats/tips \
 
 1. **Knockout Check** (`/knockout-check`) - Identify deal-breakers first
 2. **Structure Analysis** (`/structure`) - Ensure ATS-parseable format
-3. **Keyword Analysis** (`/keywords/detailed`) - Optimize for specific job
-4. **Apply fixes** and re-run checks as needed
+3. **Enhanced Keyword Analysis** (`/keywords/enhanced`) - Get comprehensive scoring with placement, density, and recency factors (Stage 2)
+4. **Apply fixes** using prioritized gap analysis and re-run checks as needed
+
+**Alternative:** Use `/keywords/detailed` for simpler analysis without Stage 2 weighting factors.
 
 ## Related Endpoints
 

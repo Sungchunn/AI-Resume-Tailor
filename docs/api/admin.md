@@ -97,11 +97,12 @@ POST /api/admin/scraper/adhoc
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ----- | ------ | ---------- | ------------- |
 | `url` | string | Yes | LinkedIn job search URL |
 | `count` | integer | No | Max jobs to scrape (1-500, default 100) |
 
 **URL Validation:**
+
 - Must use `http` or `https` scheme
 - Domain must be `linkedin.com` or `www.linkedin.com`
 - Path must start with `/jobs`
