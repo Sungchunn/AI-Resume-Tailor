@@ -15,7 +15,7 @@ All API endpoints (except health and root) are prefixed with `/api` or `/v1`.
 ## API Versions
 
 | Version | Prefix | Status |
-|---------|--------|--------|
+| ------- | --------- | -------- |
 | v1 | `/api` (legacy routes) | Active |
 | v1 | `/v1` (new routes) | Active |
 
@@ -24,7 +24,7 @@ All API endpoints (except health and root) are prefixed with `/api` or `/v1`.
 ## Interactive Documentation
 
 | Format | URL |
-|--------|-----|
+| -------- | --------- |
 | Swagger UI | `/docs` |
 | ReDoc | `/redoc` |
 | OpenAPI Spec | `/openapi.json` |
@@ -79,7 +79,7 @@ curl http://localhost:8000/api/resumes \
 ## API Routes Summary
 
 | Category | Base Path | Description |
-|----------|-----------|-------------|
+| ---------- | --------- | ------------- |
 | [Authentication](authentication.md) | `/api/auth` | User registration, login, token refresh |
 | [Resumes](resumes.md) | `/api/resumes` | Resume CRUD operations |
 | [Jobs](jobs.md) | `/api/jobs` | User's job posting CRUD operations |
@@ -119,7 +119,7 @@ All timestamps are returned in ISO 8601 format:
 List endpoints support pagination with query parameters:
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
+| --------- | ------ | --------- | ------------- |
 | `skip` / `offset` | integer | 0 | Number of records to skip |
 | `limit` | integer | 10-100 | Maximum records to return |
 

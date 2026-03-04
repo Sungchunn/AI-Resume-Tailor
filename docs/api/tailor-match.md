@@ -6,7 +6,7 @@ The Tailor and Match APIs provide AI-powered resume customization and semantic s
 
 ---
 
-# Tailor API
+## Tailor API
 
 **Base Path:** `/api/tailor`
 
@@ -25,7 +25,7 @@ POST /api/tailor
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ----- | ------ | ---------- | ------------- |
 | `resume_id` | UUID | Yes | Source resume ID |
 | `job_id` | UUID | Conditional | Target job ID (user-created) |
 | `job_listing_id` | integer | Conditional | Target job listing ID (scraped) |
@@ -88,7 +88,7 @@ POST /api/tailor/quick-match
 **Request Body:**
 
 | Field | Type | Required |
-|-------|------|----------|
+| ----- | ------ | ---------- |
 | `resume_id` | UUID | Yes |
 | `job_id` | UUID | Conditional |
 | `job_listing_id` | integer | Conditional |
@@ -136,7 +136,7 @@ GET /api/tailor/{tailored_id}
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `tailored_id` | UUID | Tailored resume identifier |
 
 **Response (200 OK):**
@@ -156,13 +156,13 @@ PATCH /api/tailor/{tailored_id}
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `tailored_id` | UUID | Tailored resume identifier |
 
 **Request Body:**
 
 | Field | Type | Description |
-|-------|------|-------------|
+| ----- | ------ | ------------- |
 | `tailored_content` | string | Updated content |
 | `style_settings` | object | Style configuration |
 | `section_order` | string[] | Order of sections |
@@ -184,7 +184,7 @@ GET /api/tailor
 **Query Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `resume_id` | UUID | Filter by source resume |
 | `job_id` | UUID | Filter by target job |
 | `job_listing_id` | integer | Filter by job listing |
@@ -224,7 +224,7 @@ No response body.
 
 ---
 
-# Semantic Match API
+## Semantic Match API
 
 **Base Path:** `/v1/match`
 
@@ -360,7 +360,7 @@ GET /v1/match/job/{job_id}
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `job_id` | UUID | Job posting identifier |
 
 **Query Parameters:**

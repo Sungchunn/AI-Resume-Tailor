@@ -25,7 +25,7 @@ POST /api/jobs
 **Request Body:**
 
 | Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
+| ----- | ------ | ---------- | ------------- |
 | `title` | string | Yes | Job title |
 | `company` | string | No | Company name |
 | `raw_content` | string | Yes | Job description text |
@@ -74,7 +74,7 @@ GET /api/jobs/{job_id}
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `job_id` | UUID | Job identifier |
 
 **Example Request:**
@@ -114,7 +114,7 @@ curl http://localhost:8000/api/jobs/770e8400-e29b-41d4-a716-446655440000 \
 **Error Responses:**
 
 | Status | Condition |
-|--------|-----------|
+| ------ | --------- |
 | 403 | Job belongs to another user |
 | 404 | Job not found |
 
@@ -131,7 +131,7 @@ GET /api/jobs
 **Query Parameters:**
 
 | Parameter | Type | Default | Constraints |
-|-----------|------|---------|-------------|
+| --------- | ------ | --------- | ------------- |
 | `skip` | integer | 0 | >= 0 |
 | `limit` | integer | 10 | 1-100 |
 
@@ -173,13 +173,13 @@ PUT /api/jobs/{job_id}
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `job_id` | UUID | Job identifier |
 
 **Request Body:**
 
 | Field | Type | Required |
-|-------|------|----------|
+| ----- | ------ | ---------- |
 | `title` | string | No |
 | `company` | string | No |
 | `raw_content` | string | No |
@@ -204,7 +204,7 @@ Returns the updated job.
 **Error Responses:**
 
 | Status | Condition |
-|--------|-----------|
+| ------ | --------- |
 | 403 | Job belongs to another user |
 | 404 | Job not found |
 
@@ -221,7 +221,7 @@ DELETE /api/jobs/{job_id}
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `job_id` | UUID | Job identifier |
 
 **Example Request:**
@@ -238,7 +238,7 @@ No response body.
 **Error Responses:**
 
 | Status | Condition |
-|--------|-----------|
+| ------ | --------- |
 | 403 | Job belongs to another user |
 | 404 | Job not found |
 
@@ -321,8 +321,6 @@ When a job is processed, the `parsed_content` field contains extracted informati
   "employment_type": "full-time"
 }
 ```
-
-
 
 ## Usage Notes
 

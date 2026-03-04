@@ -6,12 +6,12 @@ This document covers error handling conventions and rate limiting across all API
 
 ---
 
-# Error Handling
+## Error Handling
 
-## HTTP Status Codes
+### HTTP Status Codes
 
 | Status | Name | Description |
-|--------|------|-------------|
+| ------ | ------- | ------------- |
 | 200 | OK | Successful GET, PUT, PATCH request |
 | 201 | Created | Successful POST (resource created) |
 | 204 | No Content | Successful DELETE (no body returned) |
@@ -60,8 +60,6 @@ Validation errors include detailed field-level information:
 }
 ```
 
-
-
 ---
 
 ## Common Error Scenarios
@@ -85,8 +83,6 @@ Validation errors include detailed field-level information:
 }
 ```
 
-
-
 ### Authorization Errors (403)
 
 ```json
@@ -106,8 +102,6 @@ Validation errors include detailed field-level information:
 }
 ```
 
-
-
 ### Resource Errors (404)
 
 ```json
@@ -126,8 +120,6 @@ Validation errors include detailed field-level information:
   "detail": "Preset not found"
 }
 ```
-
-
 
 ### Validation Errors (400/422)
 
@@ -152,8 +144,6 @@ Validation errors include detailed field-level information:
   "detail": "URL must be from linkedin.com domain"
 }
 ```
-
-
 
 ### Conflict Errors (409)
 
@@ -226,9 +216,9 @@ async function apiRequest(endpoint: string, options: RequestInit) {
 
 ---
 
-# Rate Limiting
+## Rate Limiting
 
-## Overview
+### Overview
 
 The API implements rate limiting using a Redis-based sliding window algorithm. Limits are applied per-user (authenticated) or per-IP (unauthenticated).
 
@@ -239,7 +229,7 @@ The API implements rate limiting using a Redis-based sliding window algorithm. L
 Applied to most endpoints:
 
 | Scope | Per Minute | Per Hour |
-|-------|-----------|----------|
+| ------- | ----------- | --------- |
 | Default | 60 | 1000 |
 
 ### AI-Powered Endpoints
@@ -247,7 +237,7 @@ Applied to most endpoints:
 Applied to computationally intensive AI operations:
 
 | Endpoint | Per Minute | Per Hour |
-|----------|-----------|----------|
+| ---------- | ----------- | --------- |
 | `POST /api/tailor` | 10 | 100 |
 | `POST /api/tailor/quick-match` | 10 | 100 |
 | `POST /v1/match` | 10 | 100 |
@@ -260,7 +250,7 @@ Applied to computationally intensive AI operations:
 Applied to prevent brute force attacks:
 
 | Endpoint | Per Minute | Per Hour |
-|----------|-----------|----------|
+| ---------- | ----------- | ------- |
 | `POST /api/auth/login` | 10 | 50 |
 | `POST /api/auth/register` | 10 | 50 |
 | `POST /api/auth/refresh` | 10 | 50 |
@@ -270,7 +260,7 @@ Applied to prevent brute force attacks:
 Applied to resource-intensive file generation:
 
 | Endpoint | Per Minute | Per Hour |
-|----------|-----------|----------|
+| ---------- | ----------- | ------- |
 | `GET /api/export/*` | 5 | 30 |
 | `POST /v1/resume-builds/*/export` | 5 | 30 |
 
@@ -293,7 +283,7 @@ These endpoints are not rate limited:
 All responses include rate limit information:
 
 | Header | Description |
-|--------|-------------|
+| -------------------- | ----------------------------------------- |
 | `X-RateLimit-Limit` | Maximum requests allowed in window |
 | `X-RateLimit-Remaining` | Requests remaining in current window |
 | `X-RateLimit-Reset` | Unix timestamp when limit resets |
@@ -389,7 +379,7 @@ function sleep(ms: number) {
 Rate limits can be configured via environment variables:
 
 | Variable | Default | Description |
-|----------|---------|-------------|
+| ---------- | --------- | ------------- |
 | `RATE_LIMIT_ENABLED` | true | Enable/disable rate limiting |
 | `RATE_LIMIT_DEFAULT_PER_MINUTE` | 60 | Default requests per minute |
 | `RATE_LIMIT_DEFAULT_PER_HOUR` | 1000 | Default requests per hour |

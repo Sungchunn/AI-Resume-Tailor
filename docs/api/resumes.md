@@ -23,7 +23,7 @@ POST /api/resumes
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ----- | ------ | ---------- | ------------- |
 | `title` | string | Yes | Resume title |
 | `raw_content` | string | Yes | Resume content text |
 
@@ -66,7 +66,7 @@ GET /api/resumes/{resume_id}
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `resume_id` | UUID | Resume identifier |
 
 **Example Request:**
@@ -98,7 +98,7 @@ curl http://localhost:8000/api/resumes/550e8400-e29b-41d4-a716-446655440000 \
 **Error Responses:**
 
 | Status | Condition |
-|--------|-----------|
+| -------- | ----------- |
 | 403 | Resume belongs to another user |
 | 404 | Resume not found |
 
@@ -115,7 +115,7 @@ GET /api/resumes
 **Query Parameters:**
 
 | Parameter | Type | Default | Constraints |
-|-----------|------|---------|-------------|
+| --------- | ------ | --------- | ------------- |
 | `skip` | integer | 0 | >= 0 |
 | `limit` | integer | 10 | 1-100 |
 
@@ -155,13 +155,13 @@ PUT /api/resumes/{resume_id}
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `resume_id` | UUID | Resume identifier |
 
 **Request Body:**
 
 | Field | Type | Required |
-|-------|------|----------|
+| ----- | ------ | ---------- |
 | `title` | string | No |
 | `raw_content` | string | No |
 
@@ -184,7 +184,7 @@ Returns the updated resume.
 **Error Responses:**
 
 | Status | Condition |
-|--------|-----------|
+| -------- | ----------- |
 | 403 | Resume belongs to another user |
 | 404 | Resume not found |
 
@@ -201,7 +201,7 @@ DELETE /api/resumes/{resume_id}
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `resume_id` | UUID | Resume identifier |
 
 **Example Request:**
@@ -218,7 +218,7 @@ No response body.
 **Error Responses:**
 
 | Status | Condition |
-|--------|-----------|
+| -------- | ----------- |
 | 403 | Resume belongs to another user |
 | 404 | Resume not found |
 
@@ -306,13 +306,13 @@ POST /api/resumes/{resume_id}/parse
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `resume_id` | integer | Resume identifier |
 
 **Query Parameters:**
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
+| --------- | ------ | --------- | ------------- |
 | `force` | boolean | false | Bypass cache and re-parse |
 
 **Example Request:**
@@ -337,7 +337,7 @@ curl -X POST "http://localhost:8000/api/resumes/1/parse?force=true" \
 **Error Responses:**
 
 | Status | Condition |
-|--------|-----------|
+| -------- | ----------- |
 | 400 | Resume has no content to parse |
 | 403 | Resume belongs to another user |
 | 404 | Resume not found |
@@ -355,13 +355,13 @@ GET /api/resumes/{resume_id}/parse/status
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `resume_id` | integer | Resume identifier |
 
 **Query Parameters:**
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
+| --------- | ------ | ---------- |-------------|
 | `task_id` | string | Yes | Task ID returned from POST /parse |
 
 **Example Request:**
@@ -407,7 +407,7 @@ curl "http://localhost:8000/api/resumes/1/parse/status?task_id=550e8400-e29b-41d
 **Error Responses:**
 
 | Status | Condition |
-|--------|-----------|
+| -------- | ----------- |
 | 403 | Resume belongs to another user |
 | 404 | Resume or task not found |
 

@@ -6,7 +6,7 @@ The Upload and Export APIs handle document processing for resumes. Upload allows
 
 ---
 
-# Upload API
+## Upload API
 
 **Base Path:** `/api/upload`
 
@@ -27,13 +27,13 @@ POST /api/upload/extract
 **Request Body:**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ----- | ------ | ---------- | ------------- |
 | `file` | file | Yes | PDF or DOCX file |
 
 **Query Parameters:**
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
+| --------- | ------ | --------- | ------------- |
 | `store_file` | boolean | true | Whether to store the original file in object storage |
 
 **Constraints:**
@@ -96,7 +96,7 @@ curl -X POST "http://localhost:8000/api/upload/extract?store_file=false" \
 **Error Responses:**
 
 | Status | Condition |
-|--------|-----------|
+| -------- | ----------- |
 | 400 | Invalid file type or empty file |
 | 400 | File size exceeds maximum limit |
 | 422 | File could not be processed |
@@ -123,7 +123,7 @@ curl -X POST "http://localhost:8000/api/upload/extract?store_file=false" \
 
 ---
 
-# Export API
+## Export API
 
 **Base Paths:** `/api/export`, `/api/resumes`
 
@@ -142,13 +142,13 @@ GET /api/export/{tailored_id}
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `tailored_id` | UUID | Tailored resume identifier |
 
 **Query Parameters:**
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
+| --------- | ------ | --------- | ------------- |
 | `format` | string | pdf | Output format: `pdf`, `docx`, `txt` |
 
 **Example Request:**
@@ -182,7 +182,7 @@ Content-Disposition: attachment; filename="tailored_resume.pdf"
 **Error Responses:**
 
 | Status | Condition |
-|--------|-----------|
+| -------- | ----------- |
 | 404 | Tailored resume not found |
 | 422 | Export format not supported |
 
@@ -237,7 +237,7 @@ POST /api/resumes/{resume_id}/export
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ------ | ------------- |
 | `resume_id` | integer | Resume identifier |
 
 **Request Body:**
@@ -258,7 +258,7 @@ POST /api/resumes/{resume_id}/export
 **Request Fields:**
 
 | Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
+| ----- | ------ | ---------- |---------|-------------|
 | `format` | string | Yes | - | `pdf` or `docx` |
 | `template` | string | No | `classic` | Style template: `classic`, `modern`, `minimal` |
 | `font_family` | string | No | `Arial` | Font family name |
@@ -298,7 +298,7 @@ Content-Disposition: attachment; filename="My_Resume.pdf"
 **Error Responses:**
 
 | Status | Condition |
-|--------|-----------|
+| -------- | ----------- |
 | 400 | Resume has no content to export |
 | 403 | Not authorized to access this resume |
 | 404 | Resume not found |
@@ -336,7 +336,7 @@ Ultra-clean ATS-optimized design:
 ## Supported Formats
 
 | Format | MIME Type | Description |
-|--------|-----------|-------------|
+| -------- | ----------- |-------------|
 | `pdf` | `application/pdf` | PDF document (default) |
 | `docx` | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` | Microsoft Word document |
 | `txt` | `text/plain` | Plain text |
