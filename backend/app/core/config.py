@@ -47,9 +47,6 @@ class Settings(BaseSettings):
     # Proxy Configuration
     trust_proxy: bool = False  # Set True when behind reverse proxy
 
-    # Webhook Authentication (for n8n job listing ingestion)
-    n8n_webhook_api_key: str = ""
-
     # Admin Authentication
     # DEPRECATED: admin_emails is only used for migration seeding (20260223_0002).
     # Remove this setting after migration has run in all environments.

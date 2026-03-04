@@ -13,7 +13,6 @@ from app.api.routes import (
     resumes,
     tailor,
     upload,
-    webhooks,
     resume_builds,
 )
 
@@ -38,9 +37,6 @@ api_router.include_router(ai.router, prefix="/v1/ai", tags=["ai"])
 
 # Job Listings (system-wide jobs from external sources)
 api_router.include_router(job_listings.router, prefix="/job-listings", tags=["job-listings"])
-
-# Webhooks (n8n integration)
-api_router.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
 
 # Admin endpoints (scheduler management)
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])

@@ -75,7 +75,6 @@ flowchart TB
         AIProvider["OpenAI or Gemini<br/>(Configurable)<br/>Text Generation"]
         GeminiEmbed["Google Gemini<br/>Text Embeddings"]
         Apify["Apify<br/>LinkedIn Scraper"]
-        N8N["n8n Webhooks<br/>Job Ingestion"]
     end
 
     Browser --> NextJS
@@ -89,7 +88,6 @@ flowchart TB
     AIServices --> AIProvider
     AIServices --> GeminiEmbed
     ScraperServices --> Apify
-    ScraperServices --> N8N
 
     Services --> PostgreSQL
     Services --> MongoDB
@@ -192,7 +190,6 @@ flowchart TB
         ATS["ats<br/>/api/v1/ats"]
         AIChat["ai<br/>/api/v1/ai"]
         Listings["job-listings<br/>/api/job-listings"]
-        Webhooks["webhooks<br/>/api/webhooks"]
         Admin["admin<br/>/api/admin"]
     end
 
@@ -212,7 +209,6 @@ flowchart TB
     APIRouter --> ATS
     APIRouter --> AIChat
     APIRouter --> Listings
-    APIRouter --> Webhooks
     APIRouter --> Admin
 ```
 
@@ -517,14 +513,6 @@ flowchart TB
 | POST | `/job-listings/{id}/hide` | Hide/unhide job |
 | POST | `/job-listings/{id}/applied` | Mark applied |
 
-#### Webhook Endpoints (`/api/webhooks`)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/webhooks/job-listings` | Batch ingest (up to 2000) |
-| POST | `/webhooks/job-listings/single` | Ingest single listing |
-| DELETE | `/webhooks/job-listings/{external_job_id}` | Deactivate listing |
-
 #### Admin Endpoints (`/api/admin`)
 
 ```mermaid
@@ -661,14 +649,13 @@ flowchart LR
         RateLimit["Rate Limiter<br/>default: 60/min, 1000/hr<br/>ai: 30/min, 300/hr<br/>auth: 10/min, 100/hr"]
         JWTAuth["JWT Authentication<br/>(per-route)"]
         AdminCheck["Admin Check<br/>(per-route)"]
-        WebhookKey["Webhook Key<br/>(X-API-Key)"]
     end
 
     subgraph Handler["Route Handler"]
         Route["Endpoint Logic"]
     end
 
-    Req --> CORS --> RateLimit --> JWTAuth --> AdminCheck --> WebhookKey --> Route
+    Req --> CORS --> RateLimit --> JWTAuth --> AdminCheck --> Route
 ```
 
 ---
@@ -1663,7 +1650,6 @@ sequenceDiagram
     participant Scheduler as APScheduler
     participant Orchestrator as ScraperOrchestrator
     participant Apify as Apify API
-    participant Webhook as n8n Webhook
     participant API as FastAPI
     participant DB as PostgreSQL
 
@@ -1679,13 +1665,6 @@ sequenceDiagram
 
         Orchestrator->>DB: Upsert job_listings
         Orchestrator->>DB: Log scraper_run
-    end
-
-    alt Webhook Ingestion
-        Webhook->>API: POST /api/webhooks/job-listings
-        Note over Webhook,API: X-API-Key header required
-        API->>DB: Batch upsert (up to 2000)
-        API-->>Webhook: {created, updated, errors}
     end
 
     alt Ad-hoc Scrape
@@ -1705,7 +1684,6 @@ flowchart TB
         Scheduled["APScheduler<br/>(Daily/Weekly)"]
         Manual["Admin Manual<br/>POST /trigger"]
         AdHoc["Ad-hoc URL<br/>POST /adhoc"]
-        Webhook["n8n Webhook<br/>POST /webhooks"]
     end
 
     subgraph Processing["Processing"]
@@ -1724,7 +1702,6 @@ flowchart TB
     Scheduled --> Orchestrator
     Manual --> Orchestrator
     AdHoc --> Orchestrator
-    Webhook --> |"Direct DB"| JobListings
 
     Orchestrator --> ApifyClient
     ApifyClient --> |"Results"| Orchestrator
@@ -1844,7 +1821,6 @@ flowchart TB
     subgraph Authorization["Authorization"]
         UserAuth["User Auth<br/>(JWT Required)"]
         AdminAuth["Admin Auth<br/>(is_admin Check)"]
-        WebhookAuth["Webhook Auth<br/>(X-API-Key)"]
     end
 
     subgraph Protection["Protection Layers"]
@@ -1865,7 +1841,6 @@ flowchart TB
 
     UserAuth --> |"Protected Routes"| API["API Endpoints"]
     AdminAuth --> |"/api/admin/*"| AdminAPI["Admin Endpoints"]
-    WebhookAuth --> |"/api/webhooks/*"| WebhookAPI["Webhook Endpoints"]
 
     CORS --> API
     RateLimit --> API
@@ -1934,7 +1909,6 @@ flowchart TB
 flowchart TB
     subgraph External["External Traffic"]
         Users["Users"]
-        N8N["n8n Webhooks"]
     end
 
     subgraph Docker["Docker Compose Stack"]
@@ -1962,7 +1936,6 @@ flowchart TB
     end
 
     Users --> NextJS
-    N8N --> FastAPI
     NextJS --> FastAPI
 
     FastAPI --> PostgreSQL
@@ -2011,7 +1984,6 @@ OPENAI_MODEL=gpt-4o-mini  # Alternative model
 
 # Scraper
 APIFY_API_TOKEN=<apify-token>
-WEBHOOK_API_KEY=<webhook-secret>
 
 # Storage
 MINIO_ENDPOINT=minio:9000
@@ -2037,9 +2009,8 @@ MINIO_SECRET_KEY=<secret-key>
 | ATS | 4 |
 | AI Chat | 2 |
 | Job Listings | 10 |
-| Webhooks | 3 |
 | Admin | 17 |
-| **Total** | **93** |
+| **Total** | **90** |
 
 ---
 

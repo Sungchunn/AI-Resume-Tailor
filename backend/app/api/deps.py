@@ -1,6 +1,6 @@
 from typing import Annotated, AsyncGenerator, TypedDict
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from sqlalchemy import select
@@ -124,26 +124,6 @@ async def get_optional_user_id(
 
     user_id = payload.get("sub")
     return int(user_id) if user_id else None
-
-
-async def verify_webhook_key(
-    x_api_key: Annotated[str, Header(alias="X-API-Key")],
-) -> None:
-    """
-    Validate webhook API key from X-API-Key header.
-    Used to authenticate webhook requests from n8n/external services.
-    """
-    settings = get_settings()
-    if not settings.n8n_webhook_api_key:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Webhook not configured",
-        )
-    if x_api_key != settings.n8n_webhook_api_key:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid API key",
-        )
 
 
 async def require_admin(
