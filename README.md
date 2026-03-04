@@ -12,7 +12,7 @@ An AI-powered application that tailors resumes to specific job descriptions.
 
 ## Project Structure
 
-```
+```text
 ├── /frontend          # Next.js application
 ├── /backend           # FastAPI application
 ├── /scripts           # Automation scripts
@@ -35,14 +35,18 @@ An AI-powered application that tailors resumes to specific job descriptions.
 
 1. Clone the repository
 2. Copy environment files:
+
    ```bash
    cp backend/.env.example backend/.env
    cp frontend/.env.example frontend/.env
    ```
+
 3. Start services:
+
    ```bash
    docker-compose up -d
    ```
+
 4. Access:
    - Frontend: <http://localhost:3000>
    - Backend: <http://localhost:8000>
