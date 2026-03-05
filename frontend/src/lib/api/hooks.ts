@@ -918,3 +918,96 @@ export function useATSTips() {
     staleTime: 1000 * 60 * 60, // Cache for 1 hour
   });
 }
+
+// Progressive ATS Analysis with SSE
+import { useCallback } from "react";
+import { useATSProgressStore } from "@/lib/stores/atsProgressStore";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+/**
+ * Hook for progressive ATS analysis with SSE streaming.
+ *
+ * Automatically manages EventSource connection and updates global state.
+ * Analysis continues even if component unmounts (background execution).
+ */
+export function useATSProgressiveAnalysis() {
+  const store = useATSProgressStore();
+
+  const startAnalysis = useCallback(
+    (resumeId: number, jobId: number) => {
+      // Close any existing connection
+      store.closeConnection();
+
+      // Initialize analysis state
+      store.startAnalysis(resumeId, jobId);
+
+      // Create SSE connection
+      const url = `${API_BASE_URL}/api/v1/ats/analyze-progressive?resume_id=${resumeId}&job_id=${jobId}`;
+      const eventSource = new EventSource(url, {
+        withCredentials: true, // Send auth cookies
+      });
+
+      // Store event source in global state
+      useATSProgressStore.setState({ eventSource });
+
+      // Event handlers
+      eventSource.addEventListener("stage_start", (e: Event) => {
+        const customEvent = e as MessageEvent;
+        const data = JSON.parse(customEvent.data);
+        store.updateStage(data);
+      });
+
+      eventSource.addEventListener("stage_complete", (e: Event) => {
+        const customEvent = e as MessageEvent;
+        const data = JSON.parse(customEvent.data);
+        store.updateStage(data);
+      });
+
+      eventSource.addEventListener("stage_error", (e: Event) => {
+        const customEvent = e as MessageEvent;
+        const data = JSON.parse(customEvent.data);
+        store.updateStage(data);
+      });
+
+      eventSource.addEventListener("score_calculation", (e: Event) => {
+        const customEvent = e as MessageEvent;
+        const data = JSON.parse(customEvent.data);
+        store.updateStage(data);
+      });
+
+      eventSource.addEventListener("complete", (e: Event) => {
+        const customEvent = e as MessageEvent;
+        const data = JSON.parse(customEvent.data);
+        if (data.composite_score) {
+          store.setCompositeScore(data.composite_score);
+        }
+        store.completeAnalysis();
+      });
+
+      eventSource.addEventListener("error", (e: Event) => {
+        const customEvent = e as MessageEvent;
+        const data = JSON.parse(customEvent.data);
+        store.setError(data.error || "Unknown error occurred");
+      });
+
+      // Handle connection errors
+      eventSource.onerror = (error) => {
+        console.error("SSE connection error:", error);
+
+        // Check if error is due to auth or network
+        if (eventSource.readyState === EventSource.CLOSED) {
+          store.setError("Connection lost. Please try again.");
+        }
+      };
+
+      return eventSource;
+    },
+    [store]
+  );
+
+  return {
+    startAnalysis,
+    ...store,
+  };
+}

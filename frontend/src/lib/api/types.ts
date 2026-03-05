@@ -850,3 +850,40 @@ export interface ParseTaskResponse {
 export interface ParseStatusResponse extends ParseTaskResponse {
   error?: string | null;
 }
+
+// ============================================================================
+// ATS Progressive Analysis Types (SSE)
+// ============================================================================
+
+export interface ATSProgressiveRequest {
+  resume_id?: number;
+  job_id?: number;
+  resume_content?: Record<string, any>;
+  job_description?: string;
+}
+
+export interface ATSStageProgress {
+  stage: number;
+  stage_name: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  progress_percent: number;
+  elapsed_ms?: number;
+  result?: any;
+  error?: string;
+}
+
+export interface ATSCompositeScore {
+  final_score: number;
+  stage_breakdown: Record<string, number>;
+  weights_used: Record<string, number>;
+  normalization_applied: boolean;
+  failed_stages: string[];
+}
+
+export interface ATSProgressiveCompleteEvent {
+  stage: number;
+  status: 'completed';
+  progress_percent: number;
+  elapsed_ms: number;
+  composite_score: ATSCompositeScore;
+}
