@@ -1019,7 +1019,7 @@ export function useATSProgressiveAnalysis() {
   );
 
   return {
-    startAnalysis,
     ...store,
+    startAnalysis, // Override store's startAnalysis with SSE-enabled version
   };
 }
