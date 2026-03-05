@@ -1616,12 +1616,20 @@ async def analyze_progressive_ats(
     This endpoint orchestrates all 5 ATS stages and streams progress events:
 
     **Event Types:**
+    - `cache_hit`: Cached results found, returning fast playback
+    - `cache_miss`: No cached results, running full analysis
     - `stage_start`: Stage N is beginning
     - `stage_complete`: Stage N completed successfully (includes result data)
     - `stage_error`: Stage N failed (includes error message, continues to next stage)
     - `score_calculation`: Calculating final composite score
     - `complete`: All stages finished, composite score ready
     - `error`: Fatal error that aborts entire analysis
+
+    **Caching Behavior:**
+    - Cache key: `ats:{resume_content_hash[:16]}:{job_id}`
+    - TTL: 24 hours
+    - On cache hit, streams cached results as fast playback
+    - On cache miss, runs full pipeline and caches results
 
     **Client Usage:**
     ```javascript
@@ -1632,11 +1640,15 @@ async def analyze_progressive_ats(
     });
     ```
     """
+    # Get cache service for ATS result caching
+    cache = get_cache_service()
 
     async def event_generator():
         start_time = time.time()
         stage_results = {}
         failed_stages = []
+        resume_content_hash: str | None = None
+        effective_job_id: int | None = None
 
         # Stage metadata
         stages = [
@@ -1658,6 +1670,87 @@ async def analyze_progressive_ats(
                     })
                 }
                 return
+
+            # Get resume content for cache key generation
+            if request.resume_id:
+                resume_repo = ResumeCRUD()
+                resume = await resume_repo.get(db, id=request.resume_id)
+                if not resume or resume.owner_id != user_id:
+                    yield {
+                        "event": "error",
+                        "data": json.dumps({"error": "Resume not found or not authorized"})
+                    }
+                    return
+                raw_resume_content = resume.raw_content or ""
+                resume_content_hash = cache.hash_content(raw_resume_content)
+                effective_job_id = request.job_id
+            else:
+                # For raw content, hash the provided content
+                raw_resume_content = json.dumps(request.resume_content, sort_keys=True)
+                resume_content_hash = cache.hash_content(raw_resume_content)
+                # For raw job description, use a hash of it as a pseudo job_id
+                effective_job_id = hash(request.job_description) % (10 ** 9)  # Pseudo ID
+
+            # Check cache before running analysis
+            cached_result = await cache.get_ats_result(resume_content_hash, effective_job_id)
+            if cached_result:
+                # Cache hit - stream cached results as fast playback
+                cached_at = cached_result.get("cached_at", "")
+                yield {
+                    "event": "cache_hit",
+                    "data": json.dumps({
+                        "cached_at": cached_at,
+                        "resume_content_hash": resume_content_hash,
+                    })
+                }
+
+                # Stream each cached stage result
+                cached_stages = cached_result.get("stage_results", {})
+                for idx, (stage_num, stage_key, stage_name) in enumerate(stages):
+                    progress_percent = int(((idx + 1) / len(stages)) * 100)
+
+                    if stage_key in cached_stages:
+                        yield {
+                            "event": "stage_complete",
+                            "data": json.dumps({
+                                "stage": stage_num,
+                                "stage_name": stage_name,
+                                "status": "completed",
+                                "progress_percent": progress_percent,
+                                "elapsed_ms": 0,  # Cached, no time taken
+                                "result": cached_stages[stage_key],
+                                "from_cache": True,
+                            })
+                        }
+                    else:
+                        # Stage was missing from cache (failed previously)
+                        failed_stages.append(stage_name)
+
+                # Emit cached composite score
+                composite_score = cached_result.get("composite_score", {})
+                yield {
+                    "event": "complete",
+                    "data": json.dumps({
+                        "stage": 5,
+                        "stage_name": "Complete",
+                        "status": "completed",
+                        "progress_percent": 100,
+                        "elapsed_ms": int((time.time() - start_time) * 1000),
+                        "composite_score": composite_score,
+                        "from_cache": True,
+                        "cached_at": cached_at,
+                    })
+                }
+                return
+
+            # Cache miss - emit event and run full analysis
+            yield {
+                "event": "cache_miss",
+                "data": json.dumps({
+                    "resume_content_hash": resume_content_hash,
+                    "job_id": effective_job_id,
+                })
+            }
 
             # Execute each stage sequentially
             for idx, (stage_num, stage_key, stage_name) in enumerate(stages):
@@ -1738,6 +1831,23 @@ async def analyze_progressive_ats(
             composite_score = _calculate_composite_score(stage_results, failed_stages)
             total_elapsed = int((time.time() - start_time) * 1000)
 
+            # Cache results if we have valid data and cache key
+            if resume_content_hash and effective_job_id and stage_results:
+                # Convert stage results to cacheable format
+                cacheable_stage_results = {}
+                for key, result in stage_results.items():
+                    if hasattr(result, 'model_dump'):
+                        cacheable_stage_results[key] = result.model_dump()
+                    else:
+                        cacheable_stage_results[key] = result
+
+                await cache.set_ats_result(
+                    resume_content_hash=resume_content_hash,
+                    job_id=effective_job_id,
+                    composite_score=composite_score.model_dump(),
+                    stage_results=cacheable_stage_results,
+                )
+
             # Emit complete event
             yield {
                 "event": "complete",
@@ -1748,6 +1858,7 @@ async def analyze_progressive_ats(
                     "progress_percent": 100,
                     "elapsed_ms": total_elapsed,
                     "composite_score": composite_score.model_dump(),
+                    "from_cache": False,
                 })
             }
 
