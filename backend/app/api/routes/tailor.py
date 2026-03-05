@@ -6,6 +6,7 @@ Two Copies Architecture:
 - POST /{id}/finalize: Save user's approved version (finalized_data)
 """
 
+from datetime import datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -248,7 +249,13 @@ async def get_tailored_resume(
     dbs: DatabaseSessions = Depends(get_databases),
     current_user_id: int = Depends(get_current_user_id),
 ) -> TailoredResumeFullResponse:
-    """Get a tailored resume by ID."""
+    """Get a tailored resume by ID.
+
+    Includes ATS cache metadata (Phase 5):
+    - ats_score: Cached ATS composite score (if available)
+    - ats_cached_at: When ATS analysis was last cached
+    - is_outdated: True if resume content changed since ATS analysis
+    """
     mongo = dbs["mongo"]
 
     tailored = await tailored_resume_crud.get(mongo, id=tailored_id)
@@ -264,6 +271,32 @@ async def get_tailored_resume(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this tailored resume",
         )
+
+    # Get ATS cache metadata (Phase 5)
+    ats_score: float | None = None
+    ats_cached_at = None
+    is_outdated = False
+
+    cache = get_cache_service()
+
+    # Get the original resume to compute content hash for cache lookup
+    original_resume = await resume_crud.get(mongo, id=str(tailored.resume_id))
+    if original_resume and original_resume.raw_content:
+        resume_content_hash = cache.hash_content(original_resume.raw_content)
+        job_id = tailored.job_source.id
+
+        # Look up ATS cache
+        ats_metadata = await cache.get_ats_metadata(resume_content_hash, job_id)
+        if ats_metadata:
+            ats_score = ats_metadata.get("final_score")
+            cached_at_str = ats_metadata.get("cached_at")
+            if cached_at_str:
+                ats_cached_at = datetime.fromisoformat(cached_at_str.replace("Z", "+00:00"))
+
+            # Check staleness: compare cached hash with current content hash
+            cached_hash = ats_metadata.get("resume_content_hash")
+            if cached_hash and cached_hash != resume_content_hash:
+                is_outdated = True
 
     return TailoredResumeFullResponse(
         id=str(tailored.id),
@@ -281,6 +314,10 @@ async def get_tailored_resume(
         created_at=tailored.created_at,
         updated_at=tailored.updated_at,
         finalized_at=tailored.finalized_at,
+        # ATS cache metadata (Phase 5)
+        ats_score=ats_score,
+        ats_cached_at=ats_cached_at,
+        is_outdated=is_outdated,
     )
 
 
