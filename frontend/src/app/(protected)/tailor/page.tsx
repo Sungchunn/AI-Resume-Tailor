@@ -9,7 +9,6 @@ import {
   useJobs,
   useTailorResume,
   useQuickMatch,
-  useTailoredResumes,
   useJobListing,
 } from "@/lib/api";
 import { CardGridSkeleton } from "@/components/ui";
@@ -26,7 +25,6 @@ function TailorPageContent() {
 
   const { data: resumes, isLoading: resumesLoading } = useResumes();
   const { data: jobs, isLoading: jobsLoading } = useJobs();
-  const { data: tailoredResumes, isLoading: tailoredLoading } = useTailoredResumes();
   const { data: jobListing, isLoading: jobListingLoading, error: jobListingError } = useJobListing(jobListingId ?? 0);
   const tailorResume = useTailorResume();
   const quickMatch = useQuickMatch();
@@ -576,48 +574,6 @@ function TailorPageContent() {
           <p className="text-sm text-destructive">
             {tailorResume.error.message || "Failed to tailor resume"}
           </p>
-        </div>
-      )}
-
-      {/* Recent Tailored Resumes */}
-      {step === "select" && !tailoredLoading && tailoredResumes && tailoredResumes.length > 0 && (
-        <div className="card">
-          <h2 className="text-lg font-semibold text-foreground mb-4">
-            Recent Tailored Resumes
-          </h2>
-          <div className="space-y-3">
-            {tailoredResumes.slice(0, 5).map((tailored) => (
-              <Link
-                key={tailored.id}
-                href={`/tailor/${tailored.id}`}
-                className="block p-4 border rounded-lg hover:border-primary/30 hover:bg-primary/10 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-foreground">
-                      Tailored Resume #{tailored.id}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Created {new Date(tailored.created_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                  {tailored.match_score !== null && (
-                    <div
-                      className={`text-2xl font-bold ${
-                        tailored.match_score >= 70
-                          ? "text-green-600"
-                          : tailored.match_score >= 40
-                          ? "text-yellow-600"
-                          : "text-destructive"
-                      }`}
-                    >
-                      {Math.round(tailored.match_score)}%
-                    </div>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
         </div>
       )}
     </div>
