@@ -38,7 +38,8 @@
     "react-resizable-panels": "^4.6.4",
     "tailwindcss": "^4.1.18",
     "use-debounce": "^10.1.0",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "zustand": "4"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

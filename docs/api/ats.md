@@ -1735,17 +1735,20 @@ Analysis continues even if the client disconnects or navigates away. To resume w
 ### Error Handling
 
 **Partial Failures:**
+
 - If one stage fails, analysis continues with remaining stages
 - `stage_error` event indicates which stage failed and why
 - Final `composite_score.failed_stages` lists failed stages
 - Score is recalculated with remaining stages
 
 **Connection Loss:**
+
 - If network drops, `error` event is emitted
 - Client can retry from `error` event
 - Stages already completed are not re-run
 
 **Rate Limiting:**
+
 - SSE stream respects API rate limits
 - 429 responses will close the stream with error event
 - Exponential backoff recommended for retries
@@ -1757,7 +1760,7 @@ Analysis continues even if the client disconnects or navigates away. To resume w
 - Progress updates stream ~every 0.5-3 seconds
 - No impact on other API endpoints during analysis
 
-### Related Endpoints
+### Related Endpoint
 
 - [Knockout Check](/api/ats.md#post-atsknight-check) - Stage 0 only
 - [Structure Analysis](/api/ats.md#post-atsstructure) - Stage 1 only
