@@ -72,7 +72,7 @@ Keep the root directory clean - only `README.md` and `CLAUDE.md` at project root
 ```
 
 | Directory | Purpose | When to Add Here |
-|-----------|---------|------------------|
+| ----------- | --------- | ------------------ |
 | `/planning` | Project-level roadmaps, milestones, assessments | Implementation plans, phase breakdowns, project reviews |
 | `/features` | Feature-specific implementation docs | New feature plans, proposals, phase docs |
 | `/architecture` | System design, technical decisions | Tech stack choices, design patterns, cross-cutting concerns |

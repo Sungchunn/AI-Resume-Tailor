@@ -6,6 +6,51 @@ The Tailor and Match APIs provide AI-powered resume customization and semantic s
 
 ---
 
+## 3-Step Tailor Flow (v2)
+
+The redesigned tailor flow provides a linear wizard experience:
+
+```text
+Job Detail Page
+      │
+      │ Click "Optimize Resume for This Job"
+      ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Step 1: Select Resume                                      │
+│  /tailor?job_listing_id=X                                   │
+│                                                             │
+│  - Job context card (pre-selected from job detail page)     │
+│  - Resume selector with master resume pre-selected          │
+│  - CTA: "Analyze Match →"                                   │
+└─────────────────────────────────────────────────────────────┘
+      │
+      ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Step 2: Review Match Analysis                              │
+│  /tailor/analyze?resume_id=X&job_listing_id=Y               │
+│                                                             │
+│  - ATS Progress Stepper (5-stage streaming analysis)        │
+│  - Interactive Keyword Selection:                           │
+│    • "Skills You Have" - vault-backed, selectable           │
+│    • "Skills You Don't Have" - grayed out, not selectable   │
+│  - CTA: "Generate Tailored Resume →"                        │
+└─────────────────────────────────────────────────────────────┘
+      │
+      │ POST /api/tailor with focus_keywords
+      ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Step 3: Tailored Resume Detail                             │
+│  /tailor/[id]                                               │
+│                                                             │
+│  - Human-readable title: "Software Engineer @ Acme — Mar 5" │
+│  - Score dashboard with ATS cache info                      │
+│  - Version history sidebar (grouped by job)                 │
+│  - Actions: Edit, Download, Re-analyze, Delete              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Tailor API
 
 **Base Path:** `/api/tailor`
@@ -26,11 +71,20 @@ POST /api/tailor
 
 | Field | Type | Required | Description |
 | ----- | ------ | ---------- | ------------- |
-| `resume_id` | UUID | Yes | Source resume ID |
-| `job_id` | UUID | Conditional | Target job ID (user-created) |
+| `resume_id` | string | Yes | Source resume ID (MongoDB ObjectId) |
+| `job_id` | integer | Conditional | Target job ID (user-created) |
 | `job_listing_id` | integer | Conditional | Target job listing ID (scraped) |
+| `focus_keywords` | string[] | No | User-selected keywords to emphasize |
 
 > **Note:** Either `job_id` or `job_listing_id` must be provided, but not both.
+
+**Focus Keywords (User-in-the-Loop):**
+
+The `focus_keywords` field enables resume integrity by letting users control which skills the AI emphasizes:
+
+- If provided: AI only optimizes for these specific skills
+- If `null`/`undefined`: AI uses all vault-backed keywords by default
+- AI will NOT add skills outside the focus list (prevents lying on resumes)
 
 **Example Request:**
 
@@ -39,8 +93,9 @@ curl -X POST http://localhost:8000/api/tailor \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "resume_id": "550e8400-e29b-41d4-a716-446655440000",
-    "job_id": "770e8400-e29b-41d4-a716-446655440000"
+    "resume_id": "67890abcdef123456789abcd",
+    "job_listing_id": 123,
+    "focus_keywords": ["Python", "FastAPI", "AWS"]
   }'
 ```
 
@@ -48,28 +103,25 @@ curl -X POST http://localhost:8000/api/tailor \
 
 ```json
 {
-  "id": "aa0e8400-e29b-41d4-a716-446655440000",
-  "resume_id": "550e8400-e29b-41d4-a716-446655440000",
-  "job_id": "770e8400-e29b-41d4-a716-446655440000",
-  "job_listing_id": null,
-  "tailored_content": "John Doe\nSenior Software Engineer\n\n[Tailored content optimized for the job...]",
-  "suggestions": [
-    "Consider adding more details about your AWS experience",
-    "Highlight your team leadership achievements",
-    "Add quantified metrics to your accomplishments"
-  ],
+  "id": "abcdef123456789012345678",
+  "resume_id": "67890abcdef123456789abcd",
+  "job_id": null,
+  "job_listing_id": 123,
+  "tailored_data": {
+    "contact": {"name": "John Doe", "email": "john@example.com"},
+    "summary": "Senior Software Engineer with 5+ years of Python and AWS experience...",
+    "experience": [...],
+    "skills": ["Python", "FastAPI", "AWS", "PostgreSQL"]
+  },
+  "status": "pending",
   "match_score": 78.5,
-  "skill_matches": [
-    {"skill": "Python", "level": "expert", "relevance": "high"},
-    {"skill": "AWS", "level": "intermediate", "relevance": "high"},
-    {"skill": "Docker", "level": "advanced", "relevance": "medium"}
-  ],
-  "skill_gaps": [
-    {"skill": "Kubernetes", "importance": "preferred"},
-    {"skill": "Machine Learning", "importance": "nice-to-have"}
-  ],
+  "skill_matches": ["Python", "FastAPI", "AWS"],
+  "skill_gaps": ["Kubernetes"],
   "keyword_coverage": 0.72,
-  "created_at": "2026-02-18T10:30:00.000000"
+  "job_title": "Senior Software Engineer",
+  "company_name": "Acme Corp",
+  "focus_keywords_used": ["Python", "FastAPI", "AWS"],
+  "created_at": "2026-03-05T10:30:00.000000"
 }
 ```
 
@@ -123,7 +175,7 @@ curl -X POST http://localhost:8000/api/tailor/quick-match \
 
 ### Get Tailored Resume
 
-Retrieve a previously generated tailored resume.
+Retrieve a previously generated tailored resume with ATS cache metadata.
 
 ```http
 GET /api/tailor/{tailored_id}
@@ -133,11 +185,49 @@ GET /api/tailor/{tailored_id}
 
 | Parameter | Type | Description |
 | --------- | ------ | ------------- |
-| `tailored_id` | UUID | Tailored resume identifier |
+| `tailored_id` | string | Tailored resume identifier (MongoDB ObjectId) |
 
 **Response (200 OK):**
 
-Full TailorResponse object.
+```json
+{
+  "id": "abcdef123456789012345678",
+  "resume_id": "67890abcdef123456789abcd",
+  "job_id": null,
+  "job_listing_id": 123,
+  "tailored_data": {...},
+  "finalized_data": null,
+  "status": "pending",
+  "match_score": 78.5,
+  "job_title": "Senior Software Engineer",
+  "company_name": "Acme Corp",
+  "formatted_name": "Senior Software Engineer @ Acme Corp — Mar 5",
+  "style_settings": {},
+  "section_order": ["summary", "experience", "skills", "education"],
+  "created_at": "2026-03-05T10:30:00.000000",
+  "updated_at": "2026-03-05T10:30:00.000000",
+  "finalized_at": null,
+  "ats_score": 82.5,
+  "ats_cached_at": "2026-03-05T14:30:00.000000",
+  "is_outdated": false
+}
+```
+
+**ATS Cache Metadata Fields:**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `ats_score` | number \| null | Cached ATS composite score (0-100) |
+| `ats_cached_at` | string \| null | ISO timestamp of last ATS analysis |
+| `is_outdated` | boolean | True if resume content changed since analysis |
+
+**Formatted Name:**
+
+The `formatted_name` computed field provides a human-readable version name:
+
+- Format: `{job_title} @ {company_name} — {date}`
+- Falls back gracefully: `{job_title} — {date}` or `{company_name} — {date}`
+- Ultimate fallback: `Tailored Resume — {date}`
 
 ---
 
@@ -379,9 +469,10 @@ Match results are cached with a 15-minute TTL to improve performance:
 
 ```typescript
 {
-  resume_id: string;           // UUID
-  job_id?: string;             // UUID (user-created job)
-  job_listing_id?: number;     // Scraped job listing ID
+  resume_id: string;           // MongoDB ObjectId as string
+  job_id?: number;             // PostgreSQL job_descriptions.id
+  job_listing_id?: number;     // PostgreSQL job_listings.id
+  focus_keywords?: string[];   // User-selected keywords to emphasize
 }
 ```
 
@@ -389,17 +480,47 @@ Match results are cached with a 15-minute TTL to improve performance:
 
 ```typescript
 {
-  id: string;                    // UUID
-  resume_id: string;             // UUID
-  job_id: string | null;         // UUID
+  id: string;                    // MongoDB ObjectId
+  resume_id: string;             // MongoDB ObjectId
+  job_id: number | null;
   job_listing_id: number | null;
-  tailored_content: string;      // Optimized resume text
-  suggestions: string[];         // Improvement suggestions
+  tailored_data: ParsedContent;  // Complete tailored resume structure
+  status: "pending" | "finalized" | "archived";
   match_score: number;           // 0-100
-  skill_matches: SkillMatch[];
-  skill_gaps: SkillGap[];
+  skill_matches: string[];
+  skill_gaps: string[];
   keyword_coverage: number;      // 0-1
+  job_title: string | null;
+  company_name: string | null;
+  focus_keywords_used: string[] | null;  // Keywords that were used
   created_at: string;
+}
+```
+
+### TailoredResumeFullResponse
+
+```typescript
+{
+  id: string;
+  resume_id: string;
+  job_id: number | null;
+  job_listing_id: number | null;
+  tailored_data: ParsedContent;
+  finalized_data: ParsedContent | null;
+  status: "pending" | "finalized" | "archived";
+  match_score: number | null;
+  job_title: string | null;
+  company_name: string | null;
+  formatted_name: string;        // Computed: "{job_title} @ {company_name} — {date}"
+  style_settings: object;
+  section_order: string[];
+  created_at: string;
+  updated_at: string | null;
+  finalized_at: string | null;
+  // ATS cache metadata
+  ats_score: number | null;      // Cached ATS composite score
+  ats_cached_at: string | null;  // When ATS analysis was cached
+  is_outdated: boolean;          // True if content changed since analysis
 }
 ```
 
@@ -409,8 +530,8 @@ Match results are cached with a 15-minute TTL to improve performance:
 {
   match_score: number;           // 0-100
   keyword_coverage: number;      // 0-1
-  skill_matches: SkillMatch[];
-  skill_gaps: SkillGap[];
+  skill_matches: string[];
+  skill_gaps: string[];
 }
 ```
 

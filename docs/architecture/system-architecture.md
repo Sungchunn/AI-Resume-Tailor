@@ -1566,52 +1566,100 @@ sequenceDiagram
     end
 ```
 
-### 6.2 Resume Tailoring Flow
+### 6.2 Resume Tailoring Flow (3-Step Wizard)
+
+The tailor flow was redesigned into a linear 3-step wizard experience:
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant UI as Frontend
-    participant TailorCtx as TailoringContext
+    participant Step1 as Step 1: Select
+    participant Step2 as Step 2: Analyze
+    participant Step3 as Step 3: Detail
     participant API as FastAPI
+    participant ATS as ATS SSE Stream
     participant AI as OpenAI/Gemini API
     participant MG as MongoDB
+    participant Redis as Redis Cache
 
-    User->>UI: Select Resume + Job
-    UI->>API: POST /api/tailor
-    API->>AI: Parse & Tailor
+    %% Step 1: Resume Selection
+    User->>Step1: Click "Optimize Resume" from Job Detail
+    Note over Step1: /tailor?job_listing_id=X<br/>Master resume pre-selected
+    User->>Step1: Confirm resume selection
+    Step1->>Step2: Navigate to /tailor/analyze
+
+    %% Step 2: ATS Analysis + Keyword Selection
+    Step2->>ATS: POST /v1/ats/analyze-progressive
+
+    loop 5 ATS Stages (SSE)
+        ATS-->>Step2: stage_start / stage_complete events
+        Note over Step2: ATSProgressStepper updates
+    end
+    ATS-->>Step2: complete event with composite_score
+    ATS->>Redis: Cache ATS results (24h TTL)
+
+    Note over Step2: Show keyword selection UI<br/>Vault-backed: checkboxes<br/>Non-vault: grayed out
+    User->>Step2: Select focus keywords
+    User->>Step2: Click "Generate Tailored Resume"
+
+    %% AI Tailoring with focus_keywords
+    Step2->>API: POST /api/tailor with focus_keywords
+    API->>AI: Generate tailored resume
     AI-->>API: Tailored content
     API->>MG: Store tailored_resume
-    API-->>UI: {tailored_id, match_score}
+    API-->>Step2: {tailored_id, match_score}
+    Step2->>Step3: Redirect to /tailor/{id}
 
-    UI->>API: GET /api/tailor/{id}/compare
-    API->>MG: Fetch original + tailored
-    MG-->>API: Both documents
-    API-->>UI: {original, tailored}
+    %% Step 3: Detail Page
+    Step3->>API: GET /api/tailor/{id}
+    API->>Redis: Check ATS cache
+    Redis-->>API: ATS metadata (ats_score, cached_at, is_outdated)
+    API->>MG: Fetch tailored resume
+    MG-->>API: Tailored document
+    API-->>Step3: Full response with ATS cache info
 
-    UI->>TailorCtx: initializeSession(original, tailored)
-    Note over TailorCtx: Compute diffs client-side
-    TailorCtx-->>UI: Session with diffs
+    Note over Step3: Display formatted_name<br/>"Software Engineer @ Acme — Mar 5"
+    Note over Step3: Score dashboard with cache info<br/>Version history sidebar
 
-    User->>UI: Review diff UI (PreviewDiffLayout)
-
-    loop For each change
-        User->>UI: Accept/Reject change
-        UI->>TailorCtx: updateSession(acceptedChanges)
-    end
-
-    User->>UI: Navigate to Editor
-    UI->>TailorCtx: getActiveDraft()
-    TailorCtx-->>UI: Merged draft
-
-    User->>UI: Final edits in TipTap
-    User->>UI: Click Finalize
-    UI->>API: POST /api/tailor/{id}/finalize
+    %% Optional: Edit flow
+    User->>Step3: Click "Edit"
+    Step3->>API: GET /api/tailor/{id}/compare
+    API-->>Step3: {original, tailored}
+    Note over Step3: Client-side diffing in TailoringContext
+    User->>Step3: Accept/reject changes in editor
+    User->>Step3: Click "Finalize"
+    Step3->>API: POST /api/tailor/{id}/finalize
     API->>MG: Update finalized_data
-    MG-->>API: Success
-    API-->>UI: Complete
-    UI->>User: Redirect to library
 ```
+
+**Key Flow Changes (v2):**
+
+| Aspect | Before | After |
+| ------ | ------ | ----- |
+| Navigation | Single page with steps | 3 distinct routes |
+| History Display | On selection page | Version history sidebar on detail page |
+| ATS Analysis | None | 5-stage progressive with SSE |
+| Keyword Control | AI decides | User selects from vault-backed skills |
+| Score Display | Instant, potentially inconsistent | Gated until analysis complete |
+| Naming | UUID-based | Human-readable: "{job} @ {company} — {date}" |
+
+**Focus Keywords (Resume Integrity):**
+
+The `focus_keywords` parameter ensures users only claim skills they actually have:
+
+```typescript
+// Step 2: User selects which skills to emphasize
+const selectedKeywords = ["Python", "FastAPI", "AWS"];
+
+// AI only optimizes for these verified skills
+POST /api/tailor {
+  resume_id: "...",
+  job_listing_id: 123,
+  focus_keywords: selectedKeywords  // User's selection
+}
+```
+
+Skills not in the user's vault are grayed out and cannot be selected, preventing AI from adding unverified skills to the resume.
 
 ### Two Copies Architecture
 

@@ -1767,3 +1767,131 @@ Analysis continues even if the client disconnects or navigates away. To resume w
 - [Keyword Analysis](/api/ats.md#post-atkeywordsenhanced) - Stage 2 only
 - [Content Quality](/api/ats.md#post-atscontent-quality) - Stage 3 only
 - [Role Proximity](/api/ats.md#post-atsrole-proximity) - Stage 4 only
+
+---
+
+## ATS Result Caching
+
+ATS analysis results are cached in Redis to improve performance and reduce redundant API calls.
+
+### Cache Key Structure
+
+```text
+ats:{resume_content_hash[:16]}:{job_id}
+```
+
+**Example:**
+
+```text
+ats:a1b2c3d4e5f6g7h8:123
+```
+
+### Cached Data Structure
+
+```json
+{
+  "composite_score": {
+    "final_score": 82.5,
+    "stage_breakdown": {
+      "structure": 12.75,
+      "keywords-enhanced": 36.0,
+      "content-quality": 18.75,
+      "role-proximity": 16.0
+    },
+    "weights_used": {
+      "structure": 0.15,
+      "keywords-enhanced": 0.40,
+      "content-quality": 0.25,
+      "role-proximity": 0.20
+    },
+    "normalization_applied": false,
+    "failed_stages": []
+  },
+  "stage_results": {
+    "knockout": {...},
+    "structure": {...},
+    "keywords": {...},
+    "content-quality": {...},
+    "role-proximity": {...}
+  },
+  "cached_at": "2026-03-05T14:30:00Z",
+  "resume_content_hash": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+}
+```
+
+### Cache Configuration
+
+| Parameter | Value | Description |
+| --------- | ----- | ----------- |
+| TTL | 24 hours | Cache expires after 24 hours |
+| Key Format | `ats:{hash}:{job_id}` | Content hash ensures cache invalidation on changes |
+| Hash Length | 16 chars | First 16 characters of SHA-256 |
+
+### Cache Behavior
+
+**On Progressive Analysis Request:**
+
+1. Compute content hash from resume content
+2. Check cache with key `ats:{hash}:{job_id}`
+3. If cache hit: Stream cached results as SSE events (fast playback)
+4. If cache miss: Run full 5-stage analysis with real-time streaming
+5. On completion: Cache results with 24-hour TTL
+
+**Staleness Detection:**
+
+The cache includes `resume_content_hash` to detect when content has changed:
+
+```python
+# When fetching tailored resume
+current_hash = hash_content(resume.raw_content)
+cached_hash = ats_metadata.get("resume_content_hash")
+
+if cached_hash != current_hash:
+    is_outdated = True  # Content changed since analysis
+```
+
+**Cache-Aware Response Fields:**
+
+When fetching tailored resumes via `GET /api/tailor/{id}`, the response includes:
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `ats_score` | number \| null | Cached ATS composite score |
+| `ats_cached_at` | string \| null | ISO timestamp of last ATS analysis |
+| `is_outdated` | boolean | True if resume changed since analysis |
+
+### Re-Analysis Behavior
+
+The detail page (`/tailor/[id]`) includes a "Re-analyze" button that:
+
+1. Opens modal with ATSProgressStepper component
+2. Streams fresh ATS analysis (bypasses cache)
+3. Updates cached results on completion
+4. Displays updated scores in-place
+
+**UI States:**
+
+- **Fresh Cache:** Shows scores with "Cached as of {timestamp}" label
+- **Outdated Cache:** Shows "Outdated" badge, prompts re-analysis
+- **No Cache:** Triggers analysis automatically or shows loading state
+
+### Cache Invalidation
+
+Cache is automatically invalidated when:
+
+1. **TTL Expires:** After 24 hours
+2. **Content Changes:** New content hash doesn't match cached hash
+3. **Manual Re-analysis:** User clicks "Re-analyze" button
+
+### Performance Impact
+
+| Scenario | Typical Latency | Description |
+| -------- | --------------- | ----------- |
+| Cache Hit | <200ms | Fast playback of cached SSE events |
+| Cache Miss | 6-8 seconds | Full 5-stage analysis with streaming |
+| Re-analysis | 6-8 seconds | Fresh analysis, updates cache |
+
+### Related Endpoints
+
+- [GET /api/tailor/{id}](tailor-match.md#get-tailored-resume) - Returns ATS cache metadata
+- [POST /v1/ats/analyze-progressive](#post-apiv1atsanalyze-progressive) - Progressive analysis with caching
