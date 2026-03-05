@@ -9,9 +9,28 @@ Two Copies Architecture:
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, computed_field, model_validator
 
 from app.models.mongo.tailored_resume import TailoredResumeStatus
+
+
+def _format_tailored_name(job_title: str | None, company_name: str | None, created_at: datetime) -> str:
+    """Generate human-readable version name for tailored resumes.
+
+    Format: "{job_title} @ {company_name} — {date}"
+    Falls back gracefully when job_title or company_name is missing.
+    """
+    # Format the date as "Mar 5" (month abbreviation + day without leading zero)
+    date_str = created_at.strftime("%b %-d") if hasattr(created_at, "strftime") else str(created_at)[:10]
+
+    if job_title and company_name:
+        return f"{job_title} @ {company_name} — {date_str}"
+    elif job_title:
+        return f"{job_title} — {date_str}"
+    elif company_name:
+        return f"{company_name} — {date_str}"
+    else:
+        return f"Tailored Resume — {date_str}"
 
 
 # =============================================================================
@@ -207,6 +226,12 @@ class TailoredResumeListResponse(BaseModel):
 
     model_config = {"from_attributes": True}
 
+    @computed_field
+    @property
+    def formatted_name(self) -> str:
+        """Human-readable version name: '{job_title} @ {company_name} — {date}'."""
+        return _format_tailored_name(self.job_title, self.company_name, self.created_at)
+
 
 class TailoredResumeFullResponse(BaseModel):
     """Full response including all fields."""
@@ -231,6 +256,12 @@ class TailoredResumeFullResponse(BaseModel):
     finalized_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+    @computed_field
+    @property
+    def formatted_name(self) -> str:
+        """Human-readable version name: '{job_title} @ {company_name} — {date}'."""
+        return _format_tailored_name(self.job_title, self.company_name, self.created_at)
 
 
 # =============================================================================
