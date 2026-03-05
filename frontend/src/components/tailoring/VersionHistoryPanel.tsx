@@ -76,6 +76,7 @@ interface TailoredVersionItem {
   created_at: string;
   job_title?: string;
   company_name?: string;
+  formatted_name?: string; // Human-readable: "Job @ Company — Mar 5"
   status?: "pending" | "finalized" | "archived";
 }
 
@@ -186,6 +187,9 @@ function VersionItem({ version, isActive, onSelect, mode }: VersionItemProps) {
   const isFinalized = version.status === "finalized";
 
   if (mode === "sidebar") {
+    // Use formatted_name if available, otherwise fall back to job_title/company_name
+    const displayName = version.formatted_name || version.job_title || "Untitled";
+
     return (
       <li
         className={`px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer ${
@@ -202,21 +206,9 @@ function VersionItem({ version, isActive, onSelect, mode }: VersionItemProps) {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              {version.job_title && (
-                <span className="text-sm font-medium truncate">
-                  {version.job_title}
-                </span>
-              )}
-              {!version.job_title && (
-                <span className="text-sm text-muted-foreground">Untitled</span>
-              )}
-            </div>
-            {version.company_name && (
-              <div className="text-xs text-muted-foreground truncate">
-                {version.company_name}
-              </div>
-            )}
+            <span className="text-sm font-medium truncate block">
+              {displayName}
+            </span>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-xs text-muted-foreground">
                 {formattedDate}
@@ -242,6 +234,9 @@ function VersionItem({ version, isActive, onSelect, mode }: VersionItemProps) {
   }
 
   // Full mode - more detailed view
+  // Use formatted_name if available, otherwise fall back to job_title
+  const displayName = version.formatted_name || version.job_title || "Untitled Version";
+
   return (
     <li
       className={`p-4 hover:bg-muted/50 transition-colors ${
@@ -257,17 +252,11 @@ function VersionItem({ version, isActive, onSelect, mode }: VersionItemProps) {
               <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
             )}
             <h4 className="text-sm font-semibold truncate">
-              {version.job_title || "Untitled Version"}
+              {displayName}
             </h4>
           </div>
 
           <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
-            {version.company_name && (
-              <span className="flex items-center gap-1">
-                <Building className="h-3 w-3" />
-                {version.company_name}
-              </span>
-            )}
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {formattedDate}
