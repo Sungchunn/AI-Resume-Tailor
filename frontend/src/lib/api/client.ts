@@ -268,6 +268,12 @@ export const resumeApi = {
 
   getParseStatus: (id: string, taskId: string): Promise<ParseStatusResponse> =>
     fetchApi(`/api/resumes/${id}/parse/status?task_id=${encodeURIComponent(taskId)}`),
+
+  // Master resume designation
+  setMaster: (id: string): Promise<ResumeResponse> =>
+    fetchApi(`/api/resumes/${id}/set-master`, {
+      method: "PATCH",
+    }),
 };
 
 // Job API

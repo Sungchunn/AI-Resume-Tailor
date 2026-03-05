@@ -162,6 +162,18 @@ export function useDeleteResume() {
   });
 }
 
+export function useSetMasterResume() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => resumeApi.setMaster(id),
+    onSuccess: (_, id) => {
+      // Invalidate all resumes since the old master was also updated
+      queryClient.invalidateQueries({ queryKey: queryKeys.resumes.all });
+    },
+  });
+}
+
 export function useExportTemplates() {
   return useQuery({
     queryKey: [...queryKeys.resumes.all, "exportTemplates"] as const,

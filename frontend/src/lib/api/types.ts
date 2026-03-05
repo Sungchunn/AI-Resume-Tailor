@@ -68,6 +68,7 @@ export interface ResumeResponse extends ResumeBase {
   style?: ResumeStyle | null;
   html_content?: string | null;
   original_file?: OriginalFileInfo | null;
+  is_master: boolean; // Designates default resume for tailoring flows
   created_at: string;
   updated_at?: string | null;
 }
@@ -166,6 +167,7 @@ export interface TailoredResumeFullResponse {
   keyword_coverage: number;
   job_title: string | null;
   company_name: string | null;
+  formatted_name: string; // Human-readable: "Job @ Company — Mar 5"
   style_settings: ResumeStyle;
   section_order: string[];
   created_at: string;
@@ -192,6 +194,9 @@ export interface TailoredResumeListItem {
   job_id: number | null;
   job_listing_id: number | null;
   match_score: number | null;
+  job_title: string | null;
+  company_name: string | null;
+  formatted_name: string; // Human-readable: "Job @ Company — Mar 5"
   created_at: string;
 }
 
