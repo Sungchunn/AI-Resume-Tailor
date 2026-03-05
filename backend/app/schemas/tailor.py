@@ -107,6 +107,7 @@ class TailorRequest(BaseModel):
     resume_id: str  # MongoDB ObjectId as string
     job_id: int | None = None  # Postgres job_descriptions.id
     job_listing_id: int | None = None  # Postgres job_listings.id
+    focus_keywords: list[str] | None = None  # User-selected keywords to emphasize
 
     @model_validator(mode="after")
     def validate_job_source(self) -> "TailorRequest":
@@ -187,6 +188,7 @@ class TailorResponse(BaseModel):
     keyword_coverage: float
     job_title: str | None = None
     company_name: str | None = None
+    focus_keywords_used: list[str] | None = None  # Keywords that were used in tailoring
     created_at: datetime
 
     model_config = {"from_attributes": True}

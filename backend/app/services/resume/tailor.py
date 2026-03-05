@@ -152,6 +152,7 @@ class TailoringService:
         raw_resume: str,
         raw_job: str,
         original_parsed: dict[str, Any] | None = None,
+        focus_keywords: list[str] | None = None,
     ) -> TailoringResult:
         """Tailor a resume to a specific job description.
 
@@ -166,6 +167,7 @@ class TailoringService:
             raw_resume: Raw resume text (for parsing if original_parsed not provided)
             raw_job: Raw job description text
             original_parsed: Pre-parsed resume content (preferred - avoids re-parsing)
+            focus_keywords: User-selected keywords to emphasize (if None, uses all vault-backed keywords)
         """
         # Get content hashes for caching
         resume_hash = self.resume_parser.get_content_hash(raw_resume)
@@ -188,7 +190,7 @@ class TailoringService:
         parsed_job = await self.job_analyzer.analyze(raw_job)
 
         # Generate tailored content
-        result = await self._generate_tailoring(parsed_resume, parsed_job)
+        result = await self._generate_tailoring(parsed_resume, parsed_job, focus_keywords)
 
         # Cache the result
         await self.cache.set_tailored_result(
@@ -201,6 +203,7 @@ class TailoringService:
         self,
         parsed_resume: dict[str, Any] | ParsedResume,
         parsed_job: ParsedJob,
+        focus_keywords: list[str] | None = None,
     ) -> TailoringResult:
         """Generate tailored content using AI with retry logic.
 
@@ -209,6 +212,11 @@ class TailoringService:
         - Preserves IDs from original
         - Validates against ParsedContent Pydantic model
         - Retries once if validation fails
+
+        Args:
+            parsed_resume: Structured resume data
+            parsed_job: Parsed job description
+            focus_keywords: User-selected keywords to emphasize (if None, uses all job keywords)
         """
         # Convert to dict if ParsedResume TypedDict
         if not isinstance(parsed_resume, dict):
@@ -217,7 +225,7 @@ class TailoringService:
         # Ensure experience/education/projects have IDs for diffing
         parsed_resume = self._ensure_ids(parsed_resume)
 
-        user_prompt = self._build_tailoring_prompt(parsed_resume, parsed_job)
+        user_prompt = self._build_tailoring_prompt(parsed_resume, parsed_job, focus_keywords)
 
         # First attempt
         try:
@@ -256,8 +264,29 @@ class TailoringService:
         self,
         parsed_resume: dict[str, Any],
         parsed_job: ParsedJob,
+        focus_keywords: list[str] | None = None,
     ) -> str:
-        """Build the user prompt for tailoring."""
+        """Build the user prompt for tailoring.
+
+        Args:
+            parsed_resume: Structured resume data
+            parsed_job: Parsed job description
+            focus_keywords: User-selected keywords to emphasize (if None, uses all job keywords)
+        """
+        # Build keyword focus instructions
+        keyword_instructions = ""
+        if focus_keywords:
+            keyword_instructions = f"""
+FOCUS KEYWORDS (User-selected skills to emphasize):
+{json.dumps(focus_keywords, indent=2)}
+
+CRITICAL: The user has verified they have these specific skills. ONLY emphasize these keywords in the tailored resume. Do NOT add or emphasize skills that are not in this list - doing so would be dishonest.
+"""
+        else:
+            keyword_instructions = """
+Note: No specific keywords were selected, so emphasize all skills from the job description that appear in the original resume.
+"""
+
         return f"""Please tailor the following resume for the job description.
 
 IMPORTANT: Output the COMPLETE tailored resume as a JSON object. Preserve ALL IDs exactly as they appear in the original.
@@ -267,12 +296,12 @@ ORIGINAL RESUME (ParsedContent structure):
 
 JOB DESCRIPTION:
 {json.dumps(parsed_job, indent=2)}
-
+{keyword_instructions}
 Generate a complete tailored version that:
 1. Keeps ALL IDs exactly as they are in the original
 2. Rewrites bullets and descriptions to emphasize relevant experience
 3. Prioritizes skills that match the job requirements
-4. Maintains truthfulness - do not invent experience
+4. Maintains truthfulness - do not invent experience or add skills the candidate doesn't have
 
 Output format:
 {{

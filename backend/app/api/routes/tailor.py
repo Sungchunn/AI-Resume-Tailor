@@ -132,6 +132,7 @@ async def tailor_resume(
             raw_resume=resume.raw_content,
             raw_job=raw_job,
             original_parsed=resume.parsed.model_dump() if resume.parsed else {},
+            focus_keywords=request.focus_keywords,
         )
     except TailoringValidationError as e:
         # AI output failed Pydantic validation even after retry
@@ -174,6 +175,7 @@ async def tailor_resume(
         keyword_coverage=result.get("keyword_coverage", 0.0),
         job_title=job_title,
         company_name=company_name,
+        focus_keywords_used=request.focus_keywords,
         created_at=tailored.created_at,
     )
 
