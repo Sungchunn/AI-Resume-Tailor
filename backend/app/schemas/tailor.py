@@ -257,6 +257,11 @@ class TailoredResumeFullResponse(BaseModel):
     updated_at: datetime | None
     finalized_at: datetime | None = None
 
+    # ATS cache metadata (Phase 5)
+    ats_score: float | None = None  # Cached ATS composite score
+    ats_cached_at: datetime | None = None  # When ATS analysis was last cached
+    is_outdated: bool = False  # True if resume changed since ATS analysis
+
     model_config = {"from_attributes": True}
 
     @computed_field
