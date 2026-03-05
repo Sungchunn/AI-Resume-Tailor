@@ -3,11 +3,17 @@
  *
  * Displays a list of all tailored versions for a resume.
  * Supports viewing, comparing, and navigating between versions.
+ *
+ * Features:
+ * - Two display modes: sidebar (compact) and full (expanded)
+ * - Optional job grouping with accordion-style UI
+ * - Color-coded scores: green ≥80%, amber ≥60%, red below
+ * - Formatted names: "Job @ Company — Mar 5"
  */
 
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   Clock,
@@ -21,6 +27,8 @@ import {
   Briefcase,
   CheckCircle2,
   Circle,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { useTailoredResumesByResume } from "@/lib/api";
 
@@ -63,8 +71,22 @@ interface VersionHistoryPanelProps {
   onVersionSelect?: (tailoredId: string) => void;
   /** Display mode: 'sidebar' for compact, 'full' for expanded */
   mode?: "sidebar" | "full";
+  /** Whether to group versions by job (accordion style) */
+  groupByJob?: boolean;
+  /** Current job title (used when groupByJob is true to expand current job) */
+  currentJobTitle?: string | null;
+  /** Current company name (used when groupByJob is true) */
+  currentCompanyName?: string | null;
   /** Optional className for styling */
   className?: string;
+}
+
+interface JobGroup {
+  key: string;
+  jobTitle: string;
+  companyName: string;
+  versions: TailoredVersionItem[];
+  isCurrent: boolean;
 }
 
 interface TailoredVersionItem {
@@ -89,6 +111,9 @@ export function VersionHistoryPanel({
   currentTailoredId,
   onVersionSelect,
   mode = "sidebar",
+  groupByJob = false,
+  currentJobTitle = null,
+  currentCompanyName = null,
   className = "",
 }: VersionHistoryPanelProps) {
   const {
@@ -96,6 +121,9 @@ export function VersionHistoryPanel({
     isLoading,
     error,
   } = useTailoredResumesByResume(resumeId);
+
+  // State for expanded job groups
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   // Sort versions by date (most recent first)
   const sortedVersions = useMemo(() => {
@@ -105,6 +133,64 @@ export function VersionHistoryPanel({
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   }, [versions]);
+
+  // Group versions by job when groupByJob is enabled
+  const jobGroups = useMemo((): JobGroup[] => {
+    if (!groupByJob || !sortedVersions.length) return [];
+
+    const groups = new Map<string, JobGroup>();
+    const currentKey = `${currentJobTitle ?? ""}|${currentCompanyName ?? ""}`;
+
+    for (const version of sortedVersions as TailoredVersionItem[]) {
+      const jobTitle = version.job_title || "Untitled";
+      const companyName = version.company_name || "Unknown";
+      const key = `${jobTitle}|${companyName}`;
+
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          jobTitle,
+          companyName,
+          versions: [],
+          isCurrent: key === currentKey,
+        });
+      }
+
+      groups.get(key)!.versions.push(version);
+    }
+
+    // Sort groups: current first, then by most recent version
+    return Array.from(groups.values()).sort((a, b) => {
+      if (a.isCurrent && !b.isCurrent) return -1;
+      if (!a.isCurrent && b.isCurrent) return 1;
+      return (
+        new Date(b.versions[0].created_at).getTime() -
+        new Date(a.versions[0].created_at).getTime()
+      );
+    });
+  }, [groupByJob, sortedVersions, currentJobTitle, currentCompanyName]);
+
+  // Initialize expanded groups (expand current job by default)
+  useMemo(() => {
+    if (groupByJob) {
+      const currentGroup = jobGroups.find((g) => g.isCurrent);
+      if (currentGroup && !expandedGroups.has(currentGroup.key)) {
+        setExpandedGroups(new Set([currentGroup.key]));
+      }
+    }
+  }, [groupByJob, jobGroups]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleGroup = useCallback((key: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
 
   if (isLoading) {
     return <VersionHistoryLoading mode={mode} className={className} />;
@@ -138,21 +224,117 @@ export function VersionHistoryPanel({
       {/* Version List */}
       <div
         className={`overflow-y-auto ${
-          mode === "sidebar" ? "max-h-[400px]" : "max-h-[600px]"
+          mode === "sidebar" ? "max-h-100" : "max-h-150"
         }`}
       >
-        <ul className="divide-y divide-border">
-          {sortedVersions.map((version) => (
+        {groupByJob ? (
+          // Job-grouped view
+          <div className="divide-y divide-border">
+            {jobGroups.map((group) => (
+              <JobGroupAccordion
+                key={group.key}
+                group={group}
+                isExpanded={expandedGroups.has(group.key)}
+                onToggle={() => toggleGroup(group.key)}
+                currentTailoredId={currentTailoredId}
+                onVersionSelect={onVersionSelect}
+                mode={mode}
+              />
+            ))}
+          </div>
+        ) : (
+          // Flat list view
+          <ul className="divide-y divide-border">
+            {sortedVersions.map((version) => (
+              <VersionItem
+                key={version.id}
+                version={version as TailoredVersionItem}
+                isActive={version.id === currentTailoredId}
+                onSelect={onVersionSelect}
+                mode={mode}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Job Group Accordion
+// ============================================================================
+
+interface JobGroupAccordionProps {
+  group: JobGroup;
+  isExpanded: boolean;
+  onToggle: () => void;
+  currentTailoredId?: string;
+  onVersionSelect?: (tailoredId: string) => void;
+  mode: "sidebar" | "full";
+}
+
+function JobGroupAccordion({
+  group,
+  isExpanded,
+  onToggle,
+  currentTailoredId,
+  onVersionSelect,
+  mode,
+}: JobGroupAccordionProps) {
+  return (
+    <div>
+      {/* Group Header */}
+      <button
+        onClick={onToggle}
+        className={`
+          w-full flex items-center gap-3 px-4 py-3 text-left
+          hover:bg-muted/50 transition-colors
+          ${group.isCurrent ? "bg-primary/5" : ""}
+        `}
+      >
+        <span className="shrink-0 text-muted-foreground">
+          {isExpanded ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronRight className="h-4 w-4" />
+          )}
+        </span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium truncate">
+              {group.jobTitle}
+            </span>
+            {group.isCurrent && (
+              <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                Current
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground truncate">
+            {group.companyName}
+          </p>
+        </div>
+        <span className="shrink-0 text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+          {group.versions.length}
+        </span>
+      </button>
+
+      {/* Versions List */}
+      {isExpanded && (
+        <ul className="pl-4 border-l-2 border-muted ml-6 mb-2">
+          {group.versions.map((version) => (
             <VersionItem
               key={version.id}
-              version={version as TailoredVersionItem}
+              version={version}
               isActive={version.id === currentTailoredId}
               onSelect={onVersionSelect}
               mode={mode}
+              compact
             />
           ))}
         </ul>
-      </div>
+      )}
     </div>
   );
 }
@@ -166,9 +348,11 @@ interface VersionItemProps {
   isActive: boolean;
   onSelect?: (id: string) => void;
   mode: "sidebar" | "full";
+  /** Compact display for use inside job group accordion */
+  compact?: boolean;
 }
 
-function VersionItem({ version, isActive, onSelect, mode }: VersionItemProps) {
+function VersionItem({ version, isActive, onSelect, mode, compact = false }: VersionItemProps) {
   const formattedDate = useMemo(() => {
     try {
       return formatDistanceToNow(new Date(version.created_at));
@@ -186,6 +370,47 @@ function VersionItem({ version, isActive, onSelect, mode }: VersionItemProps) {
 
   const isFinalized = version.status === "finalized";
 
+  // Compact mode for job group accordion - minimal info, just date and score
+  if (compact) {
+    return (
+      <li
+        className={`
+          relative py-2 pl-4 pr-2 -ml-px border-l-2
+          ${isActive ? "border-primary bg-primary/5" : "border-transparent hover:bg-muted/50"}
+          transition-colors cursor-pointer
+        `}
+        onClick={() => onSelect?.(version.id)}
+      >
+        <Link
+          href={`/tailor/${version.id}`}
+          className="flex items-center gap-3 group"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className="shrink-0">
+            {isFinalized ? (
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+            ) : (
+              <Circle className="h-3.5 w-3.5 text-muted-foreground" />
+            )}
+          </span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                {formattedDate}
+              </span>
+              {version.match_score !== null && (
+                <span className={`text-xs font-medium ${matchScoreColor}`}>
+                  {version.match_score}%
+                </span>
+              )}
+            </div>
+          </div>
+          <Eye className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        </Link>
+      </li>
+    );
+  }
+
   if (mode === "sidebar") {
     // Use formatted_name if available, otherwise fall back to job_title/company_name
     const displayName = version.formatted_name || version.job_title || "Untitled";
@@ -198,7 +423,7 @@ function VersionItem({ version, isActive, onSelect, mode }: VersionItemProps) {
         onClick={() => onSelect?.(version.id)}
       >
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 mt-0.5">
+          <div className="shrink-0 mt-0.5">
             {isFinalized ? (
               <CheckCircle2 className="h-4 w-4 text-green-600" />
             ) : (
@@ -223,7 +448,7 @@ function VersionItem({ version, isActive, onSelect, mode }: VersionItemProps) {
           <Link
             href={`/tailor/review/${version.id}`}
             onClick={(e) => e.stopPropagation()}
-            className="flex-shrink-0 p-1 text-muted-foreground hover:text-foreground transition-colors"
+            className="shrink-0 p-1 text-muted-foreground hover:text-foreground transition-colors"
             title="View details"
           >
             <Eye className="h-4 w-4" />
@@ -247,9 +472,9 @@ function VersionItem({ version, isActive, onSelect, mode }: VersionItemProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             {isFinalized ? (
-              <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+              <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
             ) : (
-              <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
+              <Sparkles className="h-4 w-4 text-primary shrink-0" />
             )}
             <h4 className="text-sm font-semibold truncate">
               {displayName}
@@ -283,7 +508,7 @@ function VersionItem({ version, isActive, onSelect, mode }: VersionItemProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <Link
             href={`/tailor/review/${version.id}`}
             className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md border border-border bg-background hover:bg-muted transition-colors"
