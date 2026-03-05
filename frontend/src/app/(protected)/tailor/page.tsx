@@ -59,6 +59,23 @@ function TailorPageContent() {
     await quickMatch.mutateAsync(request);
   };
 
+  const handleAnalyze = () => {
+    if (!selectedResumeId) return;
+
+    // Need either a job listing from URL or a selected job
+    if (!hasJobListingFromUrl && !selectedJobId) return;
+
+    // Navigate to analysis page with resume and job info
+    if (hasJobListingFromUrl) {
+      router.push(`/tailor/analyze?resume_id=${selectedResumeId}&job_listing_id=${jobListingId}`);
+    } else {
+      // For user-created jobs, we still go to analyze page
+      // Note: Currently only job_listing_id is supported in analyze page
+      router.push(`/tailor/analyze?resume_id=${selectedResumeId}&job_id=${selectedJobId}`);
+    }
+  };
+
+  // Legacy direct tailor for backwards compatibility
   const handleTailor = async () => {
     if (!selectedResumeId) return;
 
@@ -352,39 +369,13 @@ function TailorPageContent() {
                   disabled={quickMatch.isPending}
                   className="btn-secondary"
                 >
-                  {quickMatch.isPending ? "Analyzing..." : "Preview Match Analysis"}
+                  {quickMatch.isPending ? "Analyzing..." : "Quick Preview"}
                 </button>
                 <button
-                  onClick={handleTailor}
-                  disabled={tailorResume.isPending}
+                  onClick={handleAnalyze}
                   className="btn-primary"
                 >
-                  {tailorResume.isPending ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      Tailoring... (this may take a minute)
-                    </>
-                  ) : (
-                    "Generate Tailored Resume"
-                  )}
+                  Analyze Match →
                 </button>
               </div>
             </div>
@@ -414,39 +405,13 @@ function TailorPageContent() {
                   disabled={quickMatch.isPending}
                   className="btn-secondary"
                 >
-                  {quickMatch.isPending ? "Analyzing..." : "Preview Match Analysis"}
+                  {quickMatch.isPending ? "Analyzing..." : "Quick Preview"}
                 </button>
                 <button
-                  onClick={handleTailor}
-                  disabled={tailorResume.isPending}
+                  onClick={handleAnalyze}
                   className="btn-primary"
                 >
-                  {tailorResume.isPending ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      Tailoring... (this may take a minute)
-                    </>
-                  ) : (
-                    "Generate Tailored Resume"
-                  )}
+                  Analyze Match →
                 </button>
               </div>
             </div>
@@ -530,36 +495,10 @@ function TailorPageContent() {
 
           <div className="flex items-center gap-4">
             <button
-              onClick={handleTailor}
-              disabled={tailorResume.isPending}
+              onClick={handleAnalyze}
               className="btn-primary"
             >
-              {tailorResume.isPending ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Tailoring... (this may take a minute)
-                </>
-              ) : (
-                "Generate Tailored Resume"
-              )}
+              Continue to Full Analysis →
             </button>
             <button onClick={resetSelection} className="btn-ghost">
               Back to Selection
