@@ -117,6 +117,7 @@ class ResumeDocument(BaseModel):
     user_id: int  # FK to Postgres users.id
 
     title: str
+    is_master: bool = False  # Designates default resume for tailoring flows
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -148,6 +149,7 @@ class ResumeCreate(BaseModel):
     parsed: ParsedContent | None = None
     style: StyleSettings | None = None
     original_file: OriginalFile | None = None
+    is_master: bool = False
 
 
 class ResumeUpdate(BaseModel):
@@ -158,3 +160,4 @@ class ResumeUpdate(BaseModel):
     html_content: str | None = None
     parsed: ParsedContent | None = None
     style: StyleSettings | None = None
+    is_master: bool | None = None
