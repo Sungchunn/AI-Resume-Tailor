@@ -319,6 +319,27 @@ export function useTailoredResumesByJob(jobId: number) {
   });
 }
 
+/**
+ * Hook to fetch tailored resumes filtered by both resume and job.
+ * Used in the version history sidebar to show job-scoped versions.
+ */
+export function useTailoredResumesByResumeAndJob(
+  resumeId: string,
+  jobListingId?: number,
+  jobId?: number
+) {
+  const hasJobFilter = !!jobListingId || !!jobId;
+  return useQuery({
+    queryKey: [
+      ...queryKeys.tailored.byResume(resumeId),
+      "job",
+      jobListingId ?? jobId,
+    ] as const,
+    queryFn: () => tailorApi.listByResumeAndJob(resumeId, jobListingId, jobId),
+    enabled: !!resumeId && hasJobFilter,
+  });
+}
+
 export function useTailoredResumes() {
   return useQuery({
     queryKey: queryKeys.tailored.list(),

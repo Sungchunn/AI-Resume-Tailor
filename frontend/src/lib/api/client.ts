@@ -328,6 +328,17 @@ export const tailorApi = {
   listByJob: (jobId: number): Promise<TailoredResumeListItem[]> =>
     fetchApi(`/api/tailor?job_id=${jobId}`),
 
+  listByResumeAndJob: (
+    resumeId: string,
+    jobListingId?: number,
+    jobId?: number
+  ): Promise<TailoredResumeListItem[]> => {
+    const params = new URLSearchParams({ resume_id: resumeId });
+    if (jobListingId) params.append("job_listing_id", String(jobListingId));
+    if (jobId) params.append("job_id", String(jobId));
+    return fetchApi(`/api/tailor?${params.toString()}`);
+  },
+
   delete: (id: string): Promise<void> =>
     fetchApi(`/api/tailor/${id}`, {
       method: "DELETE",
