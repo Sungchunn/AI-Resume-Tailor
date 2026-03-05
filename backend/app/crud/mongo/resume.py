@@ -25,6 +25,14 @@ class ResumeCRUD:
     ) -> ResumeDocument:
         """Create a new resume document."""
         now = datetime.now(timezone.utc)
+
+        # If this resume is being set as master, unset any existing master
+        if obj_in.is_master:
+            await db[self.collection_name].update_many(
+                {"user_id": obj_in.user_id, "is_master": True},
+                {"$set": {"is_master": False, "updated_at": now}},
+            )
+
         doc = {
             "user_id": obj_in.user_id,
             "title": obj_in.title,
@@ -33,6 +41,7 @@ class ResumeCRUD:
             "parsed": obj_in.parsed.model_dump() if obj_in.parsed else None,
             "style": obj_in.style.model_dump() if obj_in.style else None,
             "original_file": obj_in.original_file.model_dump() if obj_in.original_file else None,
+            "is_master": obj_in.is_master,
             "created_at": now,
             "updated_at": now,
         }
@@ -99,7 +108,7 @@ class ResumeCRUD:
             return None
 
         # Build update dict with only provided fields
-        update_data = {}
+        update_data: dict[str, Any] = {}
         if obj_in.title is not None:
             update_data["title"] = obj_in.title
         if obj_in.raw_content is not None:
@@ -110,6 +119,8 @@ class ResumeCRUD:
             update_data["parsed"] = obj_in.parsed.model_dump()
         if obj_in.style is not None:
             update_data["style"] = obj_in.style.model_dump()
+        if obj_in.is_master is not None:
+            update_data["is_master"] = obj_in.is_master
 
         if not update_data:
             # No fields to update, just return current document
@@ -166,6 +177,64 @@ class ResumeCRUD:
     ) -> int:
         """Count resumes for a user."""
         return await db[self.collection_name].count_documents({"user_id": user_id})
+
+    async def set_master(
+        self,
+        db: AsyncIOMotorDatabase,
+        id: str,
+        user_id: int,
+    ) -> ResumeDocument | None:
+        """Set a resume as the master resume for a user.
+
+        This operation:
+        1. Unsets is_master on all other resumes for this user
+        2. Sets is_master=True on the specified resume
+
+        Args:
+            db: MongoDB database instance
+            id: Resume ObjectId as string
+            user_id: User ID (for ownership verification and unset operation)
+
+        Returns:
+            Updated ResumeDocument if successful, None if resume not found
+        """
+        if not ObjectId.is_valid(id):
+            return None
+
+        now = datetime.now(timezone.utc)
+
+        # First, unset is_master on all other resumes for this user
+        await db[self.collection_name].update_many(
+            {"user_id": user_id, "is_master": True},
+            {"$set": {"is_master": False, "updated_at": now}},
+        )
+
+        # Then, set the specified resume as master
+        result = await db[self.collection_name].find_one_and_update(
+            {"_id": ObjectId(id), "user_id": user_id},
+            {"$set": {"is_master": True, "updated_at": now}},
+            return_document=True,
+        )
+        return ResumeDocument(**result) if result else None
+
+    async def get_master(
+        self,
+        db: AsyncIOMotorDatabase,
+        user_id: int,
+    ) -> ResumeDocument | None:
+        """Get the master resume for a user.
+
+        Args:
+            db: MongoDB database instance
+            user_id: User ID
+
+        Returns:
+            Master ResumeDocument if exists, None otherwise
+        """
+        doc = await db[self.collection_name].find_one(
+            {"user_id": user_id, "is_master": True}
+        )
+        return ResumeDocument(**doc) if doc else None
 
 
 # Singleton instance
