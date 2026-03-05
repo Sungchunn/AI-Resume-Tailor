@@ -49,6 +49,7 @@ def _to_response(doc) -> ResumeResponse:
             file_type=doc.original_file.file_type,
             size_bytes=doc.original_file.size_bytes,
         ) if doc.original_file else None,
+        is_master=getattr(doc, "is_master", False),
         created_at=doc.created_at,
         updated_at=doc.updated_at,
     )
@@ -158,6 +159,29 @@ async def delete_resume(
             detail="Resume not found or not authorized",
         )
     await resume_crud.delete(mongo_db, id=resume_id)
+
+
+@router.patch("/{resume_id}/set-master", response_model=ResumeResponse)
+async def set_master_resume(
+    resume_id: str,
+    mongo_db: AsyncIOMotorDatabase = Depends(get_mongo_db),
+    current_user_id: int = Depends(get_current_user_id),
+) -> ResumeResponse:
+    """
+    Set a resume as the master resume for the current user.
+
+    The master resume is the default resume used in tailoring flows.
+    Only one resume can be the master at a time - setting a new master
+    will automatically unset the previous one.
+    """
+    # set_master verifies ownership and handles the atomic update
+    resume = await resume_crud.set_master(mongo_db, id=resume_id, user_id=current_user_id)
+    if not resume:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume not found or not authorized",
+        )
+    return _to_response(resume)
 
 
 @router.get("/export/templates", response_model=ExportTemplatesResponse)
