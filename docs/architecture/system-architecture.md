@@ -75,6 +75,7 @@ flowchart TB
         AIProvider["OpenAI or Gemini<br/>(Configurable)<br/>Text Generation"]
         GeminiEmbed["Google Gemini<br/>Text Embeddings"]
         Apify["Apify<br/>LinkedIn Scraper"]
+        N8N["n8n Webhooks<br/>Job Ingestion"]
     end
 
     Browser --> NextJS
@@ -88,6 +89,7 @@ flowchart TB
     AIServices --> AIProvider
     AIServices --> GeminiEmbed
     ScraperServices --> Apify
+    ScraperServices --> N8N
 
     Services --> PostgreSQL
     Services --> MongoDB
@@ -126,7 +128,7 @@ flowchart LR
 
     subgraph Database["Database Stack"]
         direction TB
-        D1["PostgreSQL 16"]
+        D1["PostgreSQL 15"]
         D2["pgvector Extension"]
         D3["MongoDB 7"]
         D4["Redis 7"]
@@ -134,7 +136,7 @@ flowchart LR
 
     subgraph AI["AI/ML Stack"]
         direction TB
-        A1["Gemini API (default)<br/>or OpenAI API"]
+        A1["OpenAI API (default)<br/>or Gemini API"]
         A2["Gemini Embeddings<br/>(Google)"]
         A3["768-dim Vectors"]
         A4["HNSW Index"]
@@ -148,7 +150,7 @@ flowchart LR
 ### Dependency Summary
 
 | Layer | Technology | Version | Purpose |
-|-------|------------|---------|---------|
+| ------- | ------------ | --------- | --------- |
 | Frontend | Next.js | 15.1.0 | SSR Framework |
 | Frontend | React | 19.0.0 | UI Library |
 | Frontend | TanStack Query | 5.90 | Server State |
@@ -156,11 +158,11 @@ flowchart LR
 | Backend | FastAPI | Latest | API Framework |
 | Backend | SQLAlchemy | 2.0 | PostgreSQL ORM |
 | Backend | Motor | 3.x | MongoDB Async Driver |
-| Database | PostgreSQL | 16 | Relational Data |
+| Database | PostgreSQL | 15 | Relational Data |
 | Database | MongoDB | 7 | Document Storage |
 | Database | pgvector | 0.5+ | Vector Search |
-| AI | Gemini (default) | gemini-2.0-flash | Text Generation |
-| AI | OpenAI (alt) | gpt-4o-mini | Text Generation |
+| AI | OpenAI (default) | gpt-4o-mini | Text Generation |
+| AI | Gemini (alt) | gemini-2.0-flash | Text Generation |
 | AI | Gemini | text-embedding-004 | Embeddings (768-dim) |
 
 ---
@@ -190,6 +192,7 @@ flowchart TB
         ATS["ats<br/>/api/v1/ats"]
         AIChat["ai<br/>/api/v1/ai"]
         Listings["job-listings<br/>/api/job-listings"]
+        Webhooks["webhooks<br/>/api/webhooks"]
         Admin["admin<br/>/api/admin"]
     end
 
@@ -209,6 +212,7 @@ flowchart TB
     APIRouter --> ATS
     APIRouter --> AIChat
     APIRouter --> Listings
+    APIRouter --> Webhooks
     APIRouter --> Admin
 ```
 
@@ -233,7 +237,7 @@ flowchart LR
 ```
 
 | Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
+| -------- | ---------- | ------------- | ------ |
 | POST | `/auth/register` | Register new user | No |
 | POST | `/auth/login` | Login, get tokens | No |
 | POST | `/auth/refresh` | Refresh access token | Refresh Token |
@@ -263,9 +267,9 @@ flowchart LR
         GET3["GET /{id}/parse/status"]
     end
 
-    subgraph Export_Ops["Export (see /api/export)"]
-        GET4["GET /api/export/templates"]
-        POST3["POST /api/export/{id}"]
+    subgraph Export_Ops["Export"]
+        GET4["GET /export/templates"]
+        POST3["POST /{id}/export"]
     end
 
     CRUD --> CRUD_Ops
@@ -274,21 +278,21 @@ flowchart LR
 ```
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| -------- | ---------- | ------------- |
 | POST | `/resumes` | Create new resume |
 | GET | `/resumes/{id}` | Get resume by ID |
 | GET | `/resumes` | List user's resumes (paginated) |
 | PUT | `/resumes/{id}` | Update resume content |
 | DELETE | `/resumes/{id}` | Delete resume |
-| GET | `/export/templates` | Get available export templates (via /api/export) |
-| POST | `/export/{id}` | Export to PDF/DOCX (via /api/export) |
+| GET | `/resumes/export/templates` | Get available export templates |
+| POST | `/resumes/{id}/export` | Export to PDF/DOCX |
 | POST | `/resumes/{id}/parse` | Trigger async parsing |
 | GET | `/resumes/{id}/parse/status` | Poll parsing status |
 
 #### Job Endpoints (`/api/jobs`)
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| -------- | ---------- | ------------- |
 | POST | `/jobs` | Create user job description |
 | GET | `/jobs/{id}` | Get specific job |
 | GET | `/jobs` | List user's job descriptions |
@@ -316,7 +320,7 @@ flowchart TB
 ```
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| -------- | ---------- | ------------- |
 | POST | `/tailor` | Create tailored resume (Two Copies Architecture) |
 | POST | `/tailor/quick-match` | Quick match score without full tailoring |
 | GET | `/tailor/{id}` | Get tailored resume |
@@ -364,7 +368,7 @@ flowchart LR
 ```
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| -------- | ---------- | ------------- |
 | POST | `/blocks` | Create experience block |
 | GET | `/blocks` | List blocks (filter by type, tags, verified) |
 | GET | `/blocks/{id}` | Get specific block |
@@ -378,7 +382,7 @@ flowchart LR
 #### Semantic Match Endpoints (`/api/v1/match`)
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| -------- | ---------- | ------------- |
 | POST | `/match` | Find matching blocks for job description |
 | POST | `/match/analyze` | Analyze skill gaps vs requirements |
 | GET | `/match/job/{job_id}` | Get cached match results |
@@ -435,7 +439,7 @@ flowchart TB
 ```
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| -------- | ---------- | ------------- |
 | POST | `/resume-builds` | Create resume build |
 | GET | `/resume-builds` | List builds |
 | GET | `/resume-builds/{id}` | Get specific build |
@@ -456,7 +460,7 @@ flowchart TB
 #### ATS Analysis Endpoints (`/api/v1/ats`)
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| -------- | ---------- | ------------- |
 | POST | `/ats/structure` | Analyze resume structure |
 | POST | `/ats/keywords` | Analyze keyword coverage |
 | POST | `/ats/keywords/detailed` | Detailed keyword analysis |
@@ -465,7 +469,7 @@ flowchart TB
 #### AI Chat Endpoints (`/api/v1/ai`)
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| -------- | ---------- | ------------- |
 | POST | `/ai/improve-section` | AI improvement for section |
 | POST | `/ai/chat` | Conversational AI |
 
@@ -502,7 +506,7 @@ flowchart TB
 ```
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| -------- | ---------- | ------------- |
 | GET | `/job-listings/filter-options` | Get filter options |
 | GET | `/job-listings` | List with filters |
 | GET | `/job-listings/search` | Full-text search |
@@ -512,6 +516,14 @@ flowchart TB
 | POST | `/job-listings/{id}/save` | Save/unsave job |
 | POST | `/job-listings/{id}/hide` | Hide/unhide job |
 | POST | `/job-listings/{id}/applied` | Mark applied |
+
+#### Webhook Endpoints (`/api/webhooks`)
+
+| Method | Endpoint | Description |
+| -------- | ---------- | ------------- |
+| POST | `/webhooks/job-listings` | Batch ingest (up to 2000) |
+| POST | `/webhooks/job-listings/single` | Ingest single listing |
+| DELETE | `/webhooks/job-listings/{external_job_id}` | Deactivate listing |
 
 #### Admin Endpoints (`/api/admin`)
 
@@ -649,13 +661,14 @@ flowchart LR
         RateLimit["Rate Limiter<br/>default: 60/min, 1000/hr<br/>ai: 30/min, 300/hr<br/>auth: 10/min, 100/hr"]
         JWTAuth["JWT Authentication<br/>(per-route)"]
         AdminCheck["Admin Check<br/>(per-route)"]
+        WebhookKey["Webhook Key<br/>(X-API-Key)"]
     end
 
     subgraph Handler["Route Handler"]
         Route["Endpoint Logic"]
     end
 
-    Req --> CORS --> RateLimit --> JWTAuth --> AdminCheck --> Route
+    Req --> CORS --> RateLimit --> JWTAuth --> AdminCheck --> WebhookKey --> Route
 ```
 
 ---
@@ -666,11 +679,17 @@ flowchart LR
 
 ```mermaid
 erDiagram
+    users ||--o{ resumes : owns
     users ||--o{ job_descriptions : owns
     users ||--o{ experience_blocks : owns
+    users ||--o{ resume_builds : owns
     users ||--o{ user_job_interactions : has
     users ||--o{ audit_logs : generates
 
+    resumes ||--o{ tailored_resumes : generates
+
+    job_descriptions ||--o{ tailored_resumes : targets
+    job_listings ||--o{ tailored_resumes : targets
     job_listings ||--o{ user_job_interactions : receives
 
     users {
@@ -680,6 +699,22 @@ erDiagram
         string full_name
         boolean is_active
         boolean is_admin
+        datetime created_at
+        datetime updated_at
+    }
+
+    resumes {
+        int id PK
+        int owner_id FK
+        string title
+        text raw_content
+        text html_content
+        json parsed_content
+        json style
+        string original_file_key
+        string original_filename
+        string file_type
+        int file_size_bytes
         datetime created_at
         datetime updated_at
     }
@@ -731,6 +766,20 @@ erDiagram
         datetime updated_at
     }
 
+    tailored_resumes {
+        int id PK
+        int resume_id FK
+        int job_id FK "nullable"
+        int job_listing_id FK "nullable"
+        text tailored_content
+        json suggestions
+        float match_score
+        jsonb style_settings
+        array section_order
+        datetime created_at
+        datetime updated_at
+    }
+
     experience_blocks {
         int id PK
         int user_id FK
@@ -748,6 +797,22 @@ erDiagram
         datetime created_at
         datetime updated_at
         datetime deleted_at
+    }
+
+    resume_builds {
+        int id PK
+        int user_id FK
+        string job_title
+        string job_company
+        text job_description
+        vector_768 job_embedding
+        string status
+        jsonb sections
+        array pulled_block_ids
+        jsonb pending_diffs
+        datetime created_at
+        datetime updated_at
+        datetime exported_at
     }
 
     user_job_interactions {
@@ -826,29 +891,26 @@ erDiagram
 
 ### PostgreSQL Table Summary
 
-> **Note:** Resumes, tailored resumes, and resume builds are stored in MongoDB (see Section 4.2).
-> The PostgreSQL models for these entities exist in the codebase but are not actively used.
-
 | Table | Purpose | Key Indexes |
-|-------|---------|-------------|
+| -------- | ---------- | ------------- |
 | `users` | User accounts | email (unique) |
+| `resumes` | Resume metadata & content | owner_id |
 | `job_descriptions` | User-created job postings | owner_id |
 | `job_listings` | System-wide scraped jobs | external_job_id, company, location, seniority, date_posted |
+| `tailored_resumes` | AI-tailored versions | resume_id, job_id, job_listing_id |
 | `experience_blocks` | Vault - atomic resume blocks | user_id+block_type, HNSW (embedding), GIN (tags) |
+| `resume_builds` | Workshop workspace | user_id |
 | `user_job_interactions` | Save/hide/apply tracking | (user_id, job_listing_id) unique |
 | `audit_logs` | Action audit trail | user+resource, action+timestamp |
 | `scraper_runs` | Scraper execution history | status, started_at |
 | `scraper_presets` | Named search URL presets | - |
 | `scraper_schedule_settings` | Singleton scheduler config | - |
 
-### 4.2 MongoDB Collections (Primary Storage)
-
-> **Note:** MongoDB serves as the **primary and sole storage** for resumes, tailored resumes, and resume builds.
-> These are not mirrored in PostgreSQL—all content lives exclusively in MongoDB.
+### 4.2 MongoDB Collections
 
 ```mermaid
 flowchart TB
-    subgraph MongoDB["MongoDB Collections (Primary Storage)"]
+    subgraph MongoDB["MongoDB Collections"]
         subgraph resumes_col["resumes Collection"]
             R_ID["_id: ObjectId"]
             R_User["user_id: int (FK)"]
@@ -896,6 +958,7 @@ flowchart TB
 ### MongoDB Document Schemas
 
 #### Resume Document
+
 ```json
 {
   "_id": "ObjectId",
@@ -938,6 +1001,7 @@ flowchart TB
 ```
 
 #### Tailored Resume Document
+
 ```json
 {
   "_id": "ObjectId",
@@ -971,26 +1035,22 @@ flowchart TB
 
 ### 4.3 PostgreSQL-MongoDB Relationship
 
-> **Architecture Note:** This application uses a **split database architecture** where:
-> - **PostgreSQL** handles user accounts, job data, experience blocks (with vectors), and system configuration
-> - **MongoDB** is the **sole storage** for all resume-related documents (resumes, tailored resumes, resume builds)
->
-> There is no dual-storage or mirroring pattern for resumes—MongoDB is the single source of truth for resume content.
-
 ```mermaid
 flowchart TB
-    subgraph PostgreSQL["PostgreSQL (Users, Jobs, Blocks, Config)"]
+    subgraph PostgreSQL["PostgreSQL (Source of Truth)"]
         PG_Users["users"]
+        PG_Resumes["resumes<br/>(metadata)"]
         PG_Jobs["job_descriptions"]
         PG_Listings["job_listings"]
         PG_Blocks["experience_blocks<br/>(vectors)"]
+        PG_Builds["resume_builds<br/>(metadata)"]
         PG_Interactions["user_job_interactions"]
     end
 
-    subgraph MongoDB["MongoDB (Resume Storage - Primary)"]
-        MG_Resumes["resumes<br/>(complete documents)"]
+    subgraph MongoDB["MongoDB (Document Content)"]
+        MG_Resumes["resumes<br/>(full content)"]
         MG_Tailored["tailored_resumes<br/>(AI versions)"]
-        MG_Builds["resume_builds<br/>(workshop documents)"]
+        MG_Builds["resume_builds<br/>(sections)"]
     end
 
     PG_Users --> |"user_id"| MG_Resumes
@@ -1074,7 +1134,7 @@ flowchart TB
 ### Vector Index Configuration
 
 | Parameter | Value | Purpose |
-|-----------|-------|---------|
+| -------- | ---------- | ------------- |
 | Dimensions | 768 | Gemini text-embedding-004 native |
 | Index Type | HNSW | Hierarchical Navigable Small World |
 | m | 16 | Connections per layer |
@@ -1162,7 +1222,7 @@ flowchart TB
 ### Page Route Table
 
 | Route | Component | Description |
-|-------|-----------|-------------|
+| -------- | ---------- | ------------- |
 | `/` | Landing Page | Hero, tech stack, how it works |
 | `/(auth)/login` | Login Page | User authentication |
 | `/(auth)/signup` | Signup Page | User registration |
@@ -1224,6 +1284,11 @@ flowchart TB
             J3["JobListingFilters"]
         end
 
+        subgraph Tailoring_C["Tailoring Components"]
+            T1["PreviewDiffLayout"]
+            T2["VersionHistoryPanel"]
+        end
+
         subgraph Editor_C["Editor Components"]
             E1["TipTap Editor"]
             E2["SuggestionPopover"]
@@ -1260,7 +1325,7 @@ flowchart TB
 
 ### Component Module Organization
 
-```
+```text
 /src/components
 ├── /layout
 │   ├── Sidebar.tsx
@@ -1275,6 +1340,9 @@ flowchart TB
 │   ├── JobListingCard.tsx
 │   ├── JobListingTable.tsx
 │   └── JobListingFilters.tsx
+├── /tailoring
+│   ├── PreviewDiffLayout.tsx
+│   └── VersionHistoryPanel.tsx
 ├── /editor
 │   ├── TipTapEditor.tsx
 │   └── SuggestionPopover.tsx
@@ -1291,13 +1359,8 @@ flowchart TB
 ├── /vault
 │   ├── BlockList.tsx
 │   └── BlockEditor.tsx
-├── /library            # Tailoring functionality integrated here
-│   └── editor/         # Contains diff preview and editing components
 └── ProtectedRoute.tsx
 ```
-
-> **Note:** Tailoring components (PreviewDiffLayout, VersionHistoryPanel) are integrated within
-> the library/editor sections rather than in a standalone `/tailoring` folder.
 
 ### 5.3 State Management
 
@@ -1347,7 +1410,7 @@ flowchart TB
 ### State Layer Details
 
 | Layer | Technology | Purpose | Persistence |
-|-------|------------|---------|-------------|
+| -------- | ---------- | ------------- | ------------- |
 | Auth | AuthContext | User session, tokens | localStorage |
 | Theme | ThemeContext | Dark/light mode | localStorage |
 | Tailoring | TailoringContext | Edit session state | sessionStorage (30min) |
@@ -1650,6 +1713,7 @@ sequenceDiagram
     participant Scheduler as APScheduler
     participant Orchestrator as ScraperOrchestrator
     participant Apify as Apify API
+    participant Webhook as n8n Webhook
     participant API as FastAPI
     participant DB as PostgreSQL
 
@@ -1665,6 +1729,13 @@ sequenceDiagram
 
         Orchestrator->>DB: Upsert job_listings
         Orchestrator->>DB: Log scraper_run
+    end
+
+    alt Webhook Ingestion
+        Webhook->>API: POST /api/webhooks/job-listings
+        Note over Webhook,API: X-API-Key header required
+        API->>DB: Batch upsert (up to 2000)
+        API-->>Webhook: {created, updated, errors}
     end
 
     alt Ad-hoc Scrape
@@ -1684,6 +1755,7 @@ flowchart TB
         Scheduled["APScheduler<br/>(Daily/Weekly)"]
         Manual["Admin Manual<br/>POST /trigger"]
         AdHoc["Ad-hoc URL<br/>POST /adhoc"]
+        Webhook["n8n Webhook<br/>POST /webhooks"]
     end
 
     subgraph Processing["Processing"]
@@ -1702,6 +1774,7 @@ flowchart TB
     Scheduled --> Orchestrator
     Manual --> Orchestrator
     AdHoc --> Orchestrator
+    Webhook --> |"Direct DB"| JobListings
 
     Orchestrator --> ApifyClient
     ApifyClient --> |"Results"| Orchestrator
@@ -1821,6 +1894,7 @@ flowchart TB
     subgraph Authorization["Authorization"]
         UserAuth["User Auth<br/>(JWT Required)"]
         AdminAuth["Admin Auth<br/>(is_admin Check)"]
+        WebhookAuth["Webhook Auth<br/>(X-API-Key)"]
     end
 
     subgraph Protection["Protection Layers"]
@@ -1841,6 +1915,7 @@ flowchart TB
 
     UserAuth --> |"Protected Routes"| API["API Endpoints"]
     AdminAuth --> |"/api/admin/*"| AdminAPI["Admin Endpoints"]
+    WebhookAuth --> |"/api/webhooks/*"| WebhookAPI["Webhook Endpoints"]
 
     CORS --> API
     RateLimit --> API
@@ -1851,7 +1926,7 @@ flowchart TB
 ### Security Measures
 
 | Layer | Protection | Implementation |
-|-------|------------|----------------|
+| ------- | ------------ | ---------------- |
 | Authentication | JWT Tokens | Access (short-lived) + Refresh (long-lived) |
 | Password | BCrypt | Salted hashing |
 | API Rate Limits | Redis | 60/min default, 30/min AI, 10/min auth |
@@ -1893,7 +1968,7 @@ flowchart TB
 ### Cache TTL Configuration
 
 | Cache | TTL | Purpose |
-|-------|-----|---------|
+| ------- | ----- | --------- |
 | React Query | 60s staleTime | API response freshness |
 | Tailoring Session | 30 minutes | Cross-page state handoff |
 | Rate Limit Counters | 1 minute / 1 hour | Request throttling |
@@ -1909,6 +1984,7 @@ flowchart TB
 flowchart TB
     subgraph External["External Traffic"]
         Users["Users"]
+        N8N["n8n Webhooks"]
     end
 
     subgraph Docker["Docker Compose Stack"]
@@ -1936,6 +2012,7 @@ flowchart TB
     end
 
     Users --> NextJS
+    N8N --> FastAPI
     NextJS --> FastAPI
 
     FastAPI --> PostgreSQL
@@ -1951,10 +2028,10 @@ flowchart TB
 ### Container Configuration
 
 | Service | Image | Port | Volume |
-|---------|-------|------|--------|
+| ------- | ----- | ------ | ------ |
 | frontend | node:20-alpine | 3000 | - |
 | backend | python:3.11-slim | 8000 | - |
-| postgres | pgvector/pgvector:pg16 | 5432 | pgdata |
+| postgres | postgres:15-alpine | 5432 | pgdata |
 | mongodb | mongo:7 | 27017 | mongodata |
 | redis | redis:7-alpine | 6379 | redisdata |
 | minio | minio/minio | 9000, 9001 | miniodata |
@@ -1972,18 +2049,19 @@ JWT_SECRET_KEY=<generated-secret>
 JWT_ALGORITHM=HS256
 
 # AI Services - Provider Selection
-AI_PROVIDER=gemini  # Options: "gemini" (default) or "openai"
-
-# Gemini Configuration (default provider, also used for embeddings)
-GEMINI_API_KEY=<gemini-api-key>
-GEMINI_MODEL=gemini-2.0-flash  # Text generation model
+AI_PROVIDER=openai  # Options: "openai" (default) or "gemini"
 
 # OpenAI Configuration (if AI_PROVIDER=openai)
 OPENAI_API_KEY=<openai-api-key>
-OPENAI_MODEL=gpt-4o-mini  # Alternative model
+OPENAI_MODEL=gpt-4o-mini  # Default model
+
+# Gemini Configuration (for embeddings, and text gen if AI_PROVIDER=gemini)
+GEMINI_API_KEY=<gemini-api-key>
+GEMINI_MODEL=gemini-2.0-flash  # Text generation model
 
 # Scraper
 APIFY_API_TOKEN=<apify-token>
+WEBHOOK_API_KEY=<webhook-secret>
 
 # Storage
 MINIO_ENDPOINT=minio:9000
@@ -1996,7 +2074,7 @@ MINIO_SECRET_KEY=<secret-key>
 ## Appendix: API Endpoint Count Summary
 
 | Category | Endpoint Count |
-|----------|----------------|
+| ---------- | ---------------- |
 | Auth | 4 |
 | Resumes | 9 |
 | Jobs | 5 |
@@ -2009,29 +2087,30 @@ MINIO_SECRET_KEY=<secret-key>
 | ATS | 4 |
 | AI Chat | 2 |
 | Job Listings | 10 |
+| Webhooks | 3 |
 | Admin | 17 |
-| **Total** | **90** |
+| **Total** | **93** |
 
 ---
 
 ## Appendix: Database Table Count Summary
 
 | Database | Collection/Table | Purpose |
-|----------|------------------|---------|
+| ---------- | ------------------ | --------- |
 | PostgreSQL | users | User accounts |
+| PostgreSQL | resumes | Resume metadata |
 | PostgreSQL | job_descriptions | User job postings |
 | PostgreSQL | job_listings | System-wide scraped jobs |
+| PostgreSQL | tailored_resumes | AI-tailored metadata |
 | PostgreSQL | experience_blocks | Vault with vectors |
+| PostgreSQL | resume_builds | Workshop metadata |
 | PostgreSQL | user_job_interactions | Save/hide/apply tracking |
 | PostgreSQL | audit_logs | Action audit trail |
 | PostgreSQL | scraper_runs | Scraper history |
 | PostgreSQL | scraper_presets | URL presets |
 | PostgreSQL | scraper_schedule_settings | Schedule config |
-| MongoDB | resumes | Complete resume documents (primary storage) |
-| MongoDB | tailored_resumes | AI-tailored versions (primary storage) |
-| MongoDB | resume_builds | Workshop documents (primary storage) |
-| **PostgreSQL Total** | **9 tables** | |
+| MongoDB | resumes | Full resume content |
+| MongoDB | tailored_resumes | Full tailored content |
+| MongoDB | resume_builds | Workshop sections |
+| **PostgreSQL Total** | **12 tables** | |
 | **MongoDB Total** | **3 collections** | |
-
-> **Note:** PostgreSQL models for resumes, tailored_resumes, and resume_builds exist in the codebase
-> but are not actively used. MongoDB is the sole storage for resume-related data.
