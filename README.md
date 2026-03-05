@@ -6,7 +6,7 @@ An AI-powered application that tailors resumes to specific job descriptions.
 
 - **Frontend:** Next.js 15 + Bun + TypeScript
 - **Backend:** FastAPI + Python
-- **Database:** PostgreSQL
+- **Database:** PostgreSQL + MongoDB
 - **Cache:** Redis
 - **AI:** TBD (OpenAI/Anthropic)
 
@@ -33,6 +33,8 @@ An AI-powered application that tailors resumes to specific job descriptions.
 
 ### Local Development
 
+#### Option 1: Docker Compose (Recommended)
+
 1. Clone the repository
 2. Copy environment files:
 
@@ -41,7 +43,7 @@ An AI-powered application that tailors resumes to specific job descriptions.
    cp frontend/.env.example frontend/.env
    ```
 
-3. Start services:
+3. Start all services:
 
    ```bash
    docker-compose up -d
@@ -51,6 +53,59 @@ An AI-powered application that tailors resumes to specific job descriptions.
    - Frontend: <http://localhost:3000>
    - Backend: <http://localhost:8000>
    - API Docs: <http://localhost:8000/docs>
+
+#### Option 2: Manual Setup (Frontend & Backend Separately)
+
+**Frontend:**
+
+```bash
+cd frontend
+bun install
+bun dev
+```
+
+**Backend:**
+
+```bash
+cd backend
+poetry install
+poetry run uvicorn app.main:app --reload
+```
+
+## Commands Reference
+
+### Docker Compose
+
+```bash
+docker-compose up -d          # Start all services
+docker-compose down           # Stop all services
+docker-compose logs -f        # View logs
+```
+
+### Frontend (from /frontend)
+
+```bash
+bun install                   # Install dependencies
+bun dev                       # Start dev server
+```
+
+### Backend (from /backend)
+
+```bash
+poetry install                # Install all dependencies
+poetry install --only main    # Install production deps only
+poetry add <package>          # Add a new dependency
+poetry add -G dev <package>   # Add a dev dependency
+poetry run uvicorn app.main:app --reload  # Run with reload
+poetry shell                  # Activate virtual environment
+poetry run pytest             # Run tests
+```
+
+### Type Sync
+
+```bash
+./scripts/generate-client.sh  # Generate TS types from OpenAPI
+```
 
 ## Documentation
 
