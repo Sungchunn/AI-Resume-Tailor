@@ -1457,3 +1457,310 @@ curl http://localhost:8000/v1/ats/tips \
 - [Blocks](blocks.md) - Manage content blocks
 - [Tailor](tailor-match.md) - Create tailored resumes
 - [Resume Builds](resume-builds.md) - Build resumes with vault content
+
+---
+
+## Progressive ATS Analysis (Server-Sent Events)
+
+### POST `/api/v1/ats/analyze-progressive`
+
+Runs complete ATS analysis with real-time progress updates via Server-Sent Events (SSE). This endpoint orchestrates all 5 ATS stages sequentially and streams progress events to the client in real-time.
+
+**Query Parameters:**
+
+- `resume_id` (optional): Resume database ID
+- `job_id` (optional): Job database ID
+
+**Request Body:** (multipart form-data)
+
+Either provide `resume_id` + `job_id` or `resume_content` + `job_description`:
+
+```json
+{
+  "resume_id": 123,
+  "job_id": 456
+}
+```
+
+or
+
+```json
+{
+  "resume_content": {
+    "experience": "...",
+    "education": "..."
+  },
+  "job_description": "We are looking for..."
+}
+```
+
+**Authentication:** Required (Bearer token in Authorization header)
+
+**Response:** Server-Sent Events stream with the following event types:
+
+#### Event: `stage_start`
+
+Emitted when a stage begins processing.
+
+```json
+{
+  "stage": 0,
+  "stage_name": "Knockout Risk Check",
+  "status": "running",
+  "progress_percent": 0
+}
+```
+
+#### Event: `stage_complete`
+
+Emitted when a stage completes successfully. Includes full stage result data.
+
+```json
+{
+  "stage": 0,
+  "stage_name": "Knockout Risk Check",
+  "status": "completed",
+  "progress_percent": 20,
+  "elapsed_ms": 485,
+  "result": {
+    "passes_all_checks": true,
+    "risks": []
+  }
+}
+```
+
+#### Event: `stage_error`
+
+Emitted when a stage fails. Analysis continues with remaining stages.
+
+```json
+{
+  "stage": 2,
+  "stage_name": "Keyword Matching",
+  "status": "failed",
+  "progress_percent": 40,
+  "elapsed_ms": 2500,
+  "error": "Failed to analyze keywords: AI service timeout"
+}
+```
+
+#### Event: `score_calculation`
+
+Emitted when composite score calculation begins.
+
+```json
+{
+  "stage": 5,
+  "stage_name": "Calculating Final Score",
+  "status": "running",
+  "progress_percent": 95
+}
+```
+
+#### Event: `complete`
+
+Emitted when all stages finish and composite score is calculated. This is the final event.
+
+```json
+{
+  "stage": 5,
+  "stage_name": "Complete",
+  "status": "completed",
+  "progress_percent": 100,
+  "elapsed_ms": 8250,
+  "composite_score": {
+    "final_score": 82.5,
+    "stage_breakdown": {
+      "structure": 12.75,
+      "keywords-enhanced": 36.0,
+      "content-quality": 18.75,
+      "role-proximity": 16.0
+    },
+    "weights_used": {
+      "structure": 0.15,
+      "keywords-enhanced": 0.40,
+      "content-quality": 0.25,
+      "role-proximity": 0.20
+    },
+    "normalization_applied": false,
+    "failed_stages": []
+  }
+}
+```
+
+#### Event: `error`
+
+Emitted if a fatal error occurs that aborts the entire analysis.
+
+```json
+{
+  "error": "Fatal error during ATS analysis: Resume not found"
+}
+```
+
+### Stage Execution Timeline
+
+Stages execute sequentially to avoid overwhelming AI services:
+
+| Stage | Name | Typical Duration | Description |
+| ------- | ------- | ----------- | ----------- |
+| 0 | Knockout Check | ~500ms | Binary hard requirement validation |
+| 1 | Structure Analysis | ~200ms | Resume format and parsability (15% weight) |
+| 2 | Keyword Matching | ~2-3s | Enhanced keyword matching (40% weight) |
+| 3 | Content Quality | ~1s | Block classification and quantification (25% weight) |
+| 4 | Role Proximity | ~2-3s | Title and trajectory matching (20% weight) |
+| - | Final Calculation | ~50ms | Composite score calculation |
+
+**Total Expected Duration:** 6-8 seconds
+
+### Composite Score Calculation
+
+The final score combines all stage results with these weights:
+
+- **Structure:** 15%
+- **Keywords:** 40%
+- **Content Quality:** 25%
+- **Role Proximity:** 20%
+
+If a stage fails, remaining weights are renormalized to sum to 100%. For example, if Keywords (40%) fails, the remaining weights become:
+
+- Structure: 15 ÷ 60 = 25%
+- Content Quality: 25 ÷ 60 = 41.67%
+- Role Proximity: 20 ÷ 60 = 33.33%
+
+The `composite_score.normalization_applied` flag indicates when this renormalization occurred.
+
+### Client Implementation Example
+
+#### JavaScript/TypeScript
+
+```javascript
+const eventSource = new EventSource(
+  '/api/v1/ats/analyze-progressive?resume_id=123&job_id=456',
+  { withCredentials: true } // Include auth cookies
+);
+
+// Track progress
+eventSource.addEventListener('stage_start', (e) => {
+  const data = JSON.parse(e.data);
+  console.log(`Starting: ${data.stage_name}`);
+  updateProgressBar(data.progress_percent);
+});
+
+// Show results as they complete
+eventSource.addEventListener('stage_complete', (e) => {
+  const data = JSON.parse(e.data);
+  console.log(`Completed: ${data.stage_name}`, data.result);
+  displayStageResult(data);
+});
+
+// Handle stage failures gracefully
+eventSource.addEventListener('stage_error', (e) => {
+  const data = JSON.parse(e.data);
+  console.warn(`Stage ${data.stage} failed: ${data.error}`);
+  showWarning(`${data.stage_name} failed, continuing with remaining stages...`);
+});
+
+// Get final score
+eventSource.addEventListener('complete', (e) => {
+  const data = JSON.parse(e.data);
+  console.log('Final ATS Score:', data.composite_score.final_score);
+  displayFinalScore(data.composite_score);
+  eventSource.close(); // Clean up
+});
+
+// Handle errors
+eventSource.addEventListener('error', (e) => {
+  const data = JSON.parse(e.data);
+  console.error('Analysis failed:', data.error);
+  eventSource.close();
+  showError(data.error);
+});
+
+// Handle network errors
+eventSource.onerror = (error) => {
+  console.error('Connection error:', error);
+  if (eventSource.readyState === EventSource.CLOSED) {
+    showError('Connection lost. Try again?');
+  }
+};
+```
+
+#### React with Zustand
+
+```typescript
+import { useATSProgressiveAnalysis } from '@/lib/api/hooks';
+
+function MyComponent() {
+  const { startAnalysis, stages, compositeScore, isAnalyzing } = 
+    useATSProgressiveAnalysis();
+
+  const runAnalysis = () => {
+    startAnalysis(resumeId, jobId);
+  };
+
+  return (
+    <div>
+      <button onClick={runAnalysis} disabled={isAnalyzing}>
+        {isAnalyzing ? 'Analyzing...' : 'Analyze Resume'}
+      </button>
+
+      {Object.entries(stages).map(([stageNum, data]) => (
+        <div key={stageNum}>
+          <h3>{data.stageName}</h3>
+          <p>Status: {data.status}</p>
+          {data.result && <pre>{JSON.stringify(data.result)}</pre>}
+        </div>
+      ))}
+
+      {compositeScore && (
+        <div>
+          <h2>Final Score: {compositeScore.finalScore}/100</h2>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Background Execution
+
+Analysis continues even if the client disconnects or navigates away. To resume watching results:
+
+1. Store the `analysisId` returned from initial request
+2. Reconnect to SSE stream with same parameters
+3. Client-side storage (Zustand store) persists stage results
+4. Notification fires when analysis completes in background
+
+### Error Handling
+
+**Partial Failures:**
+- If one stage fails, analysis continues with remaining stages
+- `stage_error` event indicates which stage failed and why
+- Final `composite_score.failed_stages` lists failed stages
+- Score is recalculated with remaining stages
+
+**Connection Loss:**
+- If network drops, `error` event is emitted
+- Client can retry from `error` event
+- Stages already completed are not re-run
+
+**Rate Limiting:**
+- SSE stream respects API rate limits
+- 429 responses will close the stream with error event
+- Exponential backoff recommended for retries
+
+### Performance Notes
+
+- Stages execute sequentially (not parallel) to manage resource usage
+- AI-heavy stages (Keywords, Role Proximity) take 2-3s each
+- Progress updates stream ~every 0.5-3 seconds
+- No impact on other API endpoints during analysis
+
+### Related Endpoints
+
+- [Knockout Check](/api/ats.md#post-atsknight-check) - Stage 0 only
+- [Structure Analysis](/api/ats.md#post-atsstructure) - Stage 1 only
+- [Keyword Analysis](/api/ats.md#post-atkeywordsenhanced) - Stage 2 only
+- [Content Quality](/api/ats.md#post-atscontent-quality) - Stage 3 only
+- [Role Proximity](/api/ats.md#post-atsrole-proximity) - Stage 4 only

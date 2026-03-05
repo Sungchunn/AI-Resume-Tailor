@@ -547,3 +547,117 @@ docker-compose up backend
 | Add business logic | Create/update service in `services/*.py` |
 | Add data access | Create/update CRUD class in `crud/*.py` |
 | Add configuration | Add field to `Settings` in `core/config.py` |
+
+---
+
+## Server-Sent Events (SSE) for Real-Time Progress
+
+For long-running operations that benefit from real-time progress updates (e.g., ATS analysis, bulk processing), we use Server-Sent Events (SSE) via `sse-starlette`.
+
+### SSE Pattern
+
+```python
+from sse_starlette.sse import EventSourceResponse
+import json
+import time
+
+@router.post("/analyze-progressive")
+async def analyze_progressive_ats(
+    request: AnalysisRequest,
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Long-running analysis with real-time progress updates."""
+
+    async def event_generator():
+        """Yields events as analysis progresses."""
+        start_time = time.time()
+
+        for stage in stages:
+            stage_start = time.time()
+
+            # Emit start event
+            yield {
+                "event": "stage_start",
+                "data": json.dumps({"stage": stage.number, "status": "running"})
+            }
+
+            try:
+                # Execute stage
+                result = await execute_stage(stage)
+                elapsed = int((time.time() - stage_start) * 1000)
+
+                # Emit complete event
+                yield {
+                    "event": "stage_complete",
+                    "data": json.dumps({
+                        "stage": stage.number,
+                        "status": "completed",
+                        "result": result.model_dump(),
+                        "elapsed_ms": elapsed,
+                    })
+                }
+
+            except Exception as e:
+                # Emit error event but continue
+                yield {
+                    "event": "stage_error",
+                    "data": json.dumps({"stage": stage.number, "error": str(e)})
+                }
+
+        # Emit completion
+        total_elapsed = int((time.time() - start_time) * 1000)
+        yield {
+            "event": "complete",
+            "data": json.dumps({"status": "done", "total_ms": total_elapsed})
+        }
+
+    return EventSourceResponse(event_generator())
+```
+
+### Key Design Decisions
+
+1. **Sequential Execution:** Stages execute one-at-a-time to manage resource usage and API rate limits
+2. **Fault Tolerance:** Individual stage failures don't abort the entire analysis
+3. **Event Streaming:** Progress updates stream in real-time as each stage completes
+4. **Client-Side State:** Zustand store maintains analysis state across disconnects
+5. **Background Execution:** Analysis continues even if client disconnects
+
+### Event Types
+
+Every SSE endpoint should emit these standard events:
+
+| Event | When | Payload |
+|-------|------|---------|
+| `{stage}_start` | Stage begins | `{ stage: num, status: "running" }` |
+| `{stage}_complete` | Stage succeeds | `{ stage: num, status: "completed", result: {...} }` |
+| `{stage}_error` | Stage fails | `{ stage: num, status: "failed", error: "..." }` |
+| `complete` | All done | `{ status: "done", total_ms: int }` |
+| `error` | Fatal error | `{ error: "..." }` |
+
+### Client-Side Integration
+
+Frontend uses `EventSource` API to consume SSE:
+
+```typescript
+const eventSource = new EventSource('/api/v1/endpoint?params');
+
+eventSource.addEventListener('stage_complete', (e) => {
+  const data = JSON.parse(e.data);
+  // Update UI with result
+});
+
+eventSource.addEventListener('complete', (e) => {
+  eventSource.close();
+  // Analysis done
+});
+```
+
+State is managed with Zustand to persist across component unmounts.
+
+### Performance Considerations
+
+- **Connection Timeout:** SSE connections timeout after ~5 minutes with no events. Send periodic events or heartbeats if needed.
+- **Memory:** Event generators should not buffer entire results in memory. Yield events as they're computed.
+- **Rate Limiting:** Consider implementing delays between events to avoid overwhelming clients (e.g., 100-500ms between events).
+- **Error Recovery:** Include `withCredentials: true` on client to send auth cookies with EventSource.
