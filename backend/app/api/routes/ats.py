@@ -1550,3 +1550,340 @@ async def analyze_role_proximity(
         concerns=result.concerns,
         strengths=result.strengths,
     )
+
+
+# ============================================================================
+# Progressive ATS Analysis with Server-Sent Events (SSE)
+# ============================================================================
+
+import json
+import time
+from sse_starlette.sse import EventSourceResponse
+
+
+class ATSProgressiveRequest(BaseModel):
+    """Request for progressive ATS analysis with SSE streaming."""
+
+    resume_id: int | None = Field(None, description="Resume database ID")
+    job_id: int | None = Field(None, description="Job database ID")
+    resume_content: dict | None = Field(None, description="Raw resume content")
+    job_description: str | None = Field(None, description="Raw job description text")
+
+
+class ATSStageProgress(BaseModel):
+    """Progress update for a single stage."""
+
+    stage: int = Field(..., description="Stage number (0-4)")
+    stage_name: str = Field(..., description="Human-readable stage name")
+    status: Literal["pending", "running", "completed", "failed"] = Field(..., description="Stage status")
+    progress_percent: int = Field(..., ge=0, le=100, description="Overall progress 0-100")
+    elapsed_ms: int | None = Field(None, description="Time taken for this stage in milliseconds")
+    result: dict | None = Field(None, description="Stage result data (only when status=completed)")
+    error: str | None = Field(None, description="Error message (only when status=failed)")
+
+
+class ATSCompositeScore(BaseModel):
+    """Final composite ATS score calculation."""
+
+    final_score: float = Field(..., ge=0, le=100, description="Weighted composite score")
+    stage_breakdown: dict[str, float] = Field(
+        ...,
+        description="Individual stage scores with weights applied"
+    )
+    weights_used: dict[str, float] = Field(
+        ...,
+        description="Weights applied to each stage"
+    )
+    normalization_applied: bool = Field(
+        ...,
+        description="True if some stages failed and weights were renormalized"
+    )
+    failed_stages: list[str] = Field(
+        default_factory=list,
+        description="Names of stages that failed (if any)"
+    )
+
+
+@router.post("/analyze-progressive")
+async def analyze_progressive_ats(
+    request: ATSProgressiveRequest,
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Run complete ATS analysis with real-time progress updates via SSE.
+
+    This endpoint orchestrates all 5 ATS stages and streams progress events:
+
+    **Event Types:**
+    - `stage_start`: Stage N is beginning
+    - `stage_complete`: Stage N completed successfully (includes result data)
+    - `stage_error`: Stage N failed (includes error message, continues to next stage)
+    - `score_calculation`: Calculating final composite score
+    - `complete`: All stages finished, composite score ready
+    - `error`: Fatal error that aborts entire analysis
+
+    **Client Usage:**
+    ```javascript
+    const eventSource = new EventSource('/api/v1/ats/analyze-progressive?resume_id=123&job_id=456');
+    eventSource.addEventListener('stage_complete', (e) => {
+      const data = JSON.parse(e.data);
+      console.log(`Stage ${data.stage} done:`, data.result);
+    });
+    ```
+    """
+
+    async def event_generator():
+        start_time = time.time()
+        stage_results = {}
+        failed_stages = []
+
+        # Stage metadata
+        stages = [
+            (0, "knockout-check", "Knockout Risk Check"),
+            (1, "structure", "Structure Analysis"),
+            (2, "keywords-enhanced", "Keyword Matching"),
+            (3, "content-quality", "Content Quality"),
+            (4, "role-proximity", "Role Proximity"),
+        ]
+
+        try:
+            # Validate input
+            if not ((request.resume_id and request.job_id) or
+                    (request.resume_content and request.job_description)):
+                yield {
+                    "event": "error",
+                    "data": json.dumps({
+                        "error": "Must provide either (resume_id + job_id) or (resume_content + job_description)"
+                    })
+                }
+                return
+
+            # Execute each stage sequentially
+            for idx, (stage_num, stage_key, stage_name) in enumerate(stages):
+                stage_start = time.time()
+                progress_percent = int((idx / len(stages)) * 100)
+
+                # Emit stage_start event
+                yield {
+                    "event": "stage_start",
+                    "data": json.dumps({
+                        "stage": stage_num,
+                        "stage_name": stage_name,
+                        "status": "running",
+                        "progress_percent": progress_percent,
+                    })
+                }
+
+                try:
+                    # Call the appropriate internal method based on stage
+                    if stage_num == 0:
+                        result = await _execute_knockout_check(request, user_id, db)
+                    elif stage_num == 1:
+                        result = await _execute_structure_analysis(request, user_id, db)
+                    elif stage_num == 2:
+                        result = await _execute_keyword_analysis(request, user_id, db)
+                    elif stage_num == 3:
+                        result = await _execute_content_quality(request, user_id, db)
+                    elif stage_num == 4:
+                        result = await _execute_role_proximity(request, user_id, db)
+
+                    stage_elapsed = int((time.time() - stage_start) * 1000)
+                    progress_percent = int(((idx + 1) / len(stages)) * 100)
+
+                    # Store result for composite scoring
+                    stage_results[stage_key] = result
+
+                    # Emit stage_complete event
+                    yield {
+                        "event": "stage_complete",
+                        "data": json.dumps({
+                            "stage": stage_num,
+                            "stage_name": stage_name,
+                            "status": "completed",
+                            "progress_percent": progress_percent,
+                            "elapsed_ms": stage_elapsed,
+                            "result": result.model_dump() if hasattr(result, 'model_dump') else result,
+                        })
+                    }
+
+                except Exception as e:
+                    # Stage failed, but continue to next stage
+                    stage_elapsed = int((time.time() - stage_start) * 1000)
+                    failed_stages.append(stage_name)
+
+                    yield {
+                        "event": "stage_error",
+                        "data": json.dumps({
+                            "stage": stage_num,
+                            "stage_name": stage_name,
+                            "status": "failed",
+                            "progress_percent": progress_percent,
+                            "elapsed_ms": stage_elapsed,
+                            "error": str(e),
+                        })
+                    }
+
+            # Calculate composite score
+            yield {
+                "event": "score_calculation",
+                "data": json.dumps({
+                    "stage": 5,
+                    "stage_name": "Calculating Final Score",
+                    "status": "running",
+                    "progress_percent": 95,
+                })
+            }
+
+            composite_score = _calculate_composite_score(stage_results, failed_stages)
+            total_elapsed = int((time.time() - start_time) * 1000)
+
+            # Emit complete event
+            yield {
+                "event": "complete",
+                "data": json.dumps({
+                    "stage": 5,
+                    "stage_name": "Complete",
+                    "status": "completed",
+                    "progress_percent": 100,
+                    "elapsed_ms": total_elapsed,
+                    "composite_score": composite_score.model_dump(),
+                })
+            }
+
+        except Exception as e:
+            # Fatal error - abort entire analysis
+            yield {
+                "event": "error",
+                "data": json.dumps({
+                    "error": f"Fatal error during ATS analysis: {str(e)}"
+                })
+            }
+
+    return EventSourceResponse(event_generator())
+
+
+# Helper methods to execute each stage
+async def _execute_knockout_check(request: ATSProgressiveRequest, user_id: int, db: AsyncSession):
+    """Execute Stage 0: Knockout Check."""
+    knockout_request = KnockoutCheckRequest(
+        resume_id=request.resume_id,
+        job_id=request.job_id,
+        resume_content=request.resume_content,
+        job_description=request.job_description,
+    )
+    # Call the existing knockout check function
+    return await perform_knockout_check(knockout_request, user_id, db)
+
+
+async def _execute_structure_analysis(request: ATSProgressiveRequest, user_id: int, db: AsyncSession):
+    """Execute Stage 1: Structure Analysis."""
+    # Get parsed resume content
+    if request.resume_id:
+        resume_repo = ResumeCRUD()
+        resume = await resume_repo.get(db, id=request.resume_id)
+        if not resume or resume.owner_id != user_id:
+            raise HTTPException(status_code=404, detail="Resume not found")
+        resume_content = resume.parsed_content or {}
+    else:
+        resume_content = request.resume_content or {}
+
+    structure_request = ATSStructureRequest(resume_content=resume_content)
+    return await analyze_structure(structure_request, user_id, db)
+
+
+async def _execute_keyword_analysis(request: ATSProgressiveRequest, user_id: int, db: AsyncSession):
+    """Execute Stage 2: Enhanced Keyword Analysis."""
+    keyword_request = ATSKeywordEnhancedRequest(
+        resume_id=request.resume_id,
+        job_id=request.job_id,
+        resume_content=request.resume_content,
+        job_description=request.job_description,
+    )
+    return await analyze_keywords_enhanced(keyword_request, user_id, db)
+
+
+async def _execute_content_quality(request: ATSProgressiveRequest, user_id: int, db: AsyncSession):
+    """Execute Stage 3: Content Quality."""
+    content_request = ContentQualityRequest(
+        resume_id=request.resume_id,
+        resume_content=request.resume_content,
+    )
+    return await analyze_content_quality(content_request, user_id, db)
+
+
+async def _execute_role_proximity(request: ATSProgressiveRequest, user_id: int, db: AsyncSession):
+    """Execute Stage 4: Role Proximity."""
+    proximity_request = RoleProximityRequest(
+        resume_id=request.resume_id,
+        job_id=request.job_id,
+        resume_content=request.resume_content,
+        job_description=request.job_description,
+    )
+    return await analyze_role_proximity(proximity_request, user_id, db)
+
+
+def _calculate_composite_score(
+    stage_results: dict,
+    failed_stages: list[str]
+) -> ATSCompositeScore:
+    """
+    Calculate weighted composite ATS score.
+
+    Standard weights:
+    - Structure: 15%
+    - Keywords: 40%
+    - Content Quality: 25%
+    - Role Proximity: 20%
+
+    If stages fail, renormalize remaining weights to sum to 1.0.
+    """
+    # Default weights
+    weights = {
+        "structure": 0.15,
+        "keywords-enhanced": 0.40,
+        "content-quality": 0.25,
+        "role-proximity": 0.20,
+    }
+
+    # Extract scores from stage results
+    scores = {}
+    available_weight = 0.0
+
+    for stage_key, weight in weights.items():
+        if stage_key in stage_results:
+            result = stage_results[stage_key]
+
+            # Extract score based on stage type
+            if stage_key == "structure":
+                scores[stage_key] = float(result.format_score)
+            elif stage_key == "keywords-enhanced":
+                scores[stage_key] = float(result.keyword_score)
+            elif stage_key == "content-quality":
+                scores[stage_key] = float(result.content_quality_score)
+            elif stage_key == "role-proximity":
+                scores[stage_key] = float(result.role_proximity_score)
+
+            available_weight += weight
+
+    # Renormalize weights if some stages failed
+    normalization_applied = available_weight < 1.0
+    if normalization_applied and available_weight > 0:
+        normalization_factor = 1.0 / available_weight
+        weights = {k: v * normalization_factor if k in scores else 0 for k, v in weights.items()}
+
+    # Calculate weighted score
+    final_score = sum(scores[k] * weights.get(k, 0) for k in scores) if scores else 0.0
+
+    # Create breakdown
+    stage_breakdown = {
+        k: round(scores[k] * weights.get(k, 0), 2) for k in scores
+    }
+
+    return ATSCompositeScore(
+        final_score=round(final_score, 1),
+        stage_breakdown=stage_breakdown,
+        weights_used={k: round(v, 3) for k, v in weights.items()},
+        normalization_applied=normalization_applied,
+        failed_stages=failed_stages,
+    )
