@@ -106,6 +106,7 @@ export interface TailorRequest {
   resume_id: string; // MongoDB ObjectId as string
   job_id?: number;
   job_listing_id?: number;
+  focus_keywords?: string[]; // User-selected keywords to emphasize
 }
 
 export interface QuickMatchRequest {
@@ -150,6 +151,7 @@ export interface TailorResponse {
   keyword_coverage: number;
   job_title: string | null;
   company_name: string | null;
+  focus_keywords_used: string[] | null; // Keywords that were used in tailoring
   created_at: string;
 }
 
