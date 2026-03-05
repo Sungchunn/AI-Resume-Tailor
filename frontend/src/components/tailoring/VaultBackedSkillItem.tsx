@@ -39,7 +39,7 @@ export function VaultBackedSkillItem({
         {/* Checkbox */}
         <div
           className={`
-            flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5
+            shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5
             transition-all duration-150
             ${
               isSelected

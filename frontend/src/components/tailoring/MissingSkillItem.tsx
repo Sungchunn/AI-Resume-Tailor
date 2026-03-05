@@ -28,7 +28,7 @@ export function MissingSkillItem({
     >
       <div className="flex items-start gap-3">
         {/* Warning Icon */}
-        <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center mt-0.5">
+        <div className="shrink-0 w-5 h-5 flex items-center justify-center mt-0.5">
           <AlertTriangle className="h-4 w-4 text-amber-500" />
         </div>
 
@@ -46,7 +46,7 @@ export function MissingSkillItem({
             type="button"
             onClick={() => onAddToVault(skill)}
             className="
-              flex-shrink-0 inline-flex items-center gap-1 px-2 py-1
+              shrink-0 inline-flex items-center gap-1 px-2 py-1
               text-xs font-medium text-primary hover:text-primary/80
               hover:bg-primary/10 rounded transition-colors
             "
@@ -58,7 +58,7 @@ export function MissingSkillItem({
           <Link
             href="/library/blocks/new"
             className="
-              flex-shrink-0 inline-flex items-center gap-1 px-2 py-1
+              shrink-0 inline-flex items-center gap-1 px-2 py-1
               text-xs font-medium text-primary hover:text-primary/80
               hover:bg-primary/10 rounded transition-colors
             "

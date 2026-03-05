@@ -24,7 +24,7 @@ export function SelectedResumeCard({
       className={`flex items-center gap-3 p-4 rounded-lg border border-border bg-card ${className}`}
     >
       {/* Icon */}
-      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+      <div className="shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
         <FileText className="h-5 w-5 text-primary" />
       </div>
 
