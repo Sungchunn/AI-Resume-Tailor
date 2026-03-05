@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   useResumes,
   useDeleteResume,
+  useSetMasterResume,
   useJobs,
   useDeleteJob,
   useBlocks,
@@ -88,11 +89,16 @@ export default function LibraryPage() {
 function ResumesTab() {
   const { data: resumes, isLoading, error, refetch } = useResumes();
   const deleteResume = useDeleteResume();
+  const setMasterResume = useSetMasterResume();
 
   const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this resume?")) {
       deleteResume.mutate(id);
     }
+  };
+
+  const handleSetMaster = async (id: string) => {
+    setMasterResume.mutate(id);
   };
 
   if (isLoading) return <CardGridSkeleton count={3} />;
@@ -117,9 +123,19 @@ function ResumesTab() {
       {resumes && resumes.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {resumes.map((resume) => (
-            <div key={resume.id} className="card">
+            <div key={resume.id} className="card relative">
+              {/* Master Badge */}
+              {resume.is_master && (
+                <div className="absolute top-2 right-2">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                    <StarIconFilled className="h-3 w-3" />
+                    Master
+                  </span>
+                </div>
+              )}
+
               <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 pr-16">
                   <h3 className="font-semibold text-foreground truncate">
                     {resume.title}
                   </h3>
@@ -147,6 +163,16 @@ function ResumesTab() {
                 >
                   Edit
                 </Link>
+                {!resume.is_master && (
+                  <button
+                    onClick={() => handleSetMaster(resume.id)}
+                    disabled={setMasterResume.isPending}
+                    className="btn-ghost text-sm py-1.5 text-amber-600 hover:bg-amber-50"
+                    title="Set as master resume"
+                  >
+                    <StarIcon className="h-4 w-4" />
+                  </button>
+                )}
                 <button
                   onClick={() => handleDelete(resume.id)}
                   disabled={deleteResume.isPending}
@@ -511,6 +537,40 @@ function ExternalLinkIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
+      />
+    </svg>
+  );
+}
+
+function StarIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
+      />
+    </svg>
+  );
+}
+
+function StarIconFilled({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+    >
+      <path
+        fillRule="evenodd"
+        d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"
+        clipRule="evenodd"
       />
     </svg>
   );
