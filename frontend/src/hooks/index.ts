@@ -4,3 +4,7 @@ export { useATSProgressStream, formatElapsedTime, getStageResultSummary } from "
 export type { ATSStageState, UseATSProgressStreamOptions, UseATSProgressStreamResult } from "./useATSProgressStream";
 export { useParseProgress, formatElapsedTime as formatParseElapsedTime } from "./useParseProgress";
 export type { ParseStageState, UseParseProgressOptions, UseParseProgressResult, StageState } from "./useParseProgress";
+export { useBulletNavigation } from "./useBulletNavigation";
+export type { BulletFocusState } from "./useBulletNavigation";
+export { useInlineSuggestion } from "./useInlineSuggestion";
+export type { EntryContext, BulletSuggestion } from "./useInlineSuggestion";
