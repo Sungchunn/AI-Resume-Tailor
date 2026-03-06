@@ -1,8 +1,27 @@
 """Schemas for document upload and extraction."""
 
+from enum import Enum
 from typing import Literal
 
 from pydantic import BaseModel
+
+
+class UploadErrorCode(str, Enum):
+    """Error codes for upload operations."""
+
+    FILE_TOO_LARGE = "file_too_large"
+    INVALID_FILE_TYPE = "invalid_file_type"
+    EXTRACTION_FAILED = "extraction_failed"
+    STORAGE_FAILED = "storage_failed"
+    EMPTY_FILE = "empty_file"
+
+
+class UploadErrorDetail(BaseModel):
+    """Structured error detail for upload operations."""
+
+    error_code: UploadErrorCode
+    message: str
+    recoverable: bool
 
 
 class DocumentExtractionResponse(BaseModel):

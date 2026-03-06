@@ -7,7 +7,11 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from app.api.deps import get_current_user
 from app.core.config import get_settings
 from app.models.user import User
-from app.schemas.upload import DocumentExtractionResponse
+from app.schemas.upload import (
+    DocumentExtractionResponse,
+    UploadErrorCode,
+    UploadErrorDetail,
+)
 from app.services.document.converter import DocumentConversionError, convert_to_html
 from app.services.export.document_extractor import DocumentExtractionError, extract_text
 from app.services.storage.file_storage import (
@@ -56,24 +60,39 @@ async def extract_document(
         HTTPException: If file validation fails or extraction errors occur
     """
     if not file.content_type or file.content_type not in ALLOWED_CONTENT_TYPES:
+        error = UploadErrorDetail(
+            error_code=UploadErrorCode.INVALID_FILE_TYPE,
+            message="Only PDF and DOCX files are supported.",
+            recoverable=False,
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid file type. Allowed types: PDF, DOCX. Received: {file.content_type}",
+            detail=error.model_dump(),
         )
 
     file_bytes = await file.read()
     file_size = len(file_bytes)
 
     if file_size > MAX_UPLOAD_SIZE_BYTES:
+        error = UploadErrorDetail(
+            error_code=UploadErrorCode.FILE_TOO_LARGE,
+            message=f"File exceeds {settings.max_upload_size_mb}MB limit. Please select a smaller file.",
+            recoverable=False,
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File too large. Maximum size: {settings.max_upload_size_mb}MB",
+            detail=error.model_dump(),
         )
 
     if file_size == 0:
+        error = UploadErrorDetail(
+            error_code=UploadErrorCode.EMPTY_FILE,
+            message="Uploaded file is empty.",
+            recoverable=False,
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Uploaded file is empty",
+            detail=error.model_dump(),
         )
 
     warnings: list[str] = []
@@ -88,9 +107,14 @@ async def extract_document(
         )
         warnings.extend(extraction_result.warnings)
     except DocumentExtractionError as e:
+        error = UploadErrorDetail(
+            error_code=UploadErrorCode.EXTRACTION_FAILED,
+            message=f"Couldn't extract text from this file: {str(e)}. You can paste your resume content manually.",
+            recoverable=False,
+        )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(e),
+            detail=error.model_dump(),
         )
 
     # Step 2: Convert to HTML
