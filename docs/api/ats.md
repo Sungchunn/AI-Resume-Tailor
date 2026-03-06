@@ -1891,7 +1891,7 @@ Cache is automatically invalidated when:
 | Cache Miss | 6-8 seconds | Full 5-stage analysis with streaming |
 | Re-analysis | 6-8 seconds | Fresh analysis, updates cache |
 
-### Related Endpoints
+### Related Endpointss
 
 - [GET /api/tailor/{id}](tailor-match.md#get-tailored-resume) - Returns ATS cache metadata
 - [POST /v1/ats/analyze-progressive](#post-apiv1atsanalyze-progressive) - Progressive analysis with caching
