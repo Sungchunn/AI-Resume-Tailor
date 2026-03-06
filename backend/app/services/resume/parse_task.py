@@ -51,13 +51,35 @@ class ParseTaskService:
             "task_id": task_id,
             "status": "pending",
             "resume_id": resume_id,
+            "stage": None,
+            "stage_progress": None,
             "error": None,
+            "warning": None,
         }
 
         await self.redis.setex(key, TASK_TTL, json.dumps(task_data))
         logger.info(f"Created parse task {task_id} for resume {resume_id}")
 
         return task_id
+
+    async def update_stage(self, task_id: str, stage: str, progress: int = 0) -> None:
+        """
+        Update task stage and progress within that stage.
+
+        Args:
+            task_id: The task ID to update
+            stage: One of "extracting", "parsing", "storing"
+            progress: 0-100 progress within the stage
+        """
+        key = self._make_key(task_id)
+        existing = await self.redis.get(key)
+
+        if existing:
+            task_data = json.loads(existing)
+            task_data["stage"] = stage
+            task_data["stage_progress"] = progress
+            await self.redis.setex(key, TASK_TTL, json.dumps(task_data))
+            logger.debug(f"Task {task_id} stage: {stage} ({progress}%)")
 
     async def get_task_status(self, task_id: str) -> ParseStatusResponse | None:
         """
@@ -80,16 +102,22 @@ class ParseTaskService:
             task_id=task_data["task_id"],
             status=task_data["status"],
             resume_id=task_data["resume_id"],
+            stage=task_data.get("stage"),
+            stage_progress=task_data.get("stage_progress"),
             error=task_data.get("error"),
+            warning=task_data.get("warning"),
         )
 
-    async def complete_task(self, task_id: str, resume_id: int) -> None:
+    async def complete_task(
+        self, task_id: str, resume_id: int, warning: str | None = None
+    ) -> None:
         """
         Mark a task as completed.
 
         Args:
             task_id: The task ID to complete
             resume_id: The resume ID that was parsed
+            warning: Optional warning message for partial success
         """
         key = self._make_key(task_id)
 
@@ -97,12 +125,18 @@ class ParseTaskService:
             "task_id": task_id,
             "status": "completed",
             "resume_id": resume_id,
+            "stage": "storing",
+            "stage_progress": 100,
             "error": None,
+            "warning": warning,
         }
 
         # Update with fresh TTL
         await self.redis.setex(key, TASK_TTL, json.dumps(task_data))
-        logger.info(f"Completed parse task {task_id} for resume {resume_id}")
+        if warning:
+            logger.info(f"Completed parse task {task_id} for resume {resume_id} with warning: {warning}")
+        else:
+            logger.info(f"Completed parse task {task_id} for resume {resume_id}")
 
     async def fail_task(self, task_id: str, error: str) -> None:
         """
@@ -114,19 +148,23 @@ class ParseTaskService:
         """
         key = self._make_key(task_id)
 
-        # Get existing data to preserve resume_id
+        # Get existing data to preserve resume_id and stage
         existing = await self.redis.get(key)
         if existing:
             task_data = json.loads(existing)
             task_data["status"] = "failed"
             task_data["error"] = error
+            # Keep the current stage to show where it failed
         else:
             # Fallback if task expired during processing
             task_data = {
                 "task_id": task_id,
                 "status": "failed",
                 "resume_id": 0,
+                "stage": None,
+                "stage_progress": None,
                 "error": error,
+                "warning": None,
             }
 
         await self.redis.setex(key, TASK_TTL, json.dumps(task_data))

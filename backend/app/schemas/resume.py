@@ -1,6 +1,15 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
+from enum import Enum
 from typing import Any, Literal
+
+
+class ParseStage(str, Enum):
+    """Stages of resume parsing."""
+
+    EXTRACTING = "extracting"
+    PARSING = "parsing"
+    STORING = "storing"
 
 
 class ResumeBase(BaseModel):
@@ -87,4 +96,7 @@ class ParseStatusResponse(BaseModel):
     task_id: str
     status: Literal["pending", "completed", "failed"]
     resume_id: str  # MongoDB ObjectId as string
+    stage: ParseStage | None = None
+    stage_progress: int | None = None  # 0-100 within current stage
     error: str | None = None
+    warning: str | None = None  # For partial success (e.g., AI parsing failed but resume saved)
