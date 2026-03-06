@@ -113,7 +113,7 @@ const [uploadState, setUploadState] = useState<{
 } | null>(null);
 ```
 
-2. Replace `useExtractDocument` call with `uploadWithProgress`:
+1. Replace `useExtractDocument` call with `uploadWithProgress`:
 
 ```typescript
 const { promise, abort } = uploadWithProgress<DocumentExtractionResponse>({
@@ -124,7 +124,7 @@ const { promise, abort } = uploadWithProgress<DocumentExtractionResponse>({
 });
 ```
 
-3. Render `UploadProgressCard` when `uploadState` is set instead of the spinner
+1. Render `UploadProgressCard` when `uploadState` is set instead of the spinner
 
 ## Files Changed
 
