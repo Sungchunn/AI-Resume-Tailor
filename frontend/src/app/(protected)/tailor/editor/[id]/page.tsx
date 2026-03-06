@@ -28,7 +28,7 @@ import {
 } from "@/lib/api";
 import { useTailoringContext } from "@/contexts/TailoringContext";
 import { EditorLayout } from "@/components/editor";
-import { VersionHistoryPanel } from "@/components/tailoring";
+import { VersionHistoryPanel, TailorFlowStepper } from "@/components/tailoring";
 import type {
   TailoredContent,
   Suggestion,
@@ -289,6 +289,15 @@ export default function ResumeEditorPage({ params }: PageProps) {
 
   return (
     <div className="h-screen flex flex-col">
+      {/* Flow Stepper */}
+      <div className="flex-shrink-0 bg-card border-b border-border">
+        <TailorFlowStepper
+          currentStep="editor"
+          completedSteps={["select", "analyze"]}
+          className="py-2"
+        />
+      </div>
+
       {/* Header */}
       <div className="flex-shrink-0 bg-card border-b border-border px-4 py-2">
         <div className="flex items-center justify-between">
