@@ -29,6 +29,7 @@ import { DiffReviewPanel } from "./DiffReviewPanel";
 import type { TailoringSession, BlockDiff } from "@/lib/tailoring/types";
 import type { ResumeStyle, TailoredContent } from "@/lib/api/types";
 import { blocksToContent } from "@/lib/tailoring/blocksToContent";
+import { DEFAULT_STYLE } from "@/lib/styles/defaultStyle";
 
 // ============================================================================
 // Types
@@ -88,21 +89,8 @@ interface PreviewDiffLayoutProps {
 }
 
 // ============================================================================
-// Default Styles
+// Default Styles - imported from @/lib/styles/defaultStyle
 // ============================================================================
-
-const DEFAULT_STYLE: ResumeStyle = {
-  font_family: "Inter",
-  font_size_body: 11,
-  font_size_heading: 16,
-  font_size_subheading: 13,
-  margin_top: 0.75,
-  margin_bottom: 0.75,
-  margin_left: 0.75,
-  margin_right: 0.75,
-  line_spacing: 1.15,
-  section_spacing: 1.0,
-};
 
 const DEFAULT_SECTION_ORDER = [
   "summary",

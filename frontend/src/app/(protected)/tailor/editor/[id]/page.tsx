@@ -35,6 +35,7 @@ import type {
   ResumeStyle,
 } from "@/lib/api/types";
 import { blocksToContent } from "@/lib/tailoring/blocksToContent";
+import { DEFAULT_STYLE } from "@/lib/styles/defaultStyle";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -50,18 +51,7 @@ const DEFAULT_SECTION_ORDER = [
   "projects",
 ];
 
-const DEFAULT_STYLE: ResumeStyle = {
-  font_family: "Inter",
-  font_size_body: 11,
-  font_size_heading: 16,
-  font_size_subheading: 13,
-  margin_top: 0.75,
-  margin_bottom: 0.75,
-  margin_left: 0.75,
-  margin_right: 0.75,
-  line_spacing: 1.15,
-  section_spacing: 1.0,
-};
+// DEFAULT_STYLE imported from @/lib/styles/defaultStyle
 
 // ============================================================================
 // Main Component
