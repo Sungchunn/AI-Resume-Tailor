@@ -1,6 +1,8 @@
 export { useScoreCalculation } from "./useScoreCalculation";
 export { useReducedMotion } from "./useReducedMotion";
 export { useAnimatedNumber } from "./useAnimatedNumber";
+export { useATSProgressiveAnalysis } from "./useATSProgressiveAnalysis";
+export { useATSStaleness, type ATSStalenessInfo } from "./useATSStaleness";
 export {
   useUndoRedo,
   HISTORY_LIMIT,

@@ -56,3 +56,49 @@ export function formatRelativeDate(dateStr: string | null | undefined): string {
   if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
   return date.toLocaleDateString();
 }
+
+/**
+ * Format a Date object as a relative time string with optional suffix.
+ * Compatible API with date-fns formatDistanceToNow.
+ *
+ * @param date - Date object to format
+ * @param options - Options including addSuffix
+ * @returns Relative time string
+ */
+export function formatDistanceToNow(
+  date: Date,
+  options?: { addSuffix?: boolean }
+): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const addSuffix = options?.addSuffix ?? false;
+
+  let result: string;
+
+  if (diffMins < 1) {
+    result = "less than a minute";
+  } else if (diffMins === 1) {
+    result = "1 minute";
+  } else if (diffMins < 60) {
+    result = `${diffMins} minutes`;
+  } else if (diffHours === 1) {
+    result = "about 1 hour";
+  } else if (diffHours < 24) {
+    result = `about ${diffHours} hours`;
+  } else if (diffDays === 1) {
+    result = "1 day";
+  } else if (diffDays < 7) {
+    result = `${diffDays} days`;
+  } else if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7);
+    result = weeks === 1 ? "1 week" : `${weeks} weeks`;
+  } else {
+    const months = Math.floor(diffDays / 30);
+    result = months === 1 ? "about 1 month" : `about ${months} months`;
+  }
+
+  return addSuffix ? `${result} ago` : result;
+}
