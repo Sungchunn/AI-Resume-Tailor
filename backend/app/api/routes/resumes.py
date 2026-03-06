@@ -317,6 +317,9 @@ async def run_parse_task(
     task_service = get_parse_task_service()
 
     try:
+        # Stage 1: Extracting (validation)
+        await task_service.update_stage(task_id, "extracting", 0)
+
         # Get services
         ai_client = get_ai_client()
         cache_service = get_cache_service()
@@ -326,8 +329,32 @@ async def run_parse_task(
         if force:
             await cache_service.invalidate_resume(raw_content)
 
-        # Parse the resume
-        parsed_content = await parser.parse(raw_content)
+        await task_service.update_stage(task_id, "extracting", 100)
+
+        # Stage 2: AI Parsing
+        await task_service.update_stage(task_id, "parsing", 0)
+
+        try:
+            parsed_content = await parser.parse(raw_content)
+            await task_service.update_stage(task_id, "parsing", 100)
+        except Exception as parse_error:
+            # AI parsing failed - save without parsed content but continue
+            logger.warning(f"AI parsing failed for resume {resume_id}: {parse_error}")
+            parsed_content = None
+            warning_message = "AI parsing failed. Resume saved without structure analysis."
+
+            # Stage 3: Storing (partial)
+            await task_service.update_stage(task_id, "storing", 0)
+            mongo_db = get_mongodb()
+            # Don't update parsed content since it failed
+            await task_service.update_stage(task_id, "storing", 100)
+
+            # Complete with warning
+            await task_service.complete_task(task_id, resume_id, warning=warning_message)
+            return
+
+        # Stage 3: Storing
+        await task_service.update_stage(task_id, "storing", 0)
 
         # Update database (MongoDB)
         mongo_db = get_mongodb()
@@ -335,6 +362,8 @@ async def run_parse_task(
             parsed=ParsedContent(**parsed_content) if parsed_content else None,
         )
         await resume_crud.update(mongo_db, id=resume_id, obj_in=update_data)
+
+        await task_service.update_stage(task_id, "storing", 100)
 
         # Mark task completed
         await task_service.complete_task(task_id, resume_id)
