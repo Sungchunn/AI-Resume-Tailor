@@ -25,11 +25,16 @@ export interface AutoFitToggleProps {
   status: AutoFitStatus;
 }
 
+export type AutoFitState = "idle" | "fitting" | "validating" | "fitted" | "minimum_reached";
+
 export type AutoFitStatus =
   | { state: "idle" }
-  | { state: "fitting"; iteration: number }
+  | { state: "fitting"; iteration?: number }
+  | { state: "validating" }
   | { state: "fitted"; reductions: string[] }
   | { state: "minimum_reached"; message: string };
+
+export type PageSize = "letter" | "a4";
 
 export interface UseAutoFitOptions {
   content: TailoredContent;
@@ -37,12 +42,15 @@ export interface UseAutoFitOptions {
   targetHeight: number;
   enabled: boolean;
   onStyleChange: (style: Partial<ResumeStyle>) => void;
+  pageSize?: PageSize;
 }
 
 export interface UseAutoFitResult {
   status: AutoFitStatus;
   adjustedStyle: ResumeStyle;
   reductions: AutoFitReduction[];
+  serverPageCount: number | null;
+  isValidating: boolean;
 }
 
 export interface AutoFitReduction {
