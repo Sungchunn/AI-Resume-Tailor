@@ -3,14 +3,16 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useWorkshop } from "./WorkshopContext";
 import type { WorkshopTab } from "./WorkshopContext";
-import { AIRewritePanel, EditorPanel } from "./panels";
+import { AIRewritePanel, EditorPanel, ATSPanel } from "./panels";
 import { StylePanel } from "./panels/style/StylePanel";
 import { useReducedMotion } from "./hooks/useReducedMotion";
+import { cn } from "@/lib/utils";
 
 const TABS: { key: WorkshopTab; label: string }[] = [
   { key: "ai-rewrite", label: "AI Rewrite" },
   { key: "editor", label: "Editor" },
   { key: "style", label: "Style" },
+  { key: "ats", label: "ATS Score" },
 ];
 
 // Animation variants for tab transitions
@@ -32,6 +34,8 @@ export function WorkshopControlPanel() {
         return <EditorPanel />;
       case "style":
         return <StylePanel />;
+      case "ats":
+        return <ATSPanel />;
       default:
         return null;
     }
@@ -59,6 +63,23 @@ export function WorkshopControlPanel() {
             {tab.key === "ai-rewrite" && state.suggestions.length > 0 && (
               <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-white bg-blue-500 rounded-full">
                 {state.suggestions.length}
+              </span>
+            )}
+            {/* ATS score badge */}
+            {tab.key === "ats" && state.atsCompositeScore && (
+              <span className={cn(
+                "ml-1.5 inline-flex items-center justify-center min-w-5 h-5 px-1 text-xs font-medium rounded-full",
+                state.atsIsStale
+                  ? "text-amber-800 bg-amber-100"
+                  : state.atsKnockoutRisks.length > 0
+                    ? "text-red-800 bg-red-100"
+                    : state.atsCompositeScore.final_score >= 80
+                      ? "text-green-800 bg-green-100"
+                      : state.atsCompositeScore.final_score >= 60
+                        ? "text-amber-800 bg-amber-100"
+                        : "text-red-800 bg-red-100"
+              )}>
+                {Math.round(state.atsCompositeScore.final_score)}
               </span>
             )}
           </button>
