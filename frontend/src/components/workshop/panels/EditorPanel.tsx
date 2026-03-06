@@ -37,6 +37,26 @@ export function EditorPanel() {
     [generateAISuggestions]
   );
 
+  // Handle accepted bullet suggestions - could be extended to create pending diffs
+  const handleBulletAccepted = useCallback(
+    (entryIndex: number, bulletIndex: number, original: string, suggested: string, reason: string) => {
+      console.log("[BulletReview] Accepted suggestion:", {
+        entryIndex,
+        bulletIndex,
+        original,
+        suggested,
+        reason,
+      });
+      // Future: Add to pending_diffs for undo/tracking
+    },
+    []
+  );
+
+  // Get job description from tailored resume or direct source
+  const jobDescription = state.tailoredResume?.job_title
+    ? `Position: ${state.tailoredResume.job_title}${state.tailoredResume.company_name ? ` at ${state.tailoredResume.company_name}` : ""}`
+    : state.jobDescription;
+
   return (
     <SectionList
       content={state.content}
@@ -46,6 +66,9 @@ export function EditorPanel() {
       onContentChange={handleContentChange}
       onSectionFocus={handleSectionFocus}
       onAIEnhance={handleAIEnhance}
+      jobDescription={jobDescription}
+      resumeBuildId={state.tailoredId}
+      onBulletAccepted={handleBulletAccepted}
     />
   );
 }

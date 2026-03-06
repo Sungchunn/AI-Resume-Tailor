@@ -35,6 +35,9 @@ interface SectionListProps {
   onContentChange: (content: TailoredContent) => void;
   onSectionFocus: (section: string) => void;
   onAIEnhance?: (section: string) => void;
+  jobDescription?: string | null;
+  resumeBuildId?: string | null;
+  onBulletAccepted?: (entryIndex: number, bulletIndex: number, original: string, suggested: string, reason: string) => void;
 }
 
 const SECTION_LABELS: Record<string, string> = {
@@ -69,6 +72,9 @@ export function SectionList({
   onContentChange,
   onSectionFocus,
   onAIEnhance,
+  jobDescription,
+  resumeBuildId,
+  onBulletAccepted,
 }: SectionListProps) {
   // Track which sections are expanded - all expanded by default
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
@@ -179,6 +185,9 @@ export function SectionList({
           <ExperienceEditor
             entries={content.experience}
             onChange={(entries) => onContentChange({ ...content, experience: entries })}
+            jobDescription={jobDescription}
+            resumeBuildId={resumeBuildId}
+            onBulletAccepted={onBulletAccepted}
           />
         );
       case "skills":
