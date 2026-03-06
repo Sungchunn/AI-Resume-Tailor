@@ -5,10 +5,19 @@ from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem
+
+from app.services.export.html_to_document import ExportOptions
+
+
+# Page size mapping
+PAGE_SIZES = {
+    "letter": letter,
+    "a4": A4,
+}
 
 
 class ExportService:
@@ -55,14 +64,29 @@ class ExportService:
 
         return "\n".join(lines)
 
-    def generate_docx(self, tailored_content: dict[str, Any]) -> bytes:
+    def generate_docx(
+        self,
+        tailored_content: dict[str, Any],
+        options: ExportOptions | None = None,
+    ) -> bytes:
         """Generate DOCX version of a tailored resume."""
+        if options is None:
+            options = ExportOptions()
+
         doc = Document()
+
+        # Set document margins
+        for section in doc.sections:
+            section.top_margin = Inches(options.margin_top)
+            section.bottom_margin = Inches(options.margin_bottom)
+            section.left_margin = Inches(options.margin_left)
+            section.right_margin = Inches(options.margin_right)
 
         # Set default font
         style = doc.styles["Normal"]
-        style.font.name = "Calibri"
-        style.font.size = Pt(11)
+        style.font.name = options.font_family
+        style.font.size = Pt(options.font_size)
+        style.paragraph_format.line_spacing = options.line_spacing
 
         # Summary
         if summary := tailored_content.get("summary"):
@@ -111,30 +135,38 @@ class ExportService:
         buffer.seek(0)
         return buffer.getvalue()
 
-    def generate_pdf(self, tailored_content: dict[str, Any]) -> bytes:
+    def generate_pdf(
+        self,
+        tailored_content: dict[str, Any],
+        options: ExportOptions | None = None,
+    ) -> bytes:
         """Generate PDF version of a tailored resume."""
+        if options is None:
+            options = ExportOptions()
+
         buffer = io.BytesIO()
+        page_size = PAGE_SIZES.get(options.page_size, letter)
         doc = SimpleDocTemplate(
             buffer,
-            pagesize=letter,
-            rightMargin=0.75 * inch,
-            leftMargin=0.75 * inch,
-            topMargin=0.75 * inch,
-            bottomMargin=0.75 * inch,
+            pagesize=page_size,
+            rightMargin=options.margin_right * inch,
+            leftMargin=options.margin_left * inch,
+            topMargin=options.margin_top * inch,
+            bottomMargin=options.margin_bottom * inch,
         )
 
         styles = getSampleStyleSheet()
         styles.add(ParagraphStyle(
             "Heading",
             parent=styles["Heading1"],
-            fontSize=14,
+            fontSize=options.font_size + 3,
             spaceAfter=6,
             textColor=colors.HexColor("#1f2937"),
         ))
         styles.add(ParagraphStyle(
             "JobTitle",
             parent=styles["Normal"],
-            fontSize=12,
+            fontSize=options.font_size + 1,
             spaceAfter=3,
             textColor=colors.HexColor("#111827"),
             fontName="Helvetica-Bold",
@@ -142,7 +174,7 @@ class ExportService:
         styles.add(ParagraphStyle(
             "JobDetails",
             parent=styles["Normal"],
-            fontSize=10,
+            fontSize=options.font_size - 1,
             spaceAfter=6,
             textColor=colors.HexColor("#6b7280"),
             fontName="Helvetica-Oblique",
@@ -150,17 +182,19 @@ class ExportService:
         styles.add(ParagraphStyle(
             "BodyText",
             parent=styles["Normal"],
-            fontSize=11,
+            fontSize=options.font_size,
             spaceAfter=12,
             textColor=colors.HexColor("#374151"),
+            leading=options.font_size * options.line_spacing,
         ))
         styles.add(ParagraphStyle(
             "Bullet",
             parent=styles["Normal"],
-            fontSize=10,
+            fontSize=options.font_size - 1,
             leftIndent=20,
             spaceAfter=4,
             textColor=colors.HexColor("#374151"),
+            leading=(options.font_size - 1) * options.line_spacing,
         ))
 
         elements = []

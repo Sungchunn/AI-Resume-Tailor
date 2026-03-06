@@ -50,13 +50,21 @@ class ExportOptions:
     margin_left: float = 0.75
     margin_right: float = 0.75
     line_spacing: float = 1.15
+    page_size: str = "letter"  # "letter" or "a4"
+
+
+# Page size CSS values
+PAGE_SIZE_CSS = {
+    "letter": "letter",
+    "a4": "210mm 297mm",
+}
 
 
 # CSS Templates for PDF generation
 TEMPLATE_CSS = {
     StyleTemplate.CLASSIC: """
         @page {{
-            size: letter;
+            size: {page_size};
             margin: {margin_top}in {margin_right}in {margin_bottom}in {margin_left}in;
         }}
         body {{
@@ -126,7 +134,7 @@ TEMPLATE_CSS = {
     """,
     StyleTemplate.MODERN: """
         @page {{
-            size: letter;
+            size: {page_size};
             margin: {margin_top}in {margin_right}in {margin_bottom}in {margin_left}in;
         }}
         body {{
@@ -198,7 +206,7 @@ TEMPLATE_CSS = {
     """,
     StyleTemplate.MINIMAL: """
         @page {{
-            size: letter;
+            size: {page_size};
             margin: {margin_top}in {margin_right}in {margin_bottom}in {margin_left}in;
         }}
         body {{
@@ -271,6 +279,7 @@ class HTMLToDocumentService:
     def _get_css(self, options: ExportOptions) -> str:
         """Generate CSS for the given template and options."""
         template_css = TEMPLATE_CSS.get(options.template, TEMPLATE_CSS[StyleTemplate.CLASSIC])
+        page_size_css = PAGE_SIZE_CSS.get(options.page_size, "letter")
 
         return template_css.format(
             font_family=options.font_family,
@@ -283,6 +292,7 @@ class HTMLToDocumentService:
             margin_left=options.margin_left,
             margin_right=options.margin_right,
             line_spacing=options.line_spacing,
+            page_size=page_size_css,
         )
 
     def _wrap_html(self, html_content: str, options: ExportOptions) -> str:
@@ -339,6 +349,40 @@ class HTMLToDocumentService:
         html.write_pdf(buffer, font_config=self._font_config)
         buffer.seek(0)
         return buffer.getvalue()
+
+    def render_page_count(
+        self,
+        html_content: str,
+        options: ExportOptions | None = None,
+    ) -> int:
+        """
+        Render HTML and return page count without writing PDF.
+
+        Args:
+            html_content: TipTap HTML content
+            options: Export customization options
+
+        Returns:
+            Number of pages the content would occupy
+
+        Raises:
+            RuntimeError: If WeasyPrint is not available
+        """
+        if not WEASYPRINT_AVAILABLE:
+            raise RuntimeError(
+                "PDF export requires WeasyPrint system dependencies. "
+                "Install with: brew install pango (macOS) or "
+                "apt-get install libpango-1.0-0 libpangocairo-1.0-0 (Ubuntu)"
+            )
+
+        if options is None:
+            options = ExportOptions()
+
+        full_html = self._wrap_html(html_content, options)
+
+        # Render document to get page count without writing PDF
+        document = HTML(string=full_html).render()
+        return len(document.pages)
 
     def generate_docx(
         self,
