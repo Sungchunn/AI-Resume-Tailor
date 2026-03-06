@@ -32,6 +32,8 @@ from app.schemas.resume_build import (
     ExportRequest,
     WritebackRequest,
     WritebackProposal,
+    BulletSuggestionRequest,
+    BulletSuggestionResponse,
 )
 from app.schemas.block import BlockResponse
 
@@ -315,6 +317,61 @@ async def generate_suggestions(
         resume_build=ResumeBuildResponse.model_validate(updated_resume_build),
         new_suggestions_count=len(result["suggestions"]),
         gaps_identified=result.get("gaps", []),
+    )
+
+
+@router.post("/{resume_build_id}/suggest-bullet", response_model=BulletSuggestionResponse)
+async def suggest_bullet(
+    resume_build_id: int,
+    request: BulletSuggestionRequest,
+    db: AsyncSession = Depends(get_db_session),
+    current_user_id: int = Depends(get_current_user_id),
+) -> BulletSuggestionResponse:
+    """
+    Generate an AI suggestion for a single bullet point.
+
+    This is a lightweight endpoint optimized for real-time inline suggestions
+    during keyboard-driven bullet review. Unlike the full suggest endpoint,
+    this doesn't store suggestions as pending diffs - it returns immediately
+    for the user to accept or dismiss.
+    """
+    from app.services.job.diff_engine import get_diff_engine
+
+    # Verify resume build exists and user has access
+    resume_build = await resume_build_repository.get(
+        db, resume_build_id=resume_build_id, user_id=current_user_id
+    )
+    if not resume_build:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume build not found",
+        )
+
+    # Get job description from resume build if not provided
+    job_description = request.job_description or resume_build.get("job_description", "")
+    if not job_description:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Job description required for suggestions",
+        )
+
+    # Generate suggestion
+    diff_engine = get_diff_engine()
+    result = await diff_engine.suggest_single_bullet(
+        bullet_text=request.bullet_text,
+        entry_context={
+            "title": request.entry_context.title,
+            "company": request.entry_context.company,
+            "date_range": request.entry_context.date_range,
+        },
+        job_description=job_description,
+    )
+
+    return BulletSuggestionResponse(
+        original=result["original"],
+        suggested=result["suggested"],
+        reason=result["reason"],
+        impact=result["impact"],
     )
 
 

@@ -156,3 +156,28 @@ class ExportRequest(BaseModel):
 
     format: str = Field("docx", pattern="^(pdf|docx|txt|json)$", description="Export format")
     template: str = Field("default", description="Template to use")
+
+
+class BulletSuggestionEntryContext(BaseModel):
+    """Context about the experience entry containing the bullet."""
+
+    title: str = Field(..., description="Job title for the experience entry")
+    company: str = Field(..., description="Company name")
+    date_range: str = Field(..., description="Date range (e.g., 'Jan 2020 - Present')")
+
+
+class BulletSuggestionRequest(BaseModel):
+    """Schema for single bullet point suggestion request."""
+
+    bullet_text: str = Field(..., min_length=1, description="The bullet point text to improve")
+    entry_context: BulletSuggestionEntryContext = Field(..., description="Context about the experience entry")
+    job_description: str = Field(..., min_length=1, description="Target job description")
+
+
+class BulletSuggestionResponse(BaseModel):
+    """Schema for single bullet point suggestion response."""
+
+    original: str = Field(..., description="Original bullet text")
+    suggested: str = Field(..., description="Suggested improved bullet text")
+    reason: str = Field(..., description="Explanation for the suggestion")
+    impact: SuggestionImpact = Field(..., description="Impact level of the suggestion")

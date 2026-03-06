@@ -21,6 +21,44 @@ from app.core.protocols import (
 from app.services.ai.client import get_ai_client
 
 
+SINGLE_BULLET_SUGGESTION_PROMPT = """You are a precision resume bullet point optimizer.
+
+Your task is to improve a single resume bullet point to better match a job description.
+
+CURRENT BULLET POINT:
+{bullet_text}
+
+ENTRY CONTEXT:
+- Role: {entry_title}
+- Company: {entry_company}
+- Date Range: {entry_date_range}
+
+JOB DESCRIPTION:
+{job_description}
+
+INSTRUCTIONS:
+1. Analyze the bullet point and identify how it can be improved to better match the job requirements
+2. Rewrite the bullet point to be more impactful and relevant
+3. Use action verbs and quantify achievements where possible
+4. Keep the core facts accurate - do not invent accomplishments
+5. Ensure the suggested version is different from the original (if no improvement needed, return the original)
+
+OUTPUT FORMAT (valid JSON):
+{{
+  "original": "The original bullet text",
+  "suggested": "The improved bullet text",
+  "reason": "Brief explanation of why this is better (1-2 sentences)",
+  "impact": "high" | "medium" | "low"
+}}
+
+IMPACT LEVELS:
+- high: Directly addresses a key job requirement or significantly improves relevance
+- medium: Improves clarity, adds quantification, or better highlights skills
+- low: Minor wording improvements or formatting
+
+Return ONLY valid JSON. No markdown code blocks, no explanations outside the JSON."""
+
+
 DIFF_SUGGESTION_PROMPT = """You are a precision resume tailoring assistant.
 
 CRITICAL CONSTRAINT: You can ONLY use facts from the user's Vault (provided below).
@@ -496,6 +534,92 @@ Source: {block.get('source_company', 'N/A')} - {block.get('source_role', 'N/A')}
                 return None
 
         return target
+
+    async def suggest_single_bullet(
+        self,
+        bullet_text: str,
+        entry_context: dict[str, str],
+        job_description: str,
+    ) -> dict[str, Any]:
+        """
+        Generate a suggestion for a single bullet point.
+
+        This is a lightweight call optimized for real-time inline suggestions
+        during keyboard-driven bullet review.
+
+        Args:
+            bullet_text: The current bullet point text
+            entry_context: Context about the experience entry (title, company, date_range)
+            job_description: Target job requirements
+
+        Returns:
+            Dict with original, suggested, reason, and impact fields
+        """
+        import re
+
+        # Skip very short bullet text
+        if len(bullet_text.strip()) < 10:
+            return {
+                "original": bullet_text,
+                "suggested": bullet_text,
+                "reason": "Bullet too short to suggest improvements",
+                "impact": "low",
+            }
+
+        # Build prompt
+        prompt = SINGLE_BULLET_SUGGESTION_PROMPT.format(
+            bullet_text=bullet_text,
+            entry_title=entry_context.get("title", "N/A"),
+            entry_company=entry_context.get("company", "N/A"),
+            entry_date_range=entry_context.get("date_range", "N/A"),
+            job_description=job_description[:2000],  # Limit size
+        )
+
+        # Generate suggestion
+        response = await self.ai_client.generate_json(
+            system_prompt="",
+            user_prompt=prompt,
+            max_tokens=1000,
+        )
+
+        # Parse response
+        try:
+            result = json.loads(response)
+        except json.JSONDecodeError:
+            # Try to extract JSON from response
+            json_match = re.search(r'\{[\s\S]*\}', response)
+            if json_match:
+                try:
+                    result = json.loads(json_match.group())
+                except json.JSONDecodeError:
+                    return {
+                        "original": bullet_text,
+                        "suggested": bullet_text,
+                        "reason": "Could not parse AI response",
+                        "impact": "low",
+                    }
+            else:
+                return {
+                    "original": bullet_text,
+                    "suggested": bullet_text,
+                    "reason": "Could not parse AI response",
+                    "impact": "low",
+                }
+
+        # Validate and normalize result
+        suggested = result.get("suggested", bullet_text)
+        reason = result.get("reason", "Improves job fit")
+        impact = result.get("impact", "medium").lower()
+
+        if impact not in ["high", "medium", "low"]:
+            impact = "medium"
+
+        return {
+            "original": bullet_text,
+            "suggested": suggested,
+            "reason": reason,
+            "impact": impact,
+        }
 
 
 @lru_cache
