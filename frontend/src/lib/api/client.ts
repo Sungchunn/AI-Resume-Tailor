@@ -737,6 +737,95 @@ export const adminApi = {
     }),
 };
 
+// Export API for tailored resumes with style support
+export interface TailoredExportParams {
+  format?: "pdf" | "docx" | "txt";
+  font_size?: number;
+  margin_top?: number;
+  margin_bottom?: number;
+  margin_left?: number;
+  margin_right?: number;
+  line_spacing?: number;
+  page_size?: "letter" | "a4";
+  template?: string;
+}
+
+export const exportApi = {
+  /**
+   * Export a tailored resume with style parameters.
+   */
+  exportTailored: async (
+    tailoredId: number,
+    params: TailoredExportParams = {}
+  ): Promise<Blob> => {
+    const searchParams = new URLSearchParams();
+
+    if (params.format) searchParams.append("format", params.format);
+    if (params.font_size) searchParams.append("font_size", String(params.font_size));
+    if (params.margin_top) searchParams.append("margin_top", String(params.margin_top));
+    if (params.margin_bottom) searchParams.append("margin_bottom", String(params.margin_bottom));
+    if (params.margin_left) searchParams.append("margin_left", String(params.margin_left));
+    if (params.margin_right) searchParams.append("margin_right", String(params.margin_right));
+    if (params.line_spacing) searchParams.append("line_spacing", String(params.line_spacing));
+    if (params.page_size) searchParams.append("page_size", params.page_size);
+    if (params.template) searchParams.append("template", params.template);
+
+    const query = searchParams.toString();
+    const url = `${API_BASE_URL}/api/export/${tailoredId}${query ? `?${query}` : ""}`;
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${tokenManager.getAccessToken()}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "Export failed" }));
+      throw new Error(error.detail || `HTTP ${response.status}`);
+    }
+
+    return response.blob();
+  },
+};
+
+// Fit-to-Page API Types
+export interface FitToPageRequest {
+  html_content: string;
+  font_size: number;
+  margin_top: number;
+  margin_bottom: number;
+  margin_left: number;
+  margin_right: number;
+  line_spacing: number;
+  section_spacing: number;
+  entry_spacing: number;
+  page_size: "letter" | "a4";
+}
+
+export interface FitToPageStyleReduction {
+  property: string;
+  from_value: number;
+  to_value: number;
+  label: string;
+}
+
+export interface FitToPageResponse {
+  page_count: number;
+  adjusted_style: Record<string, number>;
+  reductions_applied: FitToPageStyleReduction[];
+  warning: string | null;
+}
+
+/**
+ * Calculate style adjustments to fit content to one page.
+ */
+export async function fitToPage(request: FitToPageRequest): Promise<FitToPageResponse> {
+  return fetchApi("/api/export/fit-to-page", {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}
+
 // ATS Analysis API
 export const atsApi = {
   analyzeKeywordsDetailed: (

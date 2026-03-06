@@ -1,11 +1,25 @@
 import type { TailoredContent, ResumeStyle } from "@/lib/api/types";
 
+// Page size type
+export type PageSize = "letter" | "a4";
+
 // Page dimension constants (in pixels at 96 DPI)
 export const PAGE_DIMENSIONS = {
-  WIDTH: 816, // 8.5 inches
-  HEIGHT: 1056, // 11 inches
+  LETTER: {
+    WIDTH: 816, // 8.5 inches @ 96 DPI
+    HEIGHT: 1056, // 11 inches @ 96 DPI
+  },
+  A4: {
+    WIDTH: 794, // 210mm @ 96 DPI (210 / 25.4 * 96)
+    HEIGHT: 1123, // 297mm @ 96 DPI (297 / 25.4 * 96)
+  },
   DPI: 96,
 } as const;
+
+// Helper to get dimensions for a page size
+export function getPageDimensions(pageSize: PageSize = "letter"): { WIDTH: number; HEIGHT: number } {
+  return pageSize === "a4" ? PAGE_DIMENSIONS.A4 : PAGE_DIMENSIONS.LETTER;
+}
 
 export interface ResumePreviewProps {
   content: TailoredContent;

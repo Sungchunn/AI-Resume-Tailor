@@ -602,6 +602,8 @@ export interface JobInteractionActionResponse {
 // Resume Style Types (for PDF generation)
 // ============================================================================
 
+export type PageSizeType = "letter" | "a4";
+
 export interface ResumeStyle {
   font_family?: string;
   font_size_body?: number;
@@ -614,6 +616,7 @@ export interface ResumeStyle {
   line_spacing?: number;
   section_spacing?: number;
   entry_spacing?: number;
+  page_size?: PageSizeType;
 }
 
 export interface PDFPreviewRequest {
