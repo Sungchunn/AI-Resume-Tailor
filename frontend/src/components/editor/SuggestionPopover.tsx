@@ -9,6 +9,8 @@ interface SuggestionPopoverProps {
   onAccept: (suggestion: SuggestionMark) => void;
   onReject: (suggestion: SuggestionMark) => void;
   onClose: () => void;
+  /** Callback to toggle inline diff mode for the suggestion */
+  onToggleDiffMode?: (suggestion: SuggestionMark) => void;
 }
 
 const impactLabels: Record<SuggestionImpact, { label: string; className: string }> = {
@@ -30,6 +32,7 @@ export function SuggestionPopover({
   onAccept,
   onReject,
   onClose,
+  onToggleDiffMode,
 }: SuggestionPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
   const [adjustedPosition, setAdjustedPosition] = useState(position);
@@ -65,7 +68,7 @@ export function SuggestionPopover({
     setAdjustedPosition({ x, y });
   }, [position]);
 
-  // Close on click outside
+  // Close on click outside and handle keyboard shortcuts
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -76,20 +79,25 @@ export function SuggestionPopover({
       }
     };
 
-    const handleEscape = (event: KeyboardEvent) => {
+    const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onClose();
+      }
+      // Enter to accept (when suggestion is active)
+      if (event.key === "Enter" && suggestion && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        onAccept(suggestion);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onClose]);
+  }, [onClose, onAccept, suggestion]);
 
   const handleAccept = useCallback(() => {
     if (suggestion) {
@@ -102,6 +110,12 @@ export function SuggestionPopover({
       onReject(suggestion);
     }
   }, [suggestion, onReject]);
+
+  const handleToggleDiff = useCallback(() => {
+    if (suggestion && onToggleDiffMode) {
+      onToggleDiffMode(suggestion);
+    }
+  }, [suggestion, onToggleDiffMode]);
 
   if (!suggestion || !adjustedPosition) {
     return null;
@@ -183,21 +197,50 @@ export function SuggestionPopover({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-muted border-t border-border">
-        <button
-          type="button"
-          onClick={handleAccept}
-          className="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded transition-colors"
-        >
-          Accept
-        </button>
-        <button
-          type="button"
-          onClick={handleReject}
-          className="flex-1 px-3 py-1.5 text-sm font-medium text-foreground/80 bg-card border border-input hover:bg-accent rounded transition-colors"
-        >
-          Reject
-        </button>
+      <div className="flex flex-col gap-2 px-3 py-2 bg-muted border-t border-border">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleAccept}
+            className="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded transition-colors"
+          >
+            Accept
+          </button>
+          <button
+            type="button"
+            onClick={handleReject}
+            className="flex-1 px-3 py-1.5 text-sm font-medium text-foreground/80 bg-card border border-input hover:bg-accent rounded transition-colors"
+          >
+            Reject
+          </button>
+        </div>
+
+        {/* Show in document toggle */}
+        {onToggleDiffMode && (
+          <button
+            type="button"
+            onClick={handleToggleDiff}
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground border border-input rounded hover:bg-accent transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            {suggestion.showDiff ? "Hide diff in document" : "Show diff in document"}
+          </button>
+        )}
+
+        {/* Keyboard shortcut hints */}
+        <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground/70">
+          <span className="flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 bg-background border border-border rounded text-xs">Enter</kbd>
+            <span>accept</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 bg-background border border-border rounded text-xs">Esc</kbd>
+            <span>dismiss</span>
+          </span>
+        </div>
       </div>
     </div>
   );
