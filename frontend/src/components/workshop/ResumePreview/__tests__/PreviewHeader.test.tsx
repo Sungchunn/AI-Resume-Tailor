@@ -11,6 +11,7 @@ const mockStyle: ComputedPreviewStyle = {
   subheadingFontSize: "12pt",
   lineHeight: 1.4,
   sectionGap: "16px",
+  entryGap: "8px",
   paddingTop: "72px",
   paddingBottom: "72px",
   paddingLeft: "72px",

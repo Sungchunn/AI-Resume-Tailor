@@ -46,6 +46,7 @@ export interface ComputedPreviewStyle {
   subheadingFontSize: string;
   lineHeight: number;
   sectionGap: string;
+  entryGap: string;
   paddingTop: string;
   paddingBottom: string;
   paddingLeft: string;
