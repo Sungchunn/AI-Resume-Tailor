@@ -8,6 +8,7 @@ import type {
   TailoredResumeFullResponse,
   ATSKeywordDetailedResponse,
 } from "@/lib/api/types";
+import { DEFAULT_STYLE } from "@/lib/styles/defaultStyle";
 
 export type WorkshopTab = "ai-rewrite" | "editor" | "style";
 
@@ -84,19 +85,9 @@ export interface WorkshopContextValue {
   redo: () => void;
 }
 
-// Default values
-export const DEFAULT_STYLE: ResumeStyle = {
-  font_family: "Arial",
-  font_size_body: 11,
-  font_size_heading: 18,
-  font_size_subheading: 12,
-  margin_top: 0.75,
-  margin_bottom: 0.75,
-  margin_left: 0.75,
-  margin_right: 0.75,
-  line_spacing: 1.4,
-  section_spacing: 16,
-};
+// Default values - imported from @/lib/styles/defaultStyle
+// Re-export for backward compatibility
+export { DEFAULT_STYLE } from "@/lib/styles/defaultStyle";
 
 export const DEFAULT_SECTION_ORDER = [
   "summary",

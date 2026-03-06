@@ -1,5 +1,6 @@
 export { EditorLayout } from "./EditorLayout";
-export { StyleControlsPanel, DEFAULT_STYLE } from "./StyleControlsPanel";
+export { StyleControlsPanel } from "./StyleControlsPanel";
+export { DEFAULT_STYLE, FONT_OPTIONS } from "@/lib/styles/defaultStyle";
 export { SectionReorderPanel } from "./SectionReorderPanel";
 export { SuggestionsPanel } from "./SuggestionsPanel";
 export { ContentEditor } from "./ContentEditor";

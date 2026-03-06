@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { ResumeStyle } from "@/lib/api/types";
+import { DEFAULT_STYLE, FONT_OPTIONS } from "@/lib/styles/defaultStyle";
 
 interface StyleControlsPanelProps {
   style: ResumeStyle;
@@ -9,28 +10,6 @@ interface StyleControlsPanelProps {
   onReset: () => void;
   disabled?: boolean;
 }
-
-const FONT_OPTIONS = [
-  { value: "Inter", label: "Inter" },
-  { value: "Roboto", label: "Roboto" },
-  { value: "Open Sans", label: "Open Sans" },
-  { value: "Lato", label: "Lato" },
-  { value: "Georgia", label: "Georgia" },
-  { value: "Times New Roman", label: "Times New Roman" },
-];
-
-const DEFAULT_STYLE: ResumeStyle = {
-  font_family: "Inter",
-  font_size_body: 11,
-  font_size_heading: 16,
-  font_size_subheading: 13,
-  margin_top: 0.75,
-  margin_bottom: 0.75,
-  margin_left: 0.75,
-  margin_right: 0.75,
-  line_spacing: 1.15,
-  section_spacing: 1.0,
-};
 
 export function StyleControlsPanel({
   style,
