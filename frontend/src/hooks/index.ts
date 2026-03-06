@@ -2,3 +2,5 @@ export { useMediaQuery } from "./useMediaQuery";
 export { useTailoringSession, useBlockAcceptanceState, usePendingReviewBlocks } from "./useTailoringSession";
 export { useATSProgressStream, formatElapsedTime, getStageResultSummary } from "./useATSProgressStream";
 export type { ATSStageState, UseATSProgressStreamOptions, UseATSProgressStreamResult } from "./useATSProgressStream";
+export { useParseProgress, formatElapsedTime as formatParseElapsedTime } from "./useParseProgress";
+export type { ParseStageState, UseParseProgressOptions, UseParseProgressResult, StageState } from "./useParseProgress";

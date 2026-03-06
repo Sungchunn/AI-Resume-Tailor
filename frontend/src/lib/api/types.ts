@@ -847,6 +847,7 @@ export interface AIChatResponse {
 // ============================================================================
 
 export type ParseTaskStatus = "pending" | "completed" | "failed";
+export type ParseStage = "extracting" | "parsing" | "storing";
 
 export interface ParseTaskResponse {
   task_id: string;
@@ -855,7 +856,10 @@ export interface ParseTaskResponse {
 }
 
 export interface ParseStatusResponse extends ParseTaskResponse {
+  stage?: ParseStage | null;
+  stage_progress?: number | null; // 0-100 within current stage
   error?: string | null;
+  warning?: string | null; // For partial success (e.g., AI parsing failed but resume saved)
 }
 
 // ============================================================================
