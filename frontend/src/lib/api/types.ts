@@ -425,6 +425,25 @@ export interface DiffActionResponse {
   applied_diff?: DiffSuggestion | null;
 }
 
+export interface BulletSuggestionEntryContext {
+  title: string;
+  company: string;
+  date_range: string;
+}
+
+export interface BulletSuggestionRequest {
+  bullet_text: string;
+  entry_context: BulletSuggestionEntryContext;
+  job_description: string;
+}
+
+export interface BulletSuggestionResponse {
+  original: string;
+  suggested: string;
+  reason: string;
+  impact: SuggestionImpact;
+}
+
 export interface UpdateSectionsRequest {
   sections: Record<string, unknown>;
 }
