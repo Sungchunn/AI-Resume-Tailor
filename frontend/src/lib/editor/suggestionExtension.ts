@@ -1,5 +1,6 @@
 import { Mark, mergeAttributes } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
 export type SuggestionImpact = "high" | "medium" | "low";
 
@@ -11,6 +12,7 @@ export interface SuggestionMark {
   reason: string;
   impact: SuggestionImpact;
   section?: string;
+  showDiff?: boolean; // When true, shows inline diff (strikethrough original + green suggested)
 }
 
 declare module "@tiptap/core" {
@@ -40,6 +42,14 @@ declare module "@tiptap/core" {
        * Remove all suggestions
        */
       clearAllSuggestions: () => ReturnType;
+      /**
+       * Toggle inline diff mode for a specific suggestion
+       */
+      toggleDiffMode: (id: string) => ReturnType;
+      /**
+       * Set inline diff mode for a specific suggestion
+       */
+      setDiffMode: (id: string, showDiff: boolean) => ReturnType;
     };
   }
 }
@@ -120,6 +130,13 @@ export const SuggestionExtension = Mark.create<{ onSuggestionClick?: (suggestion
           "data-section": attributes.section,
         }),
       },
+      showDiff: {
+        default: false,
+        parseHTML: (element) => element.getAttribute("data-show-diff") === "true",
+        renderHTML: (attributes) => ({
+          "data-show-diff": attributes.showDiff ? "true" : "false",
+        }),
+      },
     };
   },
 
@@ -133,8 +150,22 @@ export const SuggestionExtension = Mark.create<{ onSuggestionClick?: (suggestion
 
   renderHTML({ HTMLAttributes }) {
     const impact = (HTMLAttributes["data-impact"] as SuggestionImpact) || "medium";
+    const showDiff = HTMLAttributes["data-show-diff"] === "true";
     const colors = impactColors[impact];
 
+    if (showDiff) {
+      // Inline diff mode: show original (strikethrough) + suggested (green)
+      // Note: The actual diff content is rendered via CSS using data attributes
+      return [
+        "span",
+        mergeAttributes(HTMLAttributes, {
+          class: "suggestion-mark suggestion-diff-mode cursor-pointer",
+        }),
+        0, // Content is still rendered, CSS handles the visual diff
+      ];
+    }
+
+    // Default highlight mode
     return [
       "span",
       mergeAttributes(HTMLAttributes, {
@@ -248,6 +279,69 @@ export const SuggestionExtension = Mark.create<{ onSuggestionClick?: (suggestion
           dispatch(tr);
           return true;
         },
+      toggleDiffMode:
+        (id: string) =>
+        ({ tr, state, dispatch }) => {
+          if (!dispatch) return false;
+
+          const { doc } = state;
+          const markType = state.schema.marks[this.name];
+          let found = false;
+
+          doc.descendants((node, pos) => {
+            if (node.marks) {
+              node.marks.forEach((mark) => {
+                if (mark.type.name === this.name && mark.attrs.id === id) {
+                  found = true;
+                  const currentShowDiff = mark.attrs.showDiff || false;
+                  // Remove old mark and add new one with toggled showDiff
+                  tr.removeMark(pos, pos + node.nodeSize, markType);
+                  tr.addMark(
+                    pos,
+                    pos + node.nodeSize,
+                    markType.create({ ...mark.attrs, showDiff: !currentShowDiff })
+                  );
+                }
+              });
+            }
+          });
+
+          if (found) {
+            dispatch(tr);
+          }
+          return found;
+        },
+      setDiffMode:
+        (id: string, showDiff: boolean) =>
+        ({ tr, state, dispatch }) => {
+          if (!dispatch) return false;
+
+          const { doc } = state;
+          const markType = state.schema.marks[this.name];
+          let found = false;
+
+          doc.descendants((node, pos) => {
+            if (node.marks) {
+              node.marks.forEach((mark) => {
+                if (mark.type.name === this.name && mark.attrs.id === id) {
+                  found = true;
+                  // Remove old mark and add new one with updated showDiff
+                  tr.removeMark(pos, pos + node.nodeSize, markType);
+                  tr.addMark(
+                    pos,
+                    pos + node.nodeSize,
+                    markType.create({ ...mark.attrs, showDiff })
+                  );
+                }
+              });
+            }
+          });
+
+          if (found) {
+            dispatch(tr);
+          }
+          return found;
+        },
     };
   },
 
@@ -255,6 +349,7 @@ export const SuggestionExtension = Mark.create<{ onSuggestionClick?: (suggestion
     const extension = this;
 
     return [
+      // Plugin for handling clicks on suggestions
       new Plugin({
         key: new PluginKey("suggestion-click"),
         props: {
@@ -275,6 +370,7 @@ export const SuggestionExtension = Mark.create<{ onSuggestionClick?: (suggestion
                 reason: suggestionMark.attrs.reason,
                 impact: suggestionMark.attrs.impact,
                 section: suggestionMark.attrs.section,
+                showDiff: suggestionMark.attrs.showDiff,
               };
 
               extension.options.onSuggestionClick(suggestion, event as MouseEvent);
@@ -282,6 +378,57 @@ export const SuggestionExtension = Mark.create<{ onSuggestionClick?: (suggestion
             }
 
             return false;
+          },
+        },
+      }),
+      // Plugin for rendering inline diff decorations
+      new Plugin({
+        key: new PluginKey("suggestion-diff-decorations"),
+        props: {
+          decorations(state) {
+            const decorations: Decoration[] = [];
+
+            state.doc.descendants((node, pos) => {
+              if (!node.marks) return;
+
+              node.marks.forEach((mark) => {
+                if (mark.type.name === "suggestion" && mark.attrs.showDiff) {
+                  const from = pos;
+                  const to = pos + node.nodeSize;
+
+                  // Create a widget decoration before the text to show the diff
+                  const diffWidget = Decoration.widget(from, () => {
+                    const container = document.createElement("span");
+                    container.className = "suggestion-diff-container";
+
+                    // Original text with strikethrough
+                    const del = document.createElement("del");
+                    del.className = "suggestion-diff-deleted";
+                    del.textContent = mark.attrs.original;
+                    container.appendChild(del);
+
+                    // Suggested text with green
+                    const ins = document.createElement("ins");
+                    ins.className = "suggestion-diff-inserted";
+                    ins.textContent = mark.attrs.suggested;
+                    container.appendChild(ins);
+
+                    return container;
+                  }, { side: -1, key: `diff-${mark.attrs.id}` });
+
+                  decorations.push(diffWidget);
+
+                  // Add inline decoration to hide the original text when diff is shown
+                  decorations.push(
+                    Decoration.inline(from, to, {
+                      class: "suggestion-diff-hidden",
+                    })
+                  );
+                }
+              });
+            });
+
+            return DecorationSet.create(state.doc, decorations);
           },
         },
       }),
