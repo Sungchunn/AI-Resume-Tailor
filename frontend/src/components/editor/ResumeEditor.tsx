@@ -4,7 +4,7 @@ import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
 import Underline from "@tiptap/extension-underline";
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { EditorToolbar } from "./EditorToolbar";
 import { SuggestionPopover } from "./SuggestionPopover";
 import {
@@ -12,7 +12,16 @@ import {
   SuggestionMark,
   generateSuggestionId,
 } from "@/lib/editor/suggestionExtension";
-import type { Suggestion } from "@/lib/api/types";
+import { ThinkingStateExtension } from "@/lib/editor/thinkingStatePlugin";
+import {
+  requestInlineSuggestion,
+  applyInlineSuggestion,
+  getEditorSelection,
+  getSelectionContext,
+  detectSectionType,
+} from "@/lib/services/inlineSuggestionService";
+import type { SuggestionInstruction } from "@/lib/services/inlineSuggestionService";
+import type { Suggestion, AISectionType } from "@/lib/api/types";
 
 /**
  * Sanitize HTML content to ensure it's valid for TipTap.
@@ -65,6 +74,12 @@ interface ResumeEditorProps {
   onSuggestionAccept?: (suggestion: Suggestion) => void;
   /** Callback when a suggestion is rejected */
   onSuggestionReject?: (suggestion: Suggestion) => void;
+  /** Enable AI inline suggestions (requires AI toolbar and keyboard shortcuts) */
+  enableAI?: boolean;
+  /** Section type for AI context (auto-detected if not provided) */
+  sectionType?: AISectionType;
+  /** Job description for tailoring AI suggestions */
+  jobDescription?: string;
 }
 
 // Convert API Suggestion to SuggestionMark format
@@ -104,9 +119,14 @@ export function ResumeEditor({
   suggestions = [],
   onSuggestionAccept,
   onSuggestionReject,
+  enableAI = false,
+  sectionType,
+  jobDescription,
 }: ResumeEditorProps) {
   const [activeSuggestion, setActiveSuggestion] = useState<SuggestionMark | null>(null);
   const [popoverPosition, setPopoverPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isAILoading, setIsAILoading] = useState(false);
+  const thinkingRangeIdRef = useRef<string | null>(null);
 
   // Track which suggestions have been applied (by their original+suggested text as key)
   const [appliedSuggestionKeys, setAppliedSuggestionKeys] = useState<Set<string>>(new Set());
@@ -147,8 +167,9 @@ export function ResumeEditor({
       SuggestionExtension.configure({
         onSuggestionClick: handleSuggestionClick,
       }),
+      ...(enableAI ? [ThinkingStateExtension] : []),
     ],
-    [handleSuggestionClick]
+    [handleSuggestionClick, enableAI]
   );
 
   // Sanitize content to prevent TipTap initialization errors
@@ -296,6 +317,94 @@ export function ResumeEditor({
     setPopoverPosition(null);
   }, []);
 
+  // Handle toggle diff mode
+  const handleToggleDiffMode = useCallback(
+    (mark: SuggestionMark) => {
+      if (!editor) return;
+      editor.commands.toggleDiffMode(mark.id);
+      // Update the active suggestion state to reflect the change
+      setActiveSuggestion((prev) =>
+        prev?.id === mark.id ? { ...prev, showDiff: !prev.showDiff } : prev
+      );
+    },
+    [editor]
+  );
+
+  // Handle AI suggestion request
+  const handleAIRequest = useCallback(
+    async (instruction: SuggestionInstruction) => {
+      if (!editor || isAILoading) return;
+
+      const selection = getEditorSelection(editor);
+      if (selection.isEmpty) {
+        console.warn("No text selected for AI improvement");
+        return;
+      }
+
+      const { text, from, to } = selection;
+
+      // Set loading state and thinking decoration
+      setIsAILoading(true);
+      const thinkingId = `thinking-${Date.now()}`;
+      thinkingRangeIdRef.current = thinkingId;
+
+      // Add thinking decoration
+      if (enableAI) {
+        editor.commands.setThinking(from, to, thinkingId);
+      }
+
+      try {
+        // Detect section type if not provided
+        const detectedSection = sectionType || detectSectionType(text);
+        const context = getSelectionContext(editor);
+
+        // Request AI suggestion
+        const result = await requestInlineSuggestion({
+          text,
+          context,
+          sectionType: detectedSection,
+          instruction,
+          jobDescription,
+        });
+
+        // Clear thinking state
+        if (enableAI) {
+          editor.commands.clearThinking(thinkingId);
+        }
+
+        // Apply the suggestion as an inline mark
+        applyInlineSuggestion(editor, from, to, result);
+      } catch (error) {
+        console.error("AI suggestion request failed:", error);
+
+        // Clear thinking state on error
+        if (enableAI) {
+          editor.commands.clearThinking(thinkingId);
+        }
+      } finally {
+        setIsAILoading(false);
+        thinkingRangeIdRef.current = null;
+      }
+    },
+    [editor, isAILoading, enableAI, sectionType, jobDescription]
+  );
+
+  // Keyboard shortcut: Cmd/Ctrl+Shift+I for AI improve
+  useEffect(() => {
+    if (!enableAI || !editor) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Cmd/Ctrl + Shift + I
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === "i") {
+        event.preventDefault();
+        handleAIRequest("improve");
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [enableAI, editor, handleAIRequest]);
+
   if (!editor) {
     return (
       <div className={`border border-input rounded-lg ${className}`}>
@@ -312,7 +421,13 @@ export function ResumeEditor({
       <div
         className={`border border-input rounded-lg overflow-hidden bg-card ${className}`}
       >
-        {showToolbar && <EditorToolbar editor={editor} />}
+        {showToolbar && (
+          <EditorToolbar
+            editor={editor}
+            onAIRequest={enableAI ? handleAIRequest : undefined}
+            isAILoading={isAILoading}
+          />
+        )}
         <div className="overflow-y-auto max-h-[600px]">
           <EditorContent
             editor={editor}
@@ -355,6 +470,7 @@ export function ResumeEditor({
         onAccept={handleAcceptSuggestion}
         onReject={handleRejectSuggestion}
         onClose={handleClosePopover}
+        onToggleDiffMode={handleToggleDiffMode}
       />
     </>
   );
