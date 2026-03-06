@@ -358,3 +358,90 @@
   @apply text-muted-foreground float-left h-0 pointer-events-none;
   content: attr(data-placeholder);
 }
+
+/* AI Suggestion Inline Diff Styles */
+.suggestion-diff-container {
+  display: inline;
+}
+
+.suggestion-diff-deleted {
+  @apply text-foreground/80 line-through;
+  background-color: rgba(239, 68, 68, 0.2);
+  padding: 1px 2px;
+  border-radius: 2px;
+  text-decoration: line-through;
+  text-decoration-color: rgb(239, 68, 68);
+}
+
+.suggestion-diff-inserted {
+  @apply text-foreground font-medium;
+  background-color: rgba(34, 197, 94, 0.2);
+  padding: 1px 2px;
+  border-radius: 2px;
+  margin-left: 2px;
+}
+
+/* Hide original text when diff mode is active */
+.suggestion-diff-hidden {
+  display: none !important;
+}
+
+/* Suggestion mark in diff mode (clickable container) */
+.suggestion-mark.suggestion-diff-mode {
+  /* Minimal styling since content is hidden */
+  cursor: pointer;
+}
+
+/* AI Thinking State Styles */
+.ai-thinking-decoration {
+  position: relative;
+  background: linear-gradient(
+    90deg,
+    rgba(99, 102, 241, 0.1) 0%,
+    rgba(99, 102, 241, 0.2) 50%,
+    rgba(99, 102, 241, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: ai-thinking-shimmer 1.5s ease-in-out infinite;
+  border-radius: 2px;
+  padding: 1px 2px;
+}
+
+@keyframes ai-thinking-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.ai-thinking-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: rgb(99, 102, 241);
+  margin-left: 4px;
+}
+
+.ai-thinking-indicator::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background-color: rgb(99, 102, 241);
+  border-radius: 50%;
+  animation: ai-thinking-pulse 1s ease-in-out infinite;
+}
+
+@keyframes ai-thinking-pulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
