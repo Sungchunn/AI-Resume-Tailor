@@ -5,10 +5,9 @@ import {
   WorkshopContext,
   type WorkshopContextValue,
   type WorkshopState,
-  DEFAULT_STYLE as WORKSHOP_DEFAULT_STYLE,
   DEFAULT_SECTION_ORDER,
 } from "../../../WorkshopContext";
-import { DEFAULT_STYLE as STYLE_PANEL_DEFAULT_STYLE } from "@/components/editor/StyleControlsPanel";
+import { DEFAULT_STYLE } from "@/lib/styles/defaultStyle";
 import type { ReactNode } from "react";
 
 // Helper to create mock context value
@@ -34,7 +33,7 @@ const createMockContextValue = (
       skills: ["JavaScript", "TypeScript"],
       highlights: ["Achievement 1"],
     },
-    styleSettings: WORKSHOP_DEFAULT_STYLE,
+    styleSettings: DEFAULT_STYLE,
     sectionOrder: DEFAULT_SECTION_ORDER,
     suggestions: [],
     activeSection: undefined,
@@ -128,7 +127,7 @@ describe("StylePanel", () => {
       expect(screen.getByRole("switch")).toBeInTheDocument();
     });
 
-    it("renders style controls panel", () => {
+    it("renders Quick Access section with style controls", () => {
       const contextValue = createMockContextValue();
 
       render(
@@ -137,8 +136,43 @@ describe("StylePanel", () => {
         </WorkshopWrapper>
       );
 
-      // StyleControlsPanel should have font family selector
+      // Quick Access section should have font family selector
+      expect(screen.getByText("Quick Access")).toBeInTheDocument();
       expect(screen.getByText("Font Family")).toBeInTheDocument();
+    });
+
+    it("renders Advanced Settings section (collapsed by default)", () => {
+      const contextValue = createMockContextValue();
+
+      render(
+        <WorkshopWrapper contextValue={contextValue}>
+          <StylePanel />
+        </WorkshopWrapper>
+      );
+
+      expect(screen.getByText("Advanced Settings")).toBeInTheDocument();
+      // Reset button should not be visible when collapsed
+      expect(screen.queryByText("Reset to Default")).not.toBeInTheDocument();
+    });
+
+    it("expands Advanced Settings when clicked", () => {
+      const contextValue = createMockContextValue();
+
+      render(
+        <WorkshopWrapper contextValue={contextValue}>
+          <StylePanel />
+        </WorkshopWrapper>
+      );
+
+      // Click to expand
+      fireEvent.click(screen.getByText("Advanced Settings"));
+
+      // Reset button should now be visible
+      expect(screen.getByText("Reset to Default")).toBeInTheDocument();
+      // Typography section should be visible
+      expect(screen.getByText("Typography")).toBeInTheDocument();
+      // Entry spacing should be visible
+      expect(screen.getByText(/Entry Spacing/)).toBeInTheDocument();
     });
   });
 
@@ -302,7 +336,7 @@ describe("StylePanel", () => {
   });
 
   describe("style controls", () => {
-    it("style controls are enabled when fit-to-one-page is off", () => {
+    it("Quick Access controls are enabled when fit-to-one-page is off", () => {
       const contextValue = createMockContextValue({ fitToOnePage: false });
 
       render(
@@ -311,12 +345,12 @@ describe("StylePanel", () => {
         </WorkshopWrapper>
       );
 
-      // The Reset button should be enabled
-      const resetButton = screen.getByText("Reset to Default");
-      expect(resetButton).not.toBeDisabled();
+      // Font family select should be enabled
+      const fontSelect = screen.getByRole("combobox");
+      expect(fontSelect).not.toBeDisabled();
     });
 
-    it("style controls are disabled when fit-to-one-page is on", () => {
+    it("shows warning when fit-to-one-page is on", () => {
       const contextValue = createMockContextValue({ fitToOnePage: true });
 
       render(
@@ -325,19 +359,16 @@ describe("StylePanel", () => {
         </WorkshopWrapper>
       );
 
-      // The StyleControlsPanel should be disabled
-      // Check that the container has disabled state
-      const resetButton = screen.getByText("Reset to Default");
-      expect(resetButton).toBeDisabled();
+      expect(screen.getByText("Styles locked while Auto-Fit is enabled")).toBeInTheDocument();
     });
   });
 
   describe("reset functionality", () => {
     it("dispatches SET_STYLE with default when reset is clicked", () => {
       const contextValue = createMockContextValue({
-        fitToOnePage: false, // Ensure auto-fit is off
+        fitToOnePage: false,
         styleSettings: {
-          ...WORKSHOP_DEFAULT_STYLE,
+          ...DEFAULT_STYLE,
           font_family: "Times New Roman",
           font_size_body: 14,
         },
@@ -349,15 +380,17 @@ describe("StylePanel", () => {
         </WorkshopWrapper>
       );
 
+      // Expand Advanced Settings to access Reset button
+      fireEvent.click(screen.getByText("Advanced Settings"));
+
       // Clear any calls from initial render
       vi.mocked(contextValue.dispatch).mockClear();
 
       fireEvent.click(screen.getByText("Reset to Default"));
 
-      // StylePanel uses DEFAULT_STYLE from StyleControlsPanel
       expect(contextValue.dispatch).toHaveBeenCalledWith({
         type: "SET_STYLE",
-        payload: STYLE_PANEL_DEFAULT_STYLE,
+        payload: DEFAULT_STYLE,
       });
     });
 
@@ -373,7 +406,8 @@ describe("StylePanel", () => {
       // Select a preset first
       fireEvent.click(screen.getByText("Classic"));
 
-      // Clear calls and reset
+      // Expand Advanced Settings and reset
+      fireEvent.click(screen.getByText("Advanced Settings"));
       vi.clearAllMocks();
       fireEvent.click(screen.getByText("Reset to Default"));
 
@@ -395,8 +429,6 @@ describe("StylePanel", () => {
 
   describe("auto-fit reductions display", () => {
     it("shows adjustments when fitted with reductions", async () => {
-      // This test verifies that when fitToOnePage is enabled and
-      // reductions are made, they are displayed
       const contextValue = createMockContextValue({
         fitToOnePage: true,
         content: {
@@ -439,7 +471,6 @@ describe("StylePanel", () => {
     it("shows warning when minimum is reached", async () => {
       const contextValue = createMockContextValue({
         fitToOnePage: true,
-        // Create a lot of content that won't fit
         content: {
           summary: "Summary ".repeat(100),
           experience: Array(10).fill({
@@ -491,7 +522,7 @@ describe("StylePanel", () => {
       const classicButton = screen.getByText("Classic").closest("button");
       expect(classicButton).toHaveClass("border-blue-500");
 
-      // Note: Manual style changes through StyleControlsPanel would clear
+      // Note: Manual style changes through QuickStyleControls would clear
       // the active preset, but testing this requires simulating slider
       // changes which are complex to test
     });
@@ -500,7 +531,7 @@ describe("StylePanel", () => {
   describe("integration with context", () => {
     it("uses styleSettings from context", () => {
       const customStyle = {
-        ...WORKSHOP_DEFAULT_STYLE,
+        ...DEFAULT_STYLE,
         font_family: "Georgia",
         font_size_body: 14,
       };
@@ -515,8 +546,7 @@ describe("StylePanel", () => {
         </WorkshopWrapper>
       );
 
-      // StyleControlsPanel should show the custom font family
-      // (This depends on how StyleControlsPanel displays the current value)
+      // QuickStyleControls should show the custom font family
       expect(screen.getByText("Font Family")).toBeInTheDocument();
     });
 
@@ -539,6 +569,24 @@ describe("StylePanel", () => {
 
       // With minimal content, should fit easily
       expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "true");
+    });
+  });
+
+  describe("entry spacing control", () => {
+    it("entry spacing slider is visible in Advanced Settings", () => {
+      const contextValue = createMockContextValue();
+
+      render(
+        <WorkshopWrapper contextValue={contextValue}>
+          <StylePanel />
+        </WorkshopWrapper>
+      );
+
+      // Expand Advanced Settings
+      fireEvent.click(screen.getByText("Advanced Settings"));
+
+      // Entry spacing should be visible with default value
+      expect(screen.getByText(/Entry Spacing: 8px/)).toBeInTheDocument();
     });
   });
 });

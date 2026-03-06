@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useWorkshop } from "../../WorkshopContext";
-import { StyleControlsPanel, DEFAULT_STYLE } from "@/components/editor/StyleControlsPanel";
 import { TemplateSelector } from "./TemplateSelector";
 import { AutoFitToggle } from "./AutoFitToggle";
+import { QuickStyleControls } from "./QuickStyleControls";
+import { AdvancedStyleControls } from "./AdvancedStyleControls";
 import { useAutoFit } from "./useAutoFit";
 import { TEMPLATE_PRESETS } from "./templatePresets";
+import { DEFAULT_STYLE } from "@/lib/styles/defaultStyle";
 import type { TemplatePreset } from "./types";
 import type { ResumeStyle } from "@/lib/api/types";
 
@@ -25,6 +27,8 @@ export function StylePanel() {
     },
   });
 
+  const currentStyle = state.fitToOnePage ? adjustedStyle : state.styleSettings;
+
   const handlePresetSelect = (preset: TemplatePreset) => {
     setActivePreset(preset.id);
     dispatch({ type: "SET_STYLE", payload: preset.style });
@@ -35,7 +39,6 @@ export function StylePanel() {
   };
 
   const handleStyleChange = (style: ResumeStyle) => {
-    // Clear active preset when user manually changes style
     setActivePreset(null);
     dispatch({ type: "SET_STYLE", payload: style });
   };
@@ -89,13 +92,31 @@ export function StylePanel() {
         )}
       </div>
 
-      {/* Existing Style Controls */}
-      <div className="flex-1 overflow-auto">
-        <StyleControlsPanel
-          style={state.fitToOnePage ? adjustedStyle : state.styleSettings}
+      {/* Quick Access Section - Always Visible */}
+      <div className="border-b p-4">
+        <h3 className="text-sm font-medium text-foreground/80 mb-3">
+          Quick Access
+        </h3>
+        {state.fitToOnePage && (
+          <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded mb-3">
+            Styles locked while Auto-Fit is enabled
+          </div>
+        )}
+        <QuickStyleControls
+          style={currentStyle}
+          onChange={handleStyleChange}
+          disabled={state.fitToOnePage}
+        />
+      </div>
+
+      {/* Advanced Settings - Collapsed by Default */}
+      <div className="flex-1 overflow-auto border-t">
+        <AdvancedStyleControls
+          style={currentStyle}
           onChange={handleStyleChange}
           onReset={handleReset}
           disabled={state.fitToOnePage}
+          defaultExpanded={false}
         />
       </div>
     </div>
