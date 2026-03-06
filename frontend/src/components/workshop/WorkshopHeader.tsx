@@ -6,7 +6,7 @@ import { ChevronLeftIcon } from "@/components/icons";
 import { useWorkshop } from "./WorkshopContext";
 import { useWizardOptional } from "./wizard";
 import { MatchScoreBadge } from "./MatchScoreBadge";
-import { ScoreDisplay } from "./ScoreDisplay";
+import { ScoreDisplay, ATSScoreBadge } from "./ScoreDisplay";
 import ExportDialog from "@/components/export/ExportDialog";
 
 interface WorkshopHeaderProps {
@@ -14,7 +14,7 @@ interface WorkshopHeaderProps {
 }
 
 export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
-  const { state, save } = useWorkshop();
+  const { state, save, dispatch } = useWorkshop();
   const wizard = useWizardOptional();
   const [showExportDialog, setShowExportDialog] = useState(false);
 
@@ -45,16 +45,22 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
 
         {/* Real-time Score Display - only show when there's a job associated */}
         {hasJobId ? (
-          compact ? (
-            <MatchScoreBadge score={state.matchScore} size="sm" />
-          ) : (
-            <ScoreDisplay
-              score={state.matchScore}
-              previousScore={state.previousMatchScore}
-              isUpdating={state.isScoreUpdating}
-              lastUpdated={state.scoreLastUpdated}
+          <>
+            {compact ? (
+              <MatchScoreBadge score={state.matchScore} size="sm" />
+            ) : (
+              <ScoreDisplay
+                score={state.matchScore}
+                previousScore={state.previousMatchScore}
+                isUpdating={state.isScoreUpdating}
+                lastUpdated={state.scoreLastUpdated}
+              />
+            )}
+            <ATSScoreBadge
+              size={compact ? "sm" : "md"}
+              onClick={() => dispatch({ type: "SET_ACTIVE_TAB", payload: "ats" })}
             />
-          )
+          </>
         ) : (
           <span className="text-xs text-muted-foreground/60">No job linked</span>
         )}
