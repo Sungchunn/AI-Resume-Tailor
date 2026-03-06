@@ -20,3 +20,6 @@ export { KeywordSelectionPanel } from "./KeywordSelectionPanel";
 export { VaultBackedSkillItem } from "./VaultBackedSkillItem";
 export { MissingSkillItem } from "./MissingSkillItem";
 export { SelectedResumeCard } from "./SelectedResumeCard";
+
+// Flow Navigation Components
+export { TailorFlowStepper } from "./TailorFlowStepper";
