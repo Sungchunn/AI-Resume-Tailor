@@ -10,7 +10,42 @@ import type {
 } from "@/lib/api/types";
 import { DEFAULT_STYLE } from "@/lib/styles/defaultStyle";
 
-export type WorkshopTab = "ai-rewrite" | "editor" | "style";
+export type WorkshopTab = "ai-rewrite" | "editor" | "style" | "ats";
+
+// ATS Progressive Analysis Types
+export interface ATSCompositeScore {
+  final_score: number;
+  stage_breakdown: {
+    structure: number;
+    keywords: number;
+    content_quality: number;
+    role_proximity: number;
+  };
+  weights_used: {
+    structure: number;
+    keywords: number;
+    content_quality: number;
+    role_proximity: number;
+  };
+  normalization_applied: boolean;
+  failed_stages: string[];
+}
+
+export interface ATSStageResult {
+  stage: number;
+  name: string;
+  score: number;
+  details: Record<string, unknown>;
+  elapsed_ms: number;
+}
+
+export interface KnockoutRisk {
+  category: "experience" | "education" | "certification" | "location";
+  severity: "hard" | "soft";
+  message: string;
+  job_requirement: string;
+  resume_value: string;
+}
 
 export interface WorkshopState {
   // Data
@@ -33,8 +68,20 @@ export interface WorkshopState {
   error: string | null;
   fitToOnePage: boolean;
 
-  // ATS analysis
+  // ATS analysis (keyword-based)
   atsAnalysis: ATSKeywordDetailedResponse | null;
+
+  // ATS Progressive Analysis (SSE-based)
+  atsCompositeScore: ATSCompositeScore | null;
+  atsStageResults: Record<string, ATSStageResult>;
+  atsKnockoutRisks: KnockoutRisk[];
+  atsIsAnalyzing: boolean;
+  atsCurrentStage: number;
+  atsOverallProgress: number;
+  atsIsStale: boolean;
+  atsLastAnalyzedAt: Date | null;
+  atsContentHash: string | null;
+  atsFatalError: string | null;
 
   // Real-time score tracking
   matchScore: number;
@@ -63,7 +110,27 @@ export type WorkshopAction =
   | { type: "RESET_CHANGES" }
   | { type: "SET_MATCH_SCORE"; payload: { score: number; previous?: number | null } }
   | { type: "SET_SCORE_UPDATING"; payload: boolean }
-  | { type: "SET_SCORE_LAST_UPDATED"; payload: Date | null };
+  | { type: "SET_SCORE_LAST_UPDATED"; payload: Date | null }
+  // ATS Progressive Analysis Actions
+  | { type: "ATS_ANALYSIS_START" }
+  | { type: "ATS_STAGE_START"; payload: { stage: number; name: string } }
+  | { type: "ATS_STAGE_COMPLETE"; payload: ATSStageResult }
+  | { type: "ATS_STAGE_ERROR"; payload: { stage: number; error: string } }
+  | { type: "ATS_ANALYSIS_COMPLETE"; payload: {
+      score: ATSCompositeScore;
+      knockouts: KnockoutRisk[];
+      hash: string;
+      timestamp: Date;
+    }}
+  | { type: "ATS_ANALYSIS_ERROR"; payload: string }
+  | { type: "MARK_ATS_STALE" }
+  | { type: "ATS_CACHE_HIT"; payload: {
+      score: ATSCompositeScore;
+      stageResults: Record<string, ATSStageResult>;
+      knockouts: KnockoutRisk[];
+      cachedAt: Date;
+      hash: string;
+    }};
 
 export interface WorkshopContextValue {
   state: WorkshopState;
@@ -112,6 +179,17 @@ export const initialState: WorkshopState = {
   error: null,
   fitToOnePage: false,
   atsAnalysis: null,
+  // ATS Progressive Analysis
+  atsCompositeScore: null,
+  atsStageResults: {},
+  atsKnockoutRisks: [],
+  atsIsAnalyzing: false,
+  atsCurrentStage: -1,
+  atsOverallProgress: 0,
+  atsIsStale: false,
+  atsLastAnalyzedAt: null,
+  atsContentHash: null,
+  atsFatalError: null,
   // Real-time score tracking
   matchScore: 0,
   previousMatchScore: null,
@@ -182,7 +260,12 @@ export function workshopReducer(
       return { ...state, error: action.payload, isLoading: false };
 
     case "SET_CONTENT":
-      return { ...state, content: action.payload, hasChanges: true };
+      return {
+        ...state,
+        content: action.payload,
+        hasChanges: true,
+        atsIsStale: state.atsCompositeScore !== null,
+      };
 
     case "SET_STYLE":
       return {
@@ -192,7 +275,12 @@ export function workshopReducer(
       };
 
     case "SET_SECTION_ORDER":
-      return { ...state, sectionOrder: action.payload, hasChanges: true };
+      return {
+        ...state,
+        sectionOrder: action.payload,
+        hasChanges: true,
+        atsIsStale: state.atsCompositeScore !== null,
+      };
 
     case "ACCEPT_SUGGESTION": {
       const { index, suggestion } = action.payload;
@@ -205,6 +293,7 @@ export function workshopReducer(
         content: updatedContent,
         suggestions: updatedSuggestions,
         hasChanges: true,
+        atsIsStale: state.atsCompositeScore !== null,
       };
     }
 
@@ -262,6 +351,88 @@ export function workshopReducer(
 
     case "SET_SCORE_LAST_UPDATED":
       return { ...state, scoreLastUpdated: action.payload };
+
+    // ATS Progressive Analysis Actions
+    case "ATS_ANALYSIS_START":
+      return {
+        ...state,
+        atsIsAnalyzing: true,
+        atsCurrentStage: 0,
+        atsOverallProgress: 0,
+        atsStageResults: {},
+        atsFatalError: null,
+      };
+
+    case "ATS_STAGE_START":
+      return {
+        ...state,
+        atsCurrentStage: action.payload.stage,
+        atsOverallProgress: action.payload.stage * 20,
+      };
+
+    case "ATS_STAGE_COMPLETE":
+      return {
+        ...state,
+        atsStageResults: {
+          ...state.atsStageResults,
+          [action.payload.name]: action.payload,
+        },
+        atsOverallProgress: (action.payload.stage + 1) * 20,
+      };
+
+    case "ATS_STAGE_ERROR":
+      return {
+        ...state,
+        atsStageResults: {
+          ...state.atsStageResults,
+          [`stage_${action.payload.stage}_error`]: {
+            stage: action.payload.stage,
+            name: "error",
+            score: 0,
+            details: { error: action.payload.error },
+            elapsed_ms: 0,
+          },
+        },
+      };
+
+    case "ATS_ANALYSIS_COMPLETE":
+      return {
+        ...state,
+        atsIsAnalyzing: false,
+        atsCompositeScore: action.payload.score,
+        atsKnockoutRisks: action.payload.knockouts,
+        atsContentHash: action.payload.hash,
+        atsLastAnalyzedAt: action.payload.timestamp,
+        atsIsStale: false,
+        atsCurrentStage: -1,
+        atsOverallProgress: 100,
+      };
+
+    case "ATS_ANALYSIS_ERROR":
+      return {
+        ...state,
+        atsIsAnalyzing: false,
+        atsFatalError: action.payload,
+        atsCurrentStage: -1,
+      };
+
+    case "MARK_ATS_STALE":
+      return {
+        ...state,
+        atsIsStale: true,
+      };
+
+    case "ATS_CACHE_HIT":
+      return {
+        ...state,
+        atsCompositeScore: action.payload.score,
+        atsStageResults: action.payload.stageResults,
+        atsKnockoutRisks: action.payload.knockouts,
+        atsContentHash: action.payload.hash,
+        atsLastAnalyzedAt: action.payload.cachedAt,
+        atsIsStale: false,
+        atsIsAnalyzing: false,
+      };
 
     default:
       return state;
