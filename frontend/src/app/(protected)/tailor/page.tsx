@@ -7,13 +7,10 @@ import Image from "next/image";
 import {
   useResumes,
   useJobs,
-  useTailorResume,
-  useQuickMatch,
   useJobListing,
 } from "@/lib/api";
 import { CardGridSkeleton } from "@/components/ui";
-
-type TailorStep = "select" | "analyze" | "result";
+import { TailorFlowStepper } from "@/components/tailoring";
 
 function TailorPageContent() {
   const router = useRouter();
@@ -26,10 +23,7 @@ function TailorPageContent() {
   const { data: resumes, isLoading: resumesLoading } = useResumes();
   const { data: jobs, isLoading: jobsLoading } = useJobs();
   const { data: jobListing, isLoading: jobListingLoading, error: jobListingError } = useJobListing(jobListingId ?? 0);
-  const tailorResume = useTailorResume();
-  const quickMatch = useQuickMatch();
 
-  const [step, setStep] = useState<TailorStep>("select");
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
 
@@ -41,25 +35,10 @@ function TailorPageContent() {
   // Check if we have a valid job listing from URL
   const hasJobListingFromUrl = !!jobListingId && !!jobListing && !jobListingError;
 
-  // Can tailor if we have a resume and either a selected job OR a job listing from URL
-  const canTailor = hasResumes && selectedResumeId && (hasJobListingFromUrl || selectedJobId);
+  // Can proceed if we have a resume selected and either a job listing from URL or a selected job
+  const canProceed = hasResumes && selectedResumeId && (hasJobListingFromUrl || selectedJobId);
 
-  const handleQuickMatch = async () => {
-    if (!selectedResumeId) return;
-
-    // Need either a job listing from URL or a selected job
-    if (!hasJobListingFromUrl && !selectedJobId) return;
-
-    setStep("analyze");
-
-    const request = hasJobListingFromUrl
-      ? { resume_id: selectedResumeId, job_listing_id: jobListingId! }
-      : { resume_id: selectedResumeId, job_id: selectedJobId! };
-
-    await quickMatch.mutateAsync(request);
-  };
-
-  const handleAnalyze = () => {
+  const handleGenerateTailored = () => {
     if (!selectedResumeId) return;
 
     // Need either a job listing from URL or a selected job
@@ -70,31 +49,8 @@ function TailorPageContent() {
       router.push(`/tailor/analyze?resume_id=${selectedResumeId}&job_listing_id=${jobListingId}`);
     } else {
       // For user-created jobs, we still go to analyze page
-      // Note: Currently only job_listing_id is supported in analyze page
       router.push(`/tailor/analyze?resume_id=${selectedResumeId}&job_id=${selectedJobId}`);
     }
-  };
-
-  // Legacy direct tailor for backwards compatibility
-  const handleTailor = async () => {
-    if (!selectedResumeId) return;
-
-    // Need either a job listing from URL or a selected job
-    if (!hasJobListingFromUrl && !selectedJobId) return;
-
-    const request = hasJobListingFromUrl
-      ? { resume_id: selectedResumeId, job_listing_id: jobListingId! }
-      : { resume_id: selectedResumeId, job_id: selectedJobId! };
-
-    const result = await tailorResume.mutateAsync(request);
-    router.push(`/tailor/${result.id}`);
-  };
-
-  const resetSelection = () => {
-    setStep("select");
-    setSelectedResumeId(null);
-    setSelectedJobId(null);
-    quickMatch.reset();
   };
 
   if (resumesLoading || jobsLoading || (jobListingId && jobListingLoading)) {
@@ -164,6 +120,9 @@ function TailorPageContent() {
 
   return (
     <div className="space-y-6">
+      {/* Flow Stepper */}
+      <TailorFlowStepper currentStep="select" />
+
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Tailor Resume</h1>
@@ -173,16 +132,10 @@ function TailorPageContent() {
               : "Select a resume and job to generate a tailored version optimized for the position"}
           </p>
         </div>
-        {step !== "select" && (
-          <button onClick={resetSelection} className="btn-ghost">
-            Start Over
-          </button>
-        )}
       </div>
 
       {/* Selection Step */}
-      {step === "select" && (
-        <>
+      <>
           {/* Error loading job listing from URL */}
           {jobListingId && jobListingError && (
             <div className="card border-2 border-destructive/20 bg-destructive/10">
@@ -289,7 +242,7 @@ function TailorPageContent() {
                   + Add New
                 </Link>
               </div>
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              <div className="space-y-2 max-h-100 overflow-y-auto">
                 {resumes?.map((resume) => (
                   <button
                     key={resume.id}
@@ -323,7 +276,7 @@ function TailorPageContent() {
                     + Add New
                   </Link>
                 </div>
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                <div className="space-y-2 max-h-100 overflow-y-auto">
                   {jobs?.map((job) => (
                     <button
                       key={job.id}
@@ -349,7 +302,7 @@ function TailorPageContent() {
           {hasJobListingFromUrl && selectedResume && (
             <div className="card bg-muted">
               <h3 className="text-lg font-semibold text-foreground mb-2">
-                Ready to Tailor
+                Ready to Generate
               </h3>
               <div className="grid md:grid-cols-2 gap-4 text-sm mb-4">
                 <div>
@@ -363,21 +316,12 @@ function TailorPageContent() {
                   </span>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleQuickMatch}
-                  disabled={quickMatch.isPending}
-                  className="btn-secondary"
-                >
-                  {quickMatch.isPending ? "Analyzing..." : "Quick Preview"}
-                </button>
-                <button
-                  onClick={handleAnalyze}
-                  className="btn-primary"
-                >
-                  Analyze Match →
-                </button>
-              </div>
+              <button
+                onClick={handleGenerateTailored}
+                className="btn-primary"
+              >
+                Generate Tailored Resume →
+              </button>
             </div>
           )}
 
@@ -385,7 +329,7 @@ function TailorPageContent() {
           {!hasJobListingFromUrl && selectedResume && selectedJob && (
             <div className="card bg-muted">
               <h3 className="text-lg font-semibold text-foreground mb-2">
-                Selection Summary
+                Ready to Generate
               </h3>
               <div className="grid md:grid-cols-2 gap-4 text-sm mb-4">
                 <div>
@@ -399,122 +343,15 @@ function TailorPageContent() {
                   </span>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleQuickMatch}
-                  disabled={quickMatch.isPending}
-                  className="btn-secondary"
-                >
-                  {quickMatch.isPending ? "Analyzing..." : "Quick Preview"}
-                </button>
-                <button
-                  onClick={handleAnalyze}
-                  className="btn-primary"
-                >
-                  Analyze Match →
-                </button>
-              </div>
+              <button
+                onClick={handleGenerateTailored}
+                className="btn-primary"
+              >
+                Generate Tailored Resume →
+              </button>
             </div>
           )}
         </>
-      )}
-
-      {/* Analysis Step */}
-      {step === "analyze" && quickMatch.data && (
-        <>
-          <div className="card">
-            <h2 className="text-lg font-semibold text-foreground mb-4">
-              Match Analysis
-            </h2>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="text-center p-6 bg-muted rounded-lg">
-                <div
-                  className={`text-5xl font-bold ${
-                    quickMatch.data.match_score >= 70
-                      ? "text-green-600"
-                      : quickMatch.data.match_score >= 40
-                      ? "text-yellow-600"
-                      : "text-destructive"
-                  }`}
-                >
-                  {quickMatch.data.match_score}%
-                </div>
-                <div className="text-sm text-muted-foreground mt-2">Match Score</div>
-              </div>
-              <div className="text-center p-6 bg-muted rounded-lg">
-                <div className="text-5xl font-bold text-blue-600">
-                  {Math.round(quickMatch.data.keyword_coverage * 100)}%
-                </div>
-                <div className="text-sm text-muted-foreground mt-2">Keyword Coverage</div>
-              </div>
-              <div className="text-center p-6 bg-muted rounded-lg">
-                <div className="text-5xl font-bold text-green-600">
-                  {quickMatch.data.skill_matches.length}
-                </div>
-                <div className="text-sm text-muted-foreground mt-2">Skills Matched</div>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6 mt-6">
-              {quickMatch.data.skill_matches.length > 0 && (
-                <div>
-                  <div className="text-sm font-medium text-foreground/80 mb-2">
-                    Matching Skills
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {quickMatch.data.skill_matches.map((skill) => (
-                      <span
-                        key={skill}
-                        className="px-3 py-1 bg-green-100 text-green-700 text-sm rounded-full"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {quickMatch.data.skill_gaps.length > 0 && (
-                <div>
-                  <div className="text-sm font-medium text-foreground/80 mb-2">
-                    Skills to Highlight
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {quickMatch.data.skill_gaps.map((skill) => (
-                      <span
-                        key={skill}
-                        className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm rounded-full"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleAnalyze}
-              className="btn-primary"
-            >
-              Continue to Full Analysis →
-            </button>
-            <button onClick={resetSelection} className="btn-ghost">
-              Back to Selection
-            </button>
-          </div>
-        </>
-      )}
-
-      {/* Error Display */}
-      {tailorResume.error && (
-        <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4">
-          <p className="text-sm text-destructive">
-            {tailorResume.error.message || "Failed to tailor resume"}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
