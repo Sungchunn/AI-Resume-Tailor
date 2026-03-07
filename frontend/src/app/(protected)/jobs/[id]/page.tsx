@@ -21,6 +21,7 @@ import {
   LinkedInIcon,
   MapPinIcon,
 } from "@/components/icons";
+import { sanitizeHtml } from "@/lib/utils/sanitize";
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -351,7 +352,7 @@ export default function JobDetailPage() {
         {listing.job_description_html ? (
           <div
             className="prose prose-invert max-w-none prose-li:marker:text-muted-foreground prose-ul:my-2 prose-li:my-0.5 prose-p:my-2 prose-headings:mt-4 prose-headings:mb-2"
-            dangerouslySetInnerHTML={{ __html: listing.job_description_html }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(listing.job_description_html) }}
           />
         ) : (
           <div className="prose prose-invert max-w-none">

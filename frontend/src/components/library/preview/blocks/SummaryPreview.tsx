@@ -1,6 +1,7 @@
 "use client";
 
 import type { BaseBlockPreviewProps } from "../types";
+import { sanitizeHtml } from "@/lib/utils/sanitize";
 
 interface SummaryPreviewProps extends BaseBlockPreviewProps<string> {}
 
@@ -25,7 +26,7 @@ export function SummaryPreview({ content, style }: SummaryPreviewProps) {
           fontSize: style.bodyFontSize,
           lineHeight: style.lineHeight,
         }}
-        dangerouslySetInnerHTML={{ __html: content }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
       />
     );
   }
