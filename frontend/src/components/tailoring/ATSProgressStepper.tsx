@@ -86,6 +86,7 @@ export function ATSProgressStepper({
     totalElapsedMs,
     start,
     retry,
+    reset,
   } = useATSProgressStream(options);
 
   // Check if we have valid job source
@@ -244,6 +245,28 @@ export function ATSProgressStepper({
           >
             <Loader2 className="h-4 w-4" />
             Start Analysis
+          </button>
+        </div>
+      )}
+
+      {/* Re-run Button (after successful completion) */}
+      {isComplete && resumeId && hasValidJobSource && (
+        <div className="mt-4 flex justify-center">
+          <button
+            onClick={() => {
+              reset();
+              // Small delay to allow state to clear before restarting
+              setTimeout(() => start(resumeId, { jobId, jobListingId }), 100);
+            }}
+            className="
+              inline-flex items-center gap-2 px-3 py-1.5
+              text-xs font-medium text-muted-foreground
+              border border-border rounded-md
+              hover:bg-muted hover:text-foreground transition-colors
+            "
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Re-run Analysis
           </button>
         </div>
       )}
