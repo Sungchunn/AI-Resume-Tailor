@@ -484,6 +484,9 @@ export type JobListingSortBy =
   | "created_at";
 export type SortOrder = "asc" | "desc";
 
+// Kanban board application status
+export type ApplicationStatus = "applied" | "interview" | "accepted" | "rejected" | "ghosted";
+
 export interface JobListingResponse {
   id: number;
   external_job_id: string;
@@ -518,6 +521,11 @@ export interface JobListingResponse {
   is_saved: boolean;
   is_hidden: boolean;
   applied_at: string | null;
+
+  // Kanban board fields
+  application_status: ApplicationStatus | null;
+  status_changed_at: string | null;
+  column_position: number;
 }
 
 export interface JobListingListResponse {
@@ -588,6 +596,9 @@ export interface UserJobInteractionResponse {
   is_hidden: boolean;
   applied_at: string | null;
   last_viewed_at: string | null;
+  application_status: ApplicationStatus | null;
+  status_changed_at: string | null;
+  column_position: number;
   created_at: string;
   updated_at: string | null;
 }
@@ -596,6 +607,26 @@ export interface JobInteractionActionResponse {
   success: boolean;
   message: string;
   interaction: UserJobInteractionResponse;
+}
+
+// Kanban board request/response types
+export interface UpdateApplicationStatusRequest {
+  status: ApplicationStatus;
+}
+
+export interface ReorderKanbanRequest {
+  status: ApplicationStatus;
+  job_listing_ids: number[];
+}
+
+export interface KanbanColumnResponse {
+  status: string;
+  jobs: JobListingResponse[];
+  total: number;
+}
+
+export interface KanbanBoardResponse {
+  columns: Record<ApplicationStatus, KanbanColumnResponse>;
 }
 
 // ============================================================================
