@@ -1700,6 +1700,9 @@ async def analyze_progressive_ats(
             resume_content_hash = cache.hash_content(raw_resume_content)
 
             # Fetch job description from job_listings or job_descriptions table
+            # Note: job_listings are public scraped data - no owner check needed.
+            # Unlike user-created jobs (which require owner_id verification),
+            # job listings can be used by any authenticated user for ATS analysis.
             job_content: dict = {}
             if job_listing_id:
                 job_listing_repo = JobListingRepository()
