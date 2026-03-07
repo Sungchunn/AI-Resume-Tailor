@@ -110,16 +110,17 @@ function AnalyzePageContent() {
   // Auto-start ATS analysis when page loads with valid IDs
   useEffect(() => {
     if (
+      resumeId &&
       jobListingIdNum &&
       !atsStream.isAnalyzing &&
       !atsStream.isComplete &&
       !atsComplete
     ) {
-      // ATS endpoint expects job_listing_id as number
-      atsStream.start(0, jobListingIdNum); // resumeId not used in current ATS endpoint
+      // Start ATS analysis with resume and job listing IDs
+      atsStream.start(resumeId, { jobListingId: jobListingIdNum });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobListingIdNum]);
+  }, [resumeId, jobListingIdNum]);
 
   // Handle generate tailored resume
   const handleGenerateTailored = async () => {
@@ -292,11 +293,11 @@ function AnalyzePageContent() {
       )}
 
       {/* ATS Progressive Analysis */}
-      {jobListingIdNum && (
+      {resumeId && jobListingIdNum && (
         <div className="card">
           <ATSProgressStepper
-            resumeId={0}
-            jobId={jobListingIdNum}
+            resumeId={resumeId}
+            jobListingId={jobListingIdNum}
             autoStart={false}
             showDetails={true}
             onComplete={handleATSComplete}

@@ -18,10 +18,12 @@ interface ATSReanalyzeModalProps {
   isOpen: boolean;
   /** Callback to close the modal */
   onClose: () => void;
-  /** Resume ID for analysis */
-  resumeId: number;
-  /** Job ID for analysis */
-  jobId: number;
+  /** Resume ID for analysis (MongoDB ObjectId) */
+  resumeId: string;
+  /** Job ID for user-created jobs */
+  jobId?: number;
+  /** Job listing ID for scraped jobs */
+  jobListingId?: number;
   /** Job title for display */
   jobTitle?: string;
   /** Company name for display */
@@ -37,6 +39,7 @@ export function ATSReanalyzeModal({
   onClose,
   resumeId,
   jobId,
+  jobListingId,
   jobTitle,
   companyName,
   onComplete,
@@ -130,6 +133,7 @@ export function ATSReanalyzeModal({
               <ATSProgressStepper
                 resumeId={resumeId}
                 jobId={jobId}
+                jobListingId={jobListingId}
                 autoStart={true}
                 showDetails={false}
                 onComplete={handleComplete}

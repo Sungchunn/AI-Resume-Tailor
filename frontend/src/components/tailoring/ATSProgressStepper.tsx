@@ -38,10 +38,12 @@ import type { ATSCompositeScore } from "@/lib/stores/atsProgressStore";
 // ============================================================================
 
 interface ATSProgressStepperProps {
-  /** Resume ID for analysis */
-  resumeId?: number;
-  /** Job ID for analysis */
+  /** Resume ID for analysis (MongoDB ObjectId) */
+  resumeId?: string;
+  /** Job ID for user-created jobs */
   jobId?: number;
+  /** Job listing ID for scraped jobs */
+  jobListingId?: number;
   /** Auto-start analysis when mounted with valid IDs */
   autoStart?: boolean;
   /** Show detailed results for each stage */
@@ -61,6 +63,7 @@ interface ATSProgressStepperProps {
 export function ATSProgressStepper({
   resumeId,
   jobId,
+  jobListingId,
   autoStart = false,
   showDetails = false,
   onComplete,
@@ -85,12 +88,15 @@ export function ATSProgressStepper({
     retry,
   } = useATSProgressStream(options);
 
+  // Check if we have valid job source
+  const hasValidJobSource = !!(jobId || jobListingId);
+
   // Auto-start analysis if requested
   useEffect(() => {
-    if (autoStart && resumeId && jobId && !isAnalyzing && !isComplete) {
-      start(resumeId, jobId);
+    if (autoStart && resumeId && hasValidJobSource && !isAnalyzing && !isComplete) {
+      start(resumeId, { jobId, jobListingId });
     }
-  }, [autoStart, resumeId, jobId, isAnalyzing, isComplete, start]);
+  }, [autoStart, resumeId, jobId, jobListingId, hasValidJobSource, isAnalyzing, isComplete, start]);
 
   // Find the current active stage
   const currentStageIndex = useMemo(() => {
@@ -226,10 +232,10 @@ export function ATSProgressStepper({
       </AnimatePresence>
 
       {/* Manual Start Button (when not auto-started) */}
-      {!autoStart && !isAnalyzing && !isComplete && resumeId && jobId && (
+      {!autoStart && !isAnalyzing && !isComplete && resumeId && hasValidJobSource && (
         <div className="mt-4 flex justify-center">
           <button
-            onClick={() => start(resumeId, jobId)}
+            onClick={() => start(resumeId, { jobId, jobListingId })}
             className="
               inline-flex items-center gap-2 px-4 py-2
               text-sm font-medium bg-primary text-primary-foreground

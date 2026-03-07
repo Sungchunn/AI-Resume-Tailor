@@ -144,21 +144,18 @@ export default function TailoredResumePage({ params }: PageProps) {
     return Math.round(tailored.keyword_coverage * 100);
   }, [tailored]);
 
-  // Get numeric resume_id and job_id for ATS analysis
+  // Get resume_id and job identifiers for ATS analysis
   const analysisIds = useMemo(() => {
     if (!tailored) return null;
 
-    // We need to convert IDs for the ATS API
-    // The ATS API expects PostgreSQL IDs, but we have MongoDB IDs for resume
-    // For now, use job_listing_id or job_id as the job identifier
-    const jobId = tailored.job_listing_id ?? tailored.job_id;
-    if (!jobId) return null;
+    // The ATS API now accepts MongoDB ObjectId string for resume_id
+    // and supports either job_id (user-created) or job_listing_id (scraped)
+    if (!tailored.job_listing_id && !tailored.job_id) return null;
 
-    // Note: The ATS progressive API needs resume_id as an integer
-    // This may need backend adjustment - for now, we'll use a workaround
     return {
-      resumeId: parseInt(tailored.resume_id, 10) || 1, // Fallback for non-numeric IDs
-      jobId,
+      resumeId: tailored.resume_id, // MongoDB ObjectId string
+      jobId: tailored.job_id ?? undefined,
+      jobListingId: tailored.job_listing_id ?? undefined,
     };
   }, [tailored]);
 
@@ -599,6 +596,7 @@ export default function TailoredResumePage({ params }: PageProps) {
           onClose={handleCloseReanalyze}
           resumeId={analysisIds.resumeId}
           jobId={analysisIds.jobId}
+          jobListingId={analysisIds.jobListingId}
           jobTitle={tailored.job_title ?? undefined}
           companyName={tailored.company_name ?? undefined}
           onComplete={handleReanalyzeComplete}
