@@ -59,7 +59,7 @@ export interface UseATSProgressStreamResult {
   /** Total elapsed time across all stages */
   totalElapsedMs: number;
   /** Start analysis with resume ID and job options */
-  start: (resumeId: string, options: { jobId?: number; jobListingId?: number }) => void;
+  start: (resumeId: string, options: { jobId?: number; jobListingId?: number; forceRefresh?: boolean }) => void;
   /** Retry the last analysis */
   retry: () => void;
   /** Abort current analysis */
@@ -135,7 +135,7 @@ export function useATSProgressStream(
   // ============================================================================
 
   const start = useCallback(
-    (resumeId: string, options: { jobId?: number; jobListingId?: number }) => {
+    (resumeId: string, options: { jobId?: number; jobListingId?: number; forceRefresh?: boolean }) => {
       startAnalysis(resumeId, options);
     },
     [startAnalysis]

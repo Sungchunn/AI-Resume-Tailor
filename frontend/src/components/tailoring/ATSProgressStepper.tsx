@@ -46,6 +46,8 @@ interface ATSProgressStepperProps {
   jobListingId?: number;
   /** Auto-start analysis when mounted with valid IDs */
   autoStart?: boolean;
+  /** Force fresh analysis, bypassing cache */
+  forceRefresh?: boolean;
   /** Show detailed results for each stage */
   showDetails?: boolean;
   /** Callback when analysis completes */
@@ -65,6 +67,7 @@ export function ATSProgressStepper({
   jobId,
   jobListingId,
   autoStart = false,
+  forceRefresh = false,
   showDetails = false,
   onComplete,
   onError,
@@ -93,10 +96,12 @@ export function ATSProgressStepper({
   const hasValidJobSource = !!(jobId || jobListingId);
 
   // Auto-start analysis if requested
+  // Note: forceRefresh is intentionally not in deps - it's a static config prop set at mount
   useEffect(() => {
     if (autoStart && resumeId && hasValidJobSource && !isAnalyzing && !isComplete) {
-      start(resumeId, { jobId, jobListingId });
+      start(resumeId, { jobId, jobListingId, forceRefresh });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart, resumeId, jobId, jobListingId, hasValidJobSource, isAnalyzing, isComplete, start]);
 
   // Find the current active stage
@@ -255,8 +260,8 @@ export function ATSProgressStepper({
           <button
             onClick={() => {
               reset();
-              // Small delay to allow state to clear before restarting
-              setTimeout(() => start(resumeId, { jobId, jobListingId }), 100);
+              // Small delay to allow state to clear before restarting with forceRefresh
+              setTimeout(() => start(resumeId, { jobId, jobListingId, forceRefresh: true }), 100);
             }}
             className="
               inline-flex items-center gap-2 px-3 py-1.5

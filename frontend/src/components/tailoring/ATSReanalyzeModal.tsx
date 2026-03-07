@@ -135,6 +135,7 @@ export function ATSReanalyzeModal({
                 jobId={jobId}
                 jobListingId={jobListingId}
                 autoStart={true}
+                forceRefresh={true}
                 showDetails={false}
                 onComplete={handleComplete}
                 onError={onError}

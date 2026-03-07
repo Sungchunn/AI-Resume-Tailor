@@ -969,7 +969,7 @@ export function useATSProgressiveAnalysis() {
   const store = useATSProgressStore();
 
   const startAnalysis = useCallback(
-    (resumeId: string, options: { jobId?: number; jobListingId?: number }) => {
+    (resumeId: string, options: { jobId?: number; jobListingId?: number; forceRefresh?: boolean }) => {
       // Close any existing connection
       store.closeConnection();
 
@@ -986,6 +986,9 @@ export function useATSProgressiveAnalysis() {
       if (options.jobListingId) {
         params.set("job_listing_id", options.jobListingId.toString());
       }
+      if (options.forceRefresh) {
+        params.set("force_refresh", "true");
+      }
 
       // Add auth token as query param (EventSource doesn't support headers)
       const accessToken = tokenManager.getAccessToken();
@@ -1001,6 +1004,18 @@ export function useATSProgressiveAnalysis() {
       useATSProgressStore.setState({ eventSource });
 
       // Event handlers
+      eventSource.addEventListener("cache_hit", (e: Event) => {
+        const customEvent = e as MessageEvent;
+        const data = JSON.parse(customEvent.data);
+        console.log("ATS analysis cache hit:", data.cached_at);
+      });
+
+      eventSource.addEventListener("cache_miss", (e: Event) => {
+        const customEvent = e as MessageEvent;
+        const data = JSON.parse(customEvent.data);
+        console.log("ATS analysis cache miss, running fresh analysis for job:", data.job_id);
+      });
+
       eventSource.addEventListener("stage_start", (e: Event) => {
         const customEvent = e as MessageEvent;
         const data = JSON.parse(customEvent.data);
