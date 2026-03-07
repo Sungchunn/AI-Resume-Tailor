@@ -11,9 +11,19 @@
  * - Automatic cleanup on unmount
  */
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useATSProgressStore, type ATSCompositeScore } from "@/lib/stores/atsProgressStore";
 import { useATSProgressiveAnalysis } from "@/lib/api";
+
+// ============================================================================
+// Types (Internal)
+// ============================================================================
+
+interface LastAnalysisParams {
+  resumeId: string;
+  jobId?: number;
+  jobListingId?: number;
+}
 
 // ============================================================================
 // Types
@@ -93,8 +103,7 @@ export function useATSProgressStream(
   const { startAnalysis } = useATSProgressiveAnalysis();
 
   // Track last analysis params for retry
-  const lastResumeId = store.resumeId;
-  const lastJobId = store.jobId;
+  const lastParamsRef = useRef<LastAnalysisParams | null>(null);
 
   // Transform store stages to standardized format
   const stages = useMemo((): ATSStageState[] => {
@@ -136,15 +145,25 @@ export function useATSProgressStream(
 
   const start = useCallback(
     (resumeId: string, options: { jobId?: number; jobListingId?: number; forceRefresh?: boolean }) => {
+      // Store params for retry
+      lastParamsRef.current = {
+        resumeId,
+        jobId: options.jobId,
+        jobListingId: options.jobListingId,
+      };
       startAnalysis(resumeId, options);
     },
     [startAnalysis]
   );
 
   const retry = useCallback(() => {
-    // Retry not fully supported with new signature - would need to store resumeId as string
-    console.warn("Retry not available - please restart analysis manually");
-  }, []);
+    if (!lastParamsRef.current) {
+      console.warn("No previous analysis to retry");
+      return;
+    }
+    const { resumeId, jobId, jobListingId } = lastParamsRef.current;
+    startAnalysis(resumeId, { jobId, jobListingId, forceRefresh: true });
+  }, [startAnalysis]);
 
   const abort = useCallback(() => {
     store.closeConnection();
