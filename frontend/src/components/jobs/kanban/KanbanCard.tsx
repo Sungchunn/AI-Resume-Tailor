@@ -3,7 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { GripVertical, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import type { JobListingResponse } from "@/lib/api/types";
 import { isStagnant, formatStatusAge } from "./types";
 
@@ -46,57 +46,46 @@ export function KanbanCard({ job }: KanbanCardProps) {
         </div>
       )}
 
-      <div className="flex items-start gap-2">
-        {/* Drag Handle */}
-        <button
-          {...attributes}
-          {...listeners}
-          className="p-1 cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-        >
-          <GripVertical className="w-4 h-4" />
-        </button>
+      <Link href={`/jobs/${job.id}`} className="block">
+        <div className="flex items-start gap-3">
+          {/* Company Logo */}
+          {job.company_logo && (
+            <img
+              src={job.company_logo}
+              alt=""
+              className="w-8 h-8 rounded object-contain border border-border shrink-0"
+              loading="lazy"
+              onError={(e) => { e.currentTarget.style.display = 'none' }}
+            />
+          )}
 
-        <Link href={`/jobs/${job.id}`} className="flex-1 min-w-0">
-          <div className="flex items-start gap-2">
-            {/* Company Logo */}
-            {job.company_logo && (
-              <img
-                src={job.company_logo}
-                alt=""
-                className="w-8 h-8 rounded object-contain border border-border shrink-0"
-                loading="lazy"
-                onError={(e) => { e.currentTarget.style.display = 'none' }}
-              />
-            )}
+          <div className="flex-1 min-w-0">
+            {/* Job Title */}
+            <h4 className="text-sm font-medium text-foreground truncate">
+              {job.job_title}
+            </h4>
 
-            <div className="flex-1 min-w-0">
-              {/* Job Title */}
-              <h4 className="text-sm font-medium text-foreground truncate">
-                {job.job_title}
-              </h4>
+            {/* Company Name */}
+            <p className="text-xs text-muted-foreground truncate">
+              {job.company_name}
+            </p>
 
-              {/* Company Name */}
-              <p className="text-xs text-muted-foreground truncate">
-                {job.company_name}
+            {/* Location */}
+            {job.location && (
+              <p className="text-xs text-muted-foreground/60 truncate mt-0.5">
+                {job.location}
               </p>
-
-              {/* Location */}
-              {job.location && (
-                <p className="text-xs text-muted-foreground/60 truncate mt-0.5">
-                  {job.location}
-                </p>
-              )}
-            </div>
+            )}
           </div>
+        </div>
 
-          {/* Footer: Status age */}
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
-            <span className={`text-xs ${stagnant ? "text-amber-600 font-medium" : "text-muted-foreground/60"}`}>
-              {statusAge}
-            </span>
-          </div>
-        </Link>
-      </div>
+        {/* Footer: Status age */}
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
+          <span className={`text-xs ${stagnant ? "text-amber-600 font-medium" : "text-muted-foreground/60"}`}>
+            {statusAge}
+          </span>
+        </div>
+      </Link>
     </div>
   );
 }
