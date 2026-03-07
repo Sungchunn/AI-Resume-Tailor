@@ -73,6 +73,9 @@ export function useParseProgress(options: UseParseProgressOptions): UseParseProg
 
   // Track stage start times for elapsed calculation
   const stageStartTimes = useRef<Map<ParseStage, number>>(new Map());
+  // Note: stageElapsedTimes is a ref (not state) for performance - mutating it
+  // won't trigger re-renders. This is acceptable since elapsed times are primarily
+  // for logging/debugging. If reactive display is needed, convert to useState.
   const stageElapsedTimes = useRef<Map<ParseStage, number>>(new Map());
   const lastStage = useRef<ParseStage | null>(null);
 
