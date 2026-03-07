@@ -260,17 +260,22 @@ interface CompositeScoreDisplayProps {
 }
 
 function CompositeScoreDisplay({ score }: CompositeScoreDisplayProps) {
+  // Safely get the final score, defaulting to 0 if undefined/NaN
+  const finalScore = typeof score.finalScore === 'number' && !Number.isNaN(score.finalScore)
+    ? score.finalScore
+    : 0;
+
   const scoreColor = useMemo(() => {
-    if (score.finalScore >= 80) return "text-green-600 dark:text-green-400";
-    if (score.finalScore >= 60) return "text-amber-600 dark:text-amber-400";
+    if (finalScore >= 80) return "text-green-600 dark:text-green-400";
+    if (finalScore >= 60) return "text-amber-600 dark:text-amber-400";
     return "text-red-600 dark:text-red-400";
-  }, [score.finalScore]);
+  }, [finalScore]);
 
   const scoreBgColor = useMemo(() => {
-    if (score.finalScore >= 80) return "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900";
-    if (score.finalScore >= 60) return "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900";
+    if (finalScore >= 80) return "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900";
+    if (finalScore >= 60) return "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900";
     return "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900";
-  }, [score.finalScore]);
+  }, [finalScore]);
 
   return (
     <div className={`p-4 rounded-lg border ${scoreBgColor}`}>
@@ -282,13 +287,13 @@ function CompositeScoreDisplay({ score }: CompositeScoreDisplayProps) {
           </span>
         </div>
         <span className={`text-2xl font-bold ${scoreColor}`}>
-          {Math.round(score.finalScore)}%
+          {Math.round(finalScore)}%
         </span>
       </div>
 
       {/* Stage Breakdown */}
       <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2">
-        {Object.entries(score.stageBreakdown).map(([stage, value]) => (
+        {Object.entries(score.stageBreakdown || {}).map(([stage, value]) => (
           <div
             key={stage}
             className="text-center p-2 bg-white/50 dark:bg-black/20 rounded"
@@ -297,18 +302,18 @@ function CompositeScoreDisplay({ score }: CompositeScoreDisplayProps) {
               {stage.replace(/_/g, " ")}
             </div>
             <div className="text-sm font-semibold mt-0.5">
-              {Math.round(value as number)}%
+              {Math.round(typeof value === 'number' && !Number.isNaN(value) ? value : 0)}%
             </div>
           </div>
         ))}
       </div>
 
       {/* Warnings */}
-      {score.failedStages.length > 0 && (
+      {(score.failedStages?.length ?? 0) > 0 && (
         <div className="mt-3 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
           <AlertCircle className="h-3.5 w-3.5" />
           <span>
-            Some stages couldn&apos;t complete: {score.failedStages.join(", ")}
+            Some stages couldn&apos;t complete: {score.failedStages?.join(", ")}
           </span>
         </div>
       )}

@@ -86,7 +86,8 @@ function AnalyzePageContent() {
     setAtsComplete(true);
 
     // Extract skill data from the keyword matching stage if available
-    const keywordStage = compositeScore.stageBreakdown.keyword_matching;
+    // Backend uses "keywords-enhanced" key, not "keyword_matching"
+    const keywordStage = compositeScore.stageBreakdown?.["keywords-enhanced"];
     if (keywordStage !== undefined) {
       // The ATS analysis provides coverage metrics; we'll use placeholder skill data
       // In a full implementation, we'd extract matched/missing keywords from stage results

@@ -1029,7 +1029,20 @@ export function useATSProgressiveAnalysis() {
         const customEvent = e as MessageEvent;
         const data = JSON.parse(customEvent.data);
         if (data.composite_score) {
-          store.setCompositeScore(data.composite_score);
+          // Convert snake_case from backend to camelCase for frontend
+          // Handle potential undefined/NaN values defensively
+          const rawScore = data.composite_score.final_score;
+          if (typeof rawScore !== 'number' || Number.isNaN(rawScore)) {
+            console.warn('ATS composite score is invalid:', rawScore, 'Full data:', data.composite_score);
+          }
+          const compositeScore = {
+            finalScore: typeof rawScore === 'number' && !Number.isNaN(rawScore) ? rawScore : 0,
+            stageBreakdown: data.composite_score.stage_breakdown || {},
+            weightsUsed: data.composite_score.weights_used || {},
+            normalizationApplied: data.composite_score.normalization_applied || false,
+            failedStages: data.composite_score.failed_stages || [],
+          };
+          store.setCompositeScore(compositeScore);
         }
         store.completeAnalysis();
       });
