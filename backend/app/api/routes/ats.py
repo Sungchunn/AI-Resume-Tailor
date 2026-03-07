@@ -5,14 +5,17 @@ Provides endpoints for ATS (Applicant Tracking System) compatibility analysis.
 """
 
 from typing import Literal
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user_id, get_db
+from app.api.deps import get_current_user_id, get_current_user_id_sse, get_db, get_mongo_db
 from app.crud.block import BlockRepository
 from app.crud.resume import ResumeCRUD
 from app.crud.job import JobCRUD
+from app.crud.job_listing import JobListingRepository
+from app.crud.mongo.resume import ResumeCRUD as MongoResumeCRUD
 from app.services.job.ats_analyzer import (
     get_ats_analyzer,
     KnockoutRiskType,
@@ -1604,11 +1607,14 @@ class ATSCompositeScore(BaseModel):
     )
 
 
-@router.post("/analyze-progressive")
+@router.get("/analyze-progressive")
 async def analyze_progressive_ats(
-    request: ATSProgressiveRequest,
-    user_id: int = Depends(get_current_user_id),
+    resume_id: str | None = Query(None, description="Resume MongoDB ObjectId"),
+    job_id: int | None = Query(None, description="User-created job PostgreSQL ID"),
+    job_listing_id: int | None = Query(None, description="Scraped job listing PostgreSQL ID"),
+    user_id: int = Depends(get_current_user_id_sse),
     db: AsyncSession = Depends(get_db),
+    mongo_db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
     """
     Run complete ATS analysis with real-time progress updates via SSE.
@@ -1643,12 +1649,19 @@ async def analyze_progressive_ats(
     # Get cache service for ATS result caching
     cache = get_cache_service()
 
+    # Determine the effective job_id for this request
+    effective_job_id_for_request = job_id or job_listing_id
+
     async def event_generator():
+        nonlocal resume_id, job_id, job_listing_id
         start_time = time.time()
         stage_results = {}
         failed_stages = []
         resume_content_hash: str | None = None
         effective_job_id: int | None = None
+        raw_resume_content: str = ""
+        parsed_resume_content: dict = {}
+        job_description: str = ""
 
         # Stage metadata
         stages = [
@@ -1660,36 +1673,59 @@ async def analyze_progressive_ats(
         ]
 
         try:
-            # Validate input
-            if not ((request.resume_id and request.job_id) or
-                    (request.resume_content and request.job_description)):
+            # Validate input - need resume_id AND (job_id OR job_listing_id)
+            if not resume_id or not (job_id or job_listing_id):
                 yield {
                     "event": "error",
                     "data": json.dumps({
-                        "error": "Must provide either (resume_id + job_id) or (resume_content + job_description)"
+                        "error": "Must provide resume_id and either job_id or job_listing_id"
                     })
                 }
                 return
 
-            # Get resume content for cache key generation
-            if request.resume_id:
-                resume_repo = ResumeCRUD()
-                resume = await resume_repo.get(db, id=request.resume_id)
-                if not resume or resume.owner_id != user_id:
+            # Fetch resume from MongoDB using ObjectId string
+            mongo_resume_repo = MongoResumeCRUD()
+            mongo_resume = await mongo_resume_repo.get(mongo_db, id=resume_id)
+            if not mongo_resume or mongo_resume.user_id != user_id:
+                yield {
+                    "event": "error",
+                    "data": json.dumps({"error": "Resume not found or not authorized"})
+                }
+                return
+
+            raw_resume_content = mongo_resume.raw_content or ""
+            parsed_resume_content = mongo_resume.parsed.model_dump() if mongo_resume.parsed else {}
+            resume_content_hash = cache.hash_content(raw_resume_content)
+
+            # Fetch job description from job_listings or job_descriptions table
+            if job_listing_id:
+                job_listing_repo = JobListingRepository()
+                job_listing = await job_listing_repo.get(db, id=job_listing_id)
+                if not job_listing:
                     yield {
                         "event": "error",
-                        "data": json.dumps({"error": "Resume not found or not authorized"})
+                        "data": json.dumps({"error": "Job listing not found"})
                     }
                     return
-                raw_resume_content = resume.raw_content or ""
-                resume_content_hash = cache.hash_content(raw_resume_content)
-                effective_job_id = request.job_id
-            else:
-                # For raw content, hash the provided content
-                raw_resume_content = json.dumps(request.resume_content, sort_keys=True)
-                resume_content_hash = cache.hash_content(raw_resume_content)
-                # For raw job description, use a hash of it as a pseudo job_id
-                effective_job_id = hash(request.job_description) % (10 ** 9)  # Pseudo ID
+                job_description = job_listing.job_description or ""
+                effective_job_id = job_listing_id
+            elif job_id:
+                job_repo = JobCRUD()
+                job = await job_repo.get(db, id=job_id)
+                if not job or job.owner_id != user_id:
+                    yield {
+                        "event": "error",
+                        "data": json.dumps({"error": "Job not found or not authorized"})
+                    }
+                    return
+                job_description = job.raw_content or ""
+                effective_job_id = job_id
+
+            # Build request object with fetched content for helper functions
+            request = ATSProgressiveRequest(
+                resume_content=parsed_resume_content,
+                job_description=job_description,
+            )
 
             # Check cache before running analysis
             cached_result = await cache.get_ats_result(resume_content_hash, effective_job_id)

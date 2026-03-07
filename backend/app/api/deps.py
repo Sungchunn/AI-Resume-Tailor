@@ -1,6 +1,6 @@
 from typing import Annotated, AsyncGenerator, TypedDict
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from sqlalchemy import select
@@ -13,6 +13,42 @@ from app.db.mongodb import get_mongodb
 from app.models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
+
+
+def _validate_token(token: str | None) -> int:
+    """Validate token and return user_id. Raises HTTPException on failure."""
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    payload = decode_token(token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Ensure it's an access token, not a refresh token
+    if payload.get("type") == "refresh":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Cannot use refresh token for authentication",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return int(user_id)
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -51,38 +87,21 @@ async def get_current_user_id(
     Validate JWT token and return current user ID.
     Raises 401 if token is invalid or missing.
     """
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    return _validate_token(token)
 
-    payload = decode_token(token)
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
 
-    # Ensure it's an access token, not a refresh token
-    if payload.get("type") == "refresh":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Cannot use refresh token for authentication",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    user_id = payload.get("sub")
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    return int(user_id)
+async def get_current_user_id_sse(
+    token: Annotated[str | None, Depends(oauth2_scheme)],
+    token_query: str | None = Query(None, alias="token", description="JWT token for SSE auth"),
+) -> int:
+    """
+    Validate JWT token for SSE endpoints.
+    Accepts token from Authorization header OR query parameter.
+    EventSource doesn't support custom headers, so query param is needed.
+    """
+    # Prefer header token, fall back to query param
+    effective_token = token or token_query
+    return _validate_token(effective_token)
 
 
 async def get_current_user(
