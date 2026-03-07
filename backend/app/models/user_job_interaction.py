@@ -7,6 +7,7 @@ Tracks saves, hides, applications, and views for each user-job combination.
 from sqlalchemy import (
     Column,
     Integer,
+    String,
     DateTime,
     Boolean,
     ForeignKey,
@@ -41,6 +42,14 @@ class UserJobInteraction(Base):
     applied_at = Column(DateTime(timezone=True), nullable=True)
     last_viewed_at = Column(DateTime(timezone=True), nullable=True)
 
+    # Kanban board fields
+    # Application status: "applied", "interview", "accepted", "rejected", "ghosted"
+    application_status = Column(String(20), nullable=True, default=None)
+    # When status last changed (for notification system)
+    status_changed_at = Column(DateTime(timezone=True), nullable=True)
+    # Position within column for drag ordering
+    column_position = Column(Integer, nullable=True, default=0)
+
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -55,6 +64,7 @@ class UserJobInteraction(Base):
         Index("ix_user_job_interactions_job", "job_listing_id"),
         Index("ix_user_job_interactions_saved", "user_id", "is_saved"),
         Index("ix_user_job_interactions_hidden", "user_id", "is_hidden"),
+        Index("ix_user_job_interactions_status", "user_id", "application_status"),
     )
 
     def __repr__(self) -> str:
