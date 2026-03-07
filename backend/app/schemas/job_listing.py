@@ -40,6 +40,15 @@ class SortOrder(str, Enum):
     DESC = "desc"
 
 
+class ApplicationStatus(str, Enum):
+    """Application status options for Kanban board."""
+    APPLIED = "applied"
+    INTERVIEW = "interview"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    GHOSTED = "ghosted"
+
+
 # ============================================================================
 # JobListing Schemas
 # ============================================================================
@@ -148,6 +157,11 @@ class JobListingResponse(JobListingBase):
     is_saved: bool = False
     is_hidden: bool = False
     applied_at: datetime | None = None
+
+    # Kanban board fields
+    application_status: str | None = None
+    status_changed_at: datetime | None = None
+    column_position: int = 0
 
     model_config = {"from_attributes": True}
 
@@ -260,6 +274,9 @@ class UserJobInteractionResponse(UserJobInteractionBase):
     job_listing_id: int
     applied_at: datetime | None = None
     last_viewed_at: datetime | None = None
+    application_status: str | None = None
+    status_changed_at: datetime | None = None
+    column_position: int = 0
     created_at: datetime
     updated_at: datetime | None = None
 
@@ -290,6 +307,34 @@ class JobInteractionActionResponse(BaseModel):
     success: bool
     message: str
     interaction: UserJobInteractionResponse
+
+
+# ============================================================================
+# Kanban Board Schemas
+# ============================================================================
+
+
+class UpdateApplicationStatusRequest(BaseModel):
+    """Request to update application status in Kanban board."""
+    status: ApplicationStatus
+
+
+class ReorderKanbanRequest(BaseModel):
+    """Request to reorder jobs within a Kanban column."""
+    status: ApplicationStatus
+    job_listing_ids: list[int] = Field(..., min_length=1)
+
+
+class KanbanColumnResponse(BaseModel):
+    """Response for a single Kanban column."""
+    status: str
+    jobs: list[JobListingResponse]
+    total: int
+
+
+class KanbanBoardResponse(BaseModel):
+    """Response for full Kanban board with all columns."""
+    columns: dict[str, KanbanColumnResponse]
 
 
 # ============================================================================
