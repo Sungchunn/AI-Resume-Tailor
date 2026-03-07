@@ -1613,6 +1613,7 @@ async def analyze_progressive_ats(
     resume_id: str | None = Query(None, description="Resume MongoDB ObjectId"),
     job_id: int | None = Query(None, description="User-created job PostgreSQL ID"),
     job_listing_id: int | None = Query(None, description="Scraped job listing PostgreSQL ID"),
+    force_refresh: bool = Query(False, description="Skip cache and run fresh analysis"),
     user_id: int = Depends(get_current_user_id_sse),
     db: AsyncSession = Depends(get_db),
     mongo_db: AsyncIOMotorDatabase = Depends(get_mongo_db),
@@ -1749,8 +1750,8 @@ async def analyze_progressive_ats(
                 job_content=job_content,
             )
 
-            # Check cache before running analysis
-            cached_result = await cache.get_ats_result(resume_content_hash, effective_job_id)
+            # Check cache before running analysis (skip if force_refresh is True)
+            cached_result = None if force_refresh else await cache.get_ats_result(resume_content_hash, effective_job_id)
             if cached_result:
                 # Cache hit - stream cached results as fast playback
                 cached_at = cached_result.get("cached_at", "")
