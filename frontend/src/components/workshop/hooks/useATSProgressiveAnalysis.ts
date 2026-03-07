@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { tokenManager } from "@/lib/api/client";
 import { useWorkshop, type ATSCompositeScore, type KnockoutRisk, type ATSStageResult } from "../WorkshopContext";
 
@@ -154,6 +154,16 @@ export function useATSProgressiveAnalysis(options?: UseATSProgressiveAnalysisOpt
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
+  }, []);
+
+  // Cleanup EventSource on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    };
   }, []);
 
   return {
