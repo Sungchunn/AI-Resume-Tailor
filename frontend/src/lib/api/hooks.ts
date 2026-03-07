@@ -36,6 +36,7 @@ import type {
   ExportRequest,
   WorkshopStatus,
   JobListingFilters,
+  ApplicationStatus,
   AdHocScrapeRequest,
   ScraperPresetCreate,
   ScraperPresetUpdate,
@@ -100,6 +101,7 @@ export const queryKeys = {
     applied: () => [...queryKeys.jobListings.all, "applied"] as const,
     search: (query: string) =>
       [...queryKeys.jobListings.all, "search", query] as const,
+    kanban: () => [...queryKeys.jobListings.all, "kanban"] as const,
   },
   scraperPresets: {
     all: ["scraperPresets"] as const,
@@ -813,6 +815,40 @@ export function useMarkJobApplied() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.all });
+    },
+  });
+}
+
+// Kanban Board Hooks
+export function useKanbanBoard() {
+  return useQuery({
+    queryKey: queryKeys.jobListings.kanban(),
+    queryFn: () => jobListingApi.getKanbanBoard(),
+  });
+}
+
+export function useUpdateApplicationStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, status }: { id: number; status: ApplicationStatus }) =>
+      jobListingApi.updateApplicationStatus(id, status),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.kanban() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.applied() });
+    },
+  });
+}
+
+export function useReorderKanbanColumn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ status, jobListingIds }: { status: ApplicationStatus; jobListingIds: number[] }) =>
+      jobListingApi.reorderKanbanColumn(status, jobListingIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobListings.kanban() });
     },
   });
 }

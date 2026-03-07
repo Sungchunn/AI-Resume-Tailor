@@ -53,6 +53,8 @@ import type {
   HideJobRequest,
   ApplyJobRequest,
   JobInteractionActionResponse,
+  ApplicationStatus,
+  KanbanBoardResponse,
   AdHocScrapeRequest,
   AdHocScrapeResponse,
   ScraperBatchResult,
@@ -676,6 +678,22 @@ export const jobListingApi = {
     fetchApi(`/api/job-listings/${id}/applied`, {
       method: "POST",
       body: JSON.stringify({ applied } as ApplyJobRequest),
+    }),
+
+  // Kanban board operations
+  getKanbanBoard: (): Promise<KanbanBoardResponse> =>
+    fetchApi("/api/job-listings/kanban"),
+
+  updateApplicationStatus: (id: number, status: ApplicationStatus): Promise<JobInteractionActionResponse> =>
+    fetchApi(`/api/job-listings/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
+
+  reorderKanbanColumn: (status: ApplicationStatus, jobListingIds: number[]): Promise<{ success: boolean; message: string }> =>
+    fetchApi("/api/job-listings/kanban/reorder", {
+      method: "PUT",
+      body: JSON.stringify({ status, job_listing_ids: jobListingIds }),
     }),
 };
 
