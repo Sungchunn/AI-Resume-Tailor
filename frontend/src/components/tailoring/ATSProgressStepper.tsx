@@ -305,7 +305,7 @@ function CompositeScoreDisplay({ score }: CompositeScoreDisplayProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Trophy className={`h-5 w-5 ${scoreColor}`} />
-          <span className="text-sm font-semibold text-foreground">
+          <span className="text-sm font-semibold text-gray-800">
             Overall ATS Score
           </span>
         </div>
@@ -321,10 +321,10 @@ function CompositeScoreDisplay({ score }: CompositeScoreDisplayProps) {
             key={stage}
             className="text-center p-2 bg-white/50 dark:bg-black/20 rounded"
           >
-            <div className="text-xs text-muted-foreground capitalize">
+            <div className="text-xs text-gray-600 capitalize">
               {stage.replace(/_/g, " ")}
             </div>
-            <div className="text-sm font-semibold mt-0.5">
+            <div className="text-sm font-semibold mt-0.5 text-gray-800">
               {Math.round(typeof value === 'number' && !Number.isNaN(value) ? value : 0)}%
             </div>
           </div>
