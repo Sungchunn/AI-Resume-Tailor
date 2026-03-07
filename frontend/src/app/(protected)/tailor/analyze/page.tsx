@@ -20,13 +20,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  ArrowLeft,
   ArrowRight,
   Loader2,
   AlertCircle,
   CheckCircle2,
   Info,
 } from "lucide-react";
+import { ChevronLeftIcon } from "@/components/icons";
 
 import {
   useResume,
@@ -155,7 +155,7 @@ function AnalyzePageContent() {
   const isLoading = resumeLoading || jobListingLoading;
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
             Analyzing Match
@@ -172,7 +172,7 @@ function AnalyzePageContent() {
   // Error state - missing required params
   if (!resumeId || (!jobListingId && !jobId)) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Analyze Match</h1>
         </div>
@@ -195,7 +195,7 @@ function AnalyzePageContent() {
   // Error state - failed to load
   if (resumeError || (jobListingIdNum && jobListingError)) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Analyze Match</h1>
         </div>
@@ -224,24 +224,27 @@ function AnalyzePageContent() {
 
   // Main render
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Back button */}
+      <Link
+        href={backUrl}
+        className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ChevronLeftIcon className="h-4 w-4 mr-1" />
+        Back to selection
+      </Link>
+
       {/* Flow Stepper */}
       <TailorFlowStepper currentStep="analyze" completedSteps={["select"]} />
 
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Match Analysis
-          </h1>
-          <p className="mt-1 text-muted-foreground">
-            AI is analyzing your resume against the job requirements
-          </p>
-        </div>
-        <Link href={backUrl} className="btn-ghost flex items-center gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Link>
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">
+          Match Analysis
+        </h1>
+        <p className="mt-1 text-muted-foreground">
+          AI is analyzing your resume against the job requirements
+        </p>
       </div>
 
       {/* Job Context Card */}
@@ -449,7 +452,7 @@ export default function AnalyzePage() {
   return (
     <Suspense
       fallback={
-        <div className="space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6">
           <div>
             <h1 className="text-2xl font-bold text-foreground">
               Analyzing Match

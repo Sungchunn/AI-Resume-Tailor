@@ -11,6 +11,7 @@ import {
 } from "@/lib/api";
 import { CardGridSkeleton } from "@/components/ui";
 import { TailorFlowStepper } from "@/components/tailoring";
+import { ChevronLeftIcon } from "@/components/icons";
 
 function TailorPageContent() {
   const router = useRouter();
@@ -119,7 +120,18 @@ function TailorPageContent() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Back button - show when coming from job listing */}
+      {hasJobListingFromUrl && (
+        <Link
+          href={`/jobs/${jobListingId}`}
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeftIcon className="h-4 w-4 mr-1" />
+          Back to job details
+        </Link>
+      )}
+
       {/* Flow Stepper */}
       <TailorFlowStepper currentStep="select" />
 
