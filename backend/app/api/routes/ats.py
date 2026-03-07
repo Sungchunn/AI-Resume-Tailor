@@ -997,10 +997,10 @@ async def analyze_keywords(
     - Keywords not in Vault (user may lack this experience)
     """
     analyzer = get_ats_analyzer()
-    block_repo = BlockRepository(db)
+    block_repo = BlockRepository()
 
     # Get all vault blocks
-    vault_blocks = await block_repo.list(user_id=user_id, limit=500)
+    vault_blocks = await block_repo.list_blocks(db, user_id=user_id, limit=500)
 
     # Get resume blocks (either specified or all)
     if request.resume_block_ids:
@@ -1051,10 +1051,10 @@ async def analyze_keywords_detailed(
     Use this for the ATS Keywords Panel in the resume editor.
     """
     analyzer = get_ats_analyzer()
-    block_repo = BlockRepository(db)
+    block_repo = BlockRepository()
 
     # Get all vault blocks
-    vault_blocks = await block_repo.list(user_id=user_id, limit=500)
+    vault_blocks = await block_repo.list_blocks(db, user_id=user_id, limit=500)
 
     # Determine resume content source
     if request.resume_content:
@@ -1159,10 +1159,10 @@ async def analyze_keywords_enhanced(
     - Actionable suggestions for improvement
     """
     analyzer = get_ats_analyzer()
-    block_repo = BlockRepository(db)
+    block_repo = BlockRepository()
 
     # Get vault blocks for gap analysis
-    vault_blocks = await block_repo.list(user_id=user_id, limit=500)
+    vault_blocks = await block_repo.list_blocks(db, user_id=user_id, limit=500)
 
     # Get parsed resume
     parsed_resume = None
@@ -1571,6 +1571,7 @@ class ATSProgressiveRequest(BaseModel):
     job_id: int | None = Field(None, description="Job database ID")
     resume_content: dict | None = Field(None, description="Raw resume content")
     job_description: str | None = Field(None, description="Raw job description text")
+    job_content: dict | None = Field(None, description="Parsed job content for role proximity")
 
 
 class ATSStageProgress(BaseModel):
@@ -1698,6 +1699,7 @@ async def analyze_progressive_ats(
             resume_content_hash = cache.hash_content(raw_resume_content)
 
             # Fetch job description from job_listings or job_descriptions table
+            job_content: dict = {}
             if job_listing_id:
                 job_listing_repo = JobListingRepository()
                 job_listing = await job_listing_repo.get(db, id=job_listing_id)
@@ -1709,6 +1711,16 @@ async def analyze_progressive_ats(
                     return
                 job_description = job_listing.job_description or ""
                 effective_job_id = job_listing_id
+                # Build job_content from structured fields for role proximity
+                job_content = {
+                    "title": job_listing.job_title,
+                    "company": job_listing.company_name,
+                    "location": job_listing.location,
+                    "seniority": job_listing.seniority,
+                    "job_function": job_listing.job_function,
+                    "industry": job_listing.industry,
+                    "description": job_description,
+                }
             elif job_id:
                 job_repo = JobCRUD()
                 job = await job_repo.get(db, id=job_id)
@@ -1720,11 +1732,21 @@ async def analyze_progressive_ats(
                     return
                 job_description = job.raw_content or ""
                 effective_job_id = job_id
+                # Use parsed_content if available, otherwise build minimal dict
+                if job.parsed_content:
+                    job_content = job.parsed_content
+                else:
+                    job_content = {
+                        "title": job.title if hasattr(job, 'title') else "",
+                        "company": job.company if hasattr(job, 'company') else "",
+                        "description": job_description,
+                    }
 
             # Build request object with fetched content for helper functions
             request = ATSProgressiveRequest(
                 resume_content=parsed_resume_content,
                 job_description=job_description,
+                job_content=job_content,
             )
 
             # Check cache before running analysis
@@ -1867,8 +1889,9 @@ async def analyze_progressive_ats(
             composite_score = _calculate_composite_score(stage_results, failed_stages)
             total_elapsed = int((time.time() - start_time) * 1000)
 
-            # Cache results if we have valid data and cache key
-            if resume_content_hash and effective_job_id and stage_results:
+            # Cache results ONLY if all stages succeeded (no failed stages)
+            # This prevents caching partial/broken results during development
+            if resume_content_hash and effective_job_id and stage_results and not failed_stages:
                 # Convert stage results to cacheable format
                 cacheable_stage_results = {}
                 for key, result in stage_results.items():
@@ -1913,10 +1936,56 @@ async def analyze_progressive_ats(
 # Helper methods to execute each stage
 async def _execute_knockout_check(request: ATSProgressiveRequest, user_id: int, db: AsyncSession):
     """Execute Stage 0: Knockout Check."""
+    # Convert parsed resume dict to raw text for knockout check
+    # KnockoutCheckRequest expects resume_content as string, not dict
+    resume_text = None
+    if request.resume_content:
+        # Build text representation from parsed content
+        parts = []
+        contact = request.resume_content.get("contact", {})
+        if contact:
+            if contact.get("name"):
+                parts.append(contact["name"])
+            if contact.get("email"):
+                parts.append(contact["email"])
+            if contact.get("location"):
+                parts.append(contact["location"])
+
+        if request.resume_content.get("summary"):
+            parts.append(request.resume_content["summary"])
+
+        for exp in request.resume_content.get("experience", []):
+            if exp.get("title"):
+                parts.append(exp["title"])
+            if exp.get("company"):
+                parts.append(exp["company"])
+            if exp.get("dates"):
+                parts.append(exp["dates"])
+            for bullet in exp.get("bullets", []):
+                parts.append(bullet)
+
+        for edu in request.resume_content.get("education", []):
+            if edu.get("degree"):
+                parts.append(edu["degree"])
+            if edu.get("institution"):
+                parts.append(edu["institution"])
+
+        skills = request.resume_content.get("skills", [])
+        if skills:
+            parts.extend(skills)
+
+        for cert in request.resume_content.get("certifications", []):
+            if isinstance(cert, str):
+                parts.append(cert)
+            elif isinstance(cert, dict) and cert.get("name"):
+                parts.append(cert["name"])
+
+        resume_text = "\n".join(parts)
+
     knockout_request = KnockoutCheckRequest(
         resume_id=request.resume_id,
         job_id=request.job_id,
-        resume_content=request.resume_content,
+        resume_content=resume_text,
         job_description=request.job_description,
     )
     # Call the existing knockout check function
@@ -1936,16 +2005,18 @@ async def _execute_structure_analysis(request: ATSProgressiveRequest, user_id: i
         resume_content = request.resume_content or {}
 
     structure_request = ATSStructureRequest(resume_content=resume_content)
-    return await analyze_structure(structure_request, user_id, db)
+    # analyze_structure only takes (request, user_id) - no db param needed
+    return await analyze_structure(structure_request, user_id)
 
 
 async def _execute_keyword_analysis(request: ATSProgressiveRequest, user_id: int, db: AsyncSession):
     """Execute Stage 2: Enhanced Keyword Analysis."""
+    # ATSKeywordEnhancedRequest only takes job_description, resume_id, and resume_content
+    # (no job_id field)
     keyword_request = ATSKeywordEnhancedRequest(
         resume_id=request.resume_id,
-        job_id=request.job_id,
         resume_content=request.resume_content,
-        job_description=request.job_description,
+        job_description=request.job_description or "",
     )
     return await analyze_keywords_enhanced(keyword_request, user_id, db)
 
@@ -1965,7 +2036,7 @@ async def _execute_role_proximity(request: ATSProgressiveRequest, user_id: int, 
         resume_id=request.resume_id,
         job_id=request.job_id,
         resume_content=request.resume_content,
-        job_description=request.job_description,
+        job_content=request.job_content,  # Use job_content dict, not job_description string
     )
     return await analyze_role_proximity(proximity_request, user_id, db)
 
