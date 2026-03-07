@@ -1,0 +1,102 @@
+"use client";
+
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import Link from "next/link";
+import { GripVertical, AlertTriangle } from "lucide-react";
+import type { JobListingResponse } from "@/lib/api/types";
+import { isStagnant, formatStatusAge } from "./types";
+
+interface KanbanCardProps {
+  job: JobListingResponse;
+}
+
+export function KanbanCard({ job }: KanbanCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: job.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const stagnant = isStagnant(job.status_changed_at);
+  const statusAge = formatStatusAge(job.status_changed_at || job.applied_at);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`
+        group relative bg-card rounded-lg border p-3 transition-all
+        ${isDragging ? "opacity-50 shadow-lg ring-2 ring-primary/50" : "hover:border-primary/30 hover:shadow-sm"}
+        ${stagnant ? "border-amber-300 ring-1 ring-amber-200" : "border-border"}
+      `}
+    >
+      {/* Stagnant warning indicator */}
+      {stagnant && (
+        <div className="absolute -top-2 -right-2 bg-amber-100 rounded-full p-1" title="No update for 7+ days">
+          <AlertTriangle className="w-3 h-3 text-amber-600" />
+        </div>
+      )}
+
+      <div className="flex items-start gap-2">
+        {/* Drag Handle */}
+        <button
+          {...attributes}
+          {...listeners}
+          className="p-1 cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
+
+        <Link href={`/jobs/${job.id}`} className="flex-1 min-w-0">
+          <div className="flex items-start gap-2">
+            {/* Company Logo */}
+            {job.company_logo && (
+              <img
+                src={job.company_logo}
+                alt=""
+                className="w-8 h-8 rounded object-contain border border-border shrink-0"
+                loading="lazy"
+                onError={(e) => { e.currentTarget.style.display = 'none' }}
+              />
+            )}
+
+            <div className="flex-1 min-w-0">
+              {/* Job Title */}
+              <h4 className="text-sm font-medium text-foreground truncate">
+                {job.job_title}
+              </h4>
+
+              {/* Company Name */}
+              <p className="text-xs text-muted-foreground truncate">
+                {job.company_name}
+              </p>
+
+              {/* Location */}
+              {job.location && (
+                <p className="text-xs text-muted-foreground/60 truncate mt-0.5">
+                  {job.location}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Footer: Status age */}
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
+            <span className={`text-xs ${stagnant ? "text-amber-600 font-medium" : "text-muted-foreground/60"}`}>
+              {statusAge}
+            </span>
+          </div>
+        </Link>
+      </div>
+    </div>
+  );
+}
