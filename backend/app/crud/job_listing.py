@@ -18,6 +18,7 @@ from app.models.job_listing import JobListing
 from app.models.user_job_interaction import UserJobInteraction
 from app.schemas.job_listing import (
     ApifyJobListing,
+    ApplicationStatus,
     JobListingCreate,
     JobListingFilters,
     JobListingUpdate,
@@ -893,10 +894,19 @@ class UserJobInteractionRepository:
         interaction = await self.get_or_create(
             db, user_id=user_id, job_listing_id=job_listing_id
         )
+        now = datetime.now(timezone.utc)
         if applied:
-            interaction.applied_at = datetime.now(timezone.utc)
+            interaction.applied_at = now
+            # Also set Kanban status if not already set
+            if not interaction.application_status:
+                interaction.application_status = ApplicationStatus.APPLIED.value
+                interaction.status_changed_at = now
+                interaction.column_position = 0
         else:
             interaction.applied_at = None
+            interaction.application_status = None
+            interaction.status_changed_at = None
+            interaction.column_position = 0
         await db.flush()
         await db.refresh(interaction)
         return interaction
@@ -960,6 +970,113 @@ class UserJobInteractionRepository:
             .order_by(UserJobInteraction.applied_at.desc())
         )
         return list(result.scalars().all())
+
+    async def update_application_status(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: int,
+        job_listing_id: int,
+        status: ApplicationStatus,
+    ) -> UserJobInteraction:
+        """
+        Update the application status for a job listing.
+
+        Sets status_changed_at to current time and resets column_position to 0
+        (bottom of the new column).
+        """
+        interaction = await self.get_or_create(
+            db, user_id=user_id, job_listing_id=job_listing_id
+        )
+
+        now = datetime.now(timezone.utc)
+        interaction.application_status = status.value
+        interaction.status_changed_at = now
+
+        # If this is the first time marking as applied, also set applied_at
+        if status == ApplicationStatus.APPLIED and interaction.applied_at is None:
+            interaction.applied_at = now
+
+        # Get the max position in the target column and add to the end
+        result = await db.execute(
+            select(func.coalesce(func.max(UserJobInteraction.column_position), -1))
+            .where(
+                UserJobInteraction.user_id == user_id,
+                UserJobInteraction.application_status == status.value,
+                UserJobInteraction.id != interaction.id,
+            )
+        )
+        max_position = result.scalar() or -1
+        interaction.column_position = max_position + 1
+
+        await db.flush()
+        await db.refresh(interaction)
+        return interaction
+
+    async def get_kanban_board(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: int,
+    ) -> dict[str, list[tuple[UserJobInteraction, JobListing]]]:
+        """
+        Get all applied jobs for a user grouped by application status.
+
+        Returns a dict mapping status -> list of (interaction, job_listing) tuples,
+        ordered by column_position within each status.
+        """
+        result = await db.execute(
+            select(UserJobInteraction)
+            .where(
+                UserJobInteraction.user_id == user_id,
+                UserJobInteraction.applied_at.isnot(None),
+                UserJobInteraction.application_status.isnot(None),
+            )
+            .options(selectinload(UserJobInteraction.job_listing))
+            .order_by(
+                UserJobInteraction.application_status,
+                UserJobInteraction.column_position,
+            )
+        )
+        interactions = result.scalars().all()
+
+        # Group by status
+        board: dict[str, list[tuple[UserJobInteraction, JobListing]]] = {
+            status.value: [] for status in ApplicationStatus
+        }
+
+        for interaction in interactions:
+            status = interaction.application_status
+            if status and status in board:
+                board[status].append((interaction, interaction.job_listing))
+
+        return board
+
+    async def reorder_jobs_in_column(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: int,
+        status: ApplicationStatus,
+        job_listing_ids: list[int],
+    ) -> None:
+        """
+        Update column_position for jobs in a specific Kanban column.
+
+        The job_listing_ids list defines the new order (index = position).
+        """
+        for position, job_listing_id in enumerate(job_listing_ids):
+            await db.execute(
+                update(UserJobInteraction)
+                .where(
+                    UserJobInteraction.user_id == user_id,
+                    UserJobInteraction.job_listing_id == job_listing_id,
+                    UserJobInteraction.application_status == status.value,
+                )
+                .values(column_position=position)
+            )
+
+        await db.flush()
 
 
 # Module-level singleton instances
