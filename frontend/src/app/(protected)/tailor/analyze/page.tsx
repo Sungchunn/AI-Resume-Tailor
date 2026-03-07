@@ -41,7 +41,7 @@ import {
 } from "@/components/tailoring";
 import { useATSProgressStream } from "@/hooks/useATSProgressStream";
 import { CardGridSkeleton } from "@/components/ui";
-import type { ATSCompositeScore } from "@/lib/stores/atsProgressStore";
+import { useATSProgressStore, type ATSCompositeScore } from "@/lib/stores/atsProgressStore";
 
 // ============================================================================
 // Main Component
@@ -109,16 +109,37 @@ function AnalyzePageContent() {
   });
 
   // Auto-start ATS analysis when page loads with valid IDs
+  // Key fix: Compare current job ID with stored job ID to detect job changes
   useEffect(() => {
-    if (
-      resumeId &&
-      jobListingIdNum &&
-      !atsStream.isAnalyzing &&
-      !atsStream.isComplete &&
-      !atsComplete
-    ) {
+    if (!resumeId || !jobListingIdNum) return;
+
+    // Check if the stored analysis is for a different job - need fresh analysis
+    const storedJobId = useATSProgressStore.getState().jobId;
+    const isStaleCache = storedJobId !== null && storedJobId !== jobListingIdNum;
+
+    if (isStaleCache) {
+      // Reset the store and mark local atsComplete as false for new job
+      atsStream.reset();
+      setAtsComplete(false);
+    }
+
+    // Start analysis if not already running and not already complete for THIS job
+    const currentState = useATSProgressStore.getState();
+    const isCompleteForCurrentJob =
+      !currentState.isAnalyzing &&
+      currentState.jobId === jobListingIdNum &&
+      currentState.compositeScore !== null &&
+      Object.keys(currentState.stages).length === 5;
+
+    if (!atsStream.isAnalyzing && !isCompleteForCurrentJob && !atsComplete) {
       // Start ATS analysis with resume and job listing IDs
       atsStream.start(resumeId, { jobListingId: jobListingIdNum });
+    } else if (isCompleteForCurrentJob && !atsComplete) {
+      // Analysis already complete for this job (from cache), trigger the complete callback
+      const compositeScore = currentState.compositeScore;
+      if (compositeScore) {
+        handleATSComplete(compositeScore);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeId, jobListingIdNum]);
