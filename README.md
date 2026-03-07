@@ -8,7 +8,7 @@ An AI-powered application that tailors resumes to specific job descriptions.
 - **Backend:** FastAPI + Python
 - **Database:** PostgreSQL + MongoDB
 - **Cache:** Redis
-- **AI:** TBD (OpenAI/Anthropic)
+- **AI:** TBD (OpenAI/Gemini)
 
 ## Project Structure
 
