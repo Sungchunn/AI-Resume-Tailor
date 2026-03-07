@@ -10,6 +10,7 @@ import {
   uploadApi,
   adminApi,
   atsApi,
+  tokenManager,
 } from "./client";
 import type {
   ResumeCreate,
@@ -968,18 +969,33 @@ export function useATSProgressiveAnalysis() {
   const store = useATSProgressStore();
 
   const startAnalysis = useCallback(
-    (resumeId: number, jobId: number) => {
+    (resumeId: string, options: { jobId?: number; jobListingId?: number }) => {
       // Close any existing connection
       store.closeConnection();
 
-      // Initialize analysis state
-      store.startAnalysis(resumeId, jobId);
+      // Initialize analysis state (use effective job ID for store)
+      const effectiveJobId = options.jobId || options.jobListingId || 0;
+      store.startAnalysis(effectiveJobId, effectiveJobId);
+
+      // Build query params
+      const params = new URLSearchParams();
+      params.set("resume_id", resumeId);
+      if (options.jobId) {
+        params.set("job_id", options.jobId.toString());
+      }
+      if (options.jobListingId) {
+        params.set("job_listing_id", options.jobListingId.toString());
+      }
+
+      // Add auth token as query param (EventSource doesn't support headers)
+      const accessToken = tokenManager.getAccessToken();
+      if (accessToken) {
+        params.set("token", accessToken);
+      }
 
       // Create SSE connection
-      const url = `${API_BASE_URL}/api/v1/ats/analyze-progressive?resume_id=${resumeId}&job_id=${jobId}`;
-      const eventSource = new EventSource(url, {
-        withCredentials: true, // Send auth cookies
-      });
+      const url = `${API_BASE_URL}/api/v1/ats/analyze-progressive?${params.toString()}`;
+      const eventSource = new EventSource(url);
 
       // Store event source in global state
       useATSProgressStore.setState({ eventSource });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef } from "react";
+import { tokenManager } from "@/lib/api/client";
 import { useWorkshop, type ATSCompositeScore, type KnockoutRisk, type ATSStageResult } from "../WorkshopContext";
 
 interface UseATSProgressiveAnalysisOptions {
@@ -35,7 +36,12 @@ export function useATSProgressiveAnalysis(options?: UseATSProgressiveAnalysisOpt
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const analyze = useCallback(async () => {
-    if (!state.tailoredId || !state.tailoredResume?.job_id) {
+    // Need source resume_id and either job_id or job_listing_id
+    const sourceResumeId = state.tailoredResume?.resume_id;
+    const jobId = state.tailoredResume?.job_id;
+    const jobListingId = state.tailoredResume?.job_listing_id;
+
+    if (!sourceResumeId || (!jobId && !jobListingId)) {
       console.error("Missing resume or job ID for ATS analysis");
       return;
     }
@@ -48,8 +54,18 @@ export function useATSProgressiveAnalysis(options?: UseATSProgressiveAnalysisOpt
     dispatch({ type: "ATS_ANALYSIS_START" });
 
     const url = new URL("/api/v1/ats/analyze-progressive", window.location.origin);
-    url.searchParams.set("resume_id", state.tailoredId);
-    url.searchParams.set("job_id", state.tailoredResume.job_id.toString());
+    url.searchParams.set("resume_id", sourceResumeId);
+    if (jobListingId) {
+      url.searchParams.set("job_listing_id", jobListingId.toString());
+    } else if (jobId) {
+      url.searchParams.set("job_id", jobId.toString());
+    }
+
+    // Add auth token as query param (EventSource doesn't support headers)
+    const accessToken = tokenManager.getAccessToken();
+    if (accessToken) {
+      url.searchParams.set("token", accessToken);
+    }
 
     const eventSource = new EventSource(url.toString());
     eventSourceRef.current = eventSource;
@@ -131,7 +147,7 @@ export function useATSProgressiveAnalysis(options?: UseATSProgressiveAnalysisOpt
       eventSource.close();
       options?.onError?.("Connection failed");
     };
-  }, [state.tailoredId, state.tailoredResume?.job_id, dispatch, options]);
+  }, [state.tailoredResume?.resume_id, state.tailoredResume?.job_id, state.tailoredResume?.job_listing_id, dispatch, options]);
 
   const cancel = useCallback(() => {
     if (eventSourceRef.current) {
