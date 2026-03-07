@@ -8,7 +8,7 @@ interface KanbanCardOverlayProps {
 
 export function KanbanCardOverlay({ job }: KanbanCardOverlayProps) {
   return (
-    <div className="bg-card rounded-lg border border-primary/40 p-3 shadow-lg ring-2 ring-primary/30 w-64">
+    <div className="bg-card rounded-lg border border-primary/40 p-3 shadow-lg ring-2 ring-primary/30 w-64 cursor-grabbing">
       <div className="flex items-start gap-3">
         {/* Company Logo */}
         {job.company_logo && (

@@ -33,20 +33,22 @@ export function KanbanCard({ job }: KanbanCardProps) {
     <div
       ref={setNodeRef}
       style={style}
+      {...attributes}
+      {...listeners}
       className={`
-        group relative bg-card rounded-lg border p-3 transition-all
+        group relative bg-card rounded-lg border p-3 transition-all cursor-grab active:cursor-grabbing
         ${isDragging ? "opacity-50 shadow-lg ring-2 ring-primary/50" : "hover:border-primary/30 hover:shadow-sm"}
-        ${stagnant ? "border-amber-300 ring-1 ring-amber-200" : "border-border"}
+        ${stagnant ? "border-amber-300 dark:border-amber-600 ring-1 ring-amber-200 dark:ring-amber-700" : "border-border"}
       `}
     >
       {/* Stagnant warning indicator */}
       {stagnant && (
-        <div className="absolute -top-2 -right-2 bg-amber-100 rounded-full p-1" title="No update for 7+ days">
-          <AlertTriangle className="w-3 h-3 text-amber-600" />
+        <div className="absolute -top-2 -right-2 bg-amber-100 dark:bg-amber-900 rounded-full p-1" title="No update for 7+ days">
+          <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400" />
         </div>
       )}
 
-      <Link href={`/jobs/${job.id}`} className="block">
+      <Link href={`/jobs/${job.id}`} className="block" onClick={(e) => isDragging && e.preventDefault()}>
         <div className="flex items-start gap-3">
           {/* Company Logo */}
           {job.company_logo && (
@@ -81,7 +83,7 @@ export function KanbanCard({ job }: KanbanCardProps) {
 
         {/* Footer: Status age */}
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
-          <span className={`text-xs ${stagnant ? "text-amber-600 font-medium" : "text-muted-foreground/60"}`}>
+          <span className={`text-xs ${stagnant ? "text-amber-600 dark:text-amber-400 font-medium" : "text-muted-foreground/60"}`}>
             {statusAge}
           </span>
         </div>
