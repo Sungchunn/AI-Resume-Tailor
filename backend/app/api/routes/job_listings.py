@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db_session, get_current_user_id
 from app.crud import job_listing_repository, user_job_interaction_repository
 from app.schemas.job_listing import (
+    ApplicationStatus,
     JobListingResponse,
     JobListingListResponse,
     JobListingFilters,
@@ -24,6 +25,10 @@ from app.schemas.job_listing import (
     ApplyJobRequest,
     JobInteractionActionResponse,
     UserJobInteractionResponse,
+    UpdateApplicationStatusRequest,
+    ReorderKanbanRequest,
+    KanbanColumnResponse,
+    KanbanBoardResponse,
     SortBy,
     SortOrder,
 )
@@ -80,12 +85,18 @@ def _build_listing_response(
         "is_saved": False,
         "is_hidden": False,
         "applied_at": None,
+        "application_status": None,
+        "status_changed_at": None,
+        "column_position": 0,
     }
 
     if interaction:
         response_data["is_saved"] = interaction.is_saved
         response_data["is_hidden"] = interaction.is_hidden
         response_data["applied_at"] = interaction.applied_at
+        response_data["application_status"] = interaction.application_status
+        response_data["status_changed_at"] = interaction.status_changed_at
+        response_data["column_position"] = interaction.column_position or 0
 
     return JobListingResponse(**response_data)
 
@@ -327,6 +338,63 @@ async def list_applied_jobs(
     )
 
 
+# ============================================================================
+# Kanban Board Endpoints
+# ============================================================================
+
+
+@router.get("/kanban", response_model=KanbanBoardResponse)
+async def get_kanban_board(
+    db: AsyncSession = Depends(get_db_session),
+    current_user_id: int = Depends(get_current_user_id),
+) -> KanbanBoardResponse:
+    """
+    Get the full Kanban board with all applied jobs grouped by status.
+
+    Returns jobs organized into columns: applied, interview, accepted, rejected, ghosted.
+    Each column's jobs are ordered by their column_position.
+    """
+    board_data = await user_job_interaction_repository.get_kanban_board(
+        db, user_id=current_user_id
+    )
+
+    columns: dict[str, KanbanColumnResponse] = {}
+    for status in ApplicationStatus:
+        items = board_data.get(status.value, [])
+        jobs = [
+            _build_listing_response(listing, interaction)
+            for interaction, listing in items
+        ]
+        columns[status.value] = KanbanColumnResponse(
+            status=status.value,
+            jobs=jobs,
+            total=len(jobs),
+        )
+
+    return KanbanBoardResponse(columns=columns)
+
+
+@router.put("/kanban/reorder", response_model=dict)
+async def reorder_kanban_column(
+    request: ReorderKanbanRequest,
+    db: AsyncSession = Depends(get_db_session),
+    current_user_id: int = Depends(get_current_user_id),
+) -> dict:
+    """
+    Reorder jobs within a Kanban column.
+
+    The job_listing_ids list defines the new order (index = position).
+    """
+    await user_job_interaction_repository.reorder_jobs_in_column(
+        db,
+        user_id=current_user_id,
+        status=request.status,
+        job_listing_ids=request.job_listing_ids,
+    )
+
+    return {"success": True, "message": "Jobs reordered successfully"}
+
+
 @router.get("/{listing_id}", response_model=JobListingResponse)
 async def get_job_listing(
     listing_id: int,
@@ -433,5 +501,40 @@ async def mark_job_applied(
     return JobInteractionActionResponse(
         success=True,
         message=f"Job listing {action} successfully",
+        interaction=UserJobInteractionResponse.model_validate(interaction),
+    )
+
+
+@router.patch("/{listing_id}/status", response_model=JobInteractionActionResponse)
+async def update_application_status(
+    listing_id: int,
+    request: UpdateApplicationStatusRequest,
+    db: AsyncSession = Depends(get_db_session),
+    current_user_id: int = Depends(get_current_user_id),
+) -> JobInteractionActionResponse:
+    """
+    Update the application status for a job listing (Kanban column).
+
+    Valid statuses: applied, interview, accepted, rejected, ghosted.
+    This also updates status_changed_at and reorders within the new column.
+    """
+    # Verify listing exists
+    listing = await job_listing_repository.get(db, id=listing_id)
+    if not listing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job listing not found",
+        )
+
+    interaction = await user_job_interaction_repository.update_application_status(
+        db,
+        user_id=current_user_id,
+        job_listing_id=listing_id,
+        status=request.status,
+    )
+
+    return JobInteractionActionResponse(
+        success=True,
+        message=f"Application status updated to '{request.status.value}'",
         interaction=UserJobInteractionResponse.model_validate(interaction),
     )
