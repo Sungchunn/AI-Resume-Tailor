@@ -412,6 +412,149 @@ curl -X POST "http://localhost:8000/api/job-listings/12345/applied" \
 
 ---
 
+## Kanban Board Endpoints
+
+The following endpoints support a Kanban-style board for tracking job applications through stages.
+
+### Get Kanban Board
+
+Get all applied jobs grouped by application status.
+
+```http
+GET /api/job-listings/kanban
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "columns": {
+    "applied": {
+      "status": "applied",
+      "jobs": [
+        {
+          "id": 12345,
+          "job_title": "Junior Software Engineer",
+          "company_name": "TechCorp",
+          "application_status": "applied",
+          "status_changed_at": "2026-03-01T10:30:00.000000",
+          "column_position": 0
+        }
+      ],
+      "total": 1
+    },
+    "interview": {
+      "status": "interview",
+      "jobs": [],
+      "total": 0
+    },
+    "accepted": {
+      "status": "accepted",
+      "jobs": [],
+      "total": 0
+    },
+    "rejected": {
+      "status": "rejected",
+      "jobs": [],
+      "total": 0
+    },
+    "ghosted": {
+      "status": "ghosted",
+      "jobs": [],
+      "total": 0
+    }
+  }
+}
+```
+
+---
+
+### Update Application Status
+
+Update the application status for a job listing (move between Kanban columns).
+
+```http
+PATCH /api/job-listings/{listing_id}/status
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| `listing_id` | integer | Job listing identifier |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+| ----- | ---- | -------- | ----------- |
+| `status` | string | Yes | New status: `applied`, `interview`, `accepted`, `rejected`, `ghosted` |
+
+**Example Request:**
+
+```bash
+curl -X PATCH "http://localhost:8000/api/job-listings/12345/status" \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "interview"}'
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Application status updated to 'interview'",
+  "interaction": {
+    "id": 1,
+    "user_id": 1,
+    "job_listing_id": 12345,
+    "is_saved": true,
+    "is_hidden": false,
+    "applied_at": "2026-03-01T10:30:00.000000",
+    "application_status": "interview",
+    "status_changed_at": "2026-03-07T14:00:00.000000",
+    "column_position": 0
+  }
+}
+```
+
+---
+
+### Reorder Kanban Column
+
+Reorder jobs within a Kanban column.
+
+```http
+PUT /api/job-listings/kanban/reorder
+```
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+| ----- | ---- | -------- | ----------- |
+| `status` | string | Yes | Column status: `applied`, `interview`, `accepted`, `rejected`, `ghosted` |
+| `job_listing_ids` | array | Yes | Ordered list of job listing IDs |
+
+**Example Request:**
+
+```bash
+curl -X PUT "http://localhost:8000/api/job-listings/kanban/reorder" \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "applied", "job_listing_ids": [12345, 12346, 12347]}'
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Jobs reordered successfully"
+}
+```
+
+---
+
 ## Data Models
 
 ### JobListingResponse
@@ -441,6 +584,10 @@ curl -X POST "http://localhost:8000/api/job-listings/12345/applied" \
   is_saved: boolean;
   is_hidden: boolean;
   applied_at: string | null;
+  // Kanban board fields
+  application_status: string | null; // "applied", "interview", "accepted", "rejected", "ghosted"
+  status_changed_at: string | null;  // ISO 8601 datetime
+  column_position: number;           // Position within Kanban column
 }
 ```
 
@@ -490,13 +637,53 @@ curl -X POST "http://localhost:8000/api/job-listings/12345/applied" \
 
 ```typescript
 {
+  id: number;
+  user_id: number;
   job_listing_id: number;
   is_saved: boolean;
   is_hidden: boolean;
   applied_at: string | null;
-  viewed_at: string | null;
+  last_viewed_at: string | null;
+  // Kanban board fields
+  application_status: string | null; // "applied", "interview", "accepted", "rejected", "ghosted"
+  status_changed_at: string | null;  // ISO 8601 datetime
+  column_position: number;           // Position within Kanban column
+  created_at: string;
+  updated_at: string | null;
 }
 ```
+
+### KanbanBoardResponse
+
+```typescript
+{
+  columns: {
+    [status: string]: KanbanColumnResponse;  // One entry per status
+  };
+}
+```
+
+### KanbanColumnResponse
+
+```typescript
+{
+  status: string;                // Column status identifier
+  jobs: JobListingResponse[];    // Jobs in this column
+  total: number;                 // Total count
+}
+```
+
+### ApplicationStatus
+
+Valid values for `application_status`:
+
+| Value | Description |
+| ----- | ----------- |
+| `applied` | Initial status when job is marked as applied |
+| `interview` | Application progressed to interview stage |
+| `accepted` | Received job offer or accepted |
+| `rejected` | Application was rejected |
+| `ghosted` | No response received (typically 7+ days) |
 
 ## Sort Options
 
