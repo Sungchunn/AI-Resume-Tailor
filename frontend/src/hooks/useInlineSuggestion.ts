@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { tokenManager } from "@/lib/api/client";
 
 export interface EntryContext {
   title: string;
@@ -81,6 +82,7 @@ export function useInlineSuggestion({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${tokenManager.getAccessToken()}`,
           },
           body: JSON.stringify({
             bullet_text: bulletText,
