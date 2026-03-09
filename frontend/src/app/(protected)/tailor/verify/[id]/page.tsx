@@ -114,9 +114,18 @@ export default function VerifySectionsPage({ params }: PageProps) {
     router.push(`/tailor/editor/${id}`);
   }, [hasChanges, content, id, updateTailored, router]);
 
-  const handleBack = () => {
-    router.push(`/tailor/${id}`);
-  };
+  const handleBack = useCallback(() => {
+    if (!tailored) return;
+    // Navigate back to analyze page with the original resume and job IDs
+    const params = new URLSearchParams();
+    params.set("resume_id", tailored.resume_id);
+    if (tailored.job_listing_id) {
+      params.set("job_listing_id", tailored.job_listing_id.toString());
+    } else if (tailored.job_id) {
+      params.set("job_id", tailored.job_id.toString());
+    }
+    router.push(`/tailor/analyze?${params.toString()}`);
+  }, [tailored, router]);
 
   if (isLoading) {
     return <LoadingState />;
