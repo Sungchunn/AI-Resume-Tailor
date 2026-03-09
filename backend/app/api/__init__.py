@@ -11,6 +11,7 @@ from app.api.routes import (
     jobs,
     match,
     resumes,
+    scraper_requests,
     tailor,
     upload,
     resume_builds,
@@ -37,6 +38,9 @@ api_router.include_router(ai.router, prefix="/v1/ai", tags=["ai"])
 
 # Job Listings (system-wide jobs from external sources)
 api_router.include_router(job_listings.router, prefix="/job-listings", tags=["job-listings"])
+
+# Scraper Requests (user-submitted job URL requests)
+api_router.include_router(scraper_requests.router, tags=["scraper-requests"])
 
 # Admin endpoints (scheduler management)
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
