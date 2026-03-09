@@ -36,6 +36,8 @@ import {
   hasCoursesContent,
   MembershipsPreview,
   hasMembershipsContent,
+  LeadershipPreview,
+  hasLeadershipContent,
 } from "./blocks";
 
 /**
@@ -137,6 +139,8 @@ function hasBlockContent(block: AnyResumeBlock): boolean {
       return hasCoursesContent(block.content);
     case "memberships":
       return hasMembershipsContent(block.content);
+    case "leadership":
+      return hasLeadershipContent(block.content);
     default: {
       // Type-safe exhaustive check
       const _exhaustiveCheck: never = block;
@@ -183,6 +187,8 @@ function renderBlockContent(
       return <CoursesPreview content={block.content} style={style} />;
     case "memberships":
       return <MembershipsPreview content={block.content} style={style} />;
+    case "leadership":
+      return <LeadershipPreview content={block.content} style={style} />;
     default: {
       // Type-safe exhaustive check
       const _exhaustiveCheck: never = block;

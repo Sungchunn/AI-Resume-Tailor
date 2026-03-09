@@ -20,6 +20,7 @@ import { InterestsEditor } from "./InterestsEditor";
 import { ReferencesEditor } from "./ReferencesEditor";
 import { CoursesEditor } from "./CoursesEditor";
 import { MembershipsEditor } from "./MembershipsEditor";
+import { LeadershipEditor } from "./LeadershipEditor";
 
 interface BlockEditorDispatcherProps {
   block: AnyResumeBlock;
@@ -157,6 +158,14 @@ export function BlockEditorDispatcher({ block }: BlockEditorDispatcherProps) {
     case "memberships":
       return (
         <MembershipsEditor
+          content={block.content}
+          onChange={handleChange}
+        />
+      );
+
+    case "leadership":
+      return (
+        <LeadershipEditor
           content={block.content}
           onChange={handleChange}
         />

@@ -49,3 +49,6 @@ export { CoursesPreview, hasCoursesContent } from "./CoursesPreview";
 
 // Memberships
 export { MembershipsPreview, hasMembershipsContent } from "./MembershipsPreview";
+
+// Leadership
+export { LeadershipPreview, hasLeadershipContent } from "./LeadershipPreview";

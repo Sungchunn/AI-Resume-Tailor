@@ -34,6 +34,7 @@ import {
   BadgeCheck,
   Building,
   Undo2,
+  Star,
 } from "lucide-react";
 import { TextDiffDisplay, SideBySideDiff } from "./TextDiffDisplay";
 import type { BlockDiff, EntryDiff, BulletDiff, SkillsDiff, TextDiff, TailoringSession } from "@/lib/tailoring/types";
@@ -70,6 +71,7 @@ const BLOCK_ICONS: Record<ResumeBlockType, React.ElementType> = {
   references: Users,
   courses: BookOpen,
   memberships: Building,
+  leadership: Star,
 };
 
 const BLOCK_LABELS: Record<ResumeBlockType, string> = {
@@ -88,6 +90,7 @@ const BLOCK_LABELS: Record<ResumeBlockType, string> = {
   references: "References",
   courses: "Courses",
   memberships: "Memberships",
+  leadership: "Leadership & Extracurriculars",
 };
 
 // ============================================================================
@@ -740,6 +743,8 @@ function getEntryTitle(
       return (entry.name as string) || "Untitled Course";
     case "memberships":
       return (entry.organization as string) || "Unknown Organization";
+    case "leadership":
+      return `${entry.title || "Role"} at ${entry.organization || "Organization"}`;
     default:
       return entry.id;
   }

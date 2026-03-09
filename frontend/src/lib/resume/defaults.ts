@@ -16,6 +16,7 @@ import type {
   EducationEntry,
   ExperienceEntry,
   LanguageEntry,
+  LeadershipEntry,
   MembershipEntry,
   ProjectEntry,
   PublicationEntry,
@@ -136,6 +137,14 @@ export const BLOCK_TYPE_INFO: Record<ResumeBlockType, BlockTypeInfo> = {
     allowMultiple: false,
     category: "professional",
   },
+  leadership: {
+    type: "leadership",
+    label: "Leadership & Extracurriculars",
+    description: "Leadership roles, club activities, and extracurricular involvement",
+    icon: "Star",
+    allowMultiple: false,
+    category: "professional",
+  },
 
   // Additional sections - supplementary information
   languages: {
@@ -207,6 +216,7 @@ export const DEFAULT_BLOCK_ORDER: ResumeBlockType[] = [
   "skills",
   "certifications",
   "projects",
+  "leadership",
   "languages",
   "volunteer",
   "publications",
@@ -382,6 +392,21 @@ export function createDefaultContent<T extends ResumeBlockType>(
           startDate: "",
           endDate: "",
           current: false,
+        },
+      ] as unknown as BlockContentMap[T];
+
+    case "leadership":
+      return [
+        {
+          id: nanoid(),
+          title: "",
+          organization: "",
+          location: "",
+          startDate: "",
+          endDate: "",
+          current: false,
+          description: "",
+          bullets: [],
         },
       ] as unknown as BlockContentMap[T];
 

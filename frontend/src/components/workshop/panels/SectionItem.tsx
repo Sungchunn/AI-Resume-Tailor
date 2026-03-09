@@ -16,6 +16,7 @@ interface SectionItemProps {
   onAIEnhance: () => void;
   onDuplicate: () => void;
   onRemove: () => void;
+  onRename?: () => void;
   children: ReactNode;
 }
 
@@ -30,6 +31,7 @@ export function SectionItem({
   onAIEnhance,
   onDuplicate,
   onRemove,
+  onRename,
   children,
 }: SectionItemProps) {
   const {
@@ -116,6 +118,7 @@ export function SectionItem({
           onAIEnhance={onAIEnhance}
           onDuplicate={onDuplicate}
           onRemove={onRemove}
+          onRename={onRename}
         />
       </div>
 
