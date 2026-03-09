@@ -10,6 +10,7 @@ from app.models.audit_log import AuditLog
 from app.models.scraper_run import ScraperRun
 from app.models.scraper_preset import ScraperPreset
 from app.models.scraper_schedule_settings import ScraperScheduleSettings
+from app.models.scraper_request import ScraperRequest, RequestStatus
 
 # Backward compatibility alias
 Workshop = ResumeBuild
@@ -28,4 +29,6 @@ __all__ = [
     "ScraperRun",
     "ScraperPreset",
     "ScraperScheduleSettings",
+    "ScraperRequest",
+    "RequestStatus",
 ]
