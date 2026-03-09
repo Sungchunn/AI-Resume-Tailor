@@ -16,8 +16,24 @@ from pydantic import BaseModel, Field, field_serializer
 from app.models.mongo.resume import PyObjectId, ParsedContent
 
 
-# Default section order for new tailored resumes
-DEFAULT_SECTION_ORDER = ["summary", "experience", "skills", "education", "projects"]
+# Default section order for new tailored resumes (all 16 sections)
+DEFAULT_SECTION_ORDER = [
+    "summary",
+    "experience",
+    "skills",
+    "education",
+    "projects",
+    "certifications",
+    "languages",
+    "volunteer",
+    "publications",
+    "awards",
+    "leadership",
+    "memberships",
+    "courses",
+    "interests",
+    "references",
+]
 
 
 class TailoredResumeStatus(str, Enum):
