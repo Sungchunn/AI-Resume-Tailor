@@ -11,7 +11,7 @@
 
 import { use, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ChevronLeftIcon } from "@/components/icons";
 import { useTailoredResume, useUpdateTailoredResume } from "@/lib/api";
 import {
   BlockEditorProvider,
@@ -92,6 +92,17 @@ export default function TailoredEditorPage({ params }: PageProps) {
 
   return (
     <div className="h-screen flex flex-col">
+      {/* Back button */}
+      <div className="flex-shrink-0 bg-card px-4 pt-3">
+        <Link
+          href={`/tailor/verify/${id}`}
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeftIcon className="h-4 w-4 mr-1" />
+          Back to edit sections
+        </Link>
+      </div>
+
       {/* Flow Stepper */}
       <div className="flex-shrink-0 bg-card border-b border-border">
         <TailorFlowStepper
@@ -104,28 +115,18 @@ export default function TailoredEditorPage({ params }: PageProps) {
       {/* Header */}
       <div className="flex-shrink-0 bg-card border-b border-border px-4 py-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href={`/tailor/verify/${id}`}
-              className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="mr-1 h-4 w-4" />
-              Back to Edit
-            </Link>
-            <div className="h-5 w-px bg-border" />
-            <div className="text-sm">
-              {tailored.job_title && (
-                <span className="font-medium text-foreground">
-                  {tailored.job_title}
-                </span>
-              )}
-              {tailored.company_name && (
-                <span className="text-muted-foreground">
-                  {" @ "}
-                  {tailored.company_name}
-                </span>
-              )}
-            </div>
+          <div className="text-sm">
+            {tailored.job_title && (
+              <span className="font-medium text-foreground">
+                {tailored.job_title}
+              </span>
+            )}
+            {tailored.company_name && (
+              <span className="text-muted-foreground">
+                {" @ "}
+                {tailored.company_name}
+              </span>
+            )}
           </div>
 
           {/* Match Score */}

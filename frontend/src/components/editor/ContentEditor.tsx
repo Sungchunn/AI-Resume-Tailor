@@ -601,8 +601,10 @@ export function ContentEditor({
   };
 
   return (
-    <div className="h-full overflow-y-auto p-6">
-      {sectionOrder.map((section) => renderSection(section))}
+    <div className="h-full overflow-y-auto">
+      <div className="max-w-6xl mx-auto p-6">
+        {sectionOrder.map((section) => renderSection(section))}
+      </div>
     </div>
   );
 }

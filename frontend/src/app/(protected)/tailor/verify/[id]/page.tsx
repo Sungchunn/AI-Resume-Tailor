@@ -10,7 +10,8 @@
 import { use, useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Save, Loader2, AlertCircle } from "lucide-react";
+import { ArrowRight, Save, Loader2, AlertCircle } from "lucide-react";
+import { ChevronLeftIcon } from "@/components/icons";
 import { useTailoredResume, useUpdateTailoredResume } from "@/lib/api";
 import { TailorFlowStepper } from "@/components/tailoring";
 import { ContentEditor } from "@/components/editor";
@@ -114,19 +115,6 @@ export default function VerifySectionsPage({ params }: PageProps) {
     router.push(`/tailor/editor/${id}`);
   }, [hasChanges, content, id, updateTailored, router]);
 
-  const handleBack = useCallback(() => {
-    if (!tailored) return;
-    // Navigate back to analyze page with the original resume and job IDs
-    const params = new URLSearchParams();
-    params.set("resume_id", tailored.resume_id);
-    if (tailored.job_listing_id) {
-      params.set("job_listing_id", tailored.job_listing_id.toString());
-    } else if (tailored.job_id) {
-      params.set("job_id", tailored.job_id.toString());
-    }
-    router.push(`/tailor/analyze?${params.toString()}`);
-  }, [tailored, router]);
-
   if (isLoading) {
     return <LoadingState />;
   }
@@ -140,8 +128,28 @@ export default function VerifySectionsPage({ params }: PageProps) {
     return <LoadingState />;
   }
 
+  // Build back URL
+  const backUrl = tailored.job_listing_id
+    ? `/tailor/analyze?resume_id=${tailored.resume_id}&job_listing_id=${tailored.job_listing_id}`
+    : tailored.job_id
+    ? `/tailor/analyze?resume_id=${tailored.resume_id}&job_id=${tailored.job_id}`
+    : "/tailor";
+
   return (
-    <div className="h-screen flex flex-col bg-muted/30">
+    <div className="h-screen flex flex-col bg-muted/30 overflow-hidden">
+      {/* Back button */}
+      <div className="shrink-0 bg-card px-6 pt-4">
+        <div className="max-w-6xl mx-auto">
+          <Link
+            href={backUrl}
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeftIcon className="h-4 w-4 mr-1" />
+            Back to analysis
+          </Link>
+        </div>
+      </div>
+
       {/* Flow Stepper */}
       <div className="shrink-0 bg-card border-b border-border">
         <TailorFlowStepper
@@ -153,7 +161,7 @@ export default function VerifySectionsPage({ params }: PageProps) {
 
       {/* Header */}
       <div className="shrink-0 bg-card border-b border-border px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold text-foreground">
               Edit Resume Sections
@@ -163,13 +171,6 @@ export default function VerifySectionsPage({ params }: PageProps) {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={handleBack}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium border border-border rounded-md hover:bg-muted transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </button>
             {hasChanges && (
               <button
                 onClick={handleSave}
@@ -204,13 +205,11 @@ export default function VerifySectionsPage({ params }: PageProps) {
 
       {/* Content Editor */}
       <div className="flex-1 overflow-hidden">
-        <div className="max-w-4xl mx-auto h-full">
-          <ContentEditor
-            content={content}
-            sectionOrder={DEFAULT_SECTION_ORDER}
-            onChange={handleContentChange}
-          />
-        </div>
+        <ContentEditor
+          content={content}
+          sectionOrder={DEFAULT_SECTION_ORDER}
+          onChange={handleContentChange}
+        />
       </div>
     </div>
   );
