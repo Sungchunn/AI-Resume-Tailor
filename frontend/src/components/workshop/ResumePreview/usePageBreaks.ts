@@ -67,9 +67,64 @@ export function usePageBreaks({
         sectionSpacing,
       projects:
         sectionHeaderHeight +
-        (content.projects?.length ?? 0) * 60 +
+        (content.projects ?? []).reduce((acc, proj) => {
+          return acc + 50 + (proj.bullets?.length ?? 0) * lineHeight * 1.2 + 20;
+        }, 0) +
+        sectionSpacing,
+      languages:
+        sectionHeaderHeight +
+        Math.ceil((content.languages?.length ?? 0) / 3) * 30 +
+        sectionSpacing,
+      volunteer:
+        sectionHeaderHeight +
+        (content.volunteer ?? []).reduce((acc, vol) => {
+          return acc + 50 + (vol.bullets?.length ?? 0) * lineHeight * 1.2 + 20;
+        }, 0) +
+        sectionSpacing,
+      publications:
+        sectionHeaderHeight +
+        (content.publications?.length ?? 0) * 50 +
+        sectionSpacing,
+      awards:
+        sectionHeaderHeight +
+        (content.awards?.length ?? 0) * 35 +
+        sectionSpacing,
+      interests:
+        sectionHeaderHeight +
+        Math.ceil((content.interests ?? "").length / 80) * lineHeight + 20 +
+        sectionSpacing,
+      references:
+        sectionHeaderHeight +
+        (content.references?.length ?? 0) * 45 +
+        sectionSpacing,
+      courses:
+        sectionHeaderHeight +
+        (content.courses?.length ?? 0) * 35 +
+        sectionSpacing,
+      memberships:
+        sectionHeaderHeight +
+        (content.memberships?.length ?? 0) * 30 +
+        sectionSpacing,
+      leadership:
+        sectionHeaderHeight +
+        (content.leadership ?? []).reduce((acc, lead) => {
+          return acc + 50 + (lead.bullets?.length ?? 0) * lineHeight * 1.2 + 20;
+        }, 0) +
         sectionSpacing,
     };
+
+    // Handle custom sections
+    if (content.custom_sections) {
+      for (const [key, section] of Object.entries(content.custom_sections)) {
+        if (section.type === "text") {
+          estimatedHeights[key] = sectionHeaderHeight +
+            Math.ceil((section.content as string).length / 80) * lineHeight + sectionSpacing;
+        } else if (section.type === "entries" && Array.isArray(section.content)) {
+          estimatedHeights[key] = sectionHeaderHeight +
+            section.content.length * 60 + sectionSpacing;
+        }
+      }
+    }
 
     let currentHeight = 0;
     const pages: PageContent[] = [];
