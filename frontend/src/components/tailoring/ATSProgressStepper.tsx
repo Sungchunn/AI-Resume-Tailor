@@ -135,9 +135,6 @@ export function ATSProgressStepper({
 
         {/* Progress & Time */}
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          {isAnalyzing && (
-            <span>{Math.round(overallProgress)}%</span>
-          )}
           {totalElapsedMs > 0 && (
             <span>Total: {formatElapsedTime(totalElapsedMs)}</span>
           )}
