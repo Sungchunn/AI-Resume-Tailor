@@ -33,7 +33,7 @@ Based on the code review findings from 45 commits (a779761 through 7028926), thi
 
 ### Phase 1 Changes
 
-**1.1 Add Index on `reviewed_at`**
+#### 1.1 Add Index on reviewed_at
 
 Create new migration file `20260309_0002_add_reviewed_at_index.py`:
 
@@ -58,7 +58,7 @@ def downgrade() -> None:
     op.drop_index("ix_scraper_requests_reviewed_at", table_name="scraper_requests")
 ```
 
-**1.2 Add Optimistic Locking to approve/reject**
+#### 1.2 Add Optimistic Locking to approve/reject
 
 In `backend/app/crud/scraper_request.py`, modify `approve()` method (lines 176-195):
 
@@ -123,7 +123,7 @@ backend: add reviewed_at index and fix concurrent approve/reject race condition
 
 ### Phase 2 Changes
 
-**2.1 Move Import to Top of File**
+#### 2.1 Move Import to Top of File
 
 In `backend/app/schemas/scraper.py`, move line 303:
 
@@ -132,7 +132,7 @@ In `backend/app/schemas/scraper.py`, move line 303:
 from app.models.scraper_request import RequestStatus
 ```
 
-**2.2 Align Leadership Field Names**
+#### 2.2 Align Leadership Field Names
 
 In `backend/app/services/resume/parser.py`, update `Leadership` TypedDict:
 
@@ -174,7 +174,7 @@ backend: fix import location and align leadership field names with frontend
 
 ### Phase 3 Changes
 
-**3.1 Add Rejection Notes Validation**
+#### 3.1 Add Rejection Notes Validation
 
 In `RequestQueue.tsx`, add validation before calling reject API:
 
@@ -189,7 +189,7 @@ const handleReject = async () => {
 };
 ```
 
-**3.2 Add Error Boundary to Tailor Editor**
+#### 3.2 Add Error Boundary to Tailor Editor
 
 Create `frontend/src/components/errors/TailorEditorErrorBoundary.tsx`:
 
@@ -220,7 +220,7 @@ export class TailorEditorErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
+        <div className="flex flex-col items-center justify-center min-h-100 p-8">
           <h2 className="text-xl font-semibold text-red-600 mb-2">
             Failed to load editor
           </h2>
@@ -272,7 +272,7 @@ frontend: add rejection validation and error boundary to tailor editor
 
 ### Phase 4 Changes
 
-**4.1 Fix Modal Scroll Lock Cleanup**
+#### 4.1 Fix Modal Scroll Lock Cleanup
 
 In `RequestJobsModal.tsx`, use a more robust cleanup approach:
 
@@ -290,7 +290,7 @@ useEffect(() => {
 }, [isOpen]);
 ```
 
-**4.2 Fix ID Regeneration in SectionEditorAdapter**
+#### 4.2 Fix ID Regeneration in SectionEditorAdapter
 
 In `SectionEditorAdapter.tsx`, persist generated IDs using a ref:
 
@@ -371,19 +371,19 @@ frontend: optimize library page with conditional data fetching
 
 ### Phase 6 Verification Steps
 
-**6.1 Backend Tests**
+#### 6.1 Backend Tests
 
 ```bash
 cd backend && poetry run pytest
 ```
 
-**6.2 Frontend Build**
+#### 6.2 Frontend Build
 
 ```bash
 cd frontend && bun run build
 ```
 
-**6.3 Manual Testing Checklist**
+#### 6.3 Manual Testing Checklist
 
 - [ ] Admin can approve scraper requests without race conditions
 - [ ] Admin rejection requires non-empty notes
