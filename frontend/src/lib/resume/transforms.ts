@@ -843,12 +843,25 @@ export function tailoredContentToParsedContent(
 
   const result: ParsedResumeContent = {};
 
+  // Contact
+  if (tailored.contact) {
+    result.contact = {
+      name: tailored.contact.name,
+      email: tailored.contact.email,
+      phone: tailored.contact.phone,
+      location: tailored.contact.location,
+      linkedin: tailored.contact.linkedin,
+      github: tailored.contact.github,
+      website: tailored.contact.website,
+    };
+  }
+
   // Summary
   if (tailored.summary) {
     result.summary = tailored.summary;
   }
 
-  // Experience - convert from TailoredContent format to ParsedResumeContent format
+  // Experience
   if (tailored.experience && tailored.experience.length > 0) {
     result.experience = tailored.experience.map((exp) => ({
       title: exp.title,
@@ -860,15 +873,41 @@ export function tailoredContentToParsedContent(
     }));
   }
 
+  // Education
+  if (tailored.education && tailored.education.length > 0) {
+    result.education = tailored.education.map((edu) => ({
+      degree: edu.degree,
+      institution: edu.institution,
+      location: edu.location,
+      graduation_date: edu.graduation_date,
+      gpa: edu.gpa,
+      honors: edu.honors,
+    }));
+  }
+
   // Skills
   if (tailored.skills && tailored.skills.length > 0) {
     result.skills = tailored.skills;
   }
 
-  // Highlights can be stored as interests or a custom section
-  // For now, we'll store them as interests since that's a string field
-  if (tailored.highlights && tailored.highlights.length > 0) {
-    result.interests = tailored.highlights.join("\n• ");
+  // Certifications
+  if (tailored.certifications && tailored.certifications.length > 0) {
+    result.certifications = tailored.certifications.map((cert) => ({
+      name: cert.name,
+      issuer: cert.issuer || "",
+      date: cert.date,
+    }));
+  }
+
+  // Projects
+  if (tailored.projects && tailored.projects.length > 0) {
+    result.projects = tailored.projects.map((proj) => ({
+      name: proj.name,
+      description: proj.description,
+      technologies: proj.technologies,
+      url: proj.url,
+      bullets: proj.bullets,
+    }));
   }
 
   return result;
@@ -885,12 +924,25 @@ export function parsedContentToTailoredContent(
     return {
       summary: "",
       experience: [],
+      education: [],
       skills: [],
-      highlights: [],
+      certifications: [],
+      projects: [],
     };
   }
 
   return {
+    contact: parsed.contact
+      ? {
+          name: parsed.contact.name,
+          email: parsed.contact.email,
+          phone: parsed.contact.phone,
+          location: parsed.contact.location,
+          linkedin: parsed.contact.linkedin,
+          github: parsed.contact.github,
+          website: parsed.contact.website,
+        }
+      : undefined,
     summary: parsed.summary || "",
     experience: (parsed.experience || []).map((exp) => ({
       title: exp.title || "",
@@ -900,10 +952,26 @@ export function parsedContentToTailoredContent(
       end_date: exp.end_date || "",
       bullets: exp.bullets || [],
     })),
+    education: (parsed.education || []).map((edu) => ({
+      degree: edu.degree || "",
+      institution: edu.institution || "",
+      location: edu.location,
+      graduation_date: edu.graduation_date,
+      gpa: edu.gpa,
+      honors: edu.honors,
+    })),
     skills: parsed.skills || [],
-    // Convert interests back to highlights
-    highlights: parsed.interests
-      ? parsed.interests.split("\n• ").filter((h) => h.trim())
-      : [],
+    certifications: (parsed.certifications || []).map((cert) => ({
+      name: cert.name || "",
+      issuer: cert.issuer,
+      date: cert.date,
+    })),
+    projects: (parsed.projects || []).map((proj) => ({
+      name: proj.name || "",
+      description: proj.description,
+      technologies: proj.technologies,
+      url: proj.url,
+      bullets: proj.bullets,
+    })),
   };
 }
