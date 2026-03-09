@@ -16,7 +16,8 @@ class ContactInfo(TypedDict, total=False):
     website: str
 
 
-class Experience(TypedDict):
+class Experience(TypedDict, total=False):
+    id: str
     title: str
     company: str
     location: str
@@ -25,28 +26,134 @@ class Experience(TypedDict):
     bullets: list[str]
 
 
-class Education(TypedDict):
+class Education(TypedDict, total=False):
+    id: str
     degree: str
     institution: str
     location: str
     graduation_date: str
     gpa: str
     honors: list[str]
+    minor: str
+    relevant_courses: list[str]
 
 
-class ParsedResume(TypedDict):
+class Project(TypedDict, total=False):
+    id: str
+    name: str
+    description: str
+    technologies: list[str]
+    url: str
+    bullets: list[str]
+    start_date: str
+    end_date: str
+
+
+class Language(TypedDict, total=False):
+    id: str
+    language: str
+    proficiency: str
+
+
+class Volunteer(TypedDict, total=False):
+    id: str
+    role: str
+    organization: str
+    location: str
+    start_date: str
+    end_date: str
+    description: str
+    bullets: list[str]
+
+
+class Publication(TypedDict, total=False):
+    id: str
+    title: str
+    authors: list[str]
+    publication: str
+    date: str
+    url: str
+    doi: str
+
+
+class Award(TypedDict, total=False):
+    id: str
+    title: str
+    issuer: str
+    date: str
+    description: str
+
+
+class Reference(TypedDict, total=False):
+    id: str
+    name: str
+    title: str
+    company: str
+    email: str
+    phone: str
+    relationship: str
+
+
+class Course(TypedDict, total=False):
+    id: str
+    name: str
+    institution: str
+    date: str
+    description: str
+
+
+class Membership(TypedDict, total=False):
+    id: str
+    organization: str
+    role: str
+    start_date: str
+    end_date: str
+
+
+class Leadership(TypedDict, total=False):
+    id: str
+    role: str
+    organization: str
+    location: str
+    start_date: str
+    end_date: str
+    description: str
+    bullets: list[str]
+
+
+class Certification(TypedDict, total=False):
+    id: str
+    name: str
+    issuer: str
+    date: str
+    expiry_date: str
+    credential_id: str
+    url: str
+
+
+class ParsedResume(TypedDict, total=False):
     contact: ContactInfo
     summary: str
     experience: list[Experience]
     education: list[Education]
     skills: list[str]
-    certifications: list[str]
-    projects: list[dict]
+    certifications: list[Certification]
+    projects: list[Project]
+    languages: list[Language]
+    volunteer: list[Volunteer]
+    publications: list[Publication]
+    awards: list[Award]
+    interests: str
+    references: list[Reference]
+    courses: list[Course]
+    memberships: list[Membership]
+    leadership: list[Leadership]
 
 
 RESUME_PARSER_SYSTEM_PROMPT = """You are an expert resume parser. Extract structured information from resumes.
 
-Parse the resume into the following JSON structure:
+Parse the resume into the following JSON structure with all 16 supported sections:
+
 {
   "contact": {
     "name": "Full Name",
@@ -75,28 +182,118 @@ Parse the resume into the following JSON structure:
       "location": "City, State",
       "graduation_date": "Month Year",
       "gpa": "3.8/4.0",
-      "honors": ["Honor 1", "Honor 2"]
+      "honors": ["Honor 1", "Honor 2"],
+      "minor": "Minor field of study or null",
+      "relevant_courses": ["Course 1", "Course 2"]
     }
   ],
   "skills": ["Skill 1", "Skill 2", "Skill 3"],
-  "certifications": ["Certification 1", "Certification 2"],
+  "certifications": [
+    {
+      "name": "Certification Name",
+      "issuer": "Issuing Organization",
+      "date": "Month Year",
+      "expiry_date": "Month Year or null",
+      "credential_id": "ID or null",
+      "url": "verification-url.com or null"
+    }
+  ],
   "projects": [
     {
       "name": "Project Name",
       "description": "Brief description",
       "technologies": ["Tech 1", "Tech 2"],
-      "url": "project-url.com"
+      "url": "project-url.com or null",
+      "bullets": ["Achievement 1", "Achievement 2"],
+      "start_date": "Month Year or null",
+      "end_date": "Month Year or null"
+    }
+  ],
+  "languages": [
+    {
+      "language": "Language Name",
+      "proficiency": "Native/Fluent/Professional/Conversational/Basic"
+    }
+  ],
+  "volunteer": [
+    {
+      "role": "Volunteer Role",
+      "organization": "Organization Name",
+      "location": "City, State",
+      "start_date": "Month Year",
+      "end_date": "Month Year or Present",
+      "description": "Brief description or null",
+      "bullets": ["Achievement 1", "Achievement 2"]
+    }
+  ],
+  "publications": [
+    {
+      "title": "Publication Title",
+      "authors": ["Author 1", "Author 2"],
+      "publication": "Journal or Conference Name",
+      "date": "Month Year",
+      "url": "publication-url.com or null",
+      "doi": "DOI or null"
+    }
+  ],
+  "awards": [
+    {
+      "title": "Award Title",
+      "issuer": "Issuing Organization",
+      "date": "Month Year",
+      "description": "Brief description or null"
+    }
+  ],
+  "interests": "Hobbies, interests, or personal pursuits as a single string or null",
+  "references": [
+    {
+      "name": "Reference Name",
+      "title": "Job Title",
+      "company": "Company Name",
+      "email": "email@example.com or null",
+      "phone": "555-555-5555 or null",
+      "relationship": "Former Manager/Colleague/etc. or null"
+    }
+  ],
+  "courses": [
+    {
+      "name": "Course Name",
+      "institution": "Provider/Institution",
+      "date": "Month Year or null",
+      "description": "Brief description or null"
+    }
+  ],
+  "memberships": [
+    {
+      "organization": "Organization Name",
+      "role": "Member/Board Member/etc. or null",
+      "start_date": "Month Year or null",
+      "end_date": "Month Year or null"
+    }
+  ],
+  "leadership": [
+    {
+      "role": "Leadership Role",
+      "organization": "Organization Name",
+      "location": "City, State or null",
+      "start_date": "Month Year",
+      "end_date": "Month Year or Present",
+      "description": "Brief description or null",
+      "bullets": ["Achievement 1", "Achievement 2"]
     }
   ]
 }
 
 Rules:
 - Extract ALL information present in the resume
-- Use empty strings for missing text fields
-- Use empty arrays for missing list fields
-- Preserve the original wording of bullet points
+- Use null for missing text fields, empty arrays [] for missing list fields
+- Preserve the original wording of bullet points exactly
 - Parse dates in a consistent format (Month Year)
-- If a section doesn't exist, include it with empty values"""
+- If a section doesn't exist in the resume, include it with null or empty array
+- Map section headers intelligently: "Work History" → experience, "Honors" → awards, "Professional Affiliations" → memberships, etc.
+- Leadership can include club/organization leadership, not just work experience
+- Volunteer includes community service, nonprofit work, pro bono activities
+- Distinguish between "courses" (professional training) and "education" (formal degrees)"""
 
 
 class ResumeParser:
