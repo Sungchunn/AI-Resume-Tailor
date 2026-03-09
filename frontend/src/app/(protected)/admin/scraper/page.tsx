@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAdhocScrape } from "@/lib/api/hooks";
 import type { AdHocScrapeResponse } from "@/lib/api/types";
 import ScheduleSettings from "./components/ScheduleSettings";
+import RequestQueue from "./components/RequestQueue";
 import PresetList from "./components/PresetList";
 
 const JOB_COUNT_PRESETS = [100, 200, 400, 500];
@@ -155,6 +156,9 @@ export default function AdminScraperPage() {
 
       {/* Schedule Settings */}
       <ScheduleSettings />
+
+      {/* User Requests Queue */}
+      <RequestQueue />
 
       {/* Saved Presets */}
       <PresetList />
