@@ -209,25 +209,6 @@ export default function VerifySectionsPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="shrink-0 bg-card border-t border-border px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link
-            href={`/tailor/${id}`}
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="inline h-4 w-4 mr-1" />
-            Back to Resume
-          </Link>
-          <button
-            onClick={handleContinue}
-            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
-          >
-            Looks Good, Continue to Editor
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
