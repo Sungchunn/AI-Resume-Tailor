@@ -59,8 +59,8 @@ export default function LibraryPage() {
   const { data: kanbanData } = useKanbanBoard();
 
   // Calculate total applied jobs from kanban columns
-  const appliedCount = kanbanData
-    ? Object.values(kanbanData).reduce((sum, column) => sum + column.jobs.length, 0)
+  const appliedCount = kanbanData?.columns
+    ? Object.values(kanbanData.columns).reduce((sum, column) => sum + column.jobs.length, 0)
     : 0;
 
   const tabs: { id: TabType; label: string; count: number }[] = [
