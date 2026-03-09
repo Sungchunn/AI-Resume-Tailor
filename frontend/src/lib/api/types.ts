@@ -125,8 +125,18 @@ export interface Suggestion {
 }
 
 export interface TailoredContent {
-  summary: string;
-  experience: Array<{
+  contact?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+    linkedin?: string;
+    github?: string;
+    website?: string;
+  };
+  summary?: string;
+  experience?: Array<{
+    id?: string;
     title: string;
     company: string;
     location: string;
@@ -134,8 +144,30 @@ export interface TailoredContent {
     end_date: string;
     bullets: string[];
   }>;
-  skills: string[];
-  highlights: string[];
+  education?: Array<{
+    id?: string;
+    degree: string;
+    institution: string;
+    location?: string;
+    graduation_date?: string;
+    gpa?: string;
+    honors?: string;
+  }>;
+  skills?: string[];
+  certifications?: Array<{
+    id?: string;
+    name: string;
+    issuer?: string;
+    date?: string;
+  }>;
+  projects?: Array<{
+    id?: string;
+    name: string;
+    description?: string;
+    technologies?: string[];
+    url?: string;
+    bullets?: string[];
+  }>;
 }
 
 export interface TailorResponse {
