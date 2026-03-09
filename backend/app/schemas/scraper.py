@@ -305,13 +305,8 @@ SCRAPER_CONFIGS = [
 # Scraper Request Schemas (User-submitted job URL requests)
 # ============================================================================
 
-
-class RequestStatus(str, Enum):
-    """Status of a scraper request."""
-
-    PENDING = "pending"
-    APPROVED = "approved"
-    REJECTED = "rejected"
+# Import RequestStatus from model to avoid duplicate enum definitions
+from app.models.scraper_request import RequestStatus
 
 
 class ScraperRequestCreate(BaseModel):

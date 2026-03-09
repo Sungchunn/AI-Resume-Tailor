@@ -40,13 +40,13 @@ from app.schemas.scraper import (
     ScraperPresetListResponse,
     ScheduleSettingsUpdate,
     ScheduleSettingsResponse,
-    RequestStatus,
     ScraperRequestResponse,
     ScraperRequestAdminResponse,
     ScraperRequestAdminListResponse,
     ScraperRequestApproveRequest,
     ScraperRequestRejectRequest,
 )
+from app.models.scraper_request import RequestStatus
 from app.services.scraping.apify_client import get_apify_client
 from app.services.scraping.cost_tracker import get_cost_tracker
 from app.services.scraping.scheduler import get_scheduler_service
@@ -694,7 +694,7 @@ async def approve_scraper_request(
         )
         preset_id = preset.id
 
-    updated = await scraper_request_repository.approve(
+    await scraper_request_repository.approve(
         db,
         request_id=request_id,
         admin_id=admin_user.id,
@@ -702,7 +702,14 @@ async def approve_scraper_request(
         admin_notes=data.admin_notes,
     )
     await db.commit()
-    await db.refresh(updated, ["user", "reviewer"])
+
+    # Re-fetch with relationships loaded
+    updated = await scraper_request_repository.get_with_user(db, request_id)
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve updated request",
+        )
 
     return ScraperRequestAdminResponse(
         **ScraperRequestResponse.model_validate(updated).model_dump(),
@@ -738,14 +745,21 @@ async def reject_scraper_request(
             detail="Request already processed",
         )
 
-    updated = await scraper_request_repository.reject(
+    await scraper_request_repository.reject(
         db,
         request_id=request_id,
         admin_id=admin_user.id,
         admin_notes=data.admin_notes,
     )
     await db.commit()
-    await db.refresh(updated, ["user", "reviewer"])
+
+    # Re-fetch with relationships loaded
+    updated = await scraper_request_repository.get_with_user(db, request_id)
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve updated request",
+        )
 
     return ScraperRequestAdminResponse(
         **ScraperRequestResponse.model_validate(updated).model_dump(),
