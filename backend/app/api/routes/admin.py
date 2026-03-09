@@ -25,6 +25,7 @@ from app.crud.job_listing import job_listing_repository
 from app.crud.scraper_run import scraper_run_repository
 from app.crud.scraper_preset import scraper_preset_repository
 from app.crud.schedule_settings import schedule_settings_repository
+from app.crud.scraper_request import scraper_request_repository
 from app.models.job_listing import JobListing
 from app.schemas.scraper import (
     AdHocScrapeRequest,
@@ -39,6 +40,12 @@ from app.schemas.scraper import (
     ScraperPresetListResponse,
     ScheduleSettingsUpdate,
     ScheduleSettingsResponse,
+    RequestStatus,
+    ScraperRequestResponse,
+    ScraperRequestAdminResponse,
+    ScraperRequestAdminListResponse,
+    ScraperRequestApproveRequest,
+    ScraperRequestRejectRequest,
 )
 from app.services.scraping.apify_client import get_apify_client
 from app.services.scraping.cost_tracker import get_cost_tracker
@@ -613,3 +620,137 @@ async def toggle_schedule(
     settings = await schedule_settings_repository.get(db)
 
     return ScheduleSettingsResponse.model_validate(settings)
+
+
+# ============================================================================
+# Scraper Request Endpoints (User-submitted job URL requests)
+# ============================================================================
+
+
+@router.get("/scraper-requests", response_model=ScraperRequestAdminListResponse)
+async def list_scraper_requests(
+    status: RequestStatus | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: AsyncSession = Depends(get_db_session),
+    _: User = Depends(require_admin),
+) -> ScraperRequestAdminListResponse:
+    """
+    List all scraper requests (admin only).
+
+    Returns all user-submitted requests with optional status filtering.
+    """
+    requests, total = await scraper_request_repository.list_all(
+        db, status=status, limit=limit, offset=offset
+    )
+    return ScraperRequestAdminListResponse(
+        requests=[
+            ScraperRequestAdminResponse(
+                **ScraperRequestResponse.model_validate(r).model_dump(),
+                user_id=r.user_id,
+                user_email=r.user.email,
+                reviewed_by=r.reviewed_by,
+                reviewer_email=r.reviewer.email if r.reviewer else None,
+            )
+            for r in requests
+        ],
+        total=total,
+    )
+
+
+@router.post("/scraper-requests/{request_id}/approve", response_model=ScraperRequestAdminResponse)
+async def approve_scraper_request(
+    request_id: int,
+    data: ScraperRequestApproveRequest,
+    db: AsyncSession = Depends(get_db_session),
+    admin_user: User = Depends(require_admin),
+) -> ScraperRequestAdminResponse:
+    """
+    Approve a scraper request and optionally create a preset.
+
+    When approved with create_preset=True (default), a new scraper
+    preset will be created using the URL from the request.
+    """
+    request = await scraper_request_repository.get_with_user(db, request_id)
+    if not request:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Request not found",
+        )
+    if request.status != RequestStatus.PENDING:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Request already processed",
+        )
+
+    preset_id = None
+    if data.create_preset:
+        preset = await scraper_preset_repository.create(
+            db,
+            name=data.preset_name or request.name or f"Request #{request.id}",
+            url=request.url,
+            count=data.preset_count,
+            is_active=data.preset_is_active,
+        )
+        preset_id = preset.id
+
+    updated = await scraper_request_repository.approve(
+        db,
+        request_id=request_id,
+        admin_id=admin_user.id,
+        preset_id=preset_id,
+        admin_notes=data.admin_notes,
+    )
+    await db.commit()
+    await db.refresh(updated, ["user", "reviewer"])
+
+    return ScraperRequestAdminResponse(
+        **ScraperRequestResponse.model_validate(updated).model_dump(),
+        user_id=updated.user_id,
+        user_email=updated.user.email,
+        reviewed_by=updated.reviewed_by,
+        reviewer_email=updated.reviewer.email if updated.reviewer else None,
+    )
+
+
+@router.post("/scraper-requests/{request_id}/reject", response_model=ScraperRequestAdminResponse)
+async def reject_scraper_request(
+    request_id: int,
+    data: ScraperRequestRejectRequest,
+    db: AsyncSession = Depends(get_db_session),
+    admin_user: User = Depends(require_admin),
+) -> ScraperRequestAdminResponse:
+    """
+    Reject a scraper request with notes.
+
+    The rejection reason will be visible to the user who submitted
+    the request.
+    """
+    request = await scraper_request_repository.get_with_user(db, request_id)
+    if not request:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Request not found",
+        )
+    if request.status != RequestStatus.PENDING:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Request already processed",
+        )
+
+    updated = await scraper_request_repository.reject(
+        db,
+        request_id=request_id,
+        admin_id=admin_user.id,
+        admin_notes=data.admin_notes,
+    )
+    await db.commit()
+    await db.refresh(updated, ["user", "reviewer"])
+
+    return ScraperRequestAdminResponse(
+        **ScraperRequestResponse.model_validate(updated).model_dump(),
+        user_id=updated.user_id,
+        user_email=updated.user.email,
+        reviewed_by=updated.reviewed_by,
+        reviewer_email=updated.reviewer.email if updated.reviewer else None,
+    )
