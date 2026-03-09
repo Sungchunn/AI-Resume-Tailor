@@ -18,6 +18,7 @@ import {
   EditorLayout,
 } from "@/components/library/editor";
 import { TailorFlowStepper } from "@/components/tailoring";
+import { TailorEditorErrorBoundary } from "@/components/errors/TailorEditorErrorBoundary";
 import { useATSProgressStore } from "@/lib/stores/atsProgressStore";
 import type { ParsedResumeContent } from "@/lib/resume/types";
 import {
@@ -166,21 +167,23 @@ export default function TailoredEditorPage({ params }: PageProps) {
 
       {/* Block Editor */}
       <div className="flex-1 overflow-hidden">
-        <BlockEditorProvider
-          resumeId={id}
-          initialParsedContent={initialParsedContent}
-          initialStyle={initialStyle}
-          onSave={handleSave}
-        >
-          <EditorLayout
+        <TailorEditorErrorBoundary>
+          <BlockEditorProvider
             resumeId={id}
-            title={editorTitle}
-            hasRawContent={false}
-            hasParsedContent={!!initialParsedContent}
-            jobId={jobId}
-            jobListingId={jobListingId}
-          />
-        </BlockEditorProvider>
+            initialParsedContent={initialParsedContent}
+            initialStyle={initialStyle}
+            onSave={handleSave}
+          >
+            <EditorLayout
+              resumeId={id}
+              title={editorTitle}
+              hasRawContent={false}
+              hasParsedContent={!!initialParsedContent}
+              jobId={jobId}
+              jobListingId={jobListingId}
+            />
+          </BlockEditorProvider>
+        </TailorEditorErrorBoundary>
       </div>
     </div>
   );

@@ -169,10 +169,15 @@ function RejectModal({
   isPending: boolean;
 }) {
   const [adminNotes, setAdminNotes] = useState("");
+  const [notesError, setNotesError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!adminNotes.trim()) return;
+    if (!adminNotes.trim()) {
+      setNotesError("Admin notes are required when rejecting a request");
+      return;
+    }
+    setNotesError(null);
     onConfirm(adminNotes.trim());
   };
 
@@ -191,16 +196,25 @@ function RejectModal({
               </label>
               <textarea
                 value={adminNotes}
-                onChange={(e) => setAdminNotes(e.target.value)}
+                onChange={(e) => {
+                  setAdminNotes(e.target.value);
+                  if (notesError) setNotesError(null);
+                }}
                 placeholder="Explain why this request was rejected"
                 maxLength={500}
                 rows={3}
                 required
-                className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className={`w-full px-3 py-2 text-sm rounded-lg border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                  notesError ? "border-red-500" : "border-input"
+                }`}
               />
-              <p className="mt-1 text-xs text-muted-foreground">
-                This will be visible to the user.
-              </p>
+              {notesError ? (
+                <p className="mt-1 text-xs text-red-500">{notesError}</p>
+              ) : (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  This will be visible to the user.
+                </p>
+              )}
             </div>
 
             {/* Actions */}
