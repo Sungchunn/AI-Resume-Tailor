@@ -76,12 +76,20 @@ export function useScoreCalculation({
   const getContentHash = useCallback((c: TailoredContent): string => {
     return JSON.stringify({
       summary: c.summary,
-      experience: c.experience.map((e) => ({
+      experience: (c.experience ?? []).map((e) => ({
         title: e.title,
         bullets: e.bullets,
       })),
+      education: (c.education ?? []).map((e) => ({
+        degree: e.degree,
+        institution: e.institution,
+      })),
       skills: c.skills,
-      highlights: c.highlights,
+      certifications: (c.certifications ?? []).map((c) => c.name),
+      projects: (c.projects ?? []).map((p) => ({
+        name: p.name,
+        description: p.description,
+      })),
     });
   }, []);
 

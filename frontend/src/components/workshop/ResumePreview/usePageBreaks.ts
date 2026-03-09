@@ -45,24 +45,30 @@ export function usePageBreaks({
     const sectionSpacing = style.section_spacing ?? 16;
 
     const estimatedHeights: Record<string, number> = {
-      summary: sectionHeaderHeight + Math.ceil(content.summary.length / 80) * lineHeight + sectionSpacing,
+      summary: sectionHeaderHeight + Math.ceil((content.summary ?? "").length / 80) * lineHeight + sectionSpacing,
       experience:
         sectionHeaderHeight +
-        content.experience.reduce((acc, exp) => {
+        (content.experience ?? []).reduce((acc, exp) => {
           // Title + company line + bullets
-          return acc + 50 + exp.bullets.length * lineHeight * 1.2 + 20;
+          return acc + 50 + (exp.bullets?.length ?? 0) * lineHeight * 1.2 + 20;
         }, 0) +
+        sectionSpacing,
+      education:
+        sectionHeaderHeight +
+        (content.education?.length ?? 0) * 60 +
         sectionSpacing,
       skills:
         sectionHeaderHeight +
-        Math.ceil(content.skills.length / 4) * 35 +
+        Math.ceil((content.skills?.length ?? 0) / 4) * 35 +
         sectionSpacing,
-      highlights:
+      certifications:
         sectionHeaderHeight +
-        content.highlights.length * lineHeight * 1.3 +
+        (content.certifications?.length ?? 0) * 30 +
         sectionSpacing,
-      education: sectionHeaderHeight + 100 + sectionSpacing,
-      projects: sectionHeaderHeight + 150 + sectionSpacing,
+      projects:
+        sectionHeaderHeight +
+        (content.projects?.length ?? 0) * 60 +
+        sectionSpacing,
     };
 
     let currentHeight = 0;

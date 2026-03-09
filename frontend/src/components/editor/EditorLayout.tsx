@@ -91,8 +91,24 @@ export function EditorLayout({
       parts.push(content.skills.join(", "));
     }
 
-    if (content.highlights) {
-      parts.push(content.highlights.join(" "));
+    if (content.education) {
+      content.education.forEach((edu) => {
+        parts.push(`${edu.degree} at ${edu.institution}`);
+      });
+    }
+
+    if (content.certifications) {
+      content.certifications.forEach((cert) => {
+        parts.push(cert.name);
+      });
+    }
+
+    if (content.projects) {
+      content.projects.forEach((proj) => {
+        parts.push(proj.name);
+        if (proj.description) parts.push(proj.description);
+        if (proj.bullets) parts.push(proj.bullets.join(" "));
+      });
     }
 
     return parts.join(" ");

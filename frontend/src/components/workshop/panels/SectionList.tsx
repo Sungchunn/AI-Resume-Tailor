@@ -54,11 +54,15 @@ const SECTION_LABELS: Record<string, string> = {
 function getSectionCount(section: string, content: TailoredContent): number | null {
   switch (section) {
     case "experience":
-      return content.experience.length;
+      return content.experience?.length ?? 0;
+    case "education":
+      return content.education?.length ?? 0;
     case "skills":
-      return content.skills.length;
-    case "highlights":
-      return content.highlights.length;
+      return content.skills?.length ?? 0;
+    case "certifications":
+      return content.certifications?.length ?? 0;
+    case "projects":
+      return content.projects?.length ?? 0;
     default:
       return null;
   }
@@ -159,11 +163,11 @@ export function SectionList({
   // Handle duplicating a section (only applicable for experience)
   const handleDuplicateSection = useCallback(
     (section: string) => {
-      if (section === "experience" && content.experience.length > 0) {
-        const lastEntry = content.experience[content.experience.length - 1];
+      if (section === "experience" && (content.experience?.length ?? 0) > 0) {
+        const lastEntry = content.experience![content.experience!.length - 1];
         onContentChange({
           ...content,
-          experience: [...content.experience, { ...lastEntry }],
+          experience: [...(content.experience ?? []), { ...lastEntry }],
         });
       }
     },
@@ -176,14 +180,14 @@ export function SectionList({
       case "summary":
         return (
           <SummaryEditor
-            value={content.summary}
+            value={content.summary ?? ""}
             onChange={(value) => onContentChange({ ...content, summary: value })}
           />
         );
       case "experience":
         return (
           <ExperienceEditor
-            entries={content.experience}
+            entries={content.experience ?? []}
             onChange={(entries) => onContentChange({ ...content, experience: entries })}
             jobDescription={jobDescription}
             resumeBuildId={resumeBuildId}
@@ -193,17 +197,13 @@ export function SectionList({
       case "skills":
         return (
           <SkillsEditor
-            skills={content.skills}
+            skills={content.skills ?? []}
             onChange={(skills) => onContentChange({ ...content, skills })}
           />
         );
-      case "highlights":
-        return (
-          <HighlightsEditor
-            highlights={content.highlights}
-            onChange={(highlights) => onContentChange({ ...content, highlights })}
-          />
-        );
+      case "education":
+      case "certifications":
+      case "projects":
       default:
         return (
           <div className="text-sm text-muted-foreground italic">

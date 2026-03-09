@@ -5,7 +5,7 @@ import { useBulletNavigation, useInlineSuggestion, type EntryContext } from "@/h
 import { InlineSuggestion } from "./InlineSuggestion";
 import type { TailoredContent } from "@/lib/api/types";
 
-type ExperienceEntry = TailoredContent["experience"][number];
+type ExperienceEntry = NonNullable<TailoredContent["experience"]>[number];
 
 interface ExperienceEditorProps {
   entries: ExperienceEntry[];

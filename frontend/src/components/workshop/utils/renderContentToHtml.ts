@@ -63,14 +63,54 @@ export function renderContentToHtml(content: TailoredContent): string {
     `);
   }
 
-  // Highlights
-  if (content.highlights && content.highlights.length > 0) {
+  // Education
+  if (content.education && content.education.length > 0) {
     sections.push(`
-      <section class="highlights">
-        <h2>Key Highlights</h2>
+      <section class="education">
+        <h2>Education</h2>
+        ${content.education
+          .map(
+            (edu) => `
+          <div class="education-entry">
+            <div><strong>${escapeHtml(edu.degree)}</strong></div>
+            <div>${escapeHtml(edu.institution)}${edu.location ? `, ${escapeHtml(edu.location)}` : ""}</div>
+            ${edu.graduation_date ? `<div>${escapeHtml(edu.graduation_date)}</div>` : ""}
+          </div>
+        `
+          )
+          .join("\n")}
+      </section>
+    `);
+  }
+
+  // Certifications
+  if (content.certifications && content.certifications.length > 0) {
+    sections.push(`
+      <section class="certifications">
+        <h2>Certifications</h2>
         <ul>
-          ${content.highlights.map((h) => `<li>${escapeHtml(h)}</li>`).join("\n")}
+          ${content.certifications.map((c) => `<li>${escapeHtml(c.name)}${c.issuer ? ` - ${escapeHtml(c.issuer)}` : ""}</li>`).join("\n")}
         </ul>
+      </section>
+    `);
+  }
+
+  // Projects
+  if (content.projects && content.projects.length > 0) {
+    sections.push(`
+      <section class="projects">
+        <h2>Projects</h2>
+        ${content.projects
+          .map(
+            (p) => `
+          <div class="project-entry">
+            <div><strong>${escapeHtml(p.name)}</strong></div>
+            ${p.description ? `<div>${escapeHtml(p.description)}</div>` : ""}
+            ${p.technologies ? `<div>Technologies: ${p.technologies.map(escapeHtml).join(", ")}</div>` : ""}
+          </div>
+        `
+          )
+          .join("\n")}
       </section>
     `);
   }

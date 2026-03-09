@@ -487,21 +487,6 @@ export default function TailoredResumePage({ params }: PageProps) {
                   </p>
                 </section>
 
-                {/* Highlights */}
-                {tailored.tailored_data.highlights &&
-                  tailored.tailored_data.highlights.length > 0 && (
-                    <section className="mb-8">
-                      <h2 className="text-lg font-semibold text-foreground mb-3">
-                        Key Highlights
-                      </h2>
-                      <ul className="list-disc list-inside space-y-1 text-foreground/80">
-                        {tailored.tailored_data.highlights.map((highlight, i) => (
-                          <li key={i}>{highlight}</li>
-                        ))}
-                      </ul>
-                    </section>
-                  )}
-
                 {/* Experience */}
                 {tailored.tailored_data.experience &&
                   tailored.tailored_data.experience.length > 0 && (

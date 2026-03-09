@@ -6,9 +6,12 @@
 import type { TailoredContent } from "@/lib/api/types";
 import type {
   AnyResumeBlock,
+  ContactBlock,
   ExperienceBlock,
+  EducationBlock,
   SkillsBlock,
   SummaryBlock,
+  CertificationsBlock,
   ProjectsBlock,
 } from "@/lib/resume/types";
 
@@ -19,12 +22,29 @@ export function blocksToContent(blocks: AnyResumeBlock[]): TailoredContent {
   const content: TailoredContent = {
     summary: "",
     experience: [],
+    education: [],
     skills: [],
-    highlights: [],
+    certifications: [],
+    projects: [],
   };
 
   for (const block of blocks) {
     switch (block.type) {
+      case "contact":
+        const contactBlock = block as ContactBlock;
+        if (contactBlock.content) {
+          content.contact = {
+            name: contactBlock.content.fullName,
+            email: contactBlock.content.email,
+            phone: contactBlock.content.phone,
+            location: contactBlock.content.location,
+            linkedin: contactBlock.content.linkedin,
+            github: contactBlock.content.github,
+            website: contactBlock.content.website,
+          };
+        }
+        break;
+
       case "summary":
         content.summary = (block as SummaryBlock).content || "";
         break;
@@ -42,17 +62,43 @@ export function blocksToContent(blocks: AnyResumeBlock[]): TailoredContent {
         );
         break;
 
+      case "education":
+        content.education = ((block as EducationBlock).content || []).map(
+          (edu) => ({
+            degree: edu.degree || "",
+            institution: edu.institution || "",
+            location: edu.location,
+            graduation_date: edu.graduationDate,
+            gpa: edu.gpa,
+            honors: edu.honors,
+          })
+        );
+        break;
+
       case "skills":
         content.skills = (block as SkillsBlock).content || [];
         break;
 
+      case "certifications":
+        content.certifications = ((block as CertificationsBlock).content || []).map(
+          (cert) => ({
+            name: cert.name || "",
+            issuer: cert.issuer,
+            date: cert.date,
+          })
+        );
+        break;
+
       case "projects":
-        const projectBlock = block as ProjectsBlock;
-        if (projectBlock.content) {
-          content.highlights = projectBlock.content.map(
-            (p) => p.name + (p.description ? `: ${p.description}` : "")
-          );
-        }
+        content.projects = ((block as ProjectsBlock).content || []).map(
+          (proj) => ({
+            name: proj.name || "",
+            description: proj.description,
+            technologies: proj.technologies,
+            url: proj.url,
+            bullets: proj.bullets,
+          })
+        );
         break;
 
       default:

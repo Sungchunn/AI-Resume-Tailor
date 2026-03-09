@@ -30,11 +30,11 @@ export function PreviewSection({
   const renderSectionContent = () => {
     switch (section) {
       case "summary":
-        return <SummarySection content={content.summary} style={style} highlightedKeywords={highlightedKeywords} />;
+        return <SummarySection content={content.summary ?? ""} style={style} highlightedKeywords={highlightedKeywords} />;
       case "experience":
         return (
           <ExperienceSection
-            items={content.experience}
+            items={content.experience ?? []}
             style={style}
             startIndex={slice?.startIndex}
             endIndex={slice?.endIndex}
@@ -42,9 +42,12 @@ export function PreviewSection({
           />
         );
       case "skills":
-        return <SkillsSection skills={content.skills} style={style} highlightedKeywords={highlightedKeywords} />;
-      case "highlights":
-        return <HighlightsSection highlights={content.highlights} style={style} highlightedKeywords={highlightedKeywords} />;
+        return <SkillsSection skills={content.skills ?? []} style={style} highlightedKeywords={highlightedKeywords} />;
+      case "education":
+      case "certifications":
+      case "projects":
+        // TODO: Implement these sections
+        return null;
       default:
         return null;
     }
@@ -52,9 +55,11 @@ export function PreviewSection({
 
   // Skip rendering if section has no content
   if (section === "summary" && !content.summary) return null;
-  if (section === "experience" && content.experience.length === 0) return null;
-  if (section === "skills" && content.skills.length === 0) return null;
-  if (section === "highlights" && content.highlights.length === 0) return null;
+  if (section === "experience" && (content.experience?.length ?? 0) === 0) return null;
+  if (section === "skills" && (content.skills?.length ?? 0) === 0) return null;
+  if (section === "education" && (content.education?.length ?? 0) === 0) return null;
+  if (section === "certifications" && (content.certifications?.length ?? 0) === 0) return null;
+  if (section === "projects" && (content.projects?.length ?? 0) === 0) return null;
 
   return (
     <div
@@ -102,7 +107,8 @@ function ExperienceSection({
   endIndex?: number;
   highlightedKeywords: string[];
 }) {
-  const visibleItems = items.slice(startIndex, endIndex ?? items.length);
+  const safeItems = items ?? [];
+  const visibleItems = safeItems.slice(startIndex, endIndex ?? safeItems.length);
 
   return (
     <div className="space-y-4">

@@ -76,11 +76,13 @@ export function useAutoFit({
     (s: ResumeStyle): number => {
       const baseHeight = 100; // Header
       const summaryHeight = content.summary ? 80 : 0;
-      const expHeight = content.experience.length * (60 + 20 * 3); // entries * (header + bullets)
-      const skillsHeight = Math.ceil(content.skills.length / 5) * 30;
-      const highlightsHeight = content.highlights.length * 25;
+      const expHeight = (content.experience?.length ?? 0) * (60 + 20 * 3); // entries * (header + bullets)
+      const eduHeight = (content.education?.length ?? 0) * 50;
+      const skillsHeight = Math.ceil((content.skills?.length ?? 0) / 5) * 30;
+      const certHeight = (content.certifications?.length ?? 0) * 25;
+      const projHeight = (content.projects?.length ?? 0) * 60;
 
-      const total = baseHeight + summaryHeight + expHeight + skillsHeight + highlightsHeight;
+      const total = baseHeight + summaryHeight + expHeight + eduHeight + skillsHeight + certHeight + projHeight;
 
       // Scale by font and spacing factors
       const fontScale = (s.font_size_body ?? 11) / 11;

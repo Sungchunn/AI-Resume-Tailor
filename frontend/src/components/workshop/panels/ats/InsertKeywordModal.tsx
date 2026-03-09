@@ -42,13 +42,13 @@ export function InsertKeywordModal({
       const content = state.content;
 
       if (selectedSection === "skills") {
-        const updatedSkills = [...content.skills, keyword];
+        const updatedSkills = [...(content.skills ?? []), keyword];
         updateContent({ skills: updatedSkills });
       } else if (selectedSection === "summary") {
-        const updatedSummary = `${content.summary} ${keyword}`.trim();
+        const updatedSummary = `${content.summary ?? ""} ${keyword}`.trim();
         updateContent({ summary: updatedSummary });
       } else if (selectedSection === "experience") {
-        const updatedExperience = [...content.experience];
+        const updatedExperience = [...(content.experience ?? [])];
         if (updatedExperience.length > 0) {
           const firstEntry = { ...updatedExperience[0] };
           firstEntry.bullets = [...(firstEntry.bullets || []), `Utilized ${keyword} to...`];

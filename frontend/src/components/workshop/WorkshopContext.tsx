@@ -159,15 +159,17 @@ export { DEFAULT_STYLE } from "@/lib/styles/defaultStyle";
 export const DEFAULT_SECTION_ORDER = [
   "summary",
   "experience",
+  "education",
   "skills",
-  "highlights",
+  "certifications",
+  "projects",
 ];
 
 export const initialState: WorkshopState = {
   tailoredId: "",
   tailoredResume: null,
   jobDescription: null,
-  content: { summary: "", experience: [], skills: [], highlights: [] },
+  content: { summary: "", experience: [], education: [], skills: [], certifications: [], projects: [] },
   styleSettings: DEFAULT_STYLE,
   sectionOrder: DEFAULT_SECTION_ORDER,
   suggestions: [],
@@ -215,13 +217,16 @@ function applySuggestionToContent(
       break;
     case "skills":
       if (type === "add") {
-        return { ...content, skills: [...content.skills, suggested] };
+        return { ...content, skills: [...(content.skills ?? []), suggested] };
       }
       break;
-    case "highlights":
+    case "certifications":
       if (type === "add") {
-        return { ...content, highlights: [...content.highlights, suggested] };
+        return { ...content, certifications: [...(content.certifications ?? []), { name: suggested }] };
       }
+      break;
+    case "projects":
+      // Handle project updates - would need more context
       break;
   }
 
