@@ -13,6 +13,8 @@ from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.models.scraper_request import RequestStatus
+
 
 class ScraperRegion(str, Enum):
     """Geographic regions for job scraping."""
@@ -304,9 +306,6 @@ SCRAPER_CONFIGS = [
 # ============================================================================
 # Scraper Request Schemas (User-submitted job URL requests)
 # ============================================================================
-
-# Import RequestStatus from model to avoid duplicate enum definitions
-from app.models.scraper_request import RequestStatus
 
 
 class ScraperRequestCreate(BaseModel):

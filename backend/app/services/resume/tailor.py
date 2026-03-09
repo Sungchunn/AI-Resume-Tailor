@@ -184,7 +184,7 @@ Output the following JSON structure (this is the ParsedContent schema with all 1
   "leadership": [
     {
       "id": "PRESERVE FROM ORIGINAL",
-      "role": "Role",
+      "title": "Title",
       "organization": "Organization",
       "location": "Location or null",
       "start_date": "Start",

@@ -112,7 +112,7 @@ class Membership(TypedDict, total=False):
 
 class Leadership(TypedDict, total=False):
     id: str
-    role: str
+    title: str  # Changed from 'role' to align with frontend
     organization: str
     location: str
     start_date: str
@@ -273,7 +273,7 @@ Parse the resume into the following JSON structure with all 16 supported section
   ],
   "leadership": [
     {
-      "role": "Leadership Role",
+      "title": "Leadership Title",
       "organization": "Organization Name",
       "location": "City, State or null",
       "start_date": "Month Year",
