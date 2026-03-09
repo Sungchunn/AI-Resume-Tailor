@@ -1,22 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   useResumes,
   useDeleteResume,
   useSetMasterResume,
-  useJobs,
-  useDeleteJob,
   useBlocks,
   useDeleteBlock,
   useVerifyBlock,
+  useSavedJobListings,
+  useKanbanBoard,
 } from "@/lib/api";
 import { BlockCard } from "@/components/vault/BlockCard";
 import { CardGridSkeleton, ErrorMessage } from "@/components/ui";
+import { KanbanBoard } from "@/components/jobs/kanban";
+import { JobListingCard } from "@/components/jobs/JobListingCard";
 import type { BlockType } from "@/lib/api/types";
 
-type TabType = "resumes" | "jobs" | "vault";
+type TabType = "resumes" | "vault" | "applied" | "saved";
 
 const blockTypeOptions: { value: BlockType; label: string }[] = [
   { value: "achievement", label: "Achievement" },
@@ -27,18 +30,44 @@ const blockTypeOptions: { value: BlockType; label: string }[] = [
   { value: "education", label: "Education" },
 ];
 
+const validTabs: TabType[] = ["resumes", "vault", "applied", "saved"];
+
 export default function LibraryPage() {
-  const [activeTab, setActiveTab] = useState<TabType>("resumes");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tabParam = searchParams.get("tab") as TabType | null;
+  const initialTab = tabParam && validTabs.includes(tabParam) ? tabParam : "resumes";
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
+
+  // Sync tab state with URL params
+  useEffect(() => {
+    if (tabParam && validTabs.includes(tabParam) && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam, activeTab]);
+
+  // Update URL when tab changes
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    router.push(`/library?tab=${tab}`, { scroll: false });
+  };
 
   // Fetch counts for stats
   const { data: resumes } = useResumes();
-  const { data: jobs } = useJobs();
   const { data: blocksData } = useBlocks({});
+  const { data: savedData } = useSavedJobListings();
+  const { data: kanbanData } = useKanbanBoard();
+
+  // Calculate total applied jobs from kanban columns
+  const appliedCount = kanbanData
+    ? Object.values(kanbanData).reduce((sum, column) => sum + column.jobs.length, 0)
+    : 0;
 
   const tabs: { id: TabType; label: string; count: number }[] = [
     { id: "resumes", label: "Resumes", count: resumes?.length ?? 0 },
-    { id: "jobs", label: "Jobs", count: jobs?.length ?? 0 },
     { id: "vault", label: "Vault", count: blocksData?.total ?? 0 },
+    { id: "applied", label: "Applied", count: appliedCount },
+    { id: "saved", label: "Saved", count: savedData?.total ?? 0 },
   ];
 
   return (
@@ -46,7 +75,7 @@ export default function LibraryPage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Library</h1>
         <p className="mt-1 text-muted-foreground">
-          Manage your resumes, job descriptions, and experience blocks.
+          Manage your resumes, experience blocks, and job applications.
         </p>
       </div>
 
@@ -56,7 +85,7 @@ export default function LibraryPage() {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
                 activeTab === tab.id
                   ? "border-primary text-primary"
@@ -80,8 +109,9 @@ export default function LibraryPage() {
 
       {/* Tab Content */}
       {activeTab === "resumes" && <ResumesTab />}
-      {activeTab === "jobs" && <JobsTab />}
       {activeTab === "vault" && <VaultTab />}
+      {activeTab === "applied" && <AppliedTab />}
+      {activeTab === "saved" && <SavedTab />}
     </div>
   );
 }
@@ -203,103 +233,72 @@ function ResumesTab() {
   );
 }
 
-function JobsTab() {
-  const { data: jobs, isLoading, error, refetch } = useJobs();
-  const deleteJob = useDeleteJob();
+function AppliedTab() {
+  return (
+    <div className="space-y-4">
+      <KanbanBoard />
+    </div>
+  );
+}
 
-  const handleDelete = async (id: number) => {
-    if (confirm("Are you sure you want to delete this job description?")) {
-      deleteJob.mutate(id);
-    }
-  };
+function SavedTab() {
+  const { data, isLoading, error } = useSavedJobListings();
 
-  if (isLoading) return <CardGridSkeleton count={3} />;
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[...Array(3)].map((_, i) => (
+          <div
+            key={i}
+            className="bg-card rounded-lg border border-border p-4 animate-pulse"
+          >
+            <div className="h-5 bg-muted rounded w-3/4 mb-2" />
+            <div className="h-4 bg-muted rounded w-1/2 mb-3" />
+            <div className="h-3 bg-muted rounded w-full mb-2" />
+            <div className="h-3 bg-muted rounded w-5/6" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   if (error) {
     return (
-      <ErrorMessage
-        message="Failed to load jobs. Please try again."
-        onRetry={() => refetch()}
+      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 text-destructive">
+        <p className="font-medium">Error loading saved jobs</p>
+        <p className="text-sm">{error.message}</p>
+      </div>
+    );
+  }
+
+  if (data && data.listings.length === 0) {
+    return (
+      <EmptyState
+        icon={<BookmarkIcon />}
+        title="No saved jobs yet"
+        description="Save jobs you're interested in to find them here later."
+        action={
+          <Link href="/jobs" className="btn-primary inline-flex">
+            Browse Jobs
+          </Link>
+        }
       />
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Link href="/library/jobs/new" className="btn-primary">
-          Add Job
-        </Link>
-      </div>
-
-      {jobs && jobs.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {jobs.map((job) => (
-            <div key={job.id} className="card">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground truncate">
-                    {job.title}
-                  </h3>
-                  {job.company && (
-                    <p className="text-sm text-muted-foreground">{job.company}</p>
-                  )}
-                  <p className="mt-1 text-sm text-muted-foreground/80">
-                    Added {new Date(job.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-
-              {job.url && (
-                <a
-                  href={job.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center text-sm text-primary hover:text-primary/80"
-                >
-                  View Original
-                  <ExternalLinkIcon className="ml-1 h-3 w-3" />
-                </a>
-              )}
-
-              <div className="mt-4 flex items-center gap-2">
-                <Link
-                  href={`/library/jobs/${job.id}`}
-                  className="btn-secondary text-sm py-1.5"
-                >
-                  View
-                </Link>
-                <Link
-                  href={`/library/jobs/${job.id}/edit`}
-                  className="btn-ghost text-sm py-1.5"
-                >
-                  Edit
-                </Link>
-                <button
-                  onClick={() => handleDelete(job.id)}
-                  disabled={deleteJob.isPending}
-                  className="btn-ghost text-sm py-1.5 text-destructive hover:bg-destructive/10"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <EmptyState
-          icon={<BriefcaseIcon />}
-          title="No job descriptions yet"
-          description="Add a job description to start tailoring your resume."
-          action={
-            <Link
-              href="/library/jobs/new"
-              className="btn-primary inline-flex"
-            >
-              Add Job Description
-            </Link>
-          }
-        />
+      {data && (
+        <>
+          <p className="text-sm text-muted-foreground">
+            {data.total} saved job{data.total !== 1 ? "s" : ""}
+          </p>
+          <div className="space-y-4">
+            {data.listings.map((listing) => (
+              <JobListingCard key={listing.id} listing={listing} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
@@ -488,7 +487,7 @@ function DocumentIcon() {
   );
 }
 
-function BriefcaseIcon() {
+function BookmarkIcon() {
   return (
     <svg
       className="h-12 w-12"
@@ -500,7 +499,7 @@ function BriefcaseIcon() {
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
-        d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z"
+        d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
       />
     </svg>
   );
@@ -519,24 +518,6 @@ function VaultIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
-      />
-    </svg>
-  );
-}
-
-function ExternalLinkIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={2}
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
       />
     </svg>
   );
