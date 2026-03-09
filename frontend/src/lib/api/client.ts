@@ -75,6 +75,14 @@ import type {
   AIChatResponse,
   ParseTaskResponse,
   ParseStatusResponse,
+  ScraperRequestCreate,
+  ScraperRequestResponse,
+  ScraperRequestListResponse,
+  ScraperRequestStatus,
+  ScraperRequestAdminListResponse,
+  ScraperRequestAdminResponse,
+  ScraperRequestApproveRequest,
+  ScraperRequestRejectRequest,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -697,6 +705,21 @@ export const jobListingApi = {
     }),
 };
 
+// Scraper Request API (user-facing)
+export const scraperRequestApi = {
+  create: (data: ScraperRequestCreate): Promise<ScraperRequestResponse> =>
+    fetchApi("/api/scraper-requests", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  list: (limit = 50, offset = 0): Promise<ScraperRequestListResponse> =>
+    fetchApi(`/api/scraper-requests?limit=${limit}&offset=${offset}`),
+
+  cancel: (id: number): Promise<void> =>
+    fetchApi(`/api/scraper-requests/${id}`, { method: "DELETE" }),
+};
+
 // Admin API
 export const adminApi = {
   triggerAdhocScrape: (data: AdHocScrapeRequest): Promise<AdHocScrapeResponse> =>
@@ -752,6 +775,37 @@ export const adminApi = {
   toggleSchedule: (): Promise<ScheduleSettingsResponse> =>
     fetchApi("/api/admin/scraper/schedule/toggle", {
       method: "POST",
+    }),
+
+  // Scraper Requests (user-submitted job URL requests)
+  listScraperRequests: (
+    status?: ScraperRequestStatus,
+    limit = 50,
+    offset = 0
+  ): Promise<ScraperRequestAdminListResponse> => {
+    const params = new URLSearchParams();
+    if (status) params.append("status", status);
+    params.append("limit", String(limit));
+    params.append("offset", String(offset));
+    return fetchApi(`/api/admin/scraper-requests?${params.toString()}`);
+  },
+
+  approveScraperRequest: (
+    id: number,
+    data: ScraperRequestApproveRequest
+  ): Promise<ScraperRequestAdminResponse> =>
+    fetchApi(`/api/admin/scraper-requests/${id}/approve`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  rejectScraperRequest: (
+    id: number,
+    data: ScraperRequestRejectRequest
+  ): Promise<ScraperRequestAdminResponse> =>
+    fetchApi(`/api/admin/scraper-requests/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify(data),
     }),
 };
 

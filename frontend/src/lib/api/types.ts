@@ -951,3 +951,58 @@ export interface ATSProgressiveCompleteEvent {
   elapsed_ms: number;
   composite_score: ATSCompositeScore;
 }
+
+// ============================================================================
+// Scraper Request Types (User-submitted job URL requests)
+// ============================================================================
+
+export type ScraperRequestStatus = "pending" | "approved" | "rejected";
+
+export interface ScraperRequestCreate {
+  url: string;
+  name?: string | null;
+  reason?: string | null;
+}
+
+export interface ScraperRequestResponse {
+  id: number;
+  url: string;
+  name: string | null;
+  reason: string | null;
+  status: ScraperRequestStatus;
+  admin_notes: string | null;
+  created_at: string;
+  updated_at: string | null;
+  reviewed_at: string | null;
+  preset_id: number | null;
+}
+
+export interface ScraperRequestListResponse {
+  requests: ScraperRequestResponse[];
+  total: number;
+}
+
+// Admin types
+export interface ScraperRequestAdminResponse extends ScraperRequestResponse {
+  user_id: number;
+  user_email: string;
+  reviewed_by: number | null;
+  reviewer_email: string | null;
+}
+
+export interface ScraperRequestAdminListResponse {
+  requests: ScraperRequestAdminResponse[];
+  total: number;
+}
+
+export interface ScraperRequestApproveRequest {
+  admin_notes?: string | null;
+  create_preset?: boolean;
+  preset_name?: string | null;
+  preset_count?: number;
+  preset_is_active?: boolean;
+}
+
+export interface ScraperRequestRejectRequest {
+  admin_notes: string;
+}
