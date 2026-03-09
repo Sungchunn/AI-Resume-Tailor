@@ -3,3 +3,5 @@ export { ExperienceEditor } from "./ExperienceEditor";
 export { SkillsEditor } from "./SkillsEditor";
 export { HighlightsEditor } from "./HighlightsEditor";
 export { InlineSuggestion } from "./InlineSuggestion";
+export { SectionEditorAdapter } from "./SectionEditorAdapter";
+export { CustomSectionEditor } from "./CustomSectionEditor";

@@ -19,13 +19,16 @@ import {
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SectionItem } from "./SectionItem";
 import { AddSectionMenu } from "./AddSectionMenu";
+import { RenameSectionModal } from "./RenameSectionModal";
+import { CreateSectionModal } from "./CreateSectionModal";
+import { SectionEditorAdapter } from "./sections";
+import type { TailoredContent, CustomSection } from "@/lib/api/types";
 import {
-  SummaryEditor,
-  ExperienceEditor,
-  SkillsEditor,
-  HighlightsEditor,
-} from "./sections";
-import type { TailoredContent } from "@/lib/api/types";
+  getSectionLabel,
+  getSectionCount as getRegistrySectionCount,
+  isCustomSection,
+  isPredefinedSection,
+} from "@/lib/sections";
 
 interface SectionListProps {
   content: TailoredContent;
@@ -40,32 +43,24 @@ interface SectionListProps {
   onBulletAccepted?: (entryIndex: number, bulletIndex: number, original: string, suggested: string, reason: string) => void;
 }
 
-const SECTION_LABELS: Record<string, string> = {
-  summary: "Professional Summary",
-  experience: "Work Experience",
-  skills: "Skills",
-  education: "Education",
-  projects: "Projects",
-  highlights: "Key Highlights",
-  certifications: "Certifications",
-  awards: "Awards",
-};
-
-function getSectionCount(section: string, content: TailoredContent): number | null {
-  switch (section) {
-    case "experience":
-      return content.experience?.length ?? 0;
-    case "education":
-      return content.education?.length ?? 0;
-    case "skills":
-      return content.skills?.length ?? 0;
-    case "certifications":
-      return content.certifications?.length ?? 0;
-    case "projects":
-      return content.projects?.length ?? 0;
-    default:
-      return null;
+/**
+ * Get section label using registry with custom label support
+ */
+function getSectionDisplayLabel(section: string, content: TailoredContent): string {
+  // Check for custom section
+  if (isCustomSection(section)) {
+    const customSection = content.custom_sections?.[section];
+    return customSection?.label ?? section;
   }
+  // Use registry lookup with custom labels
+  return getSectionLabel(section, content.section_labels);
+}
+
+/**
+ * Get section count using registry
+ */
+function getSectionItemCount(section: string, content: TailoredContent): number | null {
+  return getRegistrySectionCount(section, content);
 }
 
 export function SectionList({
@@ -84,6 +79,12 @@ export function SectionList({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     () => new Set(sectionOrder)
   );
+
+  // Rename modal state
+  const [renamingSection, setRenamingSection] = useState<string | null>(null);
+
+  // Create custom section modal state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // DnD sensors
   const sensors = useSensors(
@@ -174,43 +175,81 @@ export function SectionList({
     [content, onContentChange]
   );
 
-  // Render section editor
+  // Handle renaming a section
+  const handleRenameSection = useCallback(
+    (sectionKey: string, newLabel: string) => {
+      if (isCustomSection(sectionKey)) {
+        // For custom sections, update the label in custom_sections
+        const customSection = content.custom_sections?.[sectionKey];
+        if (customSection) {
+          onContentChange({
+            ...content,
+            custom_sections: {
+              ...content.custom_sections,
+              [sectionKey]: {
+                ...customSection,
+                label: newLabel,
+              },
+            },
+          });
+        }
+      } else {
+        // For predefined sections, store in section_labels
+        onContentChange({
+          ...content,
+          section_labels: {
+            ...content.section_labels,
+            [sectionKey]: newLabel,
+          },
+        });
+      }
+    },
+    [content, onContentChange]
+  );
+
+  // Handle resetting a section label to default
+  const handleResetSectionLabel = useCallback(
+    (sectionKey: string) => {
+      if (content.section_labels?.[sectionKey]) {
+        const { [sectionKey]: _, ...restLabels } = content.section_labels;
+        onContentChange({
+          ...content,
+          section_labels: Object.keys(restLabels).length > 0 ? restLabels : undefined,
+        });
+      }
+    },
+    [content, onContentChange]
+  );
+
+  // Handle creating a custom section
+  const handleCreateCustomSection = useCallback(
+    (sectionKey: string, section: CustomSection) => {
+      onContentChange({
+        ...content,
+        custom_sections: {
+          ...content.custom_sections,
+          [sectionKey]: section,
+        },
+      });
+      // Add to section order and expand it
+      onOrderChange([...sectionOrder, sectionKey]);
+      setExpandedSections((prev) => new Set([...prev, sectionKey]));
+    },
+    [content, onContentChange, sectionOrder, onOrderChange]
+  );
+
+  // Render section editor using the adapter
   const renderSectionEditor = (section: string) => {
-    switch (section) {
-      case "summary":
-        return (
-          <SummaryEditor
-            value={content.summary ?? ""}
-            onChange={(value) => onContentChange({ ...content, summary: value })}
-          />
-        );
-      case "experience":
-        return (
-          <ExperienceEditor
-            entries={content.experience ?? []}
-            onChange={(entries) => onContentChange({ ...content, experience: entries })}
-            jobDescription={jobDescription}
-            resumeBuildId={resumeBuildId}
-            onBulletAccepted={onBulletAccepted}
-          />
-        );
-      case "skills":
-        return (
-          <SkillsEditor
-            skills={content.skills ?? []}
-            onChange={(skills) => onContentChange({ ...content, skills })}
-          />
-        );
-      case "education":
-      case "certifications":
-      case "projects":
-      default:
-        return (
-          <div className="text-sm text-muted-foreground italic">
-            Editor for "{section}" section coming soon
-          </div>
-        );
-    }
+    return (
+      <SectionEditorAdapter
+        section={section}
+        content={content}
+        onChange={onContentChange}
+        jobDescription={jobDescription}
+        resumeBuildId={resumeBuildId}
+        onBulletAccepted={onBulletAccepted}
+      />
+    );
   };
 
   return (
@@ -228,6 +267,7 @@ export function SectionList({
           <AddSectionMenu
             existingSections={sectionOrder}
             onAdd={handleAddSection}
+            onCreateCustom={() => setIsCreateModalOpen(true)}
           />
         </div>
       </div>
@@ -249,8 +289,8 @@ export function SectionList({
                 <SectionItem
                   key={section}
                   section={section}
-                  label={SECTION_LABELS[section] || section}
-                  count={getSectionCount(section, content)}
+                  label={getSectionDisplayLabel(section, content)}
+                  count={getSectionItemCount(section, content)}
                   isExpanded={expandedSections.has(section)}
                   isActive={activeSection === section}
                   onToggle={() => toggleSection(section)}
@@ -258,6 +298,7 @@ export function SectionList({
                   onAIEnhance={() => onAIEnhance?.(section)}
                   onDuplicate={() => handleDuplicateSection(section)}
                   onRemove={() => handleRemoveSection(section)}
+                  onRename={() => setRenamingSection(section)}
                 >
                   {renderSectionEditor(section)}
                 </SectionItem>
@@ -269,10 +310,35 @@ export function SectionList({
         {sectionOrder.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             <p className="text-sm">No sections yet.</p>
-            <p className="text-xs mt-1">Click "Add" to add your first section.</p>
+            <p className="text-xs mt-1">Click &quot;Add&quot; to add your first section.</p>
           </div>
         )}
       </div>
+
+      {/* Rename Section Modal */}
+      {renamingSection && (
+        <RenameSectionModal
+          open={!!renamingSection}
+          onOpenChange={(open) => {
+            if (!open) setRenamingSection(null);
+          }}
+          sectionKey={renamingSection}
+          currentLabel={getSectionDisplayLabel(renamingSection, content)}
+          onRename={(newLabel) => handleRenameSection(renamingSection, newLabel)}
+          onResetToDefault={
+            isPredefinedSection(renamingSection) && content.section_labels?.[renamingSection]
+              ? () => handleResetSectionLabel(renamingSection)
+              : undefined
+          }
+        />
+      )}
+
+      {/* Create Custom Section Modal */}
+      <CreateSectionModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onCreate={handleCreateCustomSection}
+      />
     </div>
   );
 }
