@@ -72,6 +72,8 @@ class EducationEntrySchema(BaseModel):
     graduation_date: str | None = None
     gpa: str | None = None
     honors: list[str] = []
+    minor: str | None = None
+    relevant_courses: list[str] = []
 
 
 class ProjectEntrySchema(BaseModel):
@@ -82,18 +84,144 @@ class ProjectEntrySchema(BaseModel):
     description: str | None = None
     technologies: list[str] = []
     url: str | None = None
+    bullets: list[str] = []
+    start_date: str | None = None
+    end_date: str | None = None
+
+
+class LanguageEntrySchema(BaseModel):
+    """Language proficiency entry in parsed resume."""
+
+    id: str | None = None
+    language: str | None = None
+    proficiency: str | None = None
+
+
+class VolunteerEntrySchema(BaseModel):
+    """Volunteer experience entry in parsed resume."""
+
+    id: str | None = None
+    role: str | None = None
+    organization: str | None = None
+    location: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    description: str | None = None
+    bullets: list[str] = []
+
+
+class PublicationEntrySchema(BaseModel):
+    """Publication entry in parsed resume."""
+
+    id: str | None = None
+    title: str | None = None
+    authors: list[str] = []
+    publication: str | None = None
+    date: str | None = None
+    url: str | None = None
+    doi: str | None = None
+
+
+class AwardEntrySchema(BaseModel):
+    """Award/honor entry in parsed resume."""
+
+    id: str | None = None
+    title: str | None = None
+    issuer: str | None = None
+    date: str | None = None
+    description: str | None = None
+
+
+class ReferenceEntrySchema(BaseModel):
+    """Professional reference entry in parsed resume."""
+
+    id: str | None = None
+    name: str | None = None
+    title: str | None = None
+    company: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    relationship: str | None = None
+
+
+class CourseEntrySchema(BaseModel):
+    """Course/training entry in parsed resume."""
+
+    id: str | None = None
+    name: str | None = None
+    institution: str | None = None
+    date: str | None = None
+    description: str | None = None
+
+
+class MembershipEntrySchema(BaseModel):
+    """Professional membership entry in parsed resume."""
+
+    id: str | None = None
+    organization: str | None = None
+    role: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+
+
+class LeadershipEntrySchema(BaseModel):
+    """Leadership experience entry in parsed resume."""
+
+    id: str | None = None
+    role: str | None = None
+    organization: str | None = None
+    location: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    description: str | None = None
+    bullets: list[str] = []
+
+
+class CertificationEntrySchema(BaseModel):
+    """Certification entry in parsed resume."""
+
+    id: str | None = None
+    name: str | None = None
+    issuer: str | None = None
+    date: str | None = None
+    expiry_date: str | None = None
+    credential_id: str | None = None
+    url: str | None = None
 
 
 class ParsedContentSchema(BaseModel):
-    """Structured parsed content from resume - used for both original and tailored."""
+    """Structured parsed content from resume - used for both original and tailored.
+
+    Supports all 16 section types for comprehensive resume data.
+    """
 
     contact: ContactInfoSchema | None = None
     summary: str | None = None
     experience: list[ExperienceEntrySchema] = []
     education: list[EducationEntrySchema] = []
     skills: list[str] = []
-    certifications: list[str] = []
+    certifications: list[CertificationEntrySchema] = []
     projects: list[ProjectEntrySchema] = []
+    languages: list[LanguageEntrySchema] = []
+    volunteer: list[VolunteerEntrySchema] = []
+    publications: list[PublicationEntrySchema] = []
+    awards: list[AwardEntrySchema] = []
+    interests: str | None = None
+    references: list[ReferenceEntrySchema] = []
+    courses: list[CourseEntrySchema] = []
+    memberships: list[MembershipEntrySchema] = []
+    leadership: list[LeadershipEntrySchema] = []
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_certifications(cls, data: Any) -> Any:
+        """Migrate old certifications format (list[str]) to new format."""
+        if isinstance(data, dict) and "certifications" in data:
+            certs = data["certifications"]
+            if certs and isinstance(certs, list) and len(certs) > 0:
+                if isinstance(certs[0], str):
+                    data["certifications"] = [{"name": cert} for cert in certs]
+        return data
 
 
 # =============================================================================
