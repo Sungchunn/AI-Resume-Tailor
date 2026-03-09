@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 
 from bson import ObjectId
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, Field, field_serializer, model_validator
 
 
 class PyObjectId(ObjectId):
@@ -68,6 +68,8 @@ class EducationEntry(BaseModel):
     graduation_date: str | None = None
     gpa: str | None = None
     honors: list[str] = Field(default_factory=list)
+    minor: str | None = None
+    relevant_courses: list[str] = Field(default_factory=list)
 
 
 class ProjectEntry(BaseModel):
@@ -78,18 +80,151 @@ class ProjectEntry(BaseModel):
     description: str | None = None
     technologies: list[str] = Field(default_factory=list)
     url: str | None = None
+    bullets: list[str] = Field(default_factory=list)
+    start_date: str | None = None
+    end_date: str | None = None
+
+
+class LanguageEntry(BaseModel):
+    """Language proficiency entry in parsed resume."""
+
+    id: str | None = None
+    language: str | None = None
+    proficiency: str | None = None
+
+
+class VolunteerEntry(BaseModel):
+    """Volunteer experience entry in parsed resume."""
+
+    id: str | None = None
+    role: str | None = None
+    organization: str | None = None
+    location: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    description: str | None = None
+    bullets: list[str] = Field(default_factory=list)
+
+
+class PublicationEntry(BaseModel):
+    """Publication entry in parsed resume."""
+
+    id: str | None = None
+    title: str | None = None
+    authors: list[str] = Field(default_factory=list)
+    publication: str | None = None  # Journal/Conference name
+    date: str | None = None
+    url: str | None = None
+    doi: str | None = None
+
+
+class AwardEntry(BaseModel):
+    """Award/honor entry in parsed resume."""
+
+    id: str | None = None
+    title: str | None = None
+    issuer: str | None = None
+    date: str | None = None
+    description: str | None = None
+
+
+class ReferenceEntry(BaseModel):
+    """Professional reference entry in parsed resume."""
+
+    id: str | None = None
+    name: str | None = None
+    title: str | None = None
+    company: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    relationship: str | None = None
+
+
+class CourseEntry(BaseModel):
+    """Course/training entry in parsed resume."""
+
+    id: str | None = None
+    name: str | None = None
+    institution: str | None = None
+    date: str | None = None
+    description: str | None = None
+
+
+class MembershipEntry(BaseModel):
+    """Professional membership entry in parsed resume."""
+
+    id: str | None = None
+    organization: str | None = None
+    role: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+
+
+class LeadershipEntry(BaseModel):
+    """Leadership experience entry in parsed resume."""
+
+    id: str | None = None
+    role: str | None = None
+    organization: str | None = None
+    location: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    description: str | None = None
+    bullets: list[str] = Field(default_factory=list)
+
+
+class CertificationEntry(BaseModel):
+    """Certification entry in parsed resume."""
+
+    id: str | None = None
+    name: str | None = None
+    issuer: str | None = None
+    date: str | None = None
+    expiry_date: str | None = None
+    credential_id: str | None = None
+    url: str | None = None
 
 
 class ParsedContent(BaseModel):
-    """Structured parsed content from resume."""
+    """Structured parsed content from resume.
+
+    Supports all 16 section types for comprehensive resume parsing.
+    """
 
     contact: ContactInfo | None = None
     summary: str | None = None
     experience: list[ExperienceEntry] = Field(default_factory=list)
     education: list[EducationEntry] = Field(default_factory=list)
     skills: list[str] = Field(default_factory=list)
-    certifications: list[str] = Field(default_factory=list)
+    certifications: list[CertificationEntry] = Field(default_factory=list)
     projects: list[ProjectEntry] = Field(default_factory=list)
+    languages: list[LanguageEntry] = Field(default_factory=list)
+    volunteer: list[VolunteerEntry] = Field(default_factory=list)
+    publications: list[PublicationEntry] = Field(default_factory=list)
+    awards: list[AwardEntry] = Field(default_factory=list)
+    interests: str | None = None
+    references: list[ReferenceEntry] = Field(default_factory=list)
+    courses: list[CourseEntry] = Field(default_factory=list)
+    memberships: list[MembershipEntry] = Field(default_factory=list)
+    leadership: list[LeadershipEntry] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_certifications(cls, data: Any) -> Any:
+        """Migrate old certifications format (list[str]) to new format (list[CertificationEntry]).
+
+        This ensures backwards compatibility with existing resumes that have
+        certifications stored as plain strings.
+        """
+        if isinstance(data, dict) and "certifications" in data:
+            certs = data["certifications"]
+            if certs and isinstance(certs, list) and len(certs) > 0:
+                # Check if first item is a string (old format)
+                if isinstance(certs[0], str):
+                    data["certifications"] = [
+                        {"name": cert} for cert in certs
+                    ]
+        return data
 
 
 class StyleSettings(BaseModel):
