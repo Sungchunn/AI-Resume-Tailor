@@ -18,6 +18,7 @@ import {
   EditorLayout,
 } from "@/components/library/editor";
 import { TailorFlowStepper } from "@/components/tailoring";
+import { useATSProgressStore } from "@/lib/stores/atsProgressStore";
 import type { ParsedResumeContent } from "@/lib/resume/types";
 import {
   tailoredContentToParsedContent,
@@ -48,6 +49,18 @@ export default function TailoredEditorPage({ params }: PageProps) {
   // Get job context for ATS analysis
   const jobId = tailored?.job_id ?? null;
   const jobListingId = tailored?.job_listing_id ?? null;
+
+  // Get ATS score from the store if it matches this job listing
+  const atsCompositeScore = useATSProgressStore((state) => {
+    // Check if the stored ATS score is for this job listing
+    if (jobListingId && state.jobId === jobListingId && state.compositeScore) {
+      return state.compositeScore.finalScore;
+    }
+    return null;
+  });
+
+  // Use ATS score if available, otherwise fall back to semantic match score
+  const displayScore = atsCompositeScore ?? tailored?.match_score ?? null;
 
   // Get initial style from API
   const initialStyle = useMemo(() => {
@@ -129,20 +142,22 @@ export default function TailoredEditorPage({ params }: PageProps) {
             )}
           </div>
 
-          {/* Match Score */}
-          {tailored.match_score !== null && (
+          {/* ATS Score (from analysis) or fallback to semantic match score */}
+          {displayScore !== null && (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Match:</span>
+              <span className="text-sm text-muted-foreground">
+                {atsCompositeScore !== null ? "ATS Score:" : "Match:"}
+              </span>
               <span
                 className={`text-sm font-bold ${
-                  tailored.match_score >= 80
+                  displayScore >= 80
                     ? "text-green-600"
-                    : tailored.match_score >= 60
+                    : displayScore >= 60
                     ? "text-amber-600"
                     : "text-red-600"
                 }`}
               >
-                {tailored.match_score}%
+                {Math.round(displayScore)}%
               </span>
             </div>
           )}
