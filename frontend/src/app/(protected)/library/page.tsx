@@ -52,11 +52,20 @@ export default function LibraryPage() {
     router.push(`/library?tab=${tab}`, { scroll: false });
   };
 
-  // Fetch counts for stats
-  const { data: resumes } = useResumes();
-  const { data: blocksData } = useBlocks({});
-  const { data: savedData } = useSavedJobListings();
-  const { data: kanbanData } = useKanbanBoard();
+  // Fetch data only for active tab to reduce unnecessary API calls
+  // React Query will cache the data, so switching tabs reuses cached results
+  const { data: resumes } = useResumes({
+    enabled: activeTab === "resumes",
+  });
+  const { data: blocksData } = useBlocks({
+    enabled: activeTab === "vault",
+  });
+  const { data: savedData } = useSavedJobListings({
+    enabled: activeTab === "saved",
+  });
+  const { data: kanbanData } = useKanbanBoard({
+    enabled: activeTab === "applied",
+  });
 
   // Calculate total applied jobs from kanban columns
   const appliedCount = kanbanData?.columns

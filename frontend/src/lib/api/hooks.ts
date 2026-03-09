@@ -126,10 +126,11 @@ export const queryKeys = {
 };
 
 // Resume Hooks
-export function useResumes() {
+export function useResumes(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: queryKeys.resumes.list(),
     queryFn: () => resumeApi.list(),
+    enabled: options?.enabled,
   });
 }
 
@@ -420,10 +421,13 @@ export function useBlocks(params?: {
   verified_only?: boolean;
   limit?: number;
   offset?: number;
+  enabled?: boolean;
 }) {
+  const { enabled, ...queryParams } = params ?? {};
   return useQuery({
-    queryKey: queryKeys.blocks.list(params),
-    queryFn: () => blockApi.list(params),
+    queryKey: queryKeys.blocks.list(queryParams),
+    queryFn: () => blockApi.list(queryParams),
+    enabled,
   });
 }
 
@@ -769,10 +773,16 @@ export function useJobListing(id: number) {
   });
 }
 
-export function useSavedJobListings(limit = 50, offset = 0) {
+export function useSavedJobListings(options?: {
+  limit?: number;
+  offset?: number;
+  enabled?: boolean;
+}) {
+  const { limit = 50, offset = 0, enabled } = options ?? {};
   return useQuery({
     queryKey: queryKeys.jobListings.saved(),
     queryFn: () => jobListingApi.getSaved(limit, offset),
+    enabled,
   });
 }
 
@@ -831,10 +841,11 @@ export function useMarkJobApplied() {
 }
 
 // Kanban Board Hooks
-export function useKanbanBoard() {
+export function useKanbanBoard(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: queryKeys.jobListings.kanban(),
     queryFn: () => jobListingApi.getKanbanBoard(),
+    enabled: options?.enabled,
   });
 }
 
