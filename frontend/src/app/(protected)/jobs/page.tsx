@@ -5,6 +5,7 @@ import { useJobListings } from "@/lib/api/hooks";
 import { JobListingCard } from "@/components/jobs/JobListingCard";
 import { JobListingTable } from "@/components/jobs/JobListingTable";
 import { JobListingFilters } from "@/components/jobs/JobListingFilters";
+import { RequestJobsModal } from "@/components/jobs/RequestJobsModal";
 import type { JobListingFilters as Filters } from "@/lib/api/types";
 import { formatRelativeTime } from "@/lib/utils/date";
 import Link from "next/link";
@@ -18,6 +19,7 @@ const PAGE_SIZE_OPTIONS = {
 
 export default function JobListingsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>({
     limit: 20,
     offset: 0,
@@ -114,8 +116,23 @@ export default function JobListingsPage() {
             <BookmarkIcon />
             Saved Jobs
           </Link>
+
+          {/* Request Jobs Button */}
+          <button
+            onClick={() => setIsRequestModalOpen(true)}
+            className="btn-primary flex items-center gap-2"
+          >
+            <PlusIcon />
+            Request Jobs
+          </button>
         </div>
       </div>
+
+      {/* Request Jobs Modal */}
+      <RequestJobsModal
+        isOpen={isRequestModalOpen}
+        onClose={() => setIsRequestModalOpen(false)}
+      />
 
       <div className="flex gap-6">
         {/* Filters Sidebar */}
@@ -291,6 +308,14 @@ function TableIcon() {
         strokeLinejoin="round"
         d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5"
       />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
     </svg>
   );
 }
