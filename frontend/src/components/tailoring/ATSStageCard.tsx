@@ -232,7 +232,14 @@ interface StageResultDetailsProps {
 function StageResultDetails({ stage, result }: StageResultDetailsProps) {
   switch (stage) {
     case 0: // Knockout Check
-      const risks = result.risks as Array<{ type: string; message: string }> | undefined;
+      // Backend sends: { risk_type, severity, description, job_requires, user_has }
+      const risks = result.risks as Array<{
+        risk_type: string;
+        severity: "critical" | "warning" | "info";
+        description: string;
+        job_requires: string;
+        user_has: string | null;
+      }> | undefined;
       if (!risks?.length) return null;
       return (
         <div className="mt-2 space-y-1">
@@ -243,11 +250,11 @@ function StageResultDetails({ stage, result }: StageResultDetailsProps) {
             >
               <AlertTriangle
                 className={`h-3 w-3 mt-0.5 shrink-0 ${
-                  risk.type === "critical" ? "text-red-500" :
-                  risk.type === "warning" ? "text-amber-500" : "text-blue-500"
+                  risk.severity === "critical" ? "text-red-500" :
+                  risk.severity === "warning" ? "text-amber-500" : "text-blue-500"
                 }`}
               />
-              <span>{risk.message}</span>
+              <span>{risk.description}</span>
             </div>
           ))}
         </div>

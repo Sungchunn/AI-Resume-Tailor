@@ -17,18 +17,66 @@ interface SSEStageCompleteEvent {
   elapsed_ms: number;
 }
 
+// Backend knockout risk format (from API)
+interface BackendKnockoutRisk {
+  risk_type: "experience_years" | "education_level" | "certification" | "location" | "work_authorization";
+  severity: "critical" | "warning" | "info";
+  description: string;
+  job_requires: string;
+  user_has: string | null;
+}
+
 interface SSECacheHitEvent {
   composite_score: ATSCompositeScore;
   stage_results: Record<string, ATSStageResult>;
-  knockout_risks?: KnockoutRisk[];
+  knockout_risks?: BackendKnockoutRisk[];
   cached_at: string;
   content_hash: string;
 }
 
 interface SSECompleteEvent {
   composite_score: ATSCompositeScore;
-  knockout_risks?: KnockoutRisk[];
+  knockout_risks?: BackendKnockoutRisk[];
   content_hash: string;
+}
+
+/**
+ * Transform backend knockout risk format to frontend format.
+ * Maps field names and normalizes severity/category values.
+ */
+function transformKnockoutRisks(backendRisks: BackendKnockoutRisk[]): KnockoutRisk[] {
+  return backendRisks.map((risk) => {
+    // Map risk_type to category
+    let category: KnockoutRisk["category"];
+    switch (risk.risk_type) {
+      case "experience_years":
+        category = "experience";
+        break;
+      case "education_level":
+        category = "education";
+        break;
+      case "certification":
+        category = "certification";
+        break;
+      case "location":
+      case "work_authorization":
+        category = "location";
+        break;
+      default:
+        category = "experience"; // Fallback
+    }
+
+    // Map severity: critical -> hard, warning/info -> soft
+    const severity: KnockoutRisk["severity"] = risk.severity === "critical" ? "hard" : "soft";
+
+    return {
+      category,
+      severity,
+      message: risk.description,
+      job_requirement: risk.job_requires,
+      resume_value: risk.user_has ?? "Not specified",
+    };
+  });
 }
 
 export function useATSProgressiveAnalysis(options?: UseATSProgressiveAnalysisOptions) {
@@ -82,7 +130,7 @@ export function useATSProgressiveAnalysis(options?: UseATSProgressiveAnalysisOpt
               payload: {
                 score: payload.composite_score,
                 stageResults: payload.stage_results,
-                knockouts: payload.knockout_risks ?? [],
+                knockouts: transformKnockoutRisks(payload.knockout_risks ?? []),
                 cachedAt: new Date(payload.cached_at),
                 hash: payload.content_hash,
               },
@@ -127,7 +175,7 @@ export function useATSProgressiveAnalysis(options?: UseATSProgressiveAnalysisOpt
               type: "ATS_ANALYSIS_COMPLETE",
               payload: {
                 score: payload.composite_score,
-                knockouts: payload.knockout_risks ?? [],
+                knockouts: transformKnockoutRisks(payload.knockout_risks ?? []),
                 hash: payload.content_hash,
                 timestamp: new Date(),
               },

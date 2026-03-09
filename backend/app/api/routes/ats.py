@@ -1788,6 +1788,12 @@ async def analyze_progressive_ats(
                         # Stage was missing from cache (failed previously)
                         failed_stages.append(stage_name)
 
+                # Extract knockout risks from cached stage 0 result
+                cached_knockout_risks = []
+                cached_knockout = cached_stages.get("knockout-check", {})
+                if cached_knockout:
+                    cached_knockout_risks = cached_knockout.get("risks", [])
+
                 # Emit cached composite score
                 composite_score = cached_result.get("composite_score", {})
                 yield {
@@ -1799,6 +1805,7 @@ async def analyze_progressive_ats(
                         "progress_percent": 100,
                         "elapsed_ms": int((time.time() - start_time) * 1000),
                         "composite_score": composite_score,
+                        "knockout_risks": cached_knockout_risks,
                         "from_cache": True,
                         "cached_at": cached_at,
                     })
@@ -1911,6 +1918,16 @@ async def analyze_progressive_ats(
                     stage_results=cacheable_stage_results,
                 )
 
+            # Extract knockout risks from stage 0 result
+            knockout_risks = []
+            knockout_result = stage_results.get("knockout-check")
+            if knockout_result:
+                if hasattr(knockout_result, 'model_dump'):
+                    knockout_data = knockout_result.model_dump()
+                else:
+                    knockout_data = knockout_result
+                knockout_risks = knockout_data.get("risks", [])
+
             # Emit complete event
             yield {
                 "event": "complete",
@@ -1921,6 +1938,7 @@ async def analyze_progressive_ats(
                     "progress_percent": 100,
                     "elapsed_ms": total_elapsed,
                     "composite_score": composite_score.model_dump(),
+                    "knockout_risks": knockout_risks,
                     "from_cache": False,
                 })
             }
