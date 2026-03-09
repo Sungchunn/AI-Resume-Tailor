@@ -35,6 +35,7 @@ import { useTailoringContext } from "@/contexts/TailoringContext";
 import {
   PreviewDiffLayout,
   VersionHistoryPanel,
+  TailorFlowStepper,
 } from "@/components/tailoring";
 
 interface PageProps {
@@ -78,7 +79,12 @@ export default function TailoringReviewPage({ params }: PageProps) {
 
   // Initialize context when data loads
   useEffect(() => {
-    if (compareData && !hasSessionForId(id)) {
+    if (
+      compareData &&
+      compareData.original_blocks &&
+      compareData.ai_proposed_blocks &&
+      !hasSessionForId(id)
+    ) {
       initializeSession(
         id,
         compareData.original_blocks,
@@ -117,12 +123,12 @@ export default function TailoringReviewPage({ params }: PageProps) {
     }
   }, [compareData, finalizeMutation, id, sessionHook, router]);
 
-  // Handle "Continue to Editor" - context already has the session
-  const handleContinueToEditor = useCallback(() => {
+  // Handle "Continue to Verify" - context already has the session
+  const handleContinueToVerify = useCallback(() => {
     // Update context with latest session state
     updateSession(sessionHook.session);
-    // Navigate to editor
-    router.push(`/tailor/editor/${id}`);
+    // Navigate to verify sections page
+    router.push(`/tailor/verify/${id}`);
   }, [sessionHook.session, updateSession, id, router]);
 
   // Loading state
@@ -137,8 +143,17 @@ export default function TailoringReviewPage({ params }: PageProps) {
 
   return (
     <div className="h-screen flex flex-col bg-background">
+      {/* Flow Stepper */}
+      <div className="shrink-0 bg-card border-b border-border">
+        <TailorFlowStepper
+          currentStep="analyze"
+          completedSteps={["select"]}
+          className="py-2"
+        />
+      </div>
+
       {/* Header */}
-      <header className="flex-shrink-0 border-b border-border bg-card">
+      <header className="shrink-0 border-b border-border bg-card">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -210,13 +225,13 @@ export default function TailoringReviewPage({ params }: PageProps) {
                 <History size={14} />
               </button>
 
-              {/* Continue to Editor Button */}
+              {/* Continue to Verify Button */}
               <button
-                onClick={handleContinueToEditor}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md border border-border hover:bg-muted transition-colors"
+                onClick={handleContinueToVerify}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
               >
                 <Edit3 size={14} />
-                Continue to Editor
+                Continue to Verify
               </button>
             </div>
           </div>
@@ -252,7 +267,7 @@ export default function TailoringReviewPage({ params }: PageProps) {
 
         {/* Version History Sidebar */}
         {showVersionHistory && compareData.resume_id && (
-          <aside className="w-80 border-l border-border bg-card overflow-hidden flex-shrink-0">
+          <aside className="w-80 border-l border-border bg-card overflow-hidden shrink-0">
             <VersionHistoryPanel
               resumeId={compareData.resume_id}
               currentTailoredId={id}
@@ -273,7 +288,7 @@ function LoadingState() {
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header Skeleton */}
-      <header className="flex-shrink-0 border-b border-border bg-card">
+      <header className="shrink-0 border-b border-border bg-card">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -296,7 +311,7 @@ function LoadingState() {
       <main className="flex-1 flex">
         {/* Left Panel - Preview Skeleton */}
         <div className="flex-1 p-4 bg-muted/30">
-          <div className="max-w-[816px] mx-auto">
+          <div className="max-w-204 mx-auto">
             <div className="bg-white shadow-lg rounded-sm p-8 space-y-6">
               <div className="h-8 w-3/4 bg-muted rounded animate-pulse" />
               <div className="space-y-2">
@@ -317,7 +332,7 @@ function LoadingState() {
         </div>
 
         {/* Right Panel - Diff Skeleton */}
-        <div className="w-[400px] border-l border-border bg-card">
+        <div className="w-100 border-l border-border bg-card">
           <div className="p-4 space-y-4">
             <div className="h-6 w-48 bg-muted rounded animate-pulse" />
             <div className="h-4 w-64 bg-muted rounded animate-pulse" />

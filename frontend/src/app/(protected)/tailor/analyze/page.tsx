@@ -165,8 +165,8 @@ function AnalyzePageContent() {
           };
 
       const result = await tailorResume.mutateAsync(request);
-      // Navigate to the editor page (Step 3)
-      router.push(`/tailor/editor/${result.id}`);
+      // Navigate directly to verify page (Step 3: Verify Sections)
+      router.push(`/tailor/verify/${result.id}`);
     } catch {
       // Error is handled by mutation state
     }
@@ -455,7 +455,7 @@ function AnalyzePageContent() {
             </>
           ) : (
             <>
-              Continue to Editor
+              Generate Tailored Resume
               <ArrowRight className="h-4 w-4" />
             </>
           )}

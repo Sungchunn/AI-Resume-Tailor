@@ -100,20 +100,38 @@ export default function ResumeEditorPage({ params }: PageProps) {
 
   // Initialize state from context session (if coming from review) or fetched data
   useEffect(() => {
-    if (fromReviewPage && sessionData) {
-      // Initialize from context session (review page handoff)
-      const draftContent = blocksToContent(sessionData.session.activeDraft);
-      setContent(draftContent);
-      setShowFromReviewBanner(true);
+    // Helper to check if content is valid (has actual data)
+    const isContentValid = (c: TailoredContent | null): boolean => {
+      if (!c) return false;
+      // Check if at least summary or experience has content
+      const hasSummary = c.summary && c.summary.trim().length > 0;
+      const hasExperience = c.experience && c.experience.length > 0;
+      const hasSkills = c.skills && c.skills.length > 0;
+      return hasSummary || hasExperience || hasSkills;
+    };
 
-      // Store initial state
-      initialStateRef.current = {
-        content: draftContent,
-        styleSettings: DEFAULT_STYLE,
-        sectionOrder: DEFAULT_SECTION_ORDER,
-      };
-    } else if (tailored) {
-      // Initialize from fetched data (normal flow)
+    if (fromReviewPage && sessionData) {
+      // Try to initialize from context session (review page handoff)
+      const draftContent = blocksToContent(sessionData.session.activeDraft);
+
+      // Only use context data if it has valid content, otherwise fall back to API
+      if (isContentValid(draftContent)) {
+        setContent(draftContent);
+        setShowFromReviewBanner(true);
+
+        // Store initial state
+        initialStateRef.current = {
+          content: draftContent,
+          styleSettings: DEFAULT_STYLE,
+          sectionOrder: DEFAULT_SECTION_ORDER,
+        };
+        return; // Exit early, we have valid content
+      }
+      // Fall through to use API data if context content is empty
+    }
+
+    // Initialize from fetched data (normal flow or fallback)
+    if (tailored) {
       // Use finalized_data if available, otherwise use tailored_data
       setContent(tailored.finalized_data ?? tailored.tailored_data);
 
@@ -258,8 +276,8 @@ export default function ResumeEditorPage({ params }: PageProps) {
     clearSession,
   ]);
 
-  const handleBackToReview = useCallback(() => {
-    router.push(`/tailor/review/${id}`);
+  const handleBackToVerify = useCallback(() => {
+    router.push(`/tailor/verify/${id}`);
   }, [router, id]);
 
   // Loading state
@@ -283,7 +301,7 @@ export default function ResumeEditorPage({ params }: PageProps) {
       <div className="flex-shrink-0 bg-card border-b border-border">
         <TailorFlowStepper
           currentStep="editor"
-          completedSteps={["select", "analyze"]}
+          completedSteps={["select", "analyze", "verify"]}
           className="py-2"
         />
       </div>
@@ -302,11 +320,11 @@ export default function ResumeEditorPage({ params }: PageProps) {
 
             {fromReviewPage && (
               <button
-                onClick={handleBackToReview}
+                onClick={handleBackToVerify}
                 className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80"
               >
                 <GitCompare className="h-4 w-4" />
-                Back to Review
+                Back to Verify
               </button>
             )}
           </div>

@@ -48,12 +48,17 @@ export function computeDiff(
   aiProposed: AnyResumeBlock[]
 ): BlockDiff[] {
   const diffs: BlockDiff[] = [];
-  const originalMap = new Map(original.map((b) => [b.id, b]));
-  const aiMap = new Map(aiProposed.map((b) => [b.id, b]));
+
+  // Handle undefined/null arrays
+  const safeOriginal = original ?? [];
+  const safeAiProposed = aiProposed ?? [];
+
+  const originalMap = new Map(safeOriginal.map((b) => [b.id, b]));
+  const aiMap = new Map(safeAiProposed.map((b) => [b.id, b]));
   const processedIds = new Set<string>();
 
   // Process blocks that exist in AI proposal
-  for (const aiBlock of aiProposed) {
+  for (const aiBlock of safeAiProposed) {
     processedIds.add(aiBlock.id);
     const originalBlock = originalMap.get(aiBlock.id);
 
@@ -74,7 +79,7 @@ export function computeDiff(
   }
 
   // Process blocks that only exist in original (removed by AI)
-  for (const originalBlock of original) {
+  for (const originalBlock of safeOriginal) {
     if (!processedIds.has(originalBlock.id)) {
       diffs.push({
         blockId: originalBlock.id,

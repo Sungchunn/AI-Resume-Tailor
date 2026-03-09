@@ -230,7 +230,7 @@ export default function TailoredResumePage({ params }: PageProps) {
               />
 
               <Link
-                href={`/tailor/editor/${id}`}
+                href={`/tailor/verify/${id}`}
                 className="btn-primary inline-flex items-center gap-2"
               >
                 <svg
