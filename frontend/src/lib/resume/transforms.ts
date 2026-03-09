@@ -38,6 +38,7 @@ import type {
   VolunteerBlock,
   VolunteerEntry,
 } from "./types";
+import type { TailoredContent } from "@/lib/api/types";
 import { DEFAULT_STYLE, createDefaultBlock } from "./defaults";
 
 /**
@@ -827,4 +828,82 @@ export function blocksToText(blocks: AnyResumeBlock[]): string {
   }
 
   return lines.join("\n");
+}
+
+/**
+ * Convert TailoredContent to ParsedResumeContent format
+ * This enables using the block-based editor with tailored resume data
+ */
+export function tailoredContentToParsedContent(
+  tailored: TailoredContent | null | undefined
+): ParsedResumeContent {
+  if (!tailored) {
+    return {};
+  }
+
+  const result: ParsedResumeContent = {};
+
+  // Summary
+  if (tailored.summary) {
+    result.summary = tailored.summary;
+  }
+
+  // Experience - convert from TailoredContent format to ParsedResumeContent format
+  if (tailored.experience && tailored.experience.length > 0) {
+    result.experience = tailored.experience.map((exp) => ({
+      title: exp.title,
+      company: exp.company,
+      location: exp.location,
+      start_date: exp.start_date,
+      end_date: exp.end_date,
+      bullets: exp.bullets,
+    }));
+  }
+
+  // Skills
+  if (tailored.skills && tailored.skills.length > 0) {
+    result.skills = tailored.skills;
+  }
+
+  // Highlights can be stored as interests or a custom section
+  // For now, we'll store them as interests since that's a string field
+  if (tailored.highlights && tailored.highlights.length > 0) {
+    result.interests = tailored.highlights.join("\n• ");
+  }
+
+  return result;
+}
+
+/**
+ * Convert ParsedResumeContent back to TailoredContent format
+ * Used when saving from the block editor back to the tailored resume API
+ */
+export function parsedContentToTailoredContent(
+  parsed: ParsedResumeContent | null | undefined
+): TailoredContent {
+  if (!parsed) {
+    return {
+      summary: "",
+      experience: [],
+      skills: [],
+      highlights: [],
+    };
+  }
+
+  return {
+    summary: parsed.summary || "",
+    experience: (parsed.experience || []).map((exp) => ({
+      title: exp.title || "",
+      company: exp.company || "",
+      location: exp.location || "",
+      start_date: exp.start_date || "",
+      end_date: exp.end_date || "",
+      bullets: exp.bullets || [],
+    })),
+    skills: parsed.skills || [],
+    // Convert interests back to highlights
+    highlights: parsed.interests
+      ? parsed.interests.split("\n• ").filter((h) => h.trim())
+      : [],
+  };
 }
