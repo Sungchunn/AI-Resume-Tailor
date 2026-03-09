@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { nanoid } from "nanoid";
 import type { TailoredContent, CustomSection, CustomEntry } from "@/lib/api/types";
 import type {
@@ -266,10 +266,21 @@ function EducationEditorWrapper({
   data: TailoredContent["education"];
   onChange: (data: TailoredContent["education"]) => void;
 }) {
-  const transformed = useMemo(
-    () =>
-      (data ?? []).map((item) => ({
-        id: item.id ?? nanoid(),
+  // Use ref to persist generated IDs across re-renders
+  const idMapRef = useRef<Map<number, string>>(new Map());
+
+  const transformed = useMemo(() => {
+    return (data ?? []).map((item, index) => {
+      // Use existing ID, or get stable generated ID from ref
+      let id = item.id;
+      if (!id) {
+        if (!idMapRef.current.has(index)) {
+          idMapRef.current.set(index, nanoid());
+        }
+        id = idMapRef.current.get(index)!;
+      }
+      return {
+        id,
         degree: item.degree,
         institution: item.institution,
         location: item.location ?? "",
@@ -277,9 +288,9 @@ function EducationEditorWrapper({
         gpa: item.gpa ?? "",
         honors: item.honors ?? "",
         relevantCourses: [],
-      })),
-    [data]
-  );
+      };
+    });
+  }, [data]);
 
   const handleChange = useCallback(
     (entries: EducationEntry[]) => {
@@ -309,19 +320,28 @@ function CertificationsEditorWrapper({
   data: TailoredContent["certifications"];
   onChange: (data: TailoredContent["certifications"]) => void;
 }) {
-  const transformed = useMemo(
-    () =>
-      (data ?? []).map((item) => ({
-        id: item.id ?? nanoid(),
+  const idMapRef = useRef<Map<number, string>>(new Map());
+
+  const transformed = useMemo(() => {
+    return (data ?? []).map((item, index) => {
+      let id = item.id;
+      if (!id) {
+        if (!idMapRef.current.has(index)) {
+          idMapRef.current.set(index, nanoid());
+        }
+        id = idMapRef.current.get(index)!;
+      }
+      return {
+        id,
         name: item.name,
         issuer: item.issuer ?? "",
         date: item.date ?? "",
         expirationDate: item.expiration_date ?? "",
         credentialId: item.credential_id ?? "",
         url: item.url ?? "",
-      })),
-    [data]
-  );
+      };
+    });
+  }, [data]);
 
   const handleChange = useCallback(
     (entries: CertificationEntry[]) => {
@@ -351,10 +371,19 @@ function ProjectsEditorWrapper({
   data: TailoredContent["projects"];
   onChange: (data: TailoredContent["projects"]) => void;
 }) {
-  const transformed = useMemo(
-    () =>
-      (data ?? []).map((item) => ({
-        id: item.id ?? nanoid(),
+  const idMapRef = useRef<Map<number, string>>(new Map());
+
+  const transformed = useMemo(() => {
+    return (data ?? []).map((item, index) => {
+      let id = item.id;
+      if (!id) {
+        if (!idMapRef.current.has(index)) {
+          idMapRef.current.set(index, nanoid());
+        }
+        id = idMapRef.current.get(index)!;
+      }
+      return {
+        id,
         name: item.name,
         description: item.description ?? "",
         technologies: item.technologies ?? [],
@@ -362,9 +391,9 @@ function ProjectsEditorWrapper({
         startDate: item.start_date ?? "",
         endDate: item.end_date ?? "",
         bullets: item.bullets ?? [],
-      })),
-    [data]
-  );
+      };
+    });
+  }, [data]);
 
   const handleChange = useCallback(
     (entries: ProjectEntry[]) => {
@@ -395,15 +424,24 @@ function LanguagesEditorWrapper({
   data: TailoredContent["languages"];
   onChange: (data: TailoredContent["languages"]) => void;
 }) {
-  const transformed = useMemo(
-    () =>
-      (data ?? []).map((item) => ({
-        id: item.id ?? nanoid(),
+  const idMapRef = useRef<Map<number, string>>(new Map());
+
+  const transformed = useMemo(() => {
+    return (data ?? []).map((item, index) => {
+      let id = item.id;
+      if (!id) {
+        if (!idMapRef.current.has(index)) {
+          idMapRef.current.set(index, nanoid());
+        }
+        id = idMapRef.current.get(index)!;
+      }
+      return {
+        id,
         language: item.language,
         proficiency: (item.proficiency ?? "intermediate") as LanguageProficiency,
-      })),
-    [data]
-  );
+      };
+    });
+  }, [data]);
 
   const handleChange = useCallback(
     (entries: LanguageEntry[]) => {
@@ -429,10 +467,19 @@ function VolunteerEditorWrapper({
   data: TailoredContent["volunteer"];
   onChange: (data: TailoredContent["volunteer"]) => void;
 }) {
-  const transformed = useMemo(
-    () =>
-      (data ?? []).map((item) => ({
-        id: item.id ?? nanoid(),
+  const idMapRef = useRef<Map<number, string>>(new Map());
+
+  const transformed = useMemo(() => {
+    return (data ?? []).map((item, index) => {
+      let id = item.id;
+      if (!id) {
+        if (!idMapRef.current.has(index)) {
+          idMapRef.current.set(index, nanoid());
+        }
+        id = idMapRef.current.get(index)!;
+      }
+      return {
+        id,
         role: item.role,
         organization: item.organization,
         location: item.location ?? "",
@@ -441,9 +488,9 @@ function VolunteerEditorWrapper({
         current: item.current ?? false,
         description: item.description ?? "",
         bullets: item.bullets ?? [],
-      })),
-    [data]
-  );
+      };
+    });
+  }, [data]);
 
   const handleChange = useCallback(
     (entries: VolunteerEntry[]) => {
@@ -475,10 +522,19 @@ function PublicationsEditorWrapper({
   data: TailoredContent["publications"];
   onChange: (data: TailoredContent["publications"]) => void;
 }) {
-  const transformed = useMemo(
-    () =>
-      (data ?? []).map((item) => ({
-        id: item.id ?? nanoid(),
+  const idMapRef = useRef<Map<number, string>>(new Map());
+
+  const transformed = useMemo(() => {
+    return (data ?? []).map((item, index) => {
+      let id = item.id;
+      if (!id) {
+        if (!idMapRef.current.has(index)) {
+          idMapRef.current.set(index, nanoid());
+        }
+        id = idMapRef.current.get(index)!;
+      }
+      return {
+        id,
         title: item.title,
         publicationType: (item.publication_type ?? "article") as PublicationType,
         publisher: item.publisher ?? "",
@@ -486,9 +542,9 @@ function PublicationsEditorWrapper({
         url: item.url ?? "",
         authors: item.authors ?? "",
         description: item.description ?? "",
-      })),
-    [data]
-  );
+      };
+    });
+  }, [data]);
 
   const handleChange = useCallback(
     (entries: PublicationEntry[]) => {
@@ -519,17 +575,26 @@ function AwardsEditorWrapper({
   data: TailoredContent["awards"];
   onChange: (data: TailoredContent["awards"]) => void;
 }) {
-  const transformed = useMemo(
-    () =>
-      (data ?? []).map((item) => ({
-        id: item.id ?? nanoid(),
+  const idMapRef = useRef<Map<number, string>>(new Map());
+
+  const transformed = useMemo(() => {
+    return (data ?? []).map((item, index) => {
+      let id = item.id;
+      if (!id) {
+        if (!idMapRef.current.has(index)) {
+          idMapRef.current.set(index, nanoid());
+        }
+        id = idMapRef.current.get(index)!;
+      }
+      return {
+        id,
         title: item.title,
         issuer: item.issuer,
         date: item.date ?? "",
         description: item.description ?? "",
-      })),
-    [data]
-  );
+      };
+    });
+  }, [data]);
 
   const handleChange = useCallback(
     (entries: AwardEntry[]) => {
@@ -557,18 +622,27 @@ function MembershipsEditorWrapper({
   data: TailoredContent["memberships"];
   onChange: (data: TailoredContent["memberships"]) => void;
 }) {
-  const transformed = useMemo(
-    () =>
-      (data ?? []).map((item) => ({
-        id: item.id ?? nanoid(),
+  const idMapRef = useRef<Map<number, string>>(new Map());
+
+  const transformed = useMemo(() => {
+    return (data ?? []).map((item, index) => {
+      let id = item.id;
+      if (!id) {
+        if (!idMapRef.current.has(index)) {
+          idMapRef.current.set(index, nanoid());
+        }
+        id = idMapRef.current.get(index)!;
+      }
+      return {
+        id,
         organization: item.organization,
         role: item.role ?? "",
         startDate: item.start_date ?? "",
         endDate: item.end_date ?? "",
         current: item.current ?? false,
-      })),
-    [data]
-  );
+      };
+    });
+  }, [data]);
 
   const handleChange = useCallback(
     (entries: MembershipEntry[]) => {
@@ -597,18 +671,27 @@ function CoursesEditorWrapper({
   data: TailoredContent["courses"];
   onChange: (data: TailoredContent["courses"]) => void;
 }) {
-  const transformed = useMemo(
-    () =>
-      (data ?? []).map((item) => ({
-        id: item.id ?? nanoid(),
+  const idMapRef = useRef<Map<number, string>>(new Map());
+
+  const transformed = useMemo(() => {
+    return (data ?? []).map((item, index) => {
+      let id = item.id;
+      if (!id) {
+        if (!idMapRef.current.has(index)) {
+          idMapRef.current.set(index, nanoid());
+        }
+        id = idMapRef.current.get(index)!;
+      }
+      return {
+        id,
         name: item.name,
         provider: item.provider,
         date: item.date ?? "",
         credentialUrl: item.credential_url ?? "",
         description: item.description ?? "",
-      })),
-    [data]
-  );
+      };
+    });
+  }, [data]);
 
   const handleChange = useCallback(
     (entries: CourseEntry[]) => {
@@ -637,19 +720,28 @@ function ReferencesEditorWrapper({
   data: TailoredContent["references"];
   onChange: (data: TailoredContent["references"]) => void;
 }) {
-  const transformed = useMemo(
-    () =>
-      (data ?? []).map((item) => ({
-        id: item.id ?? nanoid(),
+  const idMapRef = useRef<Map<number, string>>(new Map());
+
+  const transformed = useMemo(() => {
+    return (data ?? []).map((item, index) => {
+      let id = item.id;
+      if (!id) {
+        if (!idMapRef.current.has(index)) {
+          idMapRef.current.set(index, nanoid());
+        }
+        id = idMapRef.current.get(index)!;
+      }
+      return {
+        id,
         name: item.name,
         title: item.title,
         company: item.company,
         email: item.email ?? "",
         phone: item.phone ?? "",
         relationship: item.relationship ?? "",
-      })),
-    [data]
-  );
+      };
+    });
+  }, [data]);
 
   const handleChange = useCallback(
     (entries: ReferenceEntry[]) => {
@@ -679,10 +771,19 @@ function LeadershipEditorWrapper({
   data: TailoredContent["leadership"];
   onChange: (data: TailoredContent["leadership"]) => void;
 }) {
-  const transformed = useMemo(
-    () =>
-      (data ?? []).map((item) => ({
-        id: item.id ?? nanoid(),
+  const idMapRef = useRef<Map<number, string>>(new Map());
+
+  const transformed = useMemo(() => {
+    return (data ?? []).map((item, index) => {
+      let id = item.id;
+      if (!id) {
+        if (!idMapRef.current.has(index)) {
+          idMapRef.current.set(index, nanoid());
+        }
+        id = idMapRef.current.get(index)!;
+      }
+      return {
+        id,
         title: item.title,
         organization: item.organization,
         location: item.location ?? "",
@@ -691,9 +792,9 @@ function LeadershipEditorWrapper({
         current: item.current ?? false,
         description: item.description ?? "",
         bullets: item.bullets ?? [],
-      })),
-    [data]
-  );
+      };
+    });
+  }, [data]);
 
   const handleChange = useCallback(
     (entries: LeadershipEntry[]) => {

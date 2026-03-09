@@ -115,13 +115,16 @@ export function RequestJobsModal({ isOpen, onClose }: RequestJobsModalProps) {
     }
   }, [isOpen, resetCreateError]);
 
-  // Handle escape key
+  // Handle escape key and scroll lock
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
       }
     };
+
+    // Capture original overflow value to restore it on cleanup
+    const originalOverflow = document.body.style.overflow;
 
     if (isOpen) {
       document.addEventListener("keydown", handleEscape);
@@ -130,7 +133,7 @@ export function RequestJobsModal({ isOpen, onClose }: RequestJobsModalProps) {
 
     return () => {
       document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "";
+      document.body.style.overflow = originalOverflow;
     };
   }, [isOpen, onClose]);
 
