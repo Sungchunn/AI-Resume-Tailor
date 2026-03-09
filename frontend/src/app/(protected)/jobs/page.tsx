@@ -101,14 +101,14 @@ export default function JobListingsPage() {
 
           {/* Navigation Links */}
           <Link
-            href="/jobs/applied"
+            href="/library?tab=applied"
             className="btn-secondary flex items-center gap-2"
           >
             <CheckIcon />
             Applied
           </Link>
           <Link
-            href="/jobs/saved"
+            href="/library?tab=saved"
             className="btn-secondary flex items-center gap-2"
           >
             <BookmarkIcon />
