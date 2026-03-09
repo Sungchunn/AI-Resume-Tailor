@@ -293,13 +293,13 @@ function CompositeScoreDisplay({ score }: CompositeScoreDisplayProps) {
   const scoreColor = useMemo(() => {
     if (finalScore >= 80) return "text-green-600 dark:text-green-400";
     if (finalScore >= 60) return "text-amber-600 dark:text-amber-400";
-    return "text-red-600 dark:text-red-400";
+    return "text-red-600 dark:text-red-300";
   }, [finalScore]);
 
   const scoreBgColor = useMemo(() => {
     if (finalScore >= 80) return "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900";
     if (finalScore >= 60) return "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900";
-    return "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900";
+    return "bg-red-50 dark:bg-red-900/40 border-red-200 dark:border-red-700";
   }, [finalScore]);
 
   return (
@@ -307,7 +307,7 @@ function CompositeScoreDisplay({ score }: CompositeScoreDisplayProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Trophy className={`h-5 w-5 ${scoreColor}`} />
-          <span className="text-sm font-semibold text-gray-800">
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             Overall ATS Score
           </span>
         </div>
@@ -323,10 +323,10 @@ function CompositeScoreDisplay({ score }: CompositeScoreDisplayProps) {
             key={stage}
             className="text-center p-2 bg-white/50 dark:bg-black/20 rounded"
           >
-            <div className="text-xs text-gray-600 capitalize">
+            <div className="text-xs text-gray-600 dark:text-gray-400 capitalize">
               {stage.replace(/_/g, " ")}
             </div>
-            <div className="text-sm font-semibold mt-0.5 text-gray-800">
+            <div className="text-sm font-semibold mt-0.5 text-gray-800 dark:text-gray-200">
               {Math.round(typeof value === 'number' && !Number.isNaN(value) ? value : 0)}%
             </div>
           </div>
