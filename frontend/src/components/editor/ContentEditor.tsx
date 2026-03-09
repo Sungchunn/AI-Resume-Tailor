@@ -200,7 +200,7 @@ export function ContentEditor({
             <textarea
               value={summary}
               onChange={(e) => handleSummaryChange(e.target.value)}
-              className="w-full min-h-[100px] p-3 text-sm border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+              className="w-full min-h-25 p-3 text-sm border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring resize-y"
               placeholder="Write your professional summary..."
             />
           </div>

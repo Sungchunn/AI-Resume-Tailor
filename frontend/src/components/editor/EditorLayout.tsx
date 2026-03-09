@@ -149,7 +149,7 @@ export function EditorLayout({
   return (
     <div className="h-full flex flex-col">
       {/* Top Bar */}
-      <div className="flex-shrink-0 h-14 border-b border-border bg-card flex items-center justify-between px-4">
+      <div className="shrink-0 h-14 border-b border-border bg-card flex items-center justify-between px-4">
         <div className="flex items-center gap-4">
           <h1 className="text-lg font-semibold text-foreground">Resume Editor</h1>
           <div className="flex items-center gap-2">
@@ -285,7 +285,7 @@ export function EditorLayout({
           <Panel defaultSize={25} minSize={20} maxSize={35}>
             <div className="h-full flex flex-col bg-muted border-l border-border">
               {/* Tab Switcher */}
-              <div className="flex-shrink-0 flex border-b border-border">
+              <div className="shrink-0 flex border-b border-border">
                 <button
                   onClick={() => setRightTab("suggestions")}
                   className={`flex-1 py-2 text-sm font-medium transition-colors ${
