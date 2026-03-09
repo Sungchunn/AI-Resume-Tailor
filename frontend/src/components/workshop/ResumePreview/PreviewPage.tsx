@@ -3,6 +3,9 @@
 import type { PreviewPageProps } from "./types";
 import { PAGE_DIMENSIONS } from "./types";
 
+// Default to LETTER dimensions
+const PAGE = PAGE_DIMENSIONS.LETTER;
+
 export function PreviewPage({
   children,
   pageNumber,
@@ -19,8 +22,8 @@ export function PreviewPage({
     <div
       className="preview-page bg-card shadow-lg rounded-sm"
       style={{
-        width: PAGE_DIMENSIONS.WIDTH,
-        minHeight: PAGE_DIMENSIONS.HEIGHT,
+        width: PAGE.WIDTH,
+        minHeight: PAGE.HEIGHT,
         transform: `scale(${scale})`,
         transformOrigin: "top center",
         paddingTop: marginTop,

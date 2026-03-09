@@ -7,6 +7,9 @@ import {
 import { PAGE_DIMENSIONS } from "../types";
 import type { ResumeStyle } from "@/lib/api/types";
 
+// Default to LETTER dimensions
+const PAGE = PAGE_DIMENSIONS.LETTER;
+
 /**
  * Auto-Fit Convergence Tests
  *
@@ -32,7 +35,7 @@ const defaultStyle: ResumeStyle = {
 };
 
 const availableHeight =
-  PAGE_DIMENSIONS.HEIGHT -
+  PAGE.HEIGHT -
   0.75 * PAGE_DIMENSIONS.DPI -
   0.75 * PAGE_DIMENSIONS.DPI;
 
@@ -61,7 +64,7 @@ function trackReductionOrder(
   let lineHeight = style.line_spacing ?? 1.4;
 
   const targetHeight =
-    PAGE_DIMENSIONS.HEIGHT -
+    PAGE.HEIGHT -
     (style.margin_top ?? 0.75) * PAGE_DIMENSIONS.DPI -
     (style.margin_bottom ?? 0.75) * PAGE_DIMENSIONS.DPI;
 

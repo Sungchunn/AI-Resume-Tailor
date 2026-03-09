@@ -9,6 +9,9 @@ import { PreviewPagination } from "./PreviewPagination";
 import { usePageBreaks } from "./usePageBreaks";
 import { computePreviewStyles, calculateFitToPageStyles } from "./previewStyles";
 
+// Default to LETTER dimensions
+const PAGE = PAGE_DIMENSIONS.LETTER;
+
 export function ResumePreview({
   content,
   style,
@@ -40,8 +43,8 @@ export function ResumePreview({
 
     const updateScale = () => {
       const containerWidth =
-        containerRef.current?.clientWidth ?? PAGE_DIMENSIONS.WIDTH;
-      const newScale = Math.min(1, (containerWidth - 40) / PAGE_DIMENSIONS.WIDTH);
+        containerRef.current?.clientWidth ?? PAGE.WIDTH;
+      const newScale = Math.min(1, (containerWidth - 40) / PAGE.WIDTH);
       setScale(newScale);
     };
 

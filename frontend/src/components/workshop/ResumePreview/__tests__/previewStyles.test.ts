@@ -8,6 +8,9 @@ import {
 import { PAGE_DIMENSIONS } from "../types";
 import type { ResumeStyle } from "@/lib/api/types";
 
+// Default to LETTER dimensions
+const PAGE = PAGE_DIMENSIONS.LETTER;
+
 describe("computePreviewStyles", () => {
   it("returns default values when style is empty", () => {
     const style: ResumeStyle = {};
@@ -59,7 +62,7 @@ describe("calculateFitToPageStyles", () => {
   };
 
   const availableHeight =
-    PAGE_DIMENSIONS.HEIGHT -
+    PAGE.HEIGHT -
     0.75 * PAGE_DIMENSIONS.DPI -
     0.75 * PAGE_DIMENSIONS.DPI;
 

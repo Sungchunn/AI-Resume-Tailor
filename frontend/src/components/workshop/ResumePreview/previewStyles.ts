@@ -2,6 +2,9 @@ import type { ResumeStyle } from "@/lib/api/types";
 import type { ComputedPreviewStyle } from "./types";
 import { PAGE_DIMENSIONS } from "./types";
 
+// Default to LETTER dimensions
+const PAGE = PAGE_DIMENSIONS.LETTER;
+
 export function computePreviewStyles(style: ResumeStyle): ComputedPreviewStyle {
   return {
     fontFamily: style.font_family ?? "Arial, sans-serif",
@@ -49,7 +52,7 @@ export function calculateFitToPageStyles(
   measureFn?: (styles: ComputedPreviewStyle) => number
 ): ComputedPreviewStyle {
   const targetHeight =
-    PAGE_DIMENSIONS.HEIGHT -
+    PAGE.HEIGHT -
     (style.margin_top ?? 0.75) * PAGE_DIMENSIONS.DPI -
     (style.margin_bottom ?? 0.75) * PAGE_DIMENSIONS.DPI;
 

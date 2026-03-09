@@ -5,6 +5,9 @@ import type { TailoredContent, ResumeStyle } from "@/lib/api/types";
 import type { PageContent, PageBreakResult, SectionSlice } from "./types";
 import { PAGE_DIMENSIONS } from "./types";
 
+// Default to LETTER dimensions
+const PAGE = PAGE_DIMENSIONS.LETTER;
+
 interface UsePageBreaksOptions {
   content: TailoredContent;
   style: ResumeStyle;
@@ -30,7 +33,7 @@ export function usePageBreaks({
 
   useLayoutEffect(() => {
     // Calculate available content height per page
-    const pageHeight = PAGE_DIMENSIONS.HEIGHT;
+    const pageHeight = PAGE.HEIGHT;
     const marginTop = (style.margin_top ?? 0.75) * PAGE_DIMENSIONS.DPI;
     const marginBottom = (style.margin_bottom ?? 0.75) * PAGE_DIMENSIONS.DPI;
     const availableHeight = pageHeight - marginTop - marginBottom;
