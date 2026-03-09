@@ -23,8 +23,10 @@ interface PageProps {
 const DEFAULT_SECTION_ORDER = [
   "summary",
   "experience",
+  "education",
   "skills",
-  "highlights",
+  "certifications",
+  "projects",
 ];
 
 export default function VerifySectionsPage({ params }: PageProps) {
@@ -39,16 +41,19 @@ export default function VerifySectionsPage({ params }: PageProps) {
   const [hasChanges, setHasChanges] = useState(false);
   const initialContentRef = useRef<TailoredContent | null>(null);
 
-  // Initialize content from API data with defaults for missing arrays
+  // Initialize content from API data - preserve all fields
   useEffect(() => {
     if (tailored && !content) {
       const rawContent = tailored.finalized_data ?? tailored.tailored_data;
-      // Ensure all arrays exist with defaults
+      // Preserve all fields from backend (contact, education, certifications, projects)
       const initialContent: TailoredContent = {
+        contact: rawContent?.contact,
         summary: rawContent?.summary ?? "",
         experience: rawContent?.experience ?? [],
+        education: rawContent?.education ?? [],
         skills: rawContent?.skills ?? [],
-        highlights: rawContent?.highlights ?? [],
+        certifications: rawContent?.certifications ?? [],
+        projects: rawContent?.projects ?? [],
       };
       setContent(initialContent);
       initialContentRef.current = initialContent;
