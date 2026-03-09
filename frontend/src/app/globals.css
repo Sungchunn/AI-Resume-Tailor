@@ -274,6 +274,19 @@
   }
 }
 
+/* Resume Preview - Force Light Mode Colors
+ * The paper preview should always use light colors (dark text on white background)
+ * regardless of the app's dark/light mode setting, since resumes print on white paper.
+ */
+.preview-page {
+  --color-foreground: oklch(0.141 0.005 285.823);
+  --color-muted-foreground: oklch(0.552 0.016 285.938);
+  --color-border: oklch(0.92 0.004 286.32);
+  --color-input: oklch(0.92 0.004 286.32);
+  --color-accent: oklch(0.967 0.001 286.375);
+  color: var(--color-foreground);
+}
+
 /* TipTap Editor Styles */
 .ProseMirror {
   @apply outline-none;
