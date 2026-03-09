@@ -21,7 +21,8 @@ export type ResumeBlockType =
   | "interests"
   | "references"
   | "courses"
-  | "memberships";
+  | "memberships"
+  | "leadership";
 
 // Contact information content
 export interface ContactContent {
@@ -162,6 +163,19 @@ export interface MembershipEntry {
   current?: boolean;
 }
 
+// Leadership and extracurricular entry
+export interface LeadershipEntry {
+  id: string;
+  title: string;
+  organization: string;
+  location?: string;
+  startDate?: string;
+  endDate?: string;
+  current?: boolean;
+  description?: string;
+  bullets?: string[];
+}
+
 // Union type for all block content types
 export type BlockContent =
   | ContactContent
@@ -177,7 +191,8 @@ export type BlockContent =
   | AwardEntry[]
   | ReferenceEntry[]
   | CourseEntry[]
-  | MembershipEntry[];
+  | MembershipEntry[]
+  | LeadershipEntry[];
 
 // Content type mapping for each block type
 export type BlockContentMap = {
@@ -196,6 +211,7 @@ export type BlockContentMap = {
   references: ReferenceEntry[];
   courses: CourseEntry[];
   memberships: MembershipEntry[];
+  leadership: LeadershipEntry[];
 };
 
 // Generic resume block interface
@@ -224,6 +240,7 @@ export type InterestsBlock = ResumeBlock<"interests">;
 export type ReferencesBlock = ResumeBlock<"references">;
 export type CoursesBlock = ResumeBlock<"courses">;
 export type MembershipsBlock = ResumeBlock<"memberships">;
+export type LeadershipBlock = ResumeBlock<"leadership">;
 
 // Union of all specific block types
 export type AnyResumeBlock =
@@ -241,7 +258,8 @@ export type AnyResumeBlock =
   | InterestsBlock
   | ReferencesBlock
   | CoursesBlock
-  | MembershipsBlock;
+  | MembershipsBlock
+  | LeadershipBlock;
 
 // Resume style settings (reuses existing ResumeStyle pattern)
 export interface BlockEditorStyle {
@@ -396,5 +414,14 @@ export interface ParsedResumeContent {
     role?: string;
     start_date?: string;
     end_date?: string;
+  }>;
+  leadership?: Array<{
+    title?: string;
+    organization?: string;
+    location?: string;
+    start_date?: string;
+    end_date?: string;
+    description?: string;
+    bullets?: string[];
   }>;
 }

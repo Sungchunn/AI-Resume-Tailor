@@ -159,6 +159,9 @@ export interface TailoredContent {
     name: string;
     issuer?: string;
     date?: string;
+    expiration_date?: string;
+    credential_id?: string;
+    url?: string;
   }>;
   projects?: Array<{
     id?: string;
@@ -166,8 +169,100 @@ export interface TailoredContent {
     description?: string;
     technologies?: string[];
     url?: string;
+    start_date?: string;
+    end_date?: string;
     bullets?: string[];
   }>;
+  languages?: Array<{
+    id?: string;
+    language: string;
+    proficiency: string;
+  }>;
+  volunteer?: Array<{
+    id?: string;
+    role: string;
+    organization: string;
+    location?: string;
+    start_date: string;
+    end_date?: string;
+    current?: boolean;
+    description?: string;
+    bullets?: string[];
+  }>;
+  publications?: Array<{
+    id?: string;
+    title: string;
+    publication_type?: string;
+    publisher?: string;
+    date?: string;
+    url?: string;
+    authors?: string;
+    description?: string;
+  }>;
+  awards?: Array<{
+    id?: string;
+    title: string;
+    issuer: string;
+    date?: string;
+    description?: string;
+  }>;
+  interests?: string;
+  references?: Array<{
+    id?: string;
+    name: string;
+    title: string;
+    company: string;
+    email?: string;
+    phone?: string;
+    relationship?: string;
+  }>;
+  courses?: Array<{
+    id?: string;
+    name: string;
+    provider: string;
+    date?: string;
+    credential_url?: string;
+    description?: string;
+  }>;
+  memberships?: Array<{
+    id?: string;
+    organization: string;
+    role?: string;
+    start_date?: string;
+    end_date?: string;
+    current?: boolean;
+  }>;
+  leadership?: Array<{
+    id?: string;
+    title: string;
+    organization: string;
+    location?: string;
+    start_date?: string;
+    end_date?: string;
+    current?: boolean;
+    description?: string;
+    bullets?: string[];
+  }>;
+  // User-defined section names (e.g., rename "Awards" to "Honors")
+  section_labels?: Record<string, string>;
+  // Fully custom user-created sections
+  custom_sections?: Record<string, CustomSection>;
+}
+
+// Custom section can be free-text or entry-based
+export interface CustomSection {
+  label: string;
+  type: "text" | "entries";
+  content: string | CustomEntry[];
+}
+
+export interface CustomEntry {
+  id: string;
+  title?: string;
+  subtitle?: string;
+  date?: string;
+  description?: string;
+  bullets?: string[];
 }
 
 export interface TailorResponse {
@@ -891,7 +986,8 @@ export type AISectionType =
   | "languages"
   | "references"
   | "courses"
-  | "memberships";
+  | "memberships"
+  | "leadership";
 
 export interface ImproveSectionRequest {
   section_type: AISectionType;
