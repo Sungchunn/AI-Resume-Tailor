@@ -84,6 +84,7 @@ curl http://localhost:8000/api/resumes \
 | [Resumes](resumes.md) | `/api/resumes` | Resume CRUD operations |
 | [Jobs](jobs.md) | `/api/jobs` | User's job posting CRUD operations |
 | [Job Listings](job-listings.md) | `/api/job-listings` | Browse scraped job listings |
+| [Scraper Requests](scraper-requests.md) | `/api/scraper-requests` | Request job URLs for admin review |
 | [Upload](upload-export.md) | `/api/upload` | Document upload and text extraction |
 | [Tailor](tailor-match.md) | `/api/tailor` | AI-powered resume tailoring |
 | [Export](upload-export.md) | `/api/export` | Export tailored resumes |

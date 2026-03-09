@@ -653,6 +653,236 @@ Returns the updated schedule settings with toggled `is_enabled`.
 - Schedule changes take effect immediately after the API call
 - Presets marked as inactive are excluded from scheduled runs
 
+## Scraper Requests
+
+Admin endpoints for reviewing user-submitted scraper requests.
+
+### List Scraper Requests
+
+Get all scraper requests with optional status filtering.
+
+```http
+GET /api/admin/scraper-requests
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+| --------- | ------- | ------- | ----------- |
+| `status` | string | null | Filter by status: `pending`, `approved`, `rejected` |
+| `limit` | integer | 50 | Number of requests to return (1-100) |
+| `offset` | integer | 0 | Pagination offset |
+
+**Example Request:**
+
+```bash
+curl "http://localhost:8000/api/admin/scraper-requests?status=pending" \
+  -H "Authorization: Bearer <admin_token>"
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "requests": [
+    {
+      "id": 1,
+      "url": "https://www.linkedin.com/jobs/search/?keywords=...",
+      "name": "Remote Software Engineer Jobs",
+      "reason": "Looking for remote opportunities",
+      "status": "pending",
+      "admin_notes": null,
+      "created_at": "2026-03-09T10:30:00.000000",
+      "updated_at": "2026-03-09T10:30:00.000000",
+      "reviewed_at": null,
+      "preset_id": null,
+      "user_id": 5,
+      "user_email": "user@example.com",
+      "reviewed_by": null,
+      "reviewer_email": null
+    }
+  ],
+  "total": 1
+}
+```
+
+---
+
+### Approve Scraper Request
+
+Approve a pending request and optionally create a scraper preset.
+
+```http
+POST /api/admin/scraper-requests/{request_id}/approve
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+| --------- | ------- | ----------- |
+| `request_id` | integer | Request identifier |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+| ----- | ------- | -------- | ----------- |
+| `admin_notes` | string | No | Notes for the user |
+| `create_preset` | boolean | No | Create a preset (default: true) |
+| `preset_name` | string | No | Override preset name (max 100 chars) |
+| `preset_count` | integer | No | Max jobs to scrape (1-500, default: 100) |
+| `preset_is_active` | boolean | No | Activate preset immediately (default: true) |
+
+**Example Request:**
+
+```bash
+curl -X POST http://localhost:8000/api/admin/scraper-requests/1/approve \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "admin_notes": "Added to weekly scrape schedule",
+    "create_preset": true,
+    "preset_name": "Remote SWE Jobs",
+    "preset_count": 100,
+    "preset_is_active": true
+  }'
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "id": 1,
+  "url": "https://www.linkedin.com/jobs/search/?keywords=...",
+  "name": "Remote Software Engineer Jobs",
+  "reason": "Looking for remote opportunities",
+  "status": "approved",
+  "admin_notes": "Added to weekly scrape schedule",
+  "created_at": "2026-03-09T10:30:00.000000",
+  "updated_at": "2026-03-09T11:00:00.000000",
+  "reviewed_at": "2026-03-09T11:00:00.000000",
+  "preset_id": 10,
+  "user_id": 5,
+  "user_email": "user@example.com",
+  "reviewed_by": 1,
+  "reviewer_email": "admin@example.com"
+}
+```
+
+**Error Responses:**
+
+| Status | Condition |
+| ------ | --------- |
+| 400 | Request already processed (not pending) |
+| 404 | Request not found |
+
+---
+
+### Reject Scraper Request
+
+Reject a pending request with an explanation.
+
+```http
+POST /api/admin/scraper-requests/{request_id}/reject
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+| --------- | ------- | ----------- |
+| `request_id` | integer | Request identifier |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+| ----- | ------- | -------- | ----------- |
+| `admin_notes` | string | Yes | Rejection reason (1-500 chars) |
+
+**Example Request:**
+
+```bash
+curl -X POST http://localhost:8000/api/admin/scraper-requests/1/reject \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "admin_notes": "This search is too broad. Please narrow down to a specific location or job type."
+  }'
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "id": 1,
+  "url": "https://www.linkedin.com/jobs/search/?keywords=...",
+  "name": "Remote Software Engineer Jobs",
+  "reason": "Looking for remote opportunities",
+  "status": "rejected",
+  "admin_notes": "This search is too broad. Please narrow down to a specific location or job type.",
+  "created_at": "2026-03-09T10:30:00.000000",
+  "updated_at": "2026-03-09T11:00:00.000000",
+  "reviewed_at": "2026-03-09T11:00:00.000000",
+  "preset_id": null,
+  "user_id": 5,
+  "user_email": "user@example.com",
+  "reviewed_by": 1,
+  "reviewer_email": "admin@example.com"
+}
+```
+
+**Error Responses:**
+
+| Status | Condition |
+| ------ | --------- |
+| 400 | Request already processed (not pending) |
+| 404 | Request not found |
+| 422 | Missing or invalid admin_notes |
+
+---
+
+### ScraperRequestAdminResponse
+
+```typescript
+{
+  id: number;
+  url: string;
+  name: string | null;
+  reason: string | null;
+  status: "pending" | "approved" | "rejected";
+  admin_notes: string | null;
+  created_at: string;
+  updated_at: string | null;
+  reviewed_at: string | null;
+  preset_id: number | null;
+  user_id: number;              // Submitting user ID
+  user_email: string;           // Submitting user email
+  reviewed_by: number | null;   // Reviewing admin ID
+  reviewer_email: string | null; // Reviewing admin email
+}
+```
+
+### ScraperRequestApproveRequest
+
+```typescript
+{
+  admin_notes?: string | null;
+  create_preset?: boolean;      // Default: true
+  preset_name?: string | null;  // Override the suggested name
+  preset_count?: number;        // Default: 100, range: 1-500
+  preset_is_active?: boolean;   // Default: true
+}
+```
+
+### ScraperRequestRejectRequest
+
+```typescript
+{
+  admin_notes: string;  // Required, 1-500 chars
+}
+```
+
+---
+
 ## Related Endpoints
 
+- [Scraper Requests](scraper-requests.md) - User endpoints for submitting requests
 - [Job Listings](job-listings.md) - Browse scraped job listings
