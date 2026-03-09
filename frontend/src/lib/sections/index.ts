@@ -1,0 +1,15 @@
+export {
+  SECTION_REGISTRY,
+  SECTION_GROUPS,
+  getSectionLabel,
+  getSectionsByCategory,
+  getAllSectionKeys,
+  getSectionDefinition,
+  isPredefinedSection,
+  isCustomSection,
+  getSectionCount,
+  sectionHasContent,
+  getGroupedSections,
+  type SectionCategory,
+  type SectionDefinition,
+} from "./sectionRegistry";
