@@ -164,6 +164,9 @@ class ScraperRequestRepository:
         """
         Approve a pending request.
 
+        Uses SELECT FOR UPDATE to prevent race conditions when multiple
+        admins try to approve/reject the same request concurrently.
+
         Args:
             db: Database session
             request_id: ID of the request to approve
@@ -174,7 +177,15 @@ class ScraperRequestRepository:
         Returns:
             Updated ScraperRequest or None if not found/not pending
         """
-        request = await self.get(db, request_id)
+        # Use SELECT FOR UPDATE to prevent concurrent modifications
+        stmt = (
+            select(ScraperRequest)
+            .where(ScraperRequest.id == request_id)
+            .with_for_update()
+        )
+        result = await db.execute(stmt)
+        request = result.scalar_one_or_none()
+
         if not request or request.status != RequestStatus.PENDING:
             return None
 
@@ -199,6 +210,9 @@ class ScraperRequestRepository:
         """
         Reject a pending request.
 
+        Uses SELECT FOR UPDATE to prevent race conditions when multiple
+        admins try to approve/reject the same request concurrently.
+
         Args:
             db: Database session
             request_id: ID of the request to reject
@@ -208,7 +222,15 @@ class ScraperRequestRepository:
         Returns:
             Updated ScraperRequest or None if not found/not pending
         """
-        request = await self.get(db, request_id)
+        # Use SELECT FOR UPDATE to prevent concurrent modifications
+        stmt = (
+            select(ScraperRequest)
+            .where(ScraperRequest.id == request_id)
+            .with_for_update()
+        )
+        result = await db.execute(stmt)
+        request = result.scalar_one_or_none()
+
         if not request or request.status != RequestStatus.PENDING:
             return None
 
