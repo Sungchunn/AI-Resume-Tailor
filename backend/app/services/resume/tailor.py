@@ -52,7 +52,7 @@ TAILORING_SYSTEM_PROMPT = """You are an expert resume tailoring assistant. Your 
 
 CRITICAL: You must output the ENTIRE resume as a complete JSON object, not just the changed sections. The output structure must exactly match the input structure.
 
-Output the following JSON structure (this is the ParsedContent schema):
+Output the following JSON structure (this is the ParsedContent schema with all 16 sections):
 {
   "contact": {
     "name": "string or null",
@@ -72,9 +72,7 @@ Output the following JSON structure (this is the ParsedContent schema):
       "location": "Location",
       "start_date": "Start",
       "end_date": "End",
-      "bullets": [
-        "Rewritten bullet emphasizing relevant skills and achievements"
-      ]
+      "bullets": ["Rewritten bullet emphasizing relevant skills and achievements"]
     }
   ],
   "education": [
@@ -85,18 +83,114 @@ Output the following JSON structure (this is the ParsedContent schema):
       "location": "Location",
       "graduation_date": "Date",
       "gpa": "GPA or null",
-      "honors": ["Honor 1", "Honor 2"]
+      "honors": ["Honor 1", "Honor 2"],
+      "minor": "Minor or null",
+      "relevant_courses": ["Course 1", "Course 2"]
     }
   ],
   "skills": ["Prioritized", "Skills", "List", "Most", "Relevant", "First"],
-  "certifications": ["Certification 1", "Certification 2"],
+  "certifications": [
+    {
+      "id": "PRESERVE FROM ORIGINAL",
+      "name": "Certification Name",
+      "issuer": "Issuing Organization",
+      "date": "Month Year",
+      "expiry_date": "Month Year or null",
+      "credential_id": "ID or null",
+      "url": "URL or null"
+    }
+  ],
   "projects": [
     {
       "id": "PRESERVE FROM ORIGINAL",
       "name": "Project Name",
       "description": "Tailored description emphasizing relevant aspects",
       "technologies": ["Tech 1", "Tech 2"],
-      "url": "URL or null"
+      "url": "URL or null",
+      "bullets": ["Achievement 1", "Achievement 2"],
+      "start_date": "Start or null",
+      "end_date": "End or null"
+    }
+  ],
+  "languages": [
+    {
+      "id": "PRESERVE FROM ORIGINAL",
+      "language": "Language Name",
+      "proficiency": "Proficiency Level"
+    }
+  ],
+  "volunteer": [
+    {
+      "id": "PRESERVE FROM ORIGINAL",
+      "role": "Role",
+      "organization": "Organization",
+      "location": "Location or null",
+      "start_date": "Start",
+      "end_date": "End",
+      "description": "Description or null",
+      "bullets": ["Achievement 1", "Achievement 2"]
+    }
+  ],
+  "publications": [
+    {
+      "id": "PRESERVE FROM ORIGINAL",
+      "title": "Title",
+      "authors": ["Author 1", "Author 2"],
+      "publication": "Journal/Conference",
+      "date": "Date",
+      "url": "URL or null",
+      "doi": "DOI or null"
+    }
+  ],
+  "awards": [
+    {
+      "id": "PRESERVE FROM ORIGINAL",
+      "title": "Award Title",
+      "issuer": "Issuer",
+      "date": "Date",
+      "description": "Description or null"
+    }
+  ],
+  "interests": "Hobbies and interests as a string or null",
+  "references": [
+    {
+      "id": "PRESERVE FROM ORIGINAL",
+      "name": "Name",
+      "title": "Title",
+      "company": "Company",
+      "email": "Email or null",
+      "phone": "Phone or null",
+      "relationship": "Relationship or null"
+    }
+  ],
+  "courses": [
+    {
+      "id": "PRESERVE FROM ORIGINAL",
+      "name": "Course Name",
+      "institution": "Institution",
+      "date": "Date or null",
+      "description": "Description or null"
+    }
+  ],
+  "memberships": [
+    {
+      "id": "PRESERVE FROM ORIGINAL",
+      "organization": "Organization",
+      "role": "Role or null",
+      "start_date": "Start or null",
+      "end_date": "End or null"
+    }
+  ],
+  "leadership": [
+    {
+      "id": "PRESERVE FROM ORIGINAL",
+      "role": "Role",
+      "organization": "Organization",
+      "location": "Location or null",
+      "start_date": "Start",
+      "end_date": "End",
+      "description": "Description or null",
+      "bullets": ["Achievement 1", "Achievement 2"]
     }
   ]
 }
@@ -110,9 +204,9 @@ Also include scoring in a separate object:
 }
 
 Rules for tailoring:
-1. PRESERVE IDs - Every experience, education, and project entry MUST keep its original ID. This is critical for the frontend to do section-by-section diffing.
+1. PRESERVE IDs - Every entry in experience, education, projects, certifications, languages, volunteer, publications, awards, references, courses, memberships, and leadership MUST keep its original ID. This is critical for frontend diffing.
 2. PRESERVE TRUTHFULNESS - Never invent experience or skills the candidate doesn't have.
-3. OUTPUT THE ENTIRE RESUME - Include ALL sections, even unchanged ones. Do not omit any fields.
+3. OUTPUT THE ENTIRE RESUME - Include ALL 16 sections, even unchanged ones. Do not omit any fields.
 4. REWORD bullet points to emphasize relevant keywords and skills from the job description.
 5. PRIORITIZE experiences most relevant to the job (can reorder within sections).
 6. MATCH the language and keywords used in the job description where truthful.
@@ -418,23 +512,27 @@ Output format (ensure valid JSON):
         """
         result = dict(parsed)
 
-        # Add IDs to experience entries if missing
-        if "experience" in result and result["experience"]:
-            for i, exp in enumerate(result["experience"]):
-                if isinstance(exp, dict) and not exp.get("id"):
-                    exp["id"] = f"exp-{i}-{uuid.uuid4().hex[:8]}"
+        # Map of section names to their ID prefixes
+        entry_sections = {
+            "experience": "exp",
+            "education": "edu",
+            "projects": "proj",
+            "certifications": "cert",
+            "languages": "lang",
+            "volunteer": "vol",
+            "publications": "pub",
+            "awards": "award",
+            "references": "ref",
+            "courses": "course",
+            "memberships": "mem",
+            "leadership": "lead",
+        }
 
-        # Add IDs to education entries if missing
-        if "education" in result and result["education"]:
-            for i, edu in enumerate(result["education"]):
-                if isinstance(edu, dict) and not edu.get("id"):
-                    edu["id"] = f"edu-{i}-{uuid.uuid4().hex[:8]}"
-
-        # Add IDs to project entries if missing
-        if "projects" in result and result["projects"]:
-            for i, proj in enumerate(result["projects"]):
-                if isinstance(proj, dict) and not proj.get("id"):
-                    proj["id"] = f"proj-{i}-{uuid.uuid4().hex[:8]}"
+        for section, prefix in entry_sections.items():
+            if section in result and result[section]:
+                for i, item in enumerate(result[section]):
+                    if isinstance(item, dict) and not item.get("id"):
+                        item["id"] = f"{prefix}-{i}-{uuid.uuid4().hex[:8]}"
 
         return result
 
@@ -454,7 +552,23 @@ Output format (ensure valid JSON):
                 return set()
             return {item.get("id") for item in items if isinstance(item, dict) and item.get("id")}
 
-        for field in ["experience", "education", "projects"]:
+        # All entry-based sections that have IDs
+        entry_sections = [
+            "experience",
+            "education",
+            "projects",
+            "certifications",
+            "languages",
+            "volunteer",
+            "publications",
+            "awards",
+            "references",
+            "courses",
+            "memberships",
+            "leadership",
+        ]
+
+        for field in entry_sections:
             original_ids = get_ids(original, field)
             tailored_ids = get_ids(tailored, field)
 
