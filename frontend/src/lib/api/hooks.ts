@@ -10,6 +10,7 @@ import {
   uploadApi,
   adminApi,
   atsApi,
+  scraperRequestApi,
   tokenManager,
 } from "./client";
 import type {
@@ -42,6 +43,10 @@ import type {
   ScraperPresetUpdate,
   ScheduleSettingsUpdate,
   ATSKeywordDetailedRequest,
+  ScraperRequestCreate,
+  ScraperRequestStatus,
+  ScraperRequestApproveRequest,
+  ScraperRequestRejectRequest,
 } from "./types";
 
 // Query Keys
@@ -111,6 +116,12 @@ export const queryKeys = {
   },
   scheduleSettings: {
     all: ["scheduleSettings"] as const,
+  },
+  scraperRequests: {
+    all: ["scraperRequests"] as const,
+    myList: () => [...queryKeys.scraperRequests.all, "my"] as const,
+    adminList: (status?: ScraperRequestStatus) =>
+      [...queryKeys.scraperRequests.all, "admin", status] as const,
   },
 };
 
@@ -986,6 +997,69 @@ export function useATSTips() {
     queryKey: ["ats", "tips"],
     queryFn: () => atsApi.getTips(),
     staleTime: 1000 * 60 * 60, // Cache for 1 hour
+  });
+}
+
+// Scraper Request Hooks (User-facing)
+export function useMyScraperRequests(limit = 50, offset = 0) {
+  return useQuery({
+    queryKey: queryKeys.scraperRequests.myList(),
+    queryFn: () => scraperRequestApi.list(limit, offset),
+  });
+}
+
+export function useCreateScraperRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: ScraperRequestCreate) => scraperRequestApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.scraperRequests.all });
+    },
+  });
+}
+
+export function useCancelScraperRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => scraperRequestApi.cancel(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.scraperRequests.all });
+    },
+  });
+}
+
+// Scraper Request Hooks (Admin)
+export function useAdminScraperRequests(status?: ScraperRequestStatus, limit = 50, offset = 0) {
+  return useQuery({
+    queryKey: queryKeys.scraperRequests.adminList(status),
+    queryFn: () => adminApi.listScraperRequests(status, limit, offset),
+  });
+}
+
+export function useApproveScraperRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: ScraperRequestApproveRequest }) =>
+      adminApi.approveScraperRequest(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.scraperRequests.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.scraperPresets.all });
+    },
+  });
+}
+
+export function useRejectScraperRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: ScraperRequestRejectRequest }) =>
+      adminApi.rejectScraperRequest(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.scraperRequests.all });
+    },
   });
 }
 
