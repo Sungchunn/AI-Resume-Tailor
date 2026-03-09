@@ -33,6 +33,12 @@ export function ContentEditor({
     bulletIndex: number;
   } | null>(null);
 
+  // Ensure arrays exist with defaults
+  const summary = content.summary ?? "";
+  const experience = content.experience ?? [];
+  const skills = content.skills ?? [];
+  const highlights = content.highlights ?? [];
+
   const handleSummaryChange = useCallback(
     (value: string) => {
       onChange({ ...content, summary: value });
@@ -41,45 +47,46 @@ export function ContentEditor({
   );
 
   const handleSkillsChange = useCallback(
-    (skills: string[]) => {
-      onChange({ ...content, skills });
+    (newSkills: string[]) => {
+      onChange({ ...content, skills: newSkills });
     },
     [content, onChange]
   );
 
   const handleHighlightsChange = useCallback(
-    (highlights: string[]) => {
-      onChange({ ...content, highlights });
+    (newHighlights: string[]) => {
+      onChange({ ...content, highlights: newHighlights });
     },
     [content, onChange]
   );
 
   const handleExperienceChange = useCallback(
     (index: number, field: string, value: string | string[]) => {
-      const newExperience = [...content.experience];
+      const newExperience = [...experience];
       newExperience[index] = { ...newExperience[index], [field]: value };
       onChange({ ...content, experience: newExperience });
     },
-    [content, onChange]
+    [content, experience, onChange]
   );
 
   const handleBulletChange = useCallback(
     (expIndex: number, bulletIndex: number, value: string) => {
-      const newExperience = [...content.experience];
-      const newBullets = [...newExperience[expIndex].bullets];
+      const newExperience = [...experience];
+      const newBullets = [...(newExperience[expIndex].bullets ?? [])];
       newBullets[bulletIndex] = value;
       newExperience[expIndex] = { ...newExperience[expIndex], bullets: newBullets };
       onChange({ ...content, experience: newExperience });
     },
-    [content, onChange]
+    [content, experience, onChange]
   );
 
   const addBullet = useCallback(
     (expIndex: number) => {
-      const newExperience = [...content.experience];
+      const newExperience = [...experience];
+      const currentBullets = newExperience[expIndex].bullets ?? [];
       newExperience[expIndex] = {
         ...newExperience[expIndex],
-        bullets: [...newExperience[expIndex].bullets, ""],
+        bullets: [...currentBullets, ""],
       };
       onChange({ ...content, experience: newExperience });
       setEditingBullet({
@@ -87,36 +94,36 @@ export function ContentEditor({
         bulletIndex: newExperience[expIndex].bullets.length - 1,
       });
     },
-    [content, onChange]
+    [content, experience, onChange]
   );
 
   const removeBullet = useCallback(
     (expIndex: number, bulletIndex: number) => {
-      const newExperience = [...content.experience];
-      const newBullets = [...newExperience[expIndex].bullets];
+      const newExperience = [...experience];
+      const newBullets = [...(newExperience[expIndex].bullets ?? [])];
       newBullets.splice(bulletIndex, 1);
       newExperience[expIndex] = { ...newExperience[expIndex], bullets: newBullets };
       onChange({ ...content, experience: newExperience });
     },
-    [content, onChange]
+    [content, experience, onChange]
   );
 
   const addSkill = useCallback(
     (skill: string) => {
-      if (skill.trim() && !content.skills.includes(skill.trim())) {
-        onChange({ ...content, skills: [...content.skills, skill.trim()] });
+      if (skill.trim() && !skills.includes(skill.trim())) {
+        onChange({ ...content, skills: [...skills, skill.trim()] });
       }
     },
-    [content, onChange]
+    [content, skills, onChange]
   );
 
   const removeSkill = useCallback(
     (index: number) => {
-      const newSkills = [...content.skills];
+      const newSkills = [...skills];
       newSkills.splice(index, 1);
       onChange({ ...content, skills: newSkills });
     },
-    [content, onChange]
+    [content, skills, onChange]
   );
 
   const renderSection = (section: string) => {
@@ -136,7 +143,7 @@ export function ContentEditor({
               {SECTION_LABELS.summary}
             </h2>
             <textarea
-              value={content.summary}
+              value={summary}
               onChange={(e) => handleSummaryChange(e.target.value)}
               className="w-full min-h-[100px] p-3 text-sm border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring resize-y"
               placeholder="Write your professional summary..."
@@ -157,14 +164,14 @@ export function ContentEditor({
               {SECTION_LABELS.highlights}
             </h2>
             <ul className="space-y-2">
-              {content.highlights.map((highlight, i) => (
+              {highlights.map((highlight, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <span className="text-primary mt-1">•</span>
                   <input
                     type="text"
                     value={highlight}
                     onChange={(e) => {
-                      const newHighlights = [...content.highlights];
+                      const newHighlights = [...highlights];
                       newHighlights[i] = e.target.value;
                       handleHighlightsChange(newHighlights);
                     }}
@@ -172,7 +179,7 @@ export function ContentEditor({
                   />
                   <button
                     onClick={() => {
-                      const newHighlights = content.highlights.filter(
+                      const newHighlights = highlights.filter(
                         (_, idx) => idx !== i
                       );
                       handleHighlightsChange(newHighlights);
@@ -187,7 +194,7 @@ export function ContentEditor({
               ))}
             </ul>
             <button
-              onClick={() => handleHighlightsChange([...content.highlights, ""])}
+              onClick={() => handleHighlightsChange([...highlights, ""])}
               className="mt-2 text-sm text-primary hover:text-primary"
             >
               + Add Highlight
@@ -208,7 +215,7 @@ export function ContentEditor({
               {SECTION_LABELS.experience}
             </h2>
             <div className="space-y-6">
-              {content.experience.map((exp, expIndex) => (
+              {experience.map((exp, expIndex) => (
                 <div
                   key={expIndex}
                   className="border border-border rounded-lg p-4"
@@ -266,7 +273,7 @@ export function ContentEditor({
                   <div className="mt-3">
                     <div className="text-xs text-muted-foreground mb-2">Bullet Points</div>
                     <ul className="space-y-2">
-                      {exp.bullets.map((bullet, bulletIndex) => (
+                      {(exp.bullets ?? []).map((bullet, bulletIndex) => (
                         <li key={bulletIndex} className="flex items-start gap-2">
                           <span className="text-muted-foreground/60 mt-2">•</span>
                           <textarea
@@ -314,7 +321,7 @@ export function ContentEditor({
               {SECTION_LABELS.skills}
             </h2>
             <div className="flex flex-wrap gap-2 mb-3">
-              {content.skills.map((skill, i) => (
+              {skills.map((skill, i) => (
                 <span
                   key={i}
                   className="inline-flex items-center gap-1 px-3 py-1 bg-muted text-foreground/80 text-sm rounded-full"

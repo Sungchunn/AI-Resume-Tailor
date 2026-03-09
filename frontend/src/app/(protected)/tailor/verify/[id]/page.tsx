@@ -39,10 +39,17 @@ export default function VerifySectionsPage({ params }: PageProps) {
   const [hasChanges, setHasChanges] = useState(false);
   const initialContentRef = useRef<TailoredContent | null>(null);
 
-  // Initialize content from API data
+  // Initialize content from API data with defaults for missing arrays
   useEffect(() => {
     if (tailored && !content) {
-      const initialContent = tailored.finalized_data ?? tailored.tailored_data;
+      const rawContent = tailored.finalized_data ?? tailored.tailored_data;
+      // Ensure all arrays exist with defaults
+      const initialContent: TailoredContent = {
+        summary: rawContent?.summary ?? "",
+        experience: rawContent?.experience ?? [],
+        skills: rawContent?.skills ?? [],
+        highlights: rawContent?.highlights ?? [],
+      };
       setContent(initialContent);
       initialContentRef.current = initialContent;
     }
