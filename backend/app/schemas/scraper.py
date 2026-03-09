@@ -299,3 +299,98 @@ SCRAPER_CONFIGS = [
     #     search_url="https://www.linkedin.com/jobs/search/?alertAction=viewjobs&currentJobId=4375472384&distance=25&f_E=1%2C2&f_T=9%2C25201%2C30128%2C25194%2C2732%2C25764%2C3172&f_TPR=a1771468957-&geoId=91000003&keywords=software%20engineer&origin=JOB_ALERT_IN_APP_NOTIFICATION&originToLandingJobPostings=4375472384%2C4373671523%2C4373681426%2C4374067823%2C4370507154%2C4366980504&savedSearchId=15671109132&sortBy=R",
     # ),
 ]
+
+
+# ============================================================================
+# Scraper Request Schemas (User-submitted job URL requests)
+# ============================================================================
+
+
+class RequestStatus(str, Enum):
+    """Status of a scraper request."""
+
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class ScraperRequestCreate(BaseModel):
+    """Request to submit a new scraper request."""
+
+    url: str = Field(..., min_length=1, description="LinkedIn job search URL")
+    name: str | None = Field(default=None, max_length=100, description="Suggested preset name")
+    reason: str | None = Field(default=None, max_length=500, description="Why you want these jobs")
+
+    @field_validator("url")
+    @classmethod
+    def validate_linkedin_url(cls, v: str) -> str:
+        """Validate that the URL is a legitimate LinkedIn jobs URL."""
+        parsed = urlparse(v)
+
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError("URL must use http or https scheme")
+
+        domain = parsed.netloc.lower()
+        if domain not in ("linkedin.com", "www.linkedin.com"):
+            raise ValueError("URL must be from linkedin.com domain")
+
+        if not parsed.path.lower().startswith("/jobs"):
+            raise ValueError("URL must be a LinkedIn jobs URL")
+
+        return v
+
+
+class ScraperRequestResponse(BaseModel):
+    """Response containing a scraper request (user view)."""
+
+    id: int
+    url: str
+    name: str | None
+    reason: str | None
+    status: RequestStatus
+    admin_notes: str | None
+    created_at: datetime
+    updated_at: datetime | None
+    reviewed_at: datetime | None
+    preset_id: int | None
+
+    model_config = {"from_attributes": True}
+
+
+class ScraperRequestListResponse(BaseModel):
+    """Response containing a list of scraper requests (user view)."""
+
+    requests: list[ScraperRequestResponse]
+    total: int
+
+
+class ScraperRequestAdminResponse(ScraperRequestResponse):
+    """Response containing a scraper request (admin view)."""
+
+    user_id: int
+    user_email: str
+    reviewed_by: int | None
+    reviewer_email: str | None
+
+
+class ScraperRequestAdminListResponse(BaseModel):
+    """Response containing a list of scraper requests (admin view)."""
+
+    requests: list[ScraperRequestAdminResponse]
+    total: int
+
+
+class ScraperRequestApproveRequest(BaseModel):
+    """Request to approve a scraper request."""
+
+    admin_notes: str | None = Field(default=None, max_length=500, description="Optional notes")
+    create_preset: bool = Field(default=True, description="Whether to create a preset")
+    preset_name: str | None = Field(default=None, max_length=100, description="Override preset name")
+    preset_count: int = Field(default=100, ge=1, le=500, description="Max jobs to scrape")
+    preset_is_active: bool = Field(default=True, description="Whether preset is active")
+
+
+class ScraperRequestRejectRequest(BaseModel):
+    """Request to reject a scraper request."""
+
+    admin_notes: str = Field(..., min_length=1, max_length=500, description="Rejection reason")
