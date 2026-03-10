@@ -236,6 +236,41 @@ class ResumeCRUD:
         )
         return ResumeDocument(**doc) if doc else None
 
+    async def get_master_or_latest(
+        self,
+        db: AsyncIOMotorDatabase,
+        user_id: int,
+        projection: dict[str, Any] | None = None,
+    ) -> ResumeDocument | None:
+        """Get the master resume for a user, or the most recently updated if no master exists.
+
+        Args:
+            db: MongoDB database instance
+            user_id: User ID
+            projection: Optional MongoDB projection dict to limit returned fields
+
+        Returns:
+            Master ResumeDocument if exists, otherwise the most recently updated,
+            or None if user has no resumes
+        """
+        # First try to get the master resume
+        master = await db[self.collection_name].find_one(
+            {"user_id": user_id, "is_master": True},
+            projection,
+        )
+        if master:
+            return ResumeDocument(**master)
+
+        # Fall back to most recently updated
+        cursor = (
+            db[self.collection_name]
+            .find({"user_id": user_id}, projection)
+            .sort("updated_at", -1)
+            .limit(1)
+        )
+        docs = await cursor.to_list(length=1)
+        return ResumeDocument(**docs[0]) if docs else None
+
 
 # Singleton instance
 resume_crud = ResumeCRUD()
