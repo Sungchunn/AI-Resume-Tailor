@@ -251,10 +251,10 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
     filters.is_saved;
 
   return (
-    <div className="bg-card rounded-lg border border-border p-4">
+    <div className="bg-card dark:bg-zinc-800 rounded-lg border border-border dark:border-zinc-600 p-4">
       {/* Search */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-foreground/80 mb-1">
+        <label className="block text-sm font-medium text-foreground/80 dark:text-zinc-300 mb-1">
           Search
         </label>
         <input
@@ -262,20 +262,20 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
           value={filters.search || ""}
           onChange={handleSearchChange}
           placeholder="Search jobs..."
-          className="w-full px-3 py-2 bg-background text-foreground border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          className="w-full px-3 py-2 bg-background dark:bg-zinc-700 text-foreground border border-input dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         />
       </div>
 
       {/* Sort */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-foreground/80 mb-1">
+        <label className="block text-sm font-medium text-foreground/80 dark:text-zinc-300 mb-1">
           Sort by
         </label>
         <div className="flex gap-2">
           <select
             value={filters.sort_by || "date_posted"}
             onChange={handleSortChange}
-            className="flex-1 px-3 py-2 bg-background text-foreground border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            className="flex-1 px-3 py-2 bg-background dark:bg-zinc-700 text-foreground border border-input dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
             {SORT_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -285,7 +285,7 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
           </select>
           <button
             onClick={handleSortOrderChange}
-            className="px-3 py-2 border border-input rounded-lg hover:bg-accent"
+            className="px-3 py-2 border border-input dark:border-zinc-600 dark:bg-zinc-700 rounded-lg hover:bg-accent dark:hover:bg-zinc-600"
             title={filters.sort_order === "asc" ? "Ascending" : "Descending"}
           >
             {filters.sort_order === "asc" ? "↑" : "↓"}
@@ -296,7 +296,7 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
       {/* Collapsible section */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between w-full text-sm font-medium text-foreground/80 mb-3"
+        className="flex items-center justify-between w-full text-sm font-medium text-foreground/80 dark:text-zinc-300 mb-3"
       >
         <span>Filters</span>
         <ChevronDownIcon className={`h-5 w-5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
@@ -306,7 +306,7 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
         <div className="space-y-4">
           {/* Company Name */}
           <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-1">
+            <label className="block text-sm font-medium text-foreground/80 dark:text-zinc-300 mb-1">
               Company
             </label>
             <input
@@ -314,7 +314,7 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
               value={filters.company_name || ""}
               onChange={handleCompanyNameChange}
               placeholder="e.g., Google, Microsoft"
-              className="w-full px-3 py-2 bg-background text-foreground border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 bg-background dark:bg-zinc-700 text-foreground border border-input dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
 
@@ -322,7 +322,7 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
           {countryOptions.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-foreground/80">
+                <label className="block text-sm font-medium text-foreground/80 dark:text-zinc-300">
                   Country
                 </label>
                 <span className="text-xs text-muted-foreground">Click to cycle: include → exclude</span>
@@ -369,7 +369,7 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
           {cityOptions.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-foreground/80">
+                <label className="block text-sm font-medium text-foreground/80 dark:text-zinc-300">
                   City
                 </label>
                 <span className="text-xs text-muted-foreground">Click to cycle: include → exclude</span>
@@ -415,7 +415,7 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
           {/* Seniority */}
           {seniorityOptions.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-foreground/80 mb-2">
+              <label className="block text-sm font-medium text-foreground/80 dark:text-zinc-300 mb-2">
                 Seniority
               </label>
               <div className="space-y-2">
@@ -444,7 +444,7 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
 
           {/* Applicant Count */}
           <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-2">
+            <label className="block text-sm font-medium text-foreground/80 dark:text-zinc-300 mb-2">
               Max Applicants
             </label>
             <div className="flex flex-wrap gap-2 mb-2">
@@ -497,7 +497,7 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
 
           {/* Salary Range */}
           <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-2">
+            <label className="block text-sm font-medium text-foreground/80 dark:text-zinc-300 mb-2">
               Salary Range
             </label>
             <div className="flex gap-2">
@@ -506,14 +506,14 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
                 value={filters.salary_min || ""}
                 onChange={handleSalaryMinChange}
                 placeholder="Min"
-                className="w-1/2 px-3 py-2 bg-background text-foreground border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="w-1/2 px-3 py-2 bg-background dark:bg-zinc-700 text-foreground border border-input dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
               <input
                 type="number"
                 value={filters.salary_max || ""}
                 onChange={handleSalaryMaxChange}
                 placeholder="Max"
-                className="w-1/2 px-3 py-2 bg-background text-foreground border border-input rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="w-1/2 px-3 py-2 bg-background dark:bg-zinc-700 text-foreground border border-input dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
           </div>

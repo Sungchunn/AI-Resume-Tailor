@@ -63,11 +63,11 @@ function SaveButton({ listing }: { listing: JobListingResponse }) {
 
 export function JobListingTable({ listings }: JobListingTableProps) {
   return (
-    <div className="bg-card rounded-lg border border-border overflow-hidden">
+    <div className="bg-card dark:bg-zinc-800 rounded-lg border border-border dark:border-zinc-600 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border bg-muted/50">
+            <tr className="border-b border-border dark:border-zinc-700 bg-muted/50 dark:bg-zinc-700">
               <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                 Posted
               </th>
@@ -95,7 +95,7 @@ export function JobListingTable({ listings }: JobListingTableProps) {
             {listings.map((listing) => (
               <tr
                 key={listing.id}
-                className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
+                className="border-b border-border dark:border-zinc-700 last:border-0 hover:bg-muted/30 dark:hover:bg-zinc-700/50 transition-colors"
               >
                 {/* Date Posted */}
                 <td className="py-3 px-4 text-muted-foreground">
@@ -108,14 +108,14 @@ export function JobListingTable({ listings }: JobListingTableProps) {
                     <img
                       src={listing.company_logo}
                       alt=""
-                      className="w-8 h-8 rounded object-contain border border-border"
+                      className="w-8 h-8 rounded object-contain border border-border dark:border-zinc-600"
                       loading="lazy"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
                       }}
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded bg-muted flex items-center justify-center text-muted-foreground text-xs font-medium">
+                    <div className="w-8 h-8 rounded bg-muted dark:bg-zinc-700 flex items-center justify-center text-muted-foreground text-xs font-medium">
                       {listing.company_name?.charAt(0)?.toUpperCase() || "?"}
                     </div>
                   )}
@@ -123,7 +123,7 @@ export function JobListingTable({ listings }: JobListingTableProps) {
 
                 {/* Company Name */}
                 <td className="py-3 px-4">
-                  <span className="text-foreground font-medium">
+                  <span className="text-foreground dark:text-white font-medium">
                     {listing.company_name || "—"}
                   </span>
                 </td>
@@ -132,17 +132,17 @@ export function JobListingTable({ listings }: JobListingTableProps) {
                 <td className="py-3 px-4">
                   <Link
                     href={`/jobs/${listing.id}`}
-                    className="text-primary hover:text-primary/80 hover:underline font-medium"
+                    className="text-primary dark:text-blue-400 hover:text-primary/80 dark:hover:text-blue-300 hover:underline font-medium"
                   >
                     {listing.job_title}
                   </Link>
                   {listing.applied_at && (
-                    <span className="ml-2 text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
+                    <span className="ml-2 text-xs px-1.5 py-0.5 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 rounded">
                       Applied
                     </span>
                   )}
                   {listing.is_saved && (
-                    <span className="ml-2 text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                    <span className="ml-2 text-xs px-1.5 py-0.5 bg-primary/10 dark:bg-blue-400/20 text-primary dark:text-blue-400 rounded">
                       Saved
                     </span>
                   )}
@@ -156,7 +156,7 @@ export function JobListingTable({ listings }: JobListingTableProps) {
                 {/* Seniority */}
                 <td className="py-3 px-4">
                   {listing.seniority ? (
-                    <span className="px-2 py-0.5 bg-muted rounded-full text-xs capitalize text-muted-foreground">
+                    <span className="px-2 py-0.5 bg-muted dark:bg-zinc-700 rounded-full text-xs capitalize text-muted-foreground">
                       {listing.seniority}
                     </span>
                   ) : (

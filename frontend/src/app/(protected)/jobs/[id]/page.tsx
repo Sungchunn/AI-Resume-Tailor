@@ -88,9 +88,9 @@ export default function JobDetailPage() {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-3/4" />
-          <div className="h-6 bg-muted rounded w-1/2" />
-          <div className="h-40 bg-muted rounded" />
+          <div className="h-8 bg-muted dark:bg-zinc-700 rounded w-3/4" />
+          <div className="h-6 bg-muted dark:bg-zinc-700 rounded w-1/2" />
+          <div className="h-40 bg-muted dark:bg-zinc-700 rounded" />
         </div>
       </div>
     );
@@ -115,10 +115,10 @@ export default function JobDetailPage() {
   if (!listing) {
     return (
       <div className="max-w-4xl mx-auto">
-        <div className="bg-muted rounded-lg p-8 text-center">
-          <BriefcaseIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-1">Job not found</h3>
-          <p className="text-muted-foreground mb-4">
+        <div className="bg-muted dark:bg-zinc-800 rounded-lg p-8 text-center border border-transparent dark:border-zinc-600">
+          <BriefcaseIcon className="h-12 w-12 text-muted-foreground dark:text-zinc-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground dark:text-white mb-1">Job not found</h3>
+          <p className="text-muted-foreground dark:text-zinc-300 mb-4">
             This job listing may have been removed or is no longer available.
           </p>
           <Link
@@ -147,7 +147,7 @@ export default function JobDetailPage() {
       </Link>
 
       {/* Header */}
-      <div className="bg-card rounded-lg border border-border p-6">
+      <div className="bg-card dark:bg-zinc-800 rounded-lg border border-border dark:border-zinc-600 p-6">
         <div className="flex justify-between items-start">
           <div className="flex items-start gap-4 flex-1">
             {/* Company Logo */}
@@ -155,14 +155,14 @@ export default function JobDetailPage() {
               <img
                 src={listing.company_logo}
                 alt={listing.company_name ? `${listing.company_name} logo` : 'Company logo'}
-                className="w-16 h-16 rounded-lg object-contain border border-border"
+                className="w-16 h-16 rounded-lg object-contain border border-border dark:border-zinc-600"
                 loading="lazy"
                 onError={(e) => { e.currentTarget.style.display = 'none' }}
               />
             )}
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-foreground">{listing.job_title}</h1>
-              <p className="text-lg text-muted-foreground mt-1">{listing.company_name}</p>
+              <h1 className="text-2xl font-bold text-foreground dark:text-white">{listing.job_title}</h1>
+              <p className="text-lg text-muted-foreground dark:text-zinc-300 mt-1">{listing.company_name}</p>
             </div>
           </div>
 
@@ -200,7 +200,7 @@ export default function JobDetailPage() {
             </span>
           )}
           {listing.seniority && (
-            <span className="px-2 py-0.5 bg-muted rounded-full text-xs capitalize">
+            <span className="px-2 py-0.5 bg-muted dark:bg-zinc-700 rounded-full text-xs capitalize">
               {listing.seniority}
             </span>
           )}
@@ -241,7 +241,7 @@ export default function JobDetailPage() {
       </div>
 
       {/* Action bar */}
-      <div className="bg-card rounded-lg border border-border p-4 flex items-center justify-between">
+      <div className="bg-card dark:bg-zinc-800 rounded-lg border border-border dark:border-zinc-600 p-4 flex items-center justify-between">
         <div className="flex gap-3">
           {/* Apply Now button - prominent when apply_url exists */}
           {listing.apply_url ? (
@@ -297,8 +297,8 @@ export default function JobDetailPage() {
 
       {/* Company Info Section */}
       {(listing.company_description || listing.company_website || listing.company_linkedin_url || listing.company_address_locality) && (
-        <div className="bg-card rounded-lg border border-border p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+        <div className="bg-card dark:bg-zinc-800 rounded-lg border border-border dark:border-zinc-600 p-6">
+          <h2 className="text-lg font-semibold text-foreground dark:text-white mb-4 flex items-center gap-2">
             <BuildingIcon className="h-5 w-5 text-muted-foreground" />
             About {listing.company_name}
           </h2>
@@ -347,8 +347,8 @@ export default function JobDetailPage() {
       )}
 
       {/* Job description */}
-      <div className="bg-card rounded-lg border border-border p-6">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Job Description</h2>
+      <div className="bg-card dark:bg-zinc-800 rounded-lg border border-border dark:border-zinc-600 p-6">
+        <h2 className="text-lg font-semibold text-foreground dark:text-white mb-4">Job Description</h2>
         {listing.job_description_html ? (
           <div
             className="prose prose-invert max-w-none prose-li:marker:text-muted-foreground prose-ul:my-2 prose-li:my-0.5 prose-p:my-2 prose-headings:mt-4 prose-headings:mb-2"

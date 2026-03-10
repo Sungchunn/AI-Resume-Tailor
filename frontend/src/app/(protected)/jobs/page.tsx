@@ -57,8 +57,8 @@ export default function JobListingsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Job Listings</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl font-bold text-foreground dark:text-white">Job Listings</h1>
+          <p className="text-muted-foreground dark:text-zinc-300 mt-1">
             Browse and discover job opportunities
           </p>
           {data && data.listings.length > 0 && (
@@ -76,12 +76,12 @@ export default function JobListingsPage() {
         </div>
         <div className="flex items-center gap-4 mt-1">
           {/* View Toggle */}
-          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-muted dark:bg-zinc-800 rounded-lg p-1">
             <button
               onClick={() => handleViewModeChange("cards")}
               className={`p-2 rounded-md transition-colors ${
                 viewMode === "cards"
-                  ? "bg-card text-foreground shadow-sm"
+                  ? "bg-card dark:bg-zinc-700 text-foreground dark:text-white shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
               title="Card view"
@@ -92,7 +92,7 @@ export default function JobListingsPage() {
               onClick={() => handleViewModeChange("table")}
               className={`p-2 rounded-md transition-colors ${
                 viewMode === "table"
-                  ? "bg-card text-foreground shadow-sm"
+                  ? "bg-card dark:bg-zinc-700 text-foreground dark:text-white shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
               title="Table view"
@@ -156,7 +156,7 @@ export default function JobListingsPage() {
                 <select
                   value={filters.limit || 20}
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                  className="bg-card border border-border rounded-md px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="bg-card dark:bg-zinc-800 border border-border dark:border-zinc-600 rounded-md px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
                   {PAGE_SIZE_OPTIONS[viewMode].map((size) => (
                     <option key={size} value={size}>
@@ -174,12 +174,12 @@ export default function JobListingsPage() {
               {[...Array(5)].map((_, i) => (
                 <div
                   key={i}
-                  className="bg-card rounded-lg border border-border p-4 animate-pulse"
+                  className="bg-card dark:bg-zinc-800 rounded-lg border border-border dark:border-zinc-600 p-4 animate-pulse"
                 >
-                  <div className="h-5 bg-muted rounded w-3/4 mb-2" />
-                  <div className="h-4 bg-muted rounded w-1/2 mb-3" />
-                  <div className="h-3 bg-muted rounded w-full mb-2" />
-                  <div className="h-3 bg-muted rounded w-5/6" />
+                  <div className="h-5 bg-muted dark:bg-zinc-700 rounded w-3/4 mb-2" />
+                  <div className="h-4 bg-muted dark:bg-zinc-700 rounded w-1/2 mb-3" />
+                  <div className="h-3 bg-muted dark:bg-zinc-700 rounded w-full mb-2" />
+                  <div className="h-3 bg-muted dark:bg-zinc-700 rounded w-5/6" />
                 </div>
               ))}
             </div>
@@ -201,12 +201,12 @@ export default function JobListingsPage() {
 
           {/* Empty state */}
           {data && data.listings.length === 0 && (
-            <div className="bg-muted rounded-lg p-8 text-center">
-              <BriefcaseIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-1">
+            <div className="bg-muted dark:bg-zinc-800 rounded-lg p-8 text-center border border-transparent dark:border-zinc-600">
+              <BriefcaseIcon className="h-12 w-12 text-muted-foreground dark:text-zinc-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground dark:text-white mb-1">
                 {isEmptyDatabase ? "No jobs available" : "No jobs found"}
               </h3>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground dark:text-zinc-300">
                 {isEmptyDatabase
                   ? "Job listings will appear here once they are imported into the system."
                   : "Try adjusting your filters or search criteria"}
