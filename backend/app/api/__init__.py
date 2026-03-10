@@ -10,6 +10,7 @@ from app.api.routes import (
     job_listings,
     jobs,
     match,
+    profile,
     resumes,
     scraper_requests,
     tailor,
@@ -35,6 +36,9 @@ api_router.include_router(ats.router, prefix="/v1/ats", tags=["ats"])
 
 # Phase 6: AI Chat for Resume Editor
 api_router.include_router(ai.router, prefix="/v1/ai", tags=["ai"])
+
+# Profile endpoints (About Me generation)
+api_router.include_router(profile.router, prefix="/v1/profile", tags=["profile"])
 
 # Job Listings (system-wide jobs from external sources)
 api_router.include_router(job_listings.router, prefix="/job-listings", tags=["job-listings"])
