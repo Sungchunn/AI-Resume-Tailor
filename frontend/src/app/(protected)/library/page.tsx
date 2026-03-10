@@ -98,7 +98,7 @@ export default function LibraryPage() {
               onClick={() => handleTabChange(tab.id)}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
                 activeTab === tab.id
-                  ? "border-primary text-primary"
+                  ? "border-primary text-primary dark:border-blue-400 dark:text-blue-400"
                   : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
               }`}
             >
@@ -106,7 +106,7 @@ export default function LibraryPage() {
               <span
                 className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                   activeTab === tab.id
-                    ? "bg-primary/20 text-primary"
+                    ? "bg-primary/20 text-primary dark:bg-blue-400/20 dark:text-blue-400"
                     : "bg-muted text-muted-foreground"
                 }`}
               >
