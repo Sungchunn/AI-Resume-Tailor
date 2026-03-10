@@ -83,20 +83,30 @@ export function BlockEditorProvider({
   onSave,
   children,
 }: BlockEditorProviderProps) {
-  // Initialize state
-  const initialBlocks = useMemo(
-    () => parsedContentToBlocks(initialParsedContent),
+  // Initialize state with error handling
+  const initialBlocks = useMemo(() => {
+    try {
+      return parsedContentToBlocks(initialParsedContent);
+    } catch (err) {
+      console.error("Failed to parse resume content:", err);
+      // Return empty blocks array if parsing fails
+      return [];
+    }
     // Only compute on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
+  }, []);
 
-  const initialEditorStyle = useMemo(
-    () => apiStyleToEditorStyle(initialStyle),
+  const initialEditorStyle = useMemo(() => {
+    try {
+      return apiStyleToEditorStyle(initialStyle);
+    } catch (err) {
+      console.error("Failed to parse style settings:", err);
+      // Return default style if parsing fails
+      return apiStyleToEditorStyle(null);
+    }
     // Only compute on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
+  }, []);
 
   const initialState: BlockEditorState = useMemo(
     () => ({
