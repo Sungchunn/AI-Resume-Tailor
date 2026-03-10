@@ -61,7 +61,7 @@ export function EditorHeader({
         <div className="h-5 w-px bg-border" />
 
         <div className="flex items-center gap-2">
-          <h1 className="text-lg font-semibold text-foreground truncate max-w-[200px] sm:max-w-[300px]">
+          <h1 className="text-lg font-semibold text-foreground truncate max-w-50 sm:max-w-75">
             {title}
           </h1>
           {isDirty && (
