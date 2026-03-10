@@ -164,13 +164,21 @@ class LeadershipEntry(BaseModel):
     """Leadership experience entry in parsed resume."""
 
     id: str | None = None
-    role: str | None = None
+    title: str | None = None  # Changed from role to match frontend
     organization: str | None = None
     location: str | None = None
     start_date: str | None = None
     end_date: str | None = None
     description: str | None = None
     bullets: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_role_to_title(cls, data: Any) -> Any:
+        """Migrate old `role` field to `title` for backward compatibility."""
+        if isinstance(data, dict) and "role" in data and "title" not in data:
+            data["title"] = data.pop("role")
+        return data
 
 
 class CertificationEntry(BaseModel):
