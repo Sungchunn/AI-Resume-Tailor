@@ -53,9 +53,9 @@ export default function JobListingsPage() {
   const isEmptyDatabase = data?.total === 0 && hasNoFilters;
 
   return (
-    <div className="space-y-6">
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between shrink-0 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground dark:text-white">Job Listings</h1>
           <p className="text-muted-foreground dark:text-zinc-300 mt-1">
@@ -134,9 +134,9 @@ export default function JobListingsPage() {
         onClose={() => setIsRequestModalOpen(false)}
       />
 
-      <div className="flex gap-6">
+      <div className="flex gap-6 flex-1 min-h-0">
         {/* Filters Sidebar */}
-        <div className="w-72 shrink-0">
+        <div className="w-72 shrink-0 overflow-y-auto">
           <JobListingFilters
             filters={filters}
             onFiltersChange={setFilters}
@@ -144,10 +144,10 @@ export default function JobListingsPage() {
         </div>
 
         {/* Job Listings Grid */}
-        <div className="flex-1">
+        <div className="flex-1 flex flex-col min-h-0">
           {/* Results count and page size */}
           {data && (
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between shrink-0">
               <span className="text-sm text-muted-foreground">
                 Showing {data.listings.length} of {data.total} jobs
               </span>
@@ -168,6 +168,8 @@ export default function JobListingsPage() {
             </div>
           )}
 
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-y-auto min-h-0">
           {/* Loading state */}
           {isLoading && (
             <div className="space-y-4">
@@ -226,10 +228,11 @@ export default function JobListingsPage() {
               <JobListingTable listings={data.listings} />
             )
           )}
+          </div>
 
           {/* Pagination */}
           {data && totalPages > 1 && (
-            <div className="mt-6 flex items-center justify-between">
+            <div className="mt-4 pt-4 border-t border-border flex items-center justify-between shrink-0">
               <button
                 onClick={() => handlePageChange(Math.max(0, (filters.offset || 0) - (filters.limit || 20)))}
                 disabled={currentPage === 1}
