@@ -494,16 +494,18 @@ function SavedTab() {
   return (
     <div className="space-y-4">
       {data && (
-        <>
-          <p className="text-sm text-muted-foreground">
+        <div className="max-w-3xl mx-auto">
+          <p className="text-sm text-muted-foreground dark:text-zinc-300 mb-4">
             {data.total} saved job{data.total !== 1 ? "s" : ""}
           </p>
-          <div className="space-y-4">
+          <div className="bg-card dark:bg-zinc-800 border border-border dark:border-zinc-600 rounded-lg p-4 space-y-3">
             {data.listings.map((listing) => (
-              <JobListingCard key={listing.id} listing={listing} />
+              <div key={listing.id} className="bg-muted/50 dark:bg-zinc-700 rounded-lg hover:bg-muted dark:hover:bg-zinc-600 transition-colors">
+                <JobListingCard listing={listing} />
+              </div>
             ))}
           </div>
-        </>
+        </div>
       )}
     </div>
   );
@@ -559,10 +561,10 @@ function VaultTab() {
       </div>
 
       {/* Filters */}
-      <div className="card">
+      <div className="bg-card dark:bg-zinc-800 border border-border dark:border-zinc-600 rounded-lg p-4">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex-1">
-            <label className="text-sm font-medium text-foreground mb-2 block">
+            <label className="text-sm font-medium text-foreground dark:text-white mb-2 block">
               Filter by Type
             </label>
             <div className="flex flex-wrap gap-2">
@@ -572,8 +574,8 @@ function VaultTab() {
                   onClick={() => toggleType(option.value)}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                     selectedTypes.includes(option.value)
-                      ? "bg-primary/20 text-primary border border-primary/30"
-                      : "bg-muted text-muted-foreground border border-transparent hover:bg-accent"
+                      ? "bg-primary/20 text-primary dark:bg-blue-400/20 dark:text-blue-400 border border-primary/30 dark:border-blue-400/30"
+                      : "bg-muted/50 dark:bg-zinc-700 text-muted-foreground border border-transparent hover:bg-muted dark:hover:bg-zinc-600"
                   }`}
                 >
                   {option.label}
@@ -589,7 +591,7 @@ function VaultTab() {
               onChange={(e) => setVerifiedOnly(e.target.checked)}
               className="h-4 w-4 rounded border-border text-primary focus:ring-ring"
             />
-            <span className="text-sm text-foreground">Verified only</span>
+            <span className="text-sm text-foreground dark:text-zinc-300">Verified only</span>
           </label>
         </div>
 
@@ -599,7 +601,7 @@ function VaultTab() {
               setSelectedTypes([]);
               setVerifiedOnly(false);
             }}
-            className="mt-3 text-sm text-primary hover:text-primary/80"
+            className="mt-3 text-sm text-primary dark:text-blue-400 hover:text-primary/80 dark:hover:text-blue-300"
           >
             Clear filters
           </button>
