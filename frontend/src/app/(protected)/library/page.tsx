@@ -126,11 +126,65 @@ export default function LibraryPage() {
   );
 }
 
+type DateGroup = "today" | "yesterday" | "last_week" | "previous";
+type ResumeList = NonNullable<ReturnType<typeof useResumes>["data"]>;
+type ResumeItem = ResumeList[number];
+
+interface GroupedResumes {
+  today: ResumeItem[];
+  yesterday: ResumeItem[];
+  last_week: ResumeItem[];
+  previous: ResumeItem[];
+}
+
+function getDateGroup(dateStr: string): DateGroup {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const lastWeek = new Date(today);
+  lastWeek.setDate(lastWeek.getDate() - 7);
+
+  const itemDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (itemDate.getTime() === today.getTime()) return "today";
+  if (itemDate.getTime() === yesterday.getTime()) return "yesterday";
+  if (itemDate >= lastWeek) return "last_week";
+  return "previous";
+}
+
+function groupResumesByDate(resumes: ResumeList): GroupedResumes {
+  const groups: GroupedResumes = {
+    today: [],
+    yesterday: [],
+    last_week: [],
+    previous: [],
+  };
+
+  for (const resume of resumes) {
+    // Use updated_at if available, otherwise created_at
+    const dateToUse = resume.updated_at || resume.created_at;
+    const group = getDateGroup(dateToUse);
+    groups[group].push(resume);
+  }
+
+  return groups;
+}
+
+const DATE_GROUP_LABELS: Record<DateGroup, string> = {
+  today: "TODAY",
+  yesterday: "YESTERDAY",
+  last_week: "LAST WEEK",
+  previous: "PREVIOUS",
+};
+
 function ResumesTab() {
   const { data: resumes, isLoading, error, refetch } = useResumes();
   const deleteResume = useDeleteResume();
   const setMasterResume = useSetMasterResume();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [showPrevious, setShowPrevious] = useState(false);
 
   const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this resume?")) {
@@ -142,7 +196,7 @@ function ResumesTab() {
     setMasterResume.mutate(id);
   };
 
-  if (isLoading) return <CardGridSkeleton count={3} />;
+  if (isLoading) return <ResumeListSkeleton />;
 
   if (error) {
     return (
@@ -152,6 +206,9 @@ function ResumesTab() {
       />
     );
   }
+
+  const grouped = resumes ? groupResumesByDate(resumes) : null;
+  const recentGroups: DateGroup[] = ["today", "yesterday", "last_week"];
 
   return (
     <div className="space-y-4">
@@ -169,69 +226,81 @@ function ResumesTab() {
         onOpenChange={setIsUploadModalOpen}
       />
 
-      {resumes && resumes.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {resumes.map((resume) => (
-            <div key={resume.id} className="card relative">
-              {/* Master Badge */}
-              {resume.is_master && (
-                <div className="absolute top-2 right-2">
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                    <StarIconFilled className="h-3 w-3" />
-                    Master
-                  </span>
-                </div>
-              )}
+      <div className="max-w-3xl mx-auto bg-card border border-border rounded-lg p-6">
+      {resumes && resumes.length > 0 && grouped ? (
+        <div className="space-y-6">
+          {/* Recent groups: Today, Yesterday, Last Week */}
+          {recentGroups.map((groupKey) => {
+            const groupResumes = grouped[groupKey];
+            if (groupResumes.length === 0) return null;
 
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0 pr-16">
-                  <h3 className="font-semibold text-foreground truncate">
-                    {resume.title}
-                  </h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Created {new Date(resume.created_at).toLocaleDateString()}
-                  </p>
-                  {resume.updated_at && (
-                    <p className="text-sm text-muted-foreground/80">
-                      Updated {new Date(resume.updated_at).toLocaleDateString()}
-                    </p>
+            return (
+              <div key={groupKey}>
+                <h3 className="text-xs font-medium text-muted-foreground mb-2 tracking-wide">
+                  {DATE_GROUP_LABELS[groupKey]}
+                </h3>
+                <div className="space-y-2">
+                  {groupResumes.map((resume) => (
+                    <ResumeListItem
+                      key={resume.id}
+                      resume={resume}
+                      onDelete={handleDelete}
+                      onSetMaster={handleSetMaster}
+                      isDeleting={deleteResume.isPending}
+                      isSettingMaster={setMasterResume.isPending}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Previous group - collapsible */}
+          {grouped.previous.length > 0 && (
+            <div>
+              <h3 className="text-xs font-medium text-muted-foreground mb-2 tracking-wide">
+                {DATE_GROUP_LABELS.previous}
+              </h3>
+              {showPrevious ? (
+                <div className="space-y-2">
+                  {grouped.previous.map((resume) => (
+                    <ResumeListItem
+                      key={resume.id}
+                      resume={resume}
+                      onDelete={handleDelete}
+                      onSetMaster={handleSetMaster}
+                      isDeleting={deleteResume.isPending}
+                      isSettingMaster={setMasterResume.isPending}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {/* Show first 2 items as preview */}
+                  <div className="space-y-2">
+                    {grouped.previous.slice(0, 2).map((resume) => (
+                      <ResumeListItem
+                        key={resume.id}
+                        resume={resume}
+                        onDelete={handleDelete}
+                        onSetMaster={handleSetMaster}
+                        isDeleting={deleteResume.isPending}
+                        isSettingMaster={setMasterResume.isPending}
+                      />
+                    ))}
+                  </div>
+                  {grouped.previous.length > 2 && (
+                    <button
+                      onClick={() => setShowPrevious(true)}
+                      className="mt-3 w-full py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+                    >
+                      Show previous ({grouped.previous.length - 2} more)
+                    </button>
                   )}
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center gap-2">
-                <Link
-                  href={`/library/resumes/${resume.id}`}
-                  className="btn-secondary text-sm py-1.5"
-                >
-                  View
-                </Link>
-                <Link
-                  href={`/library/resumes/${resume.id}/edit`}
-                  className="btn-ghost text-sm py-1.5"
-                >
-                  Edit
-                </Link>
-                {!resume.is_master && (
-                  <button
-                    onClick={() => handleSetMaster(resume.id)}
-                    disabled={setMasterResume.isPending}
-                    className="btn-ghost text-sm py-1.5 text-amber-600 hover:bg-amber-50"
-                    title="Set as master resume"
-                  >
-                    <StarIcon className="h-4 w-4" />
-                  </button>
-                )}
-                <button
-                  onClick={() => handleDelete(resume.id)}
-                  disabled={deleteResume.isPending}
-                  className="btn-ghost text-sm py-1.5 text-destructive hover:bg-destructive/10"
-                >
-                  Delete
-                </button>
-              </div>
+                </>
+              )}
             </div>
-          ))}
+          )}
         </div>
       ) : (
         <EmptyState
@@ -248,6 +317,123 @@ function ResumesTab() {
           }
         />
       )}
+      </div>
+    </div>
+  );
+}
+
+interface ResumeListItemProps {
+  resume: ResumeItem;
+  onDelete: (id: string) => void;
+  onSetMaster: (id: string) => void;
+  isDeleting: boolean;
+  isSettingMaster: boolean;
+}
+
+function ResumeListItem({
+  resume,
+  onDelete,
+  onSetMaster,
+  isDeleting,
+  isSettingMaster,
+}: ResumeListItemProps) {
+  const lastUpdated = resume.updated_at || resume.created_at;
+  const formattedDate = new Date(lastUpdated).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  return (
+    <div className="group flex items-center gap-4 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+      {/* Document Icon */}
+      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+        <DocumentSmallIcon className="w-5 h-5 text-primary" />
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <h4 className="font-medium text-foreground truncate">{resume.title}</h4>
+          {resume.is_master && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
+              <StarIconFilled className="h-2.5 w-2.5" />
+              Master
+            </span>
+          )}
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Last updated {formattedDate}
+        </p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Link
+          href={`/library/resumes/${resume.id}`}
+          className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+          title="View"
+        >
+          <EyeIcon className="w-4 h-4" />
+        </Link>
+        <Link
+          href={`/library/resumes/${resume.id}/edit`}
+          className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+          title="Edit"
+        >
+          <EditIcon className="w-4 h-4" />
+        </Link>
+        {!resume.is_master && (
+          <button
+            onClick={() => onSetMaster(resume.id)}
+            disabled={isSettingMaster}
+            className="p-2 text-muted-foreground hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors disabled:opacity-50"
+            title="Set as master resume"
+          >
+            <StarIcon className="w-4 h-4" />
+          </button>
+        )}
+        <button
+          onClick={() => onDelete(resume.id)}
+          disabled={isDeleting}
+          className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors disabled:opacity-50"
+          title="Delete"
+        >
+          <TrashIcon className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* More menu (always visible on mobile, hover on desktop) */}
+      <button className="p-2 text-muted-foreground hover:text-foreground rounded-md md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+        <MoreIcon className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
+function ResumeListSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-end">
+        <div className="h-10 w-28 bg-muted rounded-md animate-pulse" />
+      </div>
+      <div>
+        <div className="h-4 w-16 bg-muted rounded mb-2 animate-pulse" />
+        <div className="space-y-2">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-4 p-3 bg-card border border-border rounded-lg"
+            >
+              <div className="w-10 h-10 rounded-lg bg-muted animate-pulse" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-48 bg-muted rounded animate-pulse" />
+                <div className="h-3 w-32 bg-muted rounded animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -571,6 +757,101 @@ function StarIconFilled({ className }: { className?: string }) {
         fillRule="evenodd"
         d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"
         clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+function DocumentSmallIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+      />
+    </svg>
+  );
+}
+
+function EyeIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+      />
+    </svg>
+  );
+}
+
+function EditIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+      />
+    </svg>
+  );
+}
+
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+      />
+    </svg>
+  );
+}
+
+function MoreIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z"
       />
     </svg>
   );
