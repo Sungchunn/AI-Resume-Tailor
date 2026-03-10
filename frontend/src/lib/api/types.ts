@@ -20,6 +20,7 @@ export interface UserResponse {
   is_active: boolean;
   is_admin: boolean;
   created_at: string;
+  headline?: string | null;
   about_me?: string | null;
   about_me_generated_at?: string | null;
 }
@@ -32,6 +33,16 @@ export interface GenerateAboutMeRequest {
 export interface AboutMeResponse {
   about_me: string;
   generated_at: string;
+}
+
+export interface UpdateProfileRequest {
+  headline?: string | null;
+  about_me?: string | null;
+}
+
+export interface ProfileResponse {
+  headline?: string | null;
+  about_me?: string | null;
 }
 
 export interface Token {

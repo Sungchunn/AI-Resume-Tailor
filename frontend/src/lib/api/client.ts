@@ -21,6 +21,8 @@ import type {
   TokenRefresh,
   GenerateAboutMeRequest,
   AboutMeResponse,
+  UpdateProfileRequest,
+  ProfileResponse,
   BlockCreate,
   BlockUpdate,
   BlockResponse,
@@ -238,6 +240,12 @@ export const profileApi = {
     fetchApi("/api/v1/profile/generate-about-me", {
       method: "POST",
       body: JSON.stringify(data || {}),
+    }),
+
+  updateProfile: (data: UpdateProfileRequest): Promise<ProfileResponse> =>
+    fetchApi("/api/v1/profile", {
+      method: "PATCH",
+      body: JSON.stringify(data),
     }),
 };
 

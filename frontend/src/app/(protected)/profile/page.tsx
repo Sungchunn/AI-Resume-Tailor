@@ -1,15 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { useResumes, useDeleteResume, useSetMasterResume } from "@/lib/api";
+import { useState, useRef, useEffect } from "react";
+import { useResumes, useDeleteResume, useSetMasterResume, useUpdateProfile } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 import { ResumeUploadModal } from "@/components/upload";
 import { AboutMeSection } from "@/components/library/AboutMeSection";
 import { ResumeTimeline } from "@/components/library/ResumeTimeline";
 
 export default function ProfilePage() {
+  const { user, refreshUser } = useAuth();
   const { data: resumes, isLoading } = useResumes();
   const deleteResume = useDeleteResume();
   const setMasterResume = useSetMasterResume();
+  const updateProfile = useUpdateProfile();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   const handleDelete = async (id: string) => {
@@ -37,6 +40,14 @@ export default function ProfilePage() {
 
   const contactInfo = getContactInfo(masterResume);
 
+  // Use user headline if set, otherwise fall back to resume title
+  const displayHeadline = user?.headline || contactInfo.title;
+
+  const handleHeadlineUpdate = async (newHeadline: string) => {
+    await updateProfile.mutateAsync({ headline: newHeadline || null });
+    refreshUser();
+  };
+
   if (isLoading) {
     return <ProfileSkeleton />;
   }
@@ -52,9 +63,12 @@ export default function ProfilePage() {
             <h1 className="text-xl font-semibold text-foreground">
               {contactInfo.name || "Your Name"}
             </h1>
-            <p className="text-muted-foreground mt-1">
-              {contactInfo.title || "Your Title"}
-            </p>
+            <EditableHeadline
+              value={displayHeadline || ""}
+              placeholder="Your Title"
+              onSave={handleHeadlineUpdate}
+              isSaving={updateProfile.isPending}
+            />
           </div>
 
           {/* Right: About */}
@@ -101,6 +115,76 @@ export default function ProfilePage() {
         />
       </div>
     </div>
+  );
+}
+
+interface EditableHeadlineProps {
+  value: string;
+  placeholder: string;
+  onSave: (value: string) => Promise<void>;
+  isSaving: boolean;
+}
+
+function EditableHeadline({ value, placeholder, onSave, isSaving }: EditableHeadlineProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setEditValue(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleSave = async () => {
+    if (editValue.trim() !== value) {
+      await onSave(editValue.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSave();
+    } else if (e.key === "Escape") {
+      setEditValue(value);
+      setIsEditing(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="mt-1">
+        <input
+          ref={inputRef}
+          type="text"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyDown}
+          disabled={isSaving}
+          className="w-full bg-transparent border-b border-primary text-muted-foreground focus:outline-none focus:border-primary py-0.5"
+          placeholder={placeholder}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setIsEditing(true)}
+      className="group flex items-center gap-2 mt-1 text-left w-full"
+    >
+      <span className={`${value ? "text-muted-foreground" : "text-muted-foreground/50 italic"}`}>
+        {value || placeholder}
+      </span>
+      <PencilIcon className="w-3 h-3 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+    </button>
   );
 }
 
@@ -163,6 +247,24 @@ function PlusIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M12 4.5v15m7.5-7.5h-15"
+      />
+    </svg>
+  );
+}
+
+function PencilIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"
       />
     </svg>
   );

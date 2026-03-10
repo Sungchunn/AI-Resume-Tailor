@@ -49,6 +49,7 @@ import type {
   ScraperRequestApproveRequest,
   ScraperRequestRejectRequest,
   GenerateAboutMeRequest,
+  UpdateProfileRequest,
 } from "./types";
 
 // Query Keys
@@ -1089,6 +1090,18 @@ export function useGenerateAboutMe() {
     onSuccess: () => {
       // Invalidate the user profile to show updated about_me
       queryClient.invalidateQueries({ queryKey: queryKeys.profile.aboutMe() });
+    },
+  });
+}
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: UpdateProfileRequest) => profileApi.updateProfile(data),
+    onSuccess: () => {
+      // Invalidate profile queries to show updated data
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile.all });
     },
   });
 }
