@@ -36,9 +36,9 @@ export function KanbanCard({ job }: KanbanCardProps) {
       {...attributes}
       {...listeners}
       className={`
-        group relative bg-card rounded-lg border p-3 transition-all cursor-grab active:cursor-grabbing
-        ${isDragging ? "opacity-50 shadow-lg ring-2 ring-primary/50" : "hover:border-primary/30 hover:shadow-sm"}
-        ${stagnant ? "border-amber-300 dark:border-amber-600 ring-1 ring-amber-200 dark:ring-amber-700" : "border-border"}
+        group relative bg-card dark:bg-zinc-800 rounded-lg border p-3 transition-all cursor-grab active:cursor-grabbing
+        ${isDragging ? "opacity-50 shadow-lg ring-2 ring-primary/50" : "hover:border-primary/30 dark:hover:border-blue-400/30 hover:shadow-sm"}
+        ${stagnant ? "border-amber-300 dark:border-amber-600 ring-1 ring-amber-200 dark:ring-amber-700" : "border-border dark:border-zinc-600"}
       `}
     >
       {/* Stagnant warning indicator */}
@@ -55,7 +55,7 @@ export function KanbanCard({ job }: KanbanCardProps) {
             <img
               src={job.company_logo}
               alt=""
-              className="w-8 h-8 rounded object-contain border border-border shrink-0"
+              className="w-8 h-8 rounded object-contain border border-border dark:border-zinc-600 shrink-0"
               loading="lazy"
               onError={(e) => { e.currentTarget.style.display = 'none' }}
             />
@@ -63,18 +63,18 @@ export function KanbanCard({ job }: KanbanCardProps) {
 
           <div className="flex-1 min-w-0">
             {/* Job Title */}
-            <h4 className="text-sm font-medium text-foreground truncate">
+            <h4 className="text-sm font-medium text-foreground dark:text-white truncate">
               {job.job_title}
             </h4>
 
             {/* Company Name */}
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs text-muted-foreground dark:text-zinc-300 truncate">
               {job.company_name}
             </p>
 
             {/* Location */}
             {job.location && (
-              <p className="text-xs text-muted-foreground/60 truncate mt-0.5">
+              <p className="text-xs text-muted-foreground/60 dark:text-zinc-400 truncate mt-0.5">
                 {job.location}
               </p>
             )}
@@ -82,8 +82,8 @@ export function KanbanCard({ job }: KanbanCardProps) {
         </div>
 
         {/* Footer: Status age */}
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
-          <span className={`text-xs ${stagnant ? "text-amber-600 dark:text-amber-400 font-medium" : "text-muted-foreground/60"}`}>
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50 dark:border-zinc-600/50">
+          <span className={`text-xs ${stagnant ? "text-amber-600 dark:text-amber-400 font-medium" : "text-muted-foreground/60 dark:text-zinc-400"}`}>
             {statusAge}
           </span>
         </div>

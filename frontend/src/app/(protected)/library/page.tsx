@@ -347,7 +347,7 @@ function ResumeListItem({
   return (
     <div className="group flex items-center gap-4 p-3 bg-muted/50 dark:bg-zinc-700 rounded-lg hover:bg-muted dark:hover:bg-zinc-600 transition-colors">
       {/* Document Icon */}
-      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+      <div className="shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
         <DocumentSmallIcon className="w-5 h-5 text-primary" />
       </div>
 
