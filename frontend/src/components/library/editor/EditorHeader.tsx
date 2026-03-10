@@ -24,7 +24,7 @@ interface EditorHeaderProps {
  * EditorHeader - Top bar for the block editor
  *
  * Features:
- * - Back navigation to library
+ * - Back navigation to profile
  * - Resume title display
  * - Save button with dirty state indicator
  * - Undo/Redo buttons
@@ -51,11 +51,11 @@ export function EditorHeader({
       {/* Left: Back button and title */}
       <div className="flex items-center gap-4">
         <Link
-          href="/library"
+          href="/profile"
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">Library</span>
+          <span className="hidden sm:inline">Profile</span>
         </Link>
 
         <div className="h-5 w-px bg-border" />

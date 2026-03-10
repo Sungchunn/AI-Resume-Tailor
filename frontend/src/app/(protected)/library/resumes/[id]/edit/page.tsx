@@ -126,10 +126,10 @@ export default function ResumeEditPage({ params }: PageProps) {
               : "Resume not found or failed to load."}
           </p>
           <a
-            href="/library"
+            href="/profile"
             className="mt-4 inline-block text-sm text-primary hover:text-primary/80"
           >
-            &larr; Back to Library
+            &larr; Back to Profile
           </a>
         </div>
       </div>
