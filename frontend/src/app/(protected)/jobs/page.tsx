@@ -55,7 +55,7 @@ export default function JobListingsPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between shrink-0 mb-6">
+      <div className="flex items-center justify-between shrink-0 pb-6 mb-6 border-b border-border">
         <div>
           <h1 className="text-2xl font-bold text-foreground dark:text-white">Job Listings</h1>
           <p className="text-muted-foreground dark:text-zinc-300 mt-1">
