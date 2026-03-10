@@ -20,6 +20,18 @@ export interface UserResponse {
   is_active: boolean;
   is_admin: boolean;
   created_at: string;
+  about_me?: string | null;
+  about_me_generated_at?: string | null;
+}
+
+// Profile Types
+export interface GenerateAboutMeRequest {
+  force_refresh?: boolean;
+}
+
+export interface AboutMeResponse {
+  about_me: string;
+  generated_at: string;
 }
 
 export interface Token {

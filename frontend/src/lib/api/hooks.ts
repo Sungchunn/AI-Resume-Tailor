@@ -11,6 +11,7 @@ import {
   adminApi,
   atsApi,
   scraperRequestApi,
+  profileApi,
   tokenManager,
 } from "./client";
 import type {
@@ -47,6 +48,7 @@ import type {
   ScraperRequestStatus,
   ScraperRequestApproveRequest,
   ScraperRequestRejectRequest,
+  GenerateAboutMeRequest,
 } from "./types";
 
 // Query Keys
@@ -122,6 +124,10 @@ export const queryKeys = {
     myList: () => [...queryKeys.scraperRequests.all, "my"] as const,
     adminList: (status?: ScraperRequestStatus) =>
       [...queryKeys.scraperRequests.all, "admin", status] as const,
+  },
+  profile: {
+    all: ["profile"] as const,
+    aboutMe: () => [...queryKeys.profile.all, "aboutMe"] as const,
   },
 };
 
@@ -1070,6 +1076,19 @@ export function useRejectScraperRequest() {
       adminApi.rejectScraperRequest(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.scraperRequests.all });
+    },
+  });
+}
+
+// Profile Hooks
+export function useGenerateAboutMe() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data?: GenerateAboutMeRequest) => profileApi.generateAboutMe(data),
+    onSuccess: () => {
+      // Invalidate the user profile to show updated about_me
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile.aboutMe() });
     },
   });
 }

@@ -19,6 +19,8 @@ import type {
   UserResponse,
   Token,
   TokenRefresh,
+  GenerateAboutMeRequest,
+  AboutMeResponse,
   BlockCreate,
   BlockUpdate,
   BlockResponse,
@@ -228,6 +230,15 @@ export const authApi = {
   logout: (): void => {
     tokenManager.clearTokens();
   },
+};
+
+// Profile API
+export const profileApi = {
+  generateAboutMe: (data?: GenerateAboutMeRequest): Promise<AboutMeResponse> =>
+    fetchApi("/api/v1/profile/generate-about-me", {
+      method: "POST",
+      body: JSON.stringify(data || {}),
+    }),
 };
 
 // Resume API
