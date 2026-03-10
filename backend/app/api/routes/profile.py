@@ -12,7 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user_id, get_db_session, get_mongo_db
 from app.crud.mongo.resume import resume_crud
 from app.models import User
-from app.schemas.profile import GenerateAboutMeRequest, AboutMeResponse
+from app.schemas.profile import (
+    GenerateAboutMeRequest,
+    AboutMeResponse,
+    UpdateProfileRequest,
+    ProfileResponse,
+)
 from app.services import get_ai_client
 
 router = APIRouter()
@@ -158,3 +163,35 @@ Remember: Write in first person, be warm and engaging, and keep it 50-100 words.
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"AI service error: {str(e)}",
         )
+
+
+@router.patch("", response_model=ProfileResponse)
+async def update_profile(
+    request: UpdateProfileRequest,
+    current_user_id: Annotated[int, Depends(get_current_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ProfileResponse:
+    """Update user profile fields (headline, about_me).
+
+    Only provided fields will be updated. Pass null/None to clear a field.
+    """
+    user = await db.get(User, current_user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    # Update only provided fields
+    if request.headline is not None:
+        user.headline = request.headline if request.headline else None
+    if request.about_me is not None:
+        user.about_me = request.about_me if request.about_me else None
+
+    await db.commit()
+    await db.refresh(user)
+
+    return ProfileResponse(
+        headline=user.headline,
+        about_me=user.about_me,
+    )

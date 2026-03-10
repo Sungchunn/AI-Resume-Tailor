@@ -17,6 +17,9 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    # User profile fields
+    headline = Column(String(255), nullable=True)  # Professional title/headline
+
     # AI-generated "About Me" blurb for library page
     about_me = Column(Text, nullable=True)
     about_me_generated_at = Column(DateTime(timezone=True), nullable=True)

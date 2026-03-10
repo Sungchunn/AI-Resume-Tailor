@@ -34,6 +34,7 @@ class UserResponse(UserBase):
     is_active: bool
     is_admin: bool
     created_at: datetime
+    headline: str | None = None
     about_me: str | None = None
     about_me_generated_at: datetime | None = None
 
