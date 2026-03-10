@@ -10,36 +10,28 @@ interface JobListingFiltersProps {
   onFiltersChange: (filters: Filters) => void;
 }
 
-// Fallback options used while loading
-const FALLBACK_SENIORITY_OPTIONS = [
-  { value: "entry level", label: "Entry Level", count: 0 },
-  { value: "mid-senior level", label: "Mid-Senior Level", count: 0 },
-  { value: "associate", label: "Associate", count: 0 },
+const SORT_OPTIONS: { value: JobListingSortBy; label: string }[] = [
+  { value: "date_posted", label: "Date Posted" },
+  { value: "salary_max", label: "Salary (High)" },
+  { value: "salary_min", label: "Salary (Low)" },
+  { value: "company_name", label: "Company" },
+  { value: "job_title", label: "Title" },
 ];
 
 const APPLICANT_PRESETS = [
-  { value: 25, label: "< 25" },
-  { value: 50, label: "< 50" },
-  { value: 100, label: "< 100" },
+  { value: 25, label: "<25" },
+  { value: 50, label: "<50" },
+  { value: 100, label: "<100" },
   { value: undefined, label: "Any" },
 ];
 
-const SORT_OPTIONS: { value: JobListingSortBy; label: string }[] = [
-  { value: "date_posted", label: "Date Posted" },
-  { value: "salary_max", label: "Salary (High to Low)" },
-  { value: "salary_min", label: "Salary (Low to High)" },
-  { value: "company_name", label: "Company Name" },
-  { value: "job_title", label: "Job Title" },
-];
-
 export function JobListingFilters({ filters, onFiltersChange }: JobListingFiltersProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [filterOptions, setFilterOptions] = useState<{
     countries: FilterOption[];
     seniorities: FilterOption[];
     cities: FilterOption[];
   } | null>(null);
-  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
 
   // Load filter options on mount
   useEffect(() => {
@@ -49,140 +41,18 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
         setFilterOptions(options);
       } catch (error) {
         console.error("Failed to load filter options:", error);
-      } finally {
-        setIsLoadingOptions(false);
       }
     };
     loadFilterOptions();
   }, []);
 
+  // Handler functions (unchanged API calls)
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onFiltersChange({ ...filters, search: e.target.value || undefined, offset: 0 });
   };
 
   const handleCompanyNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onFiltersChange({ ...filters, company_name: e.target.value || undefined, offset: 0 });
-  };
-
-  // Tri-state toggle: neutral → include → exclude → neutral
-  const handleCityToggle = (value: string) => {
-    const includedCities = filters.city?.split(",").filter(Boolean) || [];
-    const excludedCities = filters.exclude_city?.split(",").filter(Boolean) || [];
-
-    const isIncluded = includedCities.includes(value);
-    const isExcluded = excludedCities.includes(value);
-
-    let newIncluded = includedCities;
-    let newExcluded = excludedCities;
-
-    if (!isIncluded && !isExcluded) {
-      // neutral → include
-      newIncluded = [...includedCities, value];
-    } else if (isIncluded) {
-      // include → exclude
-      newIncluded = includedCities.filter((c) => c !== value);
-      newExcluded = [...excludedCities, value];
-    } else {
-      // exclude → neutral
-      newExcluded = excludedCities.filter((c) => c !== value);
-    }
-
-    onFiltersChange({
-      ...filters,
-      city: newIncluded.length > 0 ? newIncluded.join(",") : undefined,
-      exclude_city: newExcluded.length > 0 ? newExcluded.join(",") : undefined,
-      offset: 0,
-    });
-  };
-
-  const handleSeniorityChange = (value: string) => {
-    const currentSeniorities = filters.seniority?.split(",") || [];
-    let newSeniorities: string[];
-
-    if (currentSeniorities.includes(value)) {
-      newSeniorities = currentSeniorities.filter((s) => s !== value);
-    } else {
-      newSeniorities = [...currentSeniorities, value];
-    }
-
-    onFiltersChange({
-      ...filters,
-      seniority: newSeniorities.length > 0 ? newSeniorities.join(",") : undefined,
-      offset: 0,
-    });
-  };
-
-  // Tri-state toggle: neutral → include → exclude → neutral
-  const handleCountryToggle = (value: string) => {
-    const includedCountries = filters.country?.split(",").filter(Boolean) || [];
-    const excludedCountries = filters.exclude_country?.split(",").filter(Boolean) || [];
-
-    const isIncluded = includedCountries.includes(value);
-    const isExcluded = excludedCountries.includes(value);
-
-    let newIncluded = includedCountries;
-    let newExcluded = excludedCountries;
-
-    if (!isIncluded && !isExcluded) {
-      // neutral → include
-      newIncluded = [...includedCountries, value];
-    } else if (isIncluded) {
-      // include → exclude
-      newIncluded = includedCountries.filter((c) => c !== value);
-      newExcluded = [...excludedCountries, value];
-    } else {
-      // exclude → neutral
-      newExcluded = excludedCountries.filter((c) => c !== value);
-    }
-
-    onFiltersChange({
-      ...filters,
-      country: newIncluded.length > 0 ? newIncluded.join(",") : undefined,
-      exclude_country: newExcluded.length > 0 ? newExcluded.join(",") : undefined,
-      offset: 0,
-    });
-  };
-
-  const handleRemoteOnlyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFiltersChange({
-      ...filters,
-      is_remote: e.target.checked ? true : undefined,
-      offset: 0,
-    });
-  };
-
-  const handleEasyApplyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFiltersChange({
-      ...filters,
-      easy_apply: e.target.checked ? true : undefined,
-      offset: 0,
-    });
-  };
-
-  const handleApplicantsMaxChange = (value: number | undefined) => {
-    onFiltersChange({
-      ...filters,
-      applicants_max: value,
-      offset: 0,
-    });
-  };
-
-  const handleApplicantsIncludeNaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFiltersChange({
-      ...filters,
-      applicants_include_na: e.target.checked,
-      offset: 0,
-    });
-  };
-
-  const handleSalaryMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
-    onFiltersChange({ ...filters, salary_min: value, offset: 0 });
-  };
-
-  const handleSalaryMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
-    onFiltersChange({ ...filters, salary_max: value, offset: 0 });
   };
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -196,20 +66,105 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
     });
   };
 
-  const handleSavedOnlyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleRemoteOnlyChange = (checked: boolean) => {
+    onFiltersChange({ ...filters, is_remote: checked ? true : undefined, offset: 0 });
+  };
+
+  const handleEasyApplyChange = (checked: boolean) => {
+    onFiltersChange({ ...filters, easy_apply: checked ? true : undefined, offset: 0 });
+  };
+
+  const handleSavedOnlyChange = (checked: boolean) => {
+    onFiltersChange({ ...filters, is_saved: checked ? true : undefined, offset: 0 });
+  };
+
+  const handleHideHiddenChange = (checked: boolean) => {
+    onFiltersChange({ ...filters, is_hidden: checked ? false : undefined, offset: 0 });
+  };
+
+  const handleSeniorityChange = (value: string) => {
+    const currentSeniorities = filters.seniority?.split(",") || [];
+    let newSeniorities: string[];
+    if (currentSeniorities.includes(value)) {
+      newSeniorities = currentSeniorities.filter((s) => s !== value);
+    } else {
+      newSeniorities = [...currentSeniorities, value];
+    }
     onFiltersChange({
       ...filters,
-      is_saved: e.target.checked ? true : undefined,
+      seniority: newSeniorities.length > 0 ? newSeniorities.join(",") : undefined,
       offset: 0,
     });
   };
 
-  const handleHideHiddenChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCountryToggle = (value: string) => {
+    const includedCountries = filters.country?.split(",").filter(Boolean) || [];
+    const excludedCountries = filters.exclude_country?.split(",").filter(Boolean) || [];
+    const isIncluded = includedCountries.includes(value);
+    const isExcluded = excludedCountries.includes(value);
+
+    let newIncluded = includedCountries;
+    let newExcluded = excludedCountries;
+
+    if (!isIncluded && !isExcluded) {
+      newIncluded = [...includedCountries, value];
+    } else if (isIncluded) {
+      newIncluded = includedCountries.filter((c) => c !== value);
+      newExcluded = [...excludedCountries, value];
+    } else {
+      newExcluded = excludedCountries.filter((c) => c !== value);
+    }
+
     onFiltersChange({
       ...filters,
-      is_hidden: e.target.checked ? false : undefined,
+      country: newIncluded.length > 0 ? newIncluded.join(",") : undefined,
+      exclude_country: newExcluded.length > 0 ? newExcluded.join(",") : undefined,
       offset: 0,
     });
+  };
+
+  const handleCityToggle = (value: string) => {
+    const includedCities = filters.city?.split(",").filter(Boolean) || [];
+    const excludedCities = filters.exclude_city?.split(",").filter(Boolean) || [];
+    const isIncluded = includedCities.includes(value);
+    const isExcluded = excludedCities.includes(value);
+
+    let newIncluded = includedCities;
+    let newExcluded = excludedCities;
+
+    if (!isIncluded && !isExcluded) {
+      newIncluded = [...includedCities, value];
+    } else if (isIncluded) {
+      newIncluded = includedCities.filter((c) => c !== value);
+      newExcluded = [...excludedCities, value];
+    } else {
+      newExcluded = excludedCities.filter((c) => c !== value);
+    }
+
+    onFiltersChange({
+      ...filters,
+      city: newIncluded.length > 0 ? newIncluded.join(",") : undefined,
+      exclude_city: newExcluded.length > 0 ? newExcluded.join(",") : undefined,
+      offset: 0,
+    });
+  };
+
+  const handleApplicantsMaxChange = (value: number | undefined) => {
+    onFiltersChange({ ...filters, applicants_max: value, offset: 0 });
+  };
+
+  const handleApplicantsIncludeNaChange = (checked: boolean) => {
+    onFiltersChange({ ...filters, applicants_include_na: checked, offset: 0 });
+  };
+
+  const handleSalaryMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
+    onFiltersChange({ ...filters, salary_min: value, offset: 0 });
+  };
+
+  const handleSalaryMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
+    onFiltersChange({ ...filters, salary_max: value, offset: 0 });
   };
 
   const clearFilters = () => {
@@ -224,333 +179,277 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
     });
   };
 
+  // Derived state
   const selectedSeniorities = filters.seniority?.split(",") || [];
   const selectedCountries = filters.country?.split(",") || [];
   const selectedCities = filters.city?.split(",") || [];
   const excludedCities = filters.exclude_city?.split(",") || [];
   const excludedCountries = filters.exclude_country?.split(",") || [];
 
-  // Use dynamic options or fallback
-  const seniorityOptions = filterOptions?.seniorities || FALLBACK_SENIORITY_OPTIONS;
+  const seniorityOptions = filterOptions?.seniorities || [];
   const countryOptions = filterOptions?.countries || [];
   const cityOptions = filterOptions?.cities || [];
 
   const hasActiveFilters =
-    filters.search ||
-    filters.company_name ||
-    filters.city ||
-    filters.country ||
-    filters.exclude_city ||
-    filters.exclude_country ||
-    filters.seniority ||
-    filters.is_remote ||
-    filters.easy_apply ||
-    filters.applicants_max !== undefined ||
-    filters.salary_min ||
-    filters.salary_max ||
-    filters.is_saved;
+    filters.search || filters.company_name || filters.city || filters.country ||
+    filters.exclude_city || filters.exclude_country || filters.seniority ||
+    filters.is_remote || filters.easy_apply || filters.applicants_max !== undefined ||
+    filters.salary_min || filters.salary_max || filters.is_saved;
 
   return (
-    <div className="bg-card dark:bg-zinc-800 rounded-lg border border-border dark:border-zinc-600 p-4">
+    <div className="space-y-4">
       {/* Search */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-foreground/80 dark:text-zinc-300 mb-1">
-          Search
-        </label>
+      <input
+        type="text"
+        value={filters.search || ""}
+        onChange={handleSearchChange}
+        placeholder="Search jobs..."
+        className="w-full px-3 py-2 text-sm bg-card dark:bg-zinc-800 border border-border dark:border-zinc-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary"
+      />
+
+      {/* Sort */}
+      <div className="flex gap-1.5">
+        <select
+          value={filters.sort_by || "date_posted"}
+          onChange={handleSortChange}
+          className="flex-1 px-2 py-1.5 text-sm bg-card dark:bg-zinc-800 border border-border dark:border-zinc-600 rounded-md focus:ring-1 focus:ring-primary"
+        >
+          {SORT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        <button
+          onClick={handleSortOrderChange}
+          className="px-2 py-1.5 text-sm border border-border dark:border-zinc-600 dark:bg-zinc-800 rounded-md hover:bg-accent"
+          title={filters.sort_order === "asc" ? "Ascending" : "Descending"}
+        >
+          {filters.sort_order === "asc" ? "↑" : "↓"}
+        </button>
+      </div>
+
+      {/* Quick Toggles */}
+      <div className="flex flex-wrap gap-1.5">
+        <ToggleChip active={filters.is_remote === true} onClick={() => handleRemoteOnlyChange(!filters.is_remote)}>
+          Remote
+        </ToggleChip>
+        <ToggleChip active={filters.easy_apply === true} onClick={() => handleEasyApplyChange(!filters.easy_apply)}>
+          Easy Apply
+        </ToggleChip>
+        <ToggleChip active={filters.is_saved === true} onClick={() => handleSavedOnlyChange(!filters.is_saved)}>
+          Saved
+        </ToggleChip>
+        <ToggleChip active={filters.is_hidden === false} onClick={() => handleHideHiddenChange(filters.is_hidden !== false)}>
+          Hide Hidden
+        </ToggleChip>
+      </div>
+
+      {/* Company */}
+      <div>
+        <label className="block text-xs font-medium text-muted-foreground mb-1">Company</label>
         <input
           type="text"
-          value={filters.search || ""}
-          onChange={handleSearchChange}
-          placeholder="Search jobs..."
-          className="w-full px-3 py-2 bg-background dark:bg-zinc-700 text-foreground border border-input dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          value={filters.company_name || ""}
+          onChange={handleCompanyNameChange}
+          placeholder="Filter by company..."
+          className="w-full px-3 py-1.5 text-sm bg-card dark:bg-zinc-800 border border-border dark:border-zinc-600 rounded-md focus:ring-1 focus:ring-primary"
         />
       </div>
 
-      {/* Sort */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-foreground/80 dark:text-zinc-300 mb-1">
-          Sort by
-        </label>
-        <div className="flex gap-2">
-          <select
-            value={filters.sort_by || "date_posted"}
-            onChange={handleSortChange}
-            className="flex-1 px-3 py-2 bg-background dark:bg-zinc-700 text-foreground border border-input dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          >
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
+      {/* Seniority */}
+      {seniorityOptions.length > 0 && (
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Seniority</label>
+          <div className="flex flex-wrap gap-1.5">
+            {seniorityOptions.map((opt) => (
+              <ToggleChip
+                key={opt.value}
+                active={selectedSeniorities.includes(opt.value)}
+                onClick={() => handleSeniorityChange(opt.value)}
+                count={opt.count}
+              >
+                {opt.label}
+              </ToggleChip>
             ))}
-          </select>
-          <button
-            onClick={handleSortOrderChange}
-            className="px-3 py-2 border border-input dark:border-zinc-600 dark:bg-zinc-700 rounded-lg hover:bg-accent dark:hover:bg-zinc-600"
-            title={filters.sort_order === "asc" ? "Ascending" : "Descending"}
-          >
-            {filters.sort_order === "asc" ? "↑" : "↓"}
-          </button>
-        </div>
-      </div>
-
-      {/* Collapsible section */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between w-full text-sm font-medium text-foreground/80 dark:text-zinc-300 mb-3"
-      >
-        <span>Filters</span>
-        <ChevronDownIcon className={`h-5 w-5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-      </button>
-
-      {isExpanded && (
-        <div className="space-y-4">
-          {/* Company Name */}
-          <div>
-            <label className="block text-sm font-medium text-foreground/80 dark:text-zinc-300 mb-1">
-              Company
-            </label>
-            <input
-              type="text"
-              value={filters.company_name || ""}
-              onChange={handleCompanyNameChange}
-              placeholder="e.g., Google, Microsoft"
-              className="w-full px-3 py-2 bg-background dark:bg-zinc-700 text-foreground border border-input dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            />
           </div>
-
-          {/* Country - Tri-state toggle: click to cycle neutral → include → exclude */}
-          {countryOptions.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-foreground/80 dark:text-zinc-300">
-                  Country
-                </label>
-                <span className="text-xs text-muted-foreground">Click to cycle: include → exclude</span>
-              </div>
-              <div className="space-y-1 max-h-48 overflow-y-auto">
-                {countryOptions.map((option) => {
-                  const isIncluded = selectedCountries.includes(option.value);
-                  const isExcluded = excludedCountries.includes(option.value);
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => handleCountryToggle(option.value)}
-                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors ${
-                        isIncluded
-                          ? "bg-primary/10 text-primary"
-                          : isExcluded
-                          ? "bg-destructive/10 text-destructive"
-                          : "hover:bg-accent text-muted-foreground"
-                      }`}
-                    >
-                      <span className={`shrink-0 w-5 h-5 rounded border flex items-center justify-center text-xs font-bold ${
-                        isIncluded
-                          ? "bg-primary border-primary text-primary-foreground"
-                          : isExcluded
-                          ? "bg-destructive border-destructive text-destructive-foreground"
-                          : "border-input"
-                      }`}>
-                        {isIncluded && "✓"}
-                        {isExcluded && "✕"}
-                      </span>
-                      <span className="text-sm flex-1">
-                        {option.label}
-                      </span>
-                      <span className="text-xs text-muted-foreground/60">({option.count})</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* City - Tri-state toggle: click to cycle neutral → include → exclude */}
-          {cityOptions.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-foreground/80 dark:text-zinc-300">
-                  City
-                </label>
-                <span className="text-xs text-muted-foreground">Click to cycle: include → exclude</span>
-              </div>
-              <div className="space-y-1 max-h-48 overflow-y-auto">
-                {cityOptions.map((option) => {
-                  const isIncluded = selectedCities.includes(option.value);
-                  const isExcluded = excludedCities.includes(option.value);
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => handleCityToggle(option.value)}
-                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors ${
-                        isIncluded
-                          ? "bg-primary/10 text-primary"
-                          : isExcluded
-                          ? "bg-destructive/10 text-destructive"
-                          : "hover:bg-accent text-muted-foreground"
-                      }`}
-                    >
-                      <span className={`shrink-0 w-5 h-5 rounded border flex items-center justify-center text-xs font-bold ${
-                        isIncluded
-                          ? "bg-primary border-primary text-primary-foreground"
-                          : isExcluded
-                          ? "bg-destructive border-destructive text-destructive-foreground"
-                          : "border-input"
-                      }`}>
-                        {isIncluded && "✓"}
-                        {isExcluded && "✕"}
-                      </span>
-                      <span className="text-sm flex-1">
-                        {option.label}
-                      </span>
-                      <span className="text-xs text-muted-foreground/60">({option.count})</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Seniority */}
-          {seniorityOptions.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-foreground/80 dark:text-zinc-300 mb-2">
-                Seniority
-              </label>
-              <div className="space-y-2">
-                {seniorityOptions.map((option) => (
-                  <label
-                    key={option.value}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedSeniorities.includes(option.value)}
-                      onChange={() => handleSeniorityChange(option.value)}
-                      className="h-4 w-4 text-primary border-input rounded focus:ring-primary-500"
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {option.label}
-                      {option.count > 0 && (
-                        <span className="text-muted-foreground/60 ml-1">({option.count})</span>
-                      )}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Applicant Count */}
-          <div>
-            <label className="block text-sm font-medium text-foreground/80 dark:text-zinc-300 mb-2">
-              Max Applicants
-            </label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {APPLICANT_PRESETS.map((preset) => (
-                <button
-                  key={preset.label}
-                  onClick={() => handleApplicantsMaxChange(preset.value)}
-                  className={`px-3 py-1 text-sm rounded-full border transition-colors ${
-                    filters.applicants_max === preset.value
-                      ? "bg-primary/10 border-primary-500 text-primary"
-                      : "border-input text-muted-foreground hover:bg-accent"
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.applicants_include_na !== false}
-                onChange={handleApplicantsIncludeNaChange}
-                className="h-4 w-4 text-primary border-input rounded focus:ring-primary-500"
-              />
-              <span className="text-sm text-muted-foreground">Include jobs with unknown applicant count</span>
-            </label>
-          </div>
-
-          {/* Remote & Easy Apply Toggles */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.is_remote === true}
-                onChange={handleRemoteOnlyChange}
-                className="h-4 w-4 text-primary border-input rounded focus:ring-primary-500"
-              />
-              <span className="text-sm text-muted-foreground">Remote only</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.easy_apply === true}
-                onChange={handleEasyApplyChange}
-                className="h-4 w-4 text-primary border-input rounded focus:ring-primary-500"
-              />
-              <span className="text-sm text-muted-foreground">Easy Apply only</span>
-            </label>
-          </div>
-
-          {/* Salary Range */}
-          <div>
-            <label className="block text-sm font-medium text-foreground/80 dark:text-zinc-300 mb-2">
-              Salary Range
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                value={filters.salary_min || ""}
-                onChange={handleSalaryMinChange}
-                placeholder="Min"
-                className="w-1/2 px-3 py-2 bg-background dark:bg-zinc-700 text-foreground border border-input dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-              <input
-                type="number"
-                value={filters.salary_max || ""}
-                onChange={handleSalaryMaxChange}
-                placeholder="Max"
-                className="w-1/2 px-3 py-2 bg-background dark:bg-zinc-700 text-foreground border border-input dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
-          </div>
-
-          {/* Quick Filters */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.is_saved === true}
-                onChange={handleSavedOnlyChange}
-                className="h-4 w-4 text-primary border-input rounded focus:ring-primary-500"
-              />
-              <span className="text-sm text-muted-foreground">Saved jobs only</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.is_hidden === false}
-                onChange={handleHideHiddenChange}
-                className="h-4 w-4 text-primary border-input rounded focus:ring-primary-500"
-              />
-              <span className="text-sm text-muted-foreground">Hide hidden jobs</span>
-            </label>
-          </div>
-
-          {/* Clear Filters */}
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="w-full py-2 text-sm text-primary hover:text-primary font-medium"
-            >
-              Clear all filters
-            </button>
-          )}
         </div>
       )}
+
+      {/* Location */}
+      {(countryOptions.length > 0 || cityOptions.length > 0) && (
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Location</label>
+          <div className="space-y-2">
+            {countryOptions.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {countryOptions.map((opt) => (
+                  <LocationChip
+                    key={opt.value}
+                    label={opt.label}
+                    count={opt.count}
+                    state={
+                      selectedCountries.includes(opt.value) ? "include" :
+                      excludedCountries.includes(opt.value) ? "exclude" : "neutral"
+                    }
+                    onClick={() => handleCountryToggle(opt.value)}
+                  />
+                ))}
+              </div>
+            )}
+            {cityOptions.length > 0 && (
+              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                {cityOptions.map((opt) => (
+                  <LocationChip
+                    key={opt.value}
+                    label={opt.label}
+                    count={opt.count}
+                    state={
+                      selectedCities.includes(opt.value) ? "include" :
+                      excludedCities.includes(opt.value) ? "exclude" : "neutral"
+                    }
+                    onClick={() => handleCityToggle(opt.value)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Advanced Section */}
+      <div className="pt-2 border-t border-border">
+        <button
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
+          Advanced
+        </button>
+
+        {showAdvanced && (
+          <div className="mt-3 space-y-3">
+            {/* Applicants */}
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Max Applicants</label>
+              <div className="flex flex-wrap gap-1">
+                {APPLICANT_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    onClick={() => handleApplicantsMaxChange(preset.value)}
+                    className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${
+                      filters.applicants_max === preset.value
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "border-border text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+              <label className="flex items-center gap-1.5 mt-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filters.applicants_include_na !== false}
+                  onChange={(e) => handleApplicantsIncludeNaChange(e.target.checked)}
+                  className="h-3 w-3 text-primary border-input rounded"
+                />
+                <span className="text-xs text-muted-foreground">Include unknown</span>
+              </label>
+            </div>
+
+            {/* Salary */}
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Salary Range</label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={filters.salary_min || ""}
+                  onChange={handleSalaryMinChange}
+                  placeholder="Min"
+                  className="w-1/2 px-2 py-1 text-sm bg-card dark:bg-zinc-800 border border-border dark:border-zinc-600 rounded-md"
+                />
+                <input
+                  type="number"
+                  value={filters.salary_max || ""}
+                  onChange={handleSalaryMaxChange}
+                  placeholder="Max"
+                  className="w-1/2 px-2 py-1 text-sm bg-card dark:bg-zinc-800 border border-border dark:border-zinc-600 rounded-md"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Clear Filters */}
+      {hasActiveFilters && (
+        <button
+          onClick={clearFilters}
+          className="w-full py-1.5 text-xs text-primary hover:text-primary/80 font-medium"
+        >
+          Clear all filters
+        </button>
+      )}
     </div>
+  );
+}
+
+// Toggle chip component
+function ToggleChip({
+  active,
+  onClick,
+  children,
+  count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  count?: number;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${
+        active
+          ? "bg-primary/10 border-primary text-primary"
+          : "border-border text-muted-foreground hover:bg-accent hover:text-foreground"
+      }`}
+    >
+      {children}
+      {count !== undefined && count > 0 && (
+        <span className="ml-1 opacity-60">({count})</span>
+      )}
+    </button>
+  );
+}
+
+// Location chip with tri-state (neutral/include/exclude)
+function LocationChip({
+  label,
+  count,
+  state,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  state: "neutral" | "include" | "exclude";
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${
+        state === "include"
+          ? "bg-primary/10 border-primary text-primary"
+          : state === "exclude"
+          ? "bg-destructive/10 border-destructive text-destructive"
+          : "border-border text-muted-foreground hover:bg-accent"
+      }`}
+      title={state === "neutral" ? "Click to include" : state === "include" ? "Click to exclude" : "Click to clear"}
+    >
+      {state === "include" && "✓ "}
+      {state === "exclude" && "✕ "}
+      {label}
+      {count > 0 && <span className="ml-1 opacity-60">({count})</span>}
+    </button>
   );
 }
