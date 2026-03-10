@@ -27,6 +27,7 @@ const APPLICANT_PRESETS = [
 
 export function JobListingFilters({ filters, onFiltersChange }: JobListingFiltersProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showSeniority, setShowSeniority] = useState(false);
   const [showCountry, setShowCountry] = useState(false);
   const [showCity, setShowCity] = useState(false);
   const [filterOptions, setFilterOptions] = useState<{
@@ -260,19 +261,32 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
       {/* Seniority */}
       {seniorityOptions.length > 0 && (
         <div>
-          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Seniority</label>
-          <div className="flex flex-wrap gap-1.5">
-            {seniorityOptions.map((opt) => (
-              <ToggleChip
-                key={opt.value}
-                active={selectedSeniorities.includes(opt.value)}
-                onClick={() => handleSeniorityChange(opt.value)}
-                count={opt.count}
-              >
-                {opt.label}
-              </ToggleChip>
-            ))}
-          </div>
+          <button
+            onClick={() => setShowSeniority(!showSeniority)}
+            className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground w-full"
+          >
+            <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform ${showSeniority ? "rotate-180" : ""}`} />
+            <span>Seniority</span>
+            {selectedSeniorities.length > 0 && (
+              <span className="ml-auto text-primary text-[10px]">
+                {selectedSeniorities.length} selected
+              </span>
+            )}
+          </button>
+          {showSeniority && (
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {seniorityOptions.map((opt) => (
+                <ToggleChip
+                  key={opt.value}
+                  active={selectedSeniorities.includes(opt.value)}
+                  onClick={() => handleSeniorityChange(opt.value)}
+                  count={opt.count}
+                >
+                  {opt.label}
+                </ToggleChip>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
