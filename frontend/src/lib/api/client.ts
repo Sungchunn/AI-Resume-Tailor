@@ -140,10 +140,18 @@ async function fetchApi<T>(
     }
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+    });
+  } catch (error) {
+    // Network error (backend not running, CORS issues, etc.)
+    throw new Error(
+      `Unable to connect to server. Please ensure the backend is running at ${API_BASE_URL}`
+    );
+  }
 
   // Handle 401 - try to refresh token
   if (response.status === 401 && includeAuth) {
