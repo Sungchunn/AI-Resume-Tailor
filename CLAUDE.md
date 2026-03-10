@@ -328,6 +328,34 @@ When making architectural changes (modifying system design, changing design patt
 
 **Note:** Architecture docs in `/docs/architecture/` use date prefixes to track when design decisions were made and help maintain chronological context of architectural evolution.
 
+### 13. Frontend Page Layout Standards
+
+**All new pages must be centered with consistent width constraints.**
+
+- Use `max-w-4xl mx-auto` as the root container for page content
+- This matches the layout established in `/jobs/[id]` which is the golden standard
+- Only deviate from this standard if explicitly instructed otherwise
+
+```tsx
+// CORRECT - Standard page layout
+export default function MyNewPage() {
+  return (
+    <div className="max-w-4xl mx-auto">
+      {/* Page content */}
+    </div>
+  );
+}
+
+// WRONG - Missing centering
+export default function MyNewPage() {
+  return (
+    <div className="max-w-4xl">
+      {/* Content will not be centered */}
+    </div>
+  );
+}
+```
+
 ---
 
 ## Development Workflow
