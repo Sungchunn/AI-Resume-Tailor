@@ -27,6 +27,8 @@ const APPLICANT_PRESETS = [
 
 export function JobListingFilters({ filters, onFiltersChange }: JobListingFiltersProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showCountry, setShowCountry] = useState(false);
+  const [showCity, setShowCity] = useState(false);
   const [filterOptions, setFilterOptions] = useState<{
     countries: FilterOption[];
     seniorities: FilterOption[];
@@ -274,44 +276,99 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
         </div>
       )}
 
-      {/* Location */}
-      {(countryOptions.length > 0 || cityOptions.length > 0) && (
+      {/* Country */}
+      {countryOptions.length > 0 && (
         <div>
-          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Location</label>
-          <div className="space-y-2">
-            {countryOptions.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {countryOptions.map((opt) => (
-                  <LocationChip
+          <button
+            onClick={() => setShowCountry(!showCountry)}
+            className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground w-full"
+          >
+            <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform ${showCountry ? "rotate-180" : ""}`} />
+            <span>Country</span>
+            {(selectedCountries.length > 0 || excludedCountries.length > 0) && (
+              <span className="ml-auto text-primary text-[10px]">
+                {selectedCountries.length > 0 && `+${selectedCountries.length}`}
+                {excludedCountries.length > 0 && ` -${excludedCountries.length}`}
+              </span>
+            )}
+          </button>
+          {showCountry && (
+            <div className="mt-1.5 space-y-0.5 max-h-32 overflow-y-auto">
+              {countryOptions.map((opt) => {
+                const isIncluded = selectedCountries.includes(opt.value);
+                const isExcluded = excludedCountries.includes(opt.value);
+                return (
+                  <button
                     key={opt.value}
-                    label={opt.label}
-                    count={opt.count}
-                    state={
-                      selectedCountries.includes(opt.value) ? "include" :
-                      excludedCountries.includes(opt.value) ? "exclude" : "neutral"
-                    }
+                    type="button"
                     onClick={() => handleCountryToggle(opt.value)}
-                  />
-                ))}
-              </div>
+                    className={`w-full flex items-center gap-2 px-1.5 py-1 rounded text-left text-xs transition-colors ${
+                      isIncluded ? "text-primary" : isExcluded ? "text-destructive" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <span className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center text-[10px] font-medium ${
+                      isIncluded ? "bg-primary border-primary text-primary-foreground" :
+                      isExcluded ? "bg-destructive border-destructive text-destructive-foreground" :
+                      "border-border"
+                    }`}>
+                      {isIncluded && "✓"}
+                      {isExcluded && "✕"}
+                    </span>
+                    <span className="flex-1 truncate">{opt.label}</span>
+                    <span className="text-[10px] text-muted-foreground/60">({opt.count})</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* City */}
+      {cityOptions.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowCity(!showCity)}
+            className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground w-full"
+          >
+            <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform ${showCity ? "rotate-180" : ""}`} />
+            <span>City</span>
+            {(selectedCities.length > 0 || excludedCities.length > 0) && (
+              <span className="ml-auto text-primary text-[10px]">
+                {selectedCities.length > 0 && `+${selectedCities.length}`}
+                {excludedCities.length > 0 && ` -${excludedCities.length}`}
+              </span>
             )}
-            {cityOptions.length > 0 && (
-              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
-                {cityOptions.map((opt) => (
-                  <LocationChip
+          </button>
+          {showCity && (
+            <div className="mt-1.5 space-y-0.5 max-h-32 overflow-y-auto">
+              {cityOptions.map((opt) => {
+                const isIncluded = selectedCities.includes(opt.value);
+                const isExcluded = excludedCities.includes(opt.value);
+                return (
+                  <button
                     key={opt.value}
-                    label={opt.label}
-                    count={opt.count}
-                    state={
-                      selectedCities.includes(opt.value) ? "include" :
-                      excludedCities.includes(opt.value) ? "exclude" : "neutral"
-                    }
+                    type="button"
                     onClick={() => handleCityToggle(opt.value)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+                    className={`w-full flex items-center gap-2 px-1.5 py-1 rounded text-left text-xs transition-colors ${
+                      isIncluded ? "text-primary" : isExcluded ? "text-destructive" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <span className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center text-[10px] font-medium ${
+                      isIncluded ? "bg-primary border-primary text-primary-foreground" :
+                      isExcluded ? "bg-destructive border-destructive text-destructive-foreground" :
+                      "border-border"
+                    }`}>
+                      {isIncluded && "✓"}
+                      {isExcluded && "✕"}
+                    </span>
+                    <span className="flex-1 truncate">{opt.label}</span>
+                    <span className="text-[10px] text-muted-foreground/60">({opt.count})</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -418,38 +475,6 @@ function ToggleChip({
       {count !== undefined && count > 0 && (
         <span className="ml-1 opacity-60">({count})</span>
       )}
-    </button>
-  );
-}
-
-// Location chip with tri-state (neutral/include/exclude)
-function LocationChip({
-  label,
-  count,
-  state,
-  onClick,
-}: {
-  label: string;
-  count: number;
-  state: "neutral" | "include" | "exclude";
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${
-        state === "include"
-          ? "bg-primary/10 border-primary text-primary"
-          : state === "exclude"
-          ? "bg-destructive/10 border-destructive text-destructive"
-          : "border-border text-muted-foreground hover:bg-accent"
-      }`}
-      title={state === "neutral" ? "Click to include" : state === "include" ? "Click to exclude" : "Click to clear"}
-    >
-      {state === "include" && "✓ "}
-      {state === "exclude" && "✕ "}
-      {label}
-      {count > 0 && <span className="ml-1 opacity-60">({count})</span>}
     </button>
   );
 }
