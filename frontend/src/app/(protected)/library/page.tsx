@@ -17,6 +17,7 @@ import { BlockCard } from "@/components/vault/BlockCard";
 import { CardGridSkeleton, ErrorMessage } from "@/components/ui";
 import { KanbanBoard } from "@/components/jobs/kanban";
 import { JobListingCard } from "@/components/jobs/JobListingCard";
+import { ResumeUploadModal } from "@/components/upload";
 import type { BlockType } from "@/lib/api/types";
 
 type TabType = "resumes" | "vault" | "applied" | "saved";
@@ -129,6 +130,7 @@ function ResumesTab() {
   const { data: resumes, isLoading, error, refetch } = useResumes();
   const deleteResume = useDeleteResume();
   const setMasterResume = useSetMasterResume();
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this resume?")) {
@@ -154,10 +156,18 @@ function ResumesTab() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Link href="/library/resumes/new" className="btn-primary">
+        <button
+          onClick={() => setIsUploadModalOpen(true)}
+          className="btn-primary"
+        >
           Add Resume
-        </Link>
+        </button>
       </div>
+
+      <ResumeUploadModal
+        open={isUploadModalOpen}
+        onOpenChange={setIsUploadModalOpen}
+      />
 
       {resumes && resumes.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

@@ -8,3 +8,5 @@ export { useBulletNavigation } from "./useBulletNavigation";
 export type { BulletFocusState } from "./useBulletNavigation";
 export { useInlineSuggestion } from "./useInlineSuggestion";
 export type { EntryContext, BulletSuggestion } from "./useInlineSuggestion";
+export { useResumeUploadFlow } from "./useResumeUploadFlow";
+export type { UseResumeUploadFlowOptions, UploadFlowHandle } from "./useResumeUploadFlow";
