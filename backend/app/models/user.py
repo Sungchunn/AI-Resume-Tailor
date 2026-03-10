@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -16,6 +16,10 @@ class User(Base):
     is_admin = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # AI-generated "About Me" blurb for library page
+    about_me = Column(Text, nullable=True)
+    about_me_generated_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     resumes = relationship("Resume", back_populates="owner", cascade="all, delete-orphan")
