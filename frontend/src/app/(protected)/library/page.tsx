@@ -4,9 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  useResumes,
-  useDeleteResume,
-  useSetMasterResume,
   useBlocks,
   useDeleteBlock,
   useVerifyBlock,
@@ -17,12 +14,9 @@ import { BlockCard } from "@/components/vault/BlockCard";
 import { CardGridSkeleton, ErrorMessage } from "@/components/ui";
 import { KanbanBoard } from "@/components/jobs/kanban";
 import { JobListingCard } from "@/components/jobs/JobListingCard";
-import { ResumeUploadModal } from "@/components/upload";
-import { AboutMeSection } from "@/components/library/AboutMeSection";
-import { ResumeTimeline } from "@/components/library/ResumeTimeline";
 import type { BlockType } from "@/lib/api/types";
 
-type TabType = "resumes" | "vault" | "applied" | "saved";
+type TabType = "vault" | "applied" | "saved";
 
 const blockTypeOptions: { value: BlockType; label: string }[] = [
   { value: "achievement", label: "Achievement" },
@@ -33,21 +27,32 @@ const blockTypeOptions: { value: BlockType; label: string }[] = [
   { value: "education", label: "Education" },
 ];
 
-const validTabs: TabType[] = ["resumes", "vault", "applied", "saved"];
+const validTabs: TabType[] = ["vault", "applied", "saved"];
 
 export default function LibraryPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const tabParam = searchParams.get("tab") as TabType | null;
-  const initialTab = tabParam && validTabs.includes(tabParam) ? tabParam : "resumes";
-  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
+  const tabParam = searchParams.get("tab");
+  // Default to "vault" instead of "resumes" (resumes now live in /profile)
+  // Also handle legacy "resumes" param by redirecting to vault
+  const getInitialTab = (): TabType => {
+    if (tabParam === "resumes") return "vault"; // Legacy redirect
+    if (tabParam && validTabs.includes(tabParam as TabType)) return tabParam as TabType;
+    return "vault";
+  };
+  const [activeTab, setActiveTab] = useState<TabType>(getInitialTab);
 
   // Sync tab state with URL params
   useEffect(() => {
-    if (tabParam && validTabs.includes(tabParam) && tabParam !== activeTab) {
-      setActiveTab(tabParam);
+    // Redirect legacy "resumes" tab to vault
+    if (tabParam === "resumes") {
+      router.replace("/library?tab=vault", { scroll: false });
+      return;
     }
-  }, [tabParam, activeTab]);
+    if (tabParam && validTabs.includes(tabParam as TabType) && tabParam !== activeTab) {
+      setActiveTab(tabParam as TabType);
+    }
+  }, [tabParam, activeTab, router]);
 
   // Update URL when tab changes
   const handleTabChange = (tab: TabType) => {
@@ -57,9 +62,6 @@ export default function LibraryPage() {
 
   // Fetch data only for active tab to reduce unnecessary API calls
   // React Query will cache the data, so switching tabs reuses cached results
-  const { data: resumes } = useResumes({
-    enabled: activeTab === "resumes",
-  });
   const { data: blocksData } = useBlocks({
     enabled: activeTab === "vault",
   });
@@ -76,7 +78,6 @@ export default function LibraryPage() {
     : 0;
 
   const tabs: { id: TabType; label: string; count: number }[] = [
-    { id: "resumes", label: "Resumes", count: resumes?.length ?? 0 },
     { id: "vault", label: "Vault", count: blocksData?.total ?? 0 },
     { id: "applied", label: "Applied", count: appliedCount },
     { id: "saved", label: "Saved", count: savedData?.total ?? 0 },
@@ -87,7 +88,7 @@ export default function LibraryPage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground dark:text-white">Library</h1>
         <p className="mt-1 text-muted-foreground dark:text-zinc-300">
-          Manage your resumes, experience blocks, and job applications.
+          Manage your experience blocks and job applications.
         </p>
       </div>
 
@@ -120,115 +121,9 @@ export default function LibraryPage() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === "resumes" && <ResumesTab />}
       {activeTab === "vault" && <VaultTab />}
       {activeTab === "applied" && <AppliedTab />}
       {activeTab === "saved" && <SavedTab />}
-    </div>
-  );
-}
-
-function ResumesTab() {
-  const { data: resumes, isLoading, error, refetch } = useResumes();
-  const deleteResume = useDeleteResume();
-  const setMasterResume = useSetMasterResume();
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this resume?")) {
-      deleteResume.mutate(id);
-    }
-  };
-
-  const handleSetMaster = async (id: string) => {
-    setMasterResume.mutate(id);
-  };
-
-  if (isLoading) return <ResumeListSkeleton />;
-
-  if (error) {
-    return (
-      <ErrorMessage
-        message="Failed to load resumes. Please try again."
-        onRetry={() => refetch()}
-      />
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
-        <button
-          onClick={() => setIsUploadModalOpen(true)}
-          className="btn-primary"
-        >
-          Add Resume
-        </button>
-      </div>
-
-      <ResumeUploadModal
-        open={isUploadModalOpen}
-        onOpenChange={setIsUploadModalOpen}
-      />
-
-      <div className="max-w-3xl mx-auto space-y-6">
-        {/* About Me Section - AI-generated bio */}
-        <AboutMeSection />
-
-        {/* Resume Timeline */}
-        <div className="bg-card dark:bg-zinc-800 border border-border dark:border-zinc-600 rounded-lg p-6">
-          {resumes && resumes.length > 0 ? (
-            <ResumeTimeline
-              resumes={resumes}
-              onDelete={handleDelete}
-              onSetMaster={handleSetMaster}
-              isDeleting={deleteResume.isPending}
-              isSettingMaster={setMasterResume.isPending}
-            />
-          ) : (
-            <EmptyState
-              icon={<DocumentIcon />}
-              title="No resumes yet"
-              description="Get started by creating your first resume."
-              action={
-                <Link
-                  href="/library/resumes/new"
-                  className="btn-primary inline-flex"
-                >
-                  Create Resume
-                </Link>
-              }
-            />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ResumeListSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
-        <div className="h-10 w-28 bg-muted rounded-md animate-pulse" />
-      </div>
-      <div>
-        <div className="h-4 w-16 bg-muted rounded mb-2 animate-pulse" />
-        <div className="space-y-2">
-          {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-4 p-3 bg-card border border-border rounded-lg"
-            >
-              <div className="w-10 h-10 rounded-lg bg-muted animate-pulse" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 w-48 bg-muted rounded animate-pulse" />
-                <div className="h-3 w-32 bg-muted rounded animate-pulse" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
@@ -471,24 +366,6 @@ function EmptyState({
 }
 
 // Icon Components
-function DocumentIcon() {
-  return (
-    <svg
-      className="h-12 w-12"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-      />
-    </svg>
-  );
-}
-
 function BookmarkIcon() {
   return (
     <svg

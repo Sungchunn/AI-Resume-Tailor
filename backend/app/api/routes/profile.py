@@ -82,14 +82,15 @@ async def generate_about_me(
         )
 
     # Get the master or latest resume
+    # Include user_id in projection as it's required by ResumeDocument model
     resume = await resume_crud.get_master_or_latest(
         mongo,
         current_user_id,
-        # Only fetch fields we need
         projection={
+            "user_id": 1,
+            "title": 1,
             "raw_content": 1,
             "parsed": 1,
-            "title": 1,
         },
     )
 
@@ -103,7 +104,8 @@ async def generate_about_me(
     resume_content = ""
     if resume.parsed:
         # Use parsed data if available (more structured)
-        resume_content = json.dumps(resume.parsed, indent=2)[:8000]
+        # Convert Pydantic model to dict before JSON serialization
+        resume_content = json.dumps(resume.parsed.model_dump(), indent=2)[:8000]
     elif resume.raw_content:
         # Fall back to raw content
         resume_content = resume.raw_content[:8000]

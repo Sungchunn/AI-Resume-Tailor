@@ -10,23 +10,34 @@ import {
   BriefcaseIcon,
   LibraryIcon,
   SparklesIcon,
+  UserIcon,
 } from "@/components/icons";
 
+// Navigation ordered by user workflow:
+// 1. Profile - Your professional identity (foundation)
+// 2. Jobs - Discover opportunities (daily activity)
+// 3. Tailor - Create tailored resumes (core action)
+// 4. Library - Storage: Vault, Applied, Saved (management)
 const sidebarNavigation = [
+  {
+    name: "Profile",
+    href: "/profile",
+    icon: UserIcon,
+  },
   {
     name: "Jobs",
     href: "/jobs",
     icon: BriefcaseIcon,
   },
   {
-    name: "Library",
-    href: "/library",
-    icon: LibraryIcon,
-  },
-  {
     name: "Tailor",
     href: "/tailor",
     icon: SparklesIcon,
+  },
+  {
+    name: "Library",
+    href: "/library",
+    icon: LibraryIcon,
   },
 ];
 

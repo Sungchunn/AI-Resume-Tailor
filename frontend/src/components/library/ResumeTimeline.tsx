@@ -9,6 +9,8 @@ interface ResumeTimelineProps {
   onSetMaster: (id: string) => void;
   isDeleting: boolean;
   isSettingMaster: boolean;
+  /** "default" for card view, "minimal" for clean portfolio style */
+  variant?: "default" | "minimal";
 }
 
 interface TimelineGroup {
@@ -63,9 +65,29 @@ export function ResumeTimeline({
   onSetMaster,
   isDeleting,
   isSettingMaster,
+  variant = "default",
 }: ResumeTimelineProps) {
   const groups = groupResumesByMonth(resumes);
 
+  // Minimal variant - clean two-column layout like portfolio screenshot
+  if (variant === "minimal") {
+    return (
+      <div className="space-y-6">
+        {resumes.map((resume) => (
+          <MinimalResumeRow
+            key={resume.id}
+            resume={resume}
+            onDelete={onDelete}
+            onSetMaster={onSetMaster}
+            isDeleting={isDeleting}
+            isSettingMaster={isSettingMaster}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  // Default variant - grouped timeline with cards
   return (
     <div className="space-y-8">
       {groups.map((group, groupIndex) => (
@@ -112,6 +134,94 @@ export function ResumeTimeline({
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+interface MinimalResumeRowProps {
+  resume: ResumeResponse;
+  onDelete: (id: string) => void;
+  onSetMaster: (id: string) => void;
+  isDeleting: boolean;
+  isSettingMaster: boolean;
+}
+
+/**
+ * Minimal row for portfolio-style display - date on left, details on right
+ */
+function MinimalResumeRow({
+  resume,
+  onDelete,
+  onSetMaster,
+  isDeleting,
+  isSettingMaster,
+}: MinimalResumeRowProps) {
+  const createdDate = new Date(resume.created_at);
+  const updatedDate = resume.updated_at ? new Date(resume.updated_at) : createdDate;
+
+  // Format as "Mon YYYY"
+  const dateLabel = updatedDate.toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
+
+  return (
+    <div className="group flex items-start gap-12 py-2">
+      {/* Date column */}
+      <div className="w-24 shrink-0 text-sm text-muted-foreground">
+        {dateLabel}
+      </div>
+
+      {/* Content column */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/library/resumes/${resume.id}`}
+            className="text-foreground hover:text-primary transition-colors"
+          >
+            {resume.title}
+          </Link>
+          {resume.is_master && (
+            <StarIconFilled className="h-3 w-3 text-amber-500" />
+          )}
+        </div>
+        {(() => {
+          const contact = resume.parsed?.contact as Record<string, unknown> | undefined;
+          const title = contact?.title as string | undefined;
+          return title ? (
+            <p className="text-sm text-muted-foreground mt-0.5">{title}</p>
+          ) : null;
+        })()}
+      </div>
+
+      {/* Actions - show on hover */}
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Link
+          href={`/library/resumes/${resume.id}/edit`}
+          className="p-1.5 text-muted-foreground hover:text-foreground rounded transition-colors"
+          title="Edit"
+        >
+          <EditIcon className="w-3.5 h-3.5" />
+        </Link>
+        {!resume.is_master && (
+          <button
+            onClick={() => onSetMaster(resume.id)}
+            disabled={isSettingMaster}
+            className="p-1.5 text-muted-foreground hover:text-amber-500 rounded transition-colors disabled:opacity-50"
+            title="Set as master"
+          >
+            <StarIcon className="w-3.5 h-3.5" />
+          </button>
+        )}
+        <button
+          onClick={() => onDelete(resume.id)}
+          disabled={isDeleting}
+          className="p-1.5 text-muted-foreground hover:text-destructive rounded transition-colors disabled:opacity-50"
+          title="Delete"
+        >
+          <TrashIcon className="w-3.5 h-3.5" />
+        </button>
+      </div>
     </div>
   );
 }

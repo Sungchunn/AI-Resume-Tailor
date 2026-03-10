@@ -31,4 +31,5 @@ export {
   DashboardIcon,
   LibraryIcon,
   SparklesIcon,
+  UserIcon,
 } from "./NavigationIcons";
