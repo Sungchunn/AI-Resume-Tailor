@@ -83,8 +83,8 @@ export default function LibraryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Library</h1>
-        <p className="mt-1 text-muted-foreground">
+        <h1 className="text-2xl font-bold text-foreground dark:text-white">Library</h1>
+        <p className="mt-1 text-muted-foreground dark:text-zinc-300">
           Manage your resumes, experience blocks, and job applications.
         </p>
       </div>
@@ -226,7 +226,7 @@ function ResumesTab() {
         onOpenChange={setIsUploadModalOpen}
       />
 
-      <div className="max-w-3xl mx-auto bg-card border border-border rounded-lg p-6">
+      <div className="max-w-3xl mx-auto bg-card dark:bg-zinc-800 border border-border dark:border-zinc-600 rounded-lg p-6">
       {resumes && resumes.length > 0 && grouped ? (
         <div className="space-y-6">
           {/* Recent groups: Today, Yesterday, Last Week */}
@@ -345,7 +345,7 @@ function ResumeListItem({
   });
 
   return (
-    <div className="group flex items-center gap-4 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+    <div className="group flex items-center gap-4 p-3 bg-muted/50 dark:bg-zinc-700 rounded-lg hover:bg-muted dark:hover:bg-zinc-600 transition-colors">
       {/* Document Icon */}
       <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
         <DocumentSmallIcon className="w-5 h-5 text-primary" />
