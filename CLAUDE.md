@@ -335,6 +335,10 @@ When making architectural changes (modifying system design, changing design patt
 - Use `max-w-4xl mx-auto` as the root container for page content
 - This matches the layout established in `/jobs/[id]` which is the golden standard
 - Only deviate from this standard if explicitly instructed otherwise
+- **Dark Mode:** Follow the color scheme in `/docs/architecture/100326_frontend-ui-standards.md`
+  - Use zinc greys (`zinc-600` to `zinc-800`) for background hierarchy
+  - Use `blue-400` for vibrant accent colors
+  - The `/library?tab=resumes` page is the golden standard for dark mode
 
 ```tsx
 // CORRECT - Standard page layout
