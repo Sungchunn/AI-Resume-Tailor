@@ -28,6 +28,15 @@ const DEFAULT_SECTION_ORDER = [
   "skills",
   "certifications",
   "projects",
+  "languages",
+  "volunteer",
+  "publications",
+  "awards",
+  "leadership",
+  "courses",
+  "memberships",
+  "references",
+  "interests",
 ];
 
 export default function VerifySectionsPage({ params }: PageProps) {
@@ -46,7 +55,7 @@ export default function VerifySectionsPage({ params }: PageProps) {
   useEffect(() => {
     if (tailored && !content) {
       const rawContent = tailored.finalized_data ?? tailored.tailored_data;
-      // Preserve all fields from backend (contact, education, certifications, projects)
+      // Preserve all fields from backend (all 16 section types)
       const initialContent: TailoredContent = {
         contact: rawContent?.contact,
         summary: rawContent?.summary ?? "",
@@ -55,6 +64,15 @@ export default function VerifySectionsPage({ params }: PageProps) {
         skills: rawContent?.skills ?? [],
         certifications: rawContent?.certifications ?? [],
         projects: rawContent?.projects ?? [],
+        languages: rawContent?.languages ?? [],
+        volunteer: rawContent?.volunteer ?? [],
+        publications: rawContent?.publications ?? [],
+        awards: rawContent?.awards ?? [],
+        interests: rawContent?.interests ?? "",
+        references: rawContent?.references ?? [],
+        courses: rawContent?.courses ?? [],
+        memberships: rawContent?.memberships ?? [],
+        leadership: rawContent?.leadership ?? [],
       };
       setContent(initialContent);
       initialContentRef.current = initialContent;
