@@ -157,19 +157,25 @@ function MinimalResumeRow({
   isSettingMaster,
 }: MinimalResumeRowProps) {
   const createdDate = new Date(resume.created_at);
-  const updatedDate = resume.updated_at ? new Date(resume.updated_at) : createdDate;
 
-  // Format as "Mon YYYY"
-  const dateLabel = updatedDate.toLocaleDateString("en-US", {
+  // Format as "Mon DD, YYYY" and time as "h:mm AM/PM"
+  const dateLabel = createdDate.toLocaleDateString("en-US", {
     month: "short",
+    day: "numeric",
     year: "numeric",
+  });
+  const timeLabel = createdDate.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
   });
 
   return (
     <div className="group flex items-start gap-12 py-2">
       {/* Date column */}
-      <div className="w-24 shrink-0 text-sm text-muted-foreground">
-        {dateLabel}
+      <div className="w-32 shrink-0 text-sm text-muted-foreground">
+        <div>{dateLabel}</div>
+        <div className="text-xs text-muted-foreground/70">{timeLabel}</div>
       </div>
 
       {/* Content column */}

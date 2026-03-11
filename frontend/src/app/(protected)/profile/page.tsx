@@ -77,10 +77,10 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Work Experience Section */}
+        {/* Experience Section */}
         <div className="grid grid-cols-[280px_1fr] gap-16 mb-12">
           <div>
-            <h2 className="text-sm font-medium text-foreground">Work Experience</h2>
+            <h2 className="text-sm font-medium text-foreground">Experience</h2>
           </div>
           <div>
             {resumes && resumes.length > 0 ? (
