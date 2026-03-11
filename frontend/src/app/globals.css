@@ -14,8 +14,8 @@
   --color-popover: oklch(1 0 0);
   --color-popover-foreground: oklch(0.141 0.005 285.823);
 
-  --color-primary: oklch(0.546 0.245 262.881);
-  --color-primary-foreground: oklch(0.985 0 0);
+  --color-primary: oklch(0 0 0);
+  --color-primary-foreground: oklch(1 0 0);
 
   --color-secondary: oklch(0.967 0.001 286.375);
   --color-secondary-foreground: oklch(0.21 0.006 285.885);
@@ -30,7 +30,7 @@
 
   --color-border: oklch(0.92 0.004 286.32);
   --color-input: oklch(0.92 0.004 286.32);
-  --color-ring: oklch(0.546 0.245 262.881);
+  --color-ring: oklch(0 0 0);
 
   /* Chart Colors */
   --color-chart-1: oklch(0.646 0.222 41.116);
@@ -42,12 +42,12 @@
   /* Sidebar Colors - L-frame: sidebar is darker than content */
   --color-sidebar: oklch(0.967 0.001 286.375);
   --color-sidebar-foreground: oklch(0.141 0.005 285.823);
-  --color-sidebar-primary: oklch(0.546 0.245 262.881);
-  --color-sidebar-primary-foreground: oklch(0.985 0 0);
+  --color-sidebar-primary: oklch(0 0 0);
+  --color-sidebar-primary-foreground: oklch(1 0 0);
   --color-sidebar-accent: oklch(0.92 0.004 286.32);
   --color-sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --color-sidebar-border: oklch(0.92 0.004 286.32);
-  --color-sidebar-ring: oklch(0.546 0.245 262.881);
+  --color-sidebar-ring: oklch(0 0 0);
 
   /* Typography */
   --font-sans: "Inter", system-ui, sans-serif;
@@ -73,8 +73,8 @@
   --color-popover: oklch(0.269 0.009 264.5);
   --color-popover-foreground: oklch(0.985 0 0);
 
-  --color-primary: oklch(0.546 0.245 262.881);
-  --color-primary-foreground: oklch(0.985 0 0);
+  --color-primary: oklch(1 0 0);
+  --color-primary-foreground: oklch(0 0 0);
 
   --color-secondary: oklch(0.303 0.009 264.5);
   --color-secondary-foreground: oklch(0.985 0 0);
@@ -89,7 +89,7 @@
 
   --color-border: oklch(0.377 0.009 264.5 / 60%);
   --color-input: oklch(0.377 0.009 264.5 / 70%);
-  --color-ring: oklch(0.488 0.243 264.376);
+  --color-ring: oklch(1 0 0);
 
   /* Chart Colors */
   --color-chart-1: oklch(0.488 0.243 264.376);
@@ -101,12 +101,12 @@
   /* Sidebar Colors - L-frame: sidebar is darker (zinc-900) */
   --color-sidebar: oklch(0.188 0.006 264.5);
   --color-sidebar-foreground: oklch(0.985 0 0);
-  --color-sidebar-primary: oklch(0.546 0.245 262.881);
-  --color-sidebar-primary-foreground: oklch(0.985 0 0);
+  --color-sidebar-primary: oklch(1 0 0);
+  --color-sidebar-primary-foreground: oklch(0 0 0);
   --color-sidebar-accent: oklch(0.269 0.009 264.5);
   --color-sidebar-accent-foreground: oklch(0.985 0 0);
   --color-sidebar-border: oklch(0.303 0.009 264.5 / 60%);
-  --color-sidebar-ring: oklch(0.488 0.243 264.376);
+  --color-sidebar-ring: oklch(1 0 0);
 }
 
 /* Dark Theme (System Preference - fallback when no class is set) */
@@ -122,8 +122,8 @@
     --color-popover: oklch(0.269 0.009 264.5);
     --color-popover-foreground: oklch(0.985 0 0);
 
-    --color-primary: oklch(0.546 0.245 262.881);
-    --color-primary-foreground: oklch(0.985 0 0);
+    --color-primary: oklch(1 0 0);
+    --color-primary-foreground: oklch(0 0 0);
 
     --color-secondary: oklch(0.303 0.009 264.5);
     --color-secondary-foreground: oklch(0.985 0 0);
@@ -138,7 +138,7 @@
 
     --color-border: oklch(0.377 0.009 264.5 / 60%);
     --color-input: oklch(0.377 0.009 264.5 / 70%);
-    --color-ring: oklch(0.488 0.243 264.376);
+    --color-ring: oklch(1 0 0);
 
     /* Chart Colors */
     --color-chart-1: oklch(0.488 0.243 264.376);
@@ -150,12 +150,12 @@
     /* Sidebar Colors - L-frame: sidebar is darker (zinc-900) */
     --color-sidebar: oklch(0.188 0.006 264.5);
     --color-sidebar-foreground: oklch(0.985 0 0);
-    --color-sidebar-primary: oklch(0.546 0.245 262.881);
-    --color-sidebar-primary-foreground: oklch(0.985 0 0);
+    --color-sidebar-primary: oklch(1 0 0);
+    --color-sidebar-primary-foreground: oklch(0 0 0);
     --color-sidebar-accent: oklch(0.269 0.009 264.5);
     --color-sidebar-accent-foreground: oklch(0.985 0 0);
     --color-sidebar-border: oklch(0.303 0.009 264.5 / 60%);
-    --color-sidebar-ring: oklch(0.488 0.243 264.376);
+    --color-sidebar-ring: oklch(1 0 0);
   }
 }
 
