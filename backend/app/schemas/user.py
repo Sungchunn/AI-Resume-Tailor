@@ -37,6 +37,7 @@ class UserResponse(UserBase):
     headline: str | None = None
     about_me: str | None = None
     about_me_generated_at: datetime | None = None
+    timezone: str | None = "UTC"
 
     model_config = {"from_attributes": True}
 
