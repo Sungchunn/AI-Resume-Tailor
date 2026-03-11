@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { TimezoneProvider } from "@/contexts/TimezoneContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,7 +20,9 @@ export default function RootLayout({
       <body className="min-h-screen">
         <ThemeProvider>
           <QueryProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <TimezoneProvider>{children}</TimezoneProvider>
+            </AuthProvider>
           </QueryProvider>
         </ThemeProvider>
       </body>
