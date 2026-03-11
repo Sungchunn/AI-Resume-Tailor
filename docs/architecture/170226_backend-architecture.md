@@ -19,7 +19,7 @@ A guide for developers familiar with Java Spring Boot transitioning to Python Fa
 
 ## Project Structure
 
-```
+```text
 backend/app/
 ├── main.py           # Application entry point
 ├── api/
@@ -46,7 +46,7 @@ backend/app/
 ## Spring Boot to FastAPI Mapping
 
 | Concept | Spring Boot | FastAPI |
-|---------|-------------|---------|
+| ------- | ----------- | ------- |
 | Entry Point | `@SpringBootApplication` | `FastAPI()` in `main.py` |
 | Controllers | `@RestController` | Router functions with `@router.get()` |
 | Request DTOs | `@RequestBody` classes | Pydantic `BaseModel` |
@@ -495,6 +495,7 @@ flowchart TB
 **Response Headers:**
 
 PDF export endpoints include metadata headers:
+
 - `X-Page-Count` - Number of pages in generated PDF
 - `X-Overflows` - Whether content exceeds one page
 
@@ -606,7 +607,7 @@ docker-compose up backend
 ### Common Patterns
 
 | Task | Code |
-|------|------|
+| ---- | ---- |
 | Add new endpoint | Create function in `routes/*.py` with `@router.method()` |
 | Add request validation | Create Pydantic model in `schemas/*.py` |
 | Add database table | Create SQLAlchemy model in `models/*.py` |
@@ -694,7 +695,7 @@ async def analyze_progressive_ats(
 Every SSE endpoint should emit these standard events:
 
 | Event | When | Payload |
-|-------|------|---------|
+| ----- | ---- | ------- |
 | `{stage}_start` | Stage begins | `{ stage: num, status: "running" }` |
 | `{stage}_complete` | Stage succeeds | `{ stage: num, status: "completed", result: {...} }` |
 | `{stage}_error` | Stage fails | `{ stage: num, status: "failed", error: "..." }` |
