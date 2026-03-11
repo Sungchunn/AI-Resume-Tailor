@@ -688,7 +688,7 @@ async def export_resume_build(
         )
 
     content_type, export_func = format_map[export_in.format]
-    content = await export_func(sections, template=export_in.template)
+    result = await export_func(sections, template=export_in.template)
 
     # Update status to exported
     await resume_build_repository.update_status(
@@ -703,8 +703,24 @@ async def export_resume_build(
     job_title = resume_build.get("job_title", "resume").replace(" ", "_")
     filename = f"{job_title}.{export_in.format}"
 
+    # Handle PDF result with metadata
+    if export_in.format == "pdf":
+        from app.services.export.service import PDFResult
+        if isinstance(result, PDFResult):
+            return Response(
+                content=result.content,
+                media_type=content_type,
+                headers={
+                    "Content-Disposition": f'attachment; filename="{filename}"',
+                    "X-Page-Count": str(result.page_count),
+                    "X-Overflows": str(result.overflows).lower(),
+                },
+            )
+
+    # Other formats return bytes or string directly
+    content = result if isinstance(result, bytes) else result.encode()
     return Response(
-        content=content if isinstance(content, bytes) else content.encode(),
+        content=content,
         media_type=content_type,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

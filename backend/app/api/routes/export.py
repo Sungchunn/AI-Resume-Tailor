@@ -74,11 +74,15 @@ async def export_tailored_resume(
     )
 
     if format == ExportFormat.PDF:
-        content = export_service.generate_pdf(tailored_content, options=options)
+        result = export_service.generate_pdf(tailored_content, options=options)
         return Response(
-            content=content,
+            content=result.content,
             media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="{filename}.pdf"'},
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}.pdf"',
+                "X-Page-Count": str(result.page_count),
+                "X-Overflows": str(result.overflows).lower(),
+            },
         )
     elif format == ExportFormat.DOCX:
         content = export_service.generate_docx(tailored_content, options=options)
