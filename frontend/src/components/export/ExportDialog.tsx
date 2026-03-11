@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { useExportResume, useExportTemplates } from "@/lib/api/hooks";
 import type { ExportStyleTemplate, ExportFormat } from "@/lib/api/types";
 
@@ -42,7 +43,16 @@ export default function ExportDialog({
   const [margins, setMargins] = useState(0.75);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  // Overflow warning state (shown after export completes)
+  const [overflowInfo, setOverflowInfo] = useState<{
+    pageCount: number;
+    show: boolean;
+  } | null>(null);
+
   const handleExport = () => {
+    // Clear any previous overflow warning
+    setOverflowInfo(null);
+
     exportResume(
       {
         resumeId,
@@ -58,9 +68,9 @@ export default function ExportDialog({
         },
       },
       {
-        onSuccess: (blob) => {
+        onSuccess: (result) => {
           // Create download link
-          const url = window.URL.createObjectURL(blob);
+          const url = window.URL.createObjectURL(result.blob);
           const link = document.createElement("a");
           link.href = url;
           const safeTitle = resumeTitle.replace(/[^a-zA-Z0-9-_ ]/g, "_");
@@ -69,7 +79,13 @@ export default function ExportDialog({
           link.click();
           document.body.removeChild(link);
           window.URL.revokeObjectURL(url);
-          onClose();
+
+          // Show overflow warning if needed, otherwise close
+          if (result.overflows) {
+            setOverflowInfo({ pageCount: result.pageCount, show: true });
+          } else {
+            onClose();
+          }
         },
         onError: (error) => {
           alert(`Export failed: ${error.message}`);
@@ -127,6 +143,29 @@ export default function ExportDialog({
                 </svg>
               </button>
             </div>
+
+            {/* Overflow Warning (shown after export) */}
+            {overflowInfo?.show && (
+              <div className="mb-6 flex items-start gap-3 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-amber-800">
+                <AlertTriangle className="h-5 w-5 mt-0.5 text-amber-500 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">
+                    Your exported resume is {overflowInfo.pageCount} pages.
+                  </p>
+                  <p className="mt-1 text-sm text-amber-700">
+                    Most recruiters prefer one-page resumes. Consider using smaller
+                    font sizes, narrower margins, or shortening your content.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="mt-2 text-sm font-medium text-amber-700 hover:text-amber-900 underline"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Format Selection */}
             <div className="mb-6">
