@@ -1,27 +1,45 @@
+"""
+Export Service for Resume Generation.
+
+Converts tailored resume content to PDF, DOCX, and plain text formats.
+PDF generation uses WeasyPrint with Jinja2 templates.
+"""
+
 import io
+from dataclasses import dataclass
 from typing import Any
 
 from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem
 
-from app.services.export.html_to_document import ExportOptions
+from app.services.export.html_to_document import ExportOptions, WEASYPRINT_AVAILABLE
+from app.services.export.template_renderer import (
+    ExportStyle,
+    get_template_renderer,
+)
+
+# WeasyPrint import (conditional for environments without system deps)
+if WEASYPRINT_AVAILABLE:
+    from weasyprint import HTML
+    from weasyprint.text.fonts import FontConfiguration
 
 
-# Page size mapping
-PAGE_SIZES = {
-    "letter": letter,
-    "a4": A4,
-}
+@dataclass
+class PDFResult:
+    """Result of PDF generation with metadata."""
+
+    content: bytes
+    page_count: int
+    overflows: bool = False
 
 
 class ExportService:
     """Service for exporting tailored resumes to different formats."""
+
+    def __init__(self):
+        self._template_renderer = get_template_renderer()
+        self._font_config = FontConfiguration() if WEASYPRINT_AVAILABLE else None
 
     def generate_plain_text(self, tailored_content: dict[str, Any]) -> str:
         """Generate plain text version of a tailored resume."""
@@ -113,7 +131,7 @@ class ExportService:
 
                 # Bullets
                 for bullet in job.get("bullets", []):
-                    bullet_para = doc.add_paragraph(bullet, style="List Bullet")
+                    doc.add_paragraph(bullet, style="List Bullet")
 
                 doc.add_paragraph()
 
@@ -139,126 +157,114 @@ class ExportService:
         self,
         tailored_content: dict[str, Any],
         options: ExportOptions | None = None,
-    ) -> bytes:
-        """Generate PDF version of a tailored resume."""
+        contact: dict[str, Any] | None = None,
+    ) -> PDFResult:
+        """
+        Generate PDF version of a tailored resume using WeasyPrint.
+
+        Args:
+            tailored_content: Resume content dict with sections
+            options: Export customization options
+            contact: Optional contact information dict
+
+        Returns:
+            PDFResult with content bytes, page_count, and overflow flag
+        """
+        if not WEASYPRINT_AVAILABLE:
+            raise RuntimeError(
+                "PDF export requires WeasyPrint system dependencies. "
+                "Install with: brew install pango (macOS) or "
+                "apt-get install libpango-1.0-0 libpangocairo-1.0-0 (Ubuntu)"
+            )
+
         if options is None:
             options = ExportOptions()
 
-        buffer = io.BytesIO()
-        page_size = PAGE_SIZES.get(options.page_size, letter)
-        doc = SimpleDocTemplate(
-            buffer,
-            pagesize=page_size,
-            rightMargin=options.margin_right * inch,
-            leftMargin=options.margin_left * inch,
-            topMargin=options.margin_top * inch,
-            bottomMargin=options.margin_bottom * inch,
+        # Convert ExportOptions to ExportStyle
+        style = ExportStyle(
+            template=options.template.value if hasattr(options.template, "value") else str(options.template),
+            font_family=options.font_family,
+            font_size=options.font_size,
+            margin_top=options.margin_top,
+            margin_bottom=options.margin_bottom,
+            margin_left=options.margin_left,
+            margin_right=options.margin_right,
+            line_spacing=options.line_spacing,
+            page_size=options.page_size,
         )
 
-        styles = getSampleStyleSheet()
-        styles.add(ParagraphStyle(
-            "Heading",
-            parent=styles["Heading1"],
-            fontSize=options.font_size + 3,
-            spaceAfter=6,
-            textColor=colors.HexColor("#1f2937"),
-        ))
-        styles.add(ParagraphStyle(
-            "JobTitle",
-            parent=styles["Normal"],
-            fontSize=options.font_size + 1,
-            spaceAfter=3,
-            textColor=colors.HexColor("#111827"),
-            fontName="Helvetica-Bold",
-        ))
-        styles.add(ParagraphStyle(
-            "JobDetails",
-            parent=styles["Normal"],
-            fontSize=options.font_size - 1,
-            spaceAfter=6,
-            textColor=colors.HexColor("#6b7280"),
-            fontName="Helvetica-Oblique",
-        ))
-        styles.add(ParagraphStyle(
-            "BodyText",
-            parent=styles["Normal"],
-            fontSize=options.font_size,
-            spaceAfter=12,
-            textColor=colors.HexColor("#374151"),
-            leading=options.font_size * options.line_spacing,
-        ))
-        styles.add(ParagraphStyle(
-            "Bullet",
-            parent=styles["Normal"],
-            fontSize=options.font_size - 1,
-            leftIndent=20,
-            spaceAfter=4,
-            textColor=colors.HexColor("#374151"),
-            leading=(options.font_size - 1) * options.line_spacing,
-        ))
+        # Normalize content to unified structure
+        normalized = self._template_renderer.normalize_tailored_content(
+            tailored_content, contact=contact
+        )
 
-        elements = []
+        # Render HTML using template
+        html_content = self._template_renderer.render(normalized, style)
 
-        # Summary
-        if summary := tailored_content.get("summary"):
-            elements.append(Paragraph("SUMMARY", styles["Heading"]))
-            elements.append(Paragraph(summary, styles["BodyText"]))
-            elements.append(Spacer(1, 12))
+        # Generate PDF using WeasyPrint
+        html = HTML(string=html_content)
+        document = html.render(font_config=self._font_config)
 
-        # Experience
-        if experience := tailored_content.get("experience", []):
-            elements.append(Paragraph("EXPERIENCE", styles["Heading"]))
-            for job in experience:
-                title = job.get("title", "")
-                company = job.get("company", "")
-                elements.append(Paragraph(f"{title} | {company}", styles["JobTitle"]))
+        # Get page count
+        page_count = len(document.pages)
 
-                location = job.get("location", "")
-                dates = f"{job.get('start_date', '')} - {job.get('end_date', '')}"
-                elements.append(Paragraph(f"{location} | {dates}", styles["JobDetails"]))
+        # Check for overflow (content doesn't fit on target pages)
+        # For now, we consider overflow if > 1 page and user expected 1
+        overflows = page_count > 1
 
-                for bullet in job.get("bullets", []):
-                    # Escape special characters for ReportLab
-                    safe_bullet = bullet.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                    elements.append(Paragraph(f"• {safe_bullet}", styles["Bullet"]))
-
-                elements.append(Spacer(1, 8))
-
-        # Skills
-        if skills := tailored_content.get("skills", []):
-            elements.append(Paragraph("SKILLS", styles["Heading"]))
-            skills_text = ", ".join(skills)
-            elements.append(Paragraph(skills_text, styles["BodyText"]))
-            elements.append(Spacer(1, 12))
-
-        # Highlights
-        if highlights := tailored_content.get("highlights", []):
-            elements.append(Paragraph("KEY HIGHLIGHTS", styles["Heading"]))
-            for highlight in highlights:
-                safe_highlight = highlight.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                elements.append(Paragraph(f"• {safe_highlight}", styles["Bullet"]))
-
-        doc.build(elements)
+        # Write PDF to bytes
+        buffer = io.BytesIO()
+        document.write_pdf(buffer)
         buffer.seek(0)
-        return buffer.getvalue()
 
+        return PDFResult(
+            content=buffer.getvalue(),
+            page_count=page_count,
+            overflows=overflows,
+        )
 
     # Async wrapper methods for workshop router compatibility
-    async def export_pdf(self, content: dict[str, Any], template: str = "default") -> bytes:
-        """Export resume content as PDF bytes."""
-        return self.generate_pdf(content)
+    async def export_pdf(
+        self,
+        content: dict[str, Any],
+        template: str = "classic",
+        contact: dict[str, Any] | None = None,
+    ) -> PDFResult:
+        """Export resume content as PDF bytes with metadata."""
+        from app.services.export.html_to_document import StyleTemplate
 
-    async def export_docx(self, content: dict[str, Any], template: str = "default") -> bytes:
+        try:
+            style_template = StyleTemplate(template)
+        except ValueError:
+            style_template = StyleTemplate.CLASSIC
+
+        options = ExportOptions(template=style_template)
+        return self.generate_pdf(content, options=options, contact=contact)
+
+    async def export_docx(
+        self,
+        content: dict[str, Any],
+        template: str = "default",
+    ) -> bytes:
         """Export resume content as DOCX bytes."""
         return self.generate_docx(content)
 
-    async def export_txt(self, content: dict[str, Any], template: str = "default") -> str:
+    async def export_txt(
+        self,
+        content: dict[str, Any],
+        template: str = "default",
+    ) -> str:
         """Export resume content as plain text."""
         return self.generate_plain_text(content)
 
-    async def export_json(self, content: dict[str, Any], template: str = "default") -> str:
+    async def export_json(
+        self,
+        content: dict[str, Any],
+        template: str = "default",
+    ) -> str:
         """Export resume content as JSON string."""
         import json
+
         return json.dumps(content, indent=2)
 
 
