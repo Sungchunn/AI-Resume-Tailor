@@ -1,0 +1,200 @@
+/*
+ * Base CSS for Resume PDF Export
+ *
+ * Common styles shared across all templates.
+ * Uses CSS variables for customization.
+ */
+
+/* Page setup with CSS variables for margin customization */
+@page {
+    size: var(--page-size, letter);
+    margin-top: var(--margin-top, 0.75in);
+    margin-bottom: var(--margin-bottom, 0.75in);
+    margin-left: var(--margin-left, 0.75in);
+    margin-right: var(--margin-right, 0.75in);
+}
+
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    font-family: var(--font-family, Arial, sans-serif);
+    font-size: var(--font-size, 11pt);
+    line-height: var(--line-spacing, 1.15);
+    color: #1a1a1a;
+}
+
+/* Section spacing - page-break aware */
+.section {
+    margin-bottom: var(--section-spacing, 14pt);
+    break-inside: avoid-page;
+}
+
+/* Entry spacing - keep entries together */
+.entry {
+    margin-bottom: var(--entry-spacing, 10pt);
+    break-inside: avoid-page;
+}
+
+/* Typography base */
+h1, h2, h3 {
+    font-weight: bold;
+    margin-top: 0;
+}
+
+p {
+    margin-top: 0;
+    margin-bottom: 6pt;
+}
+
+/* Lists */
+ul, ol {
+    margin-top: 4pt;
+    margin-bottom: 6pt;
+    padding-left: 18pt;
+}
+
+li {
+    margin-bottom: 3pt;
+}
+
+/* Inline formatting */
+strong, b {
+    font-weight: bold;
+}
+
+em, i {
+    font-style: italic;
+}
+
+/* Links */
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* Contact header layout */
+.contact-header {
+    text-align: center;
+    margin-bottom: 12pt;
+    break-inside: avoid-page;
+}
+
+.contact-header .name {
+    font-size: calc(var(--font-size, 11pt) + 8pt);
+    font-weight: bold;
+    margin-bottom: 4pt;
+}
+
+.contact-header .headline {
+    font-size: calc(var(--font-size, 11pt) + 2pt);
+    color: #4b5563;
+    margin-bottom: 6pt;
+}
+
+.contact-header .contact-info {
+    font-size: calc(var(--font-size, 11pt) - 1pt);
+    color: #6b7280;
+}
+
+.contact-header .contact-info span:not(:last-child)::after {
+    content: " | ";
+    color: #9ca3af;
+}
+
+/* Section header */
+.section-header {
+    font-size: calc(var(--font-size, 11pt) + 3pt);
+    margin-bottom: 8pt;
+    padding-bottom: 3pt;
+}
+
+/* Entry header (job title, company, etc.) */
+.entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 2pt;
+}
+
+.entry-header .title {
+    font-weight: bold;
+    font-size: calc(var(--font-size, 11pt) + 1pt);
+}
+
+.entry-header .date {
+    font-size: calc(var(--font-size, 11pt) - 1pt);
+    color: #6b7280;
+}
+
+.entry-subheader {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4pt;
+    color: #4b5563;
+    font-size: var(--font-size, 11pt);
+}
+
+.entry-subheader .company {
+    font-weight: 500;
+}
+
+.entry-subheader .location {
+    font-size: calc(var(--font-size, 11pt) - 1pt);
+    color: #6b7280;
+}
+
+/* Bullet points in entries */
+.entry ul {
+    margin-top: 4pt;
+    margin-bottom: 0;
+}
+
+.entry li {
+    margin-bottom: 2pt;
+}
+
+/* Summary/objective section */
+.summary-content {
+    text-align: justify;
+}
+
+/* Skills section - inline display */
+.skills-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.skills-list li {
+    display: inline;
+}
+
+.skills-list li:not(:last-child)::after {
+    content: " • ";
+    color: #9ca3af;
+}
+
+/* Education entry */
+.education-entry .degree {
+    font-weight: bold;
+}
+
+.education-entry .field {
+    font-style: italic;
+}
+
+/* Highlights/achievements */
+.highlights-list {
+    list-style-type: disc;
+    padding-left: 18pt;
+}
+
+.highlights-list li {
+    margin-bottom: 4pt;
+}

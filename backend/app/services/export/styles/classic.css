@@ -1,0 +1,49 @@
+/*
+ * Classic Resume Template
+ *
+ * Traditional, professional styling with serif-friendly typography.
+ * Features underlined section headers and conservative color scheme.
+ */
+
+/* Section headers - classic underlined style */
+.section-header {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid #333;
+    padding-bottom: 4pt;
+    color: #000;
+}
+
+/* Contact header - classic centered */
+.contact-header .name {
+    color: #000;
+    letter-spacing: 0.5px;
+}
+
+.contact-header .headline {
+    font-style: italic;
+    color: #555;
+}
+
+/* Entry styling */
+.entry-header .title {
+    color: #111827;
+}
+
+.entry-subheader {
+    color: #374151;
+}
+
+/* Blockquotes */
+blockquote {
+    margin: 8pt 0;
+    padding-left: 12pt;
+    border-left: 3px solid #ccc;
+    color: #555;
+    font-style: italic;
+}
+
+/* Links in classic style */
+a {
+    color: #0066cc;
+}

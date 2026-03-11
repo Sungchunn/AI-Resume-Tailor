@@ -1,0 +1,62 @@
+/*
+ * Minimal Resume Template
+ *
+ * Clean, understated design with muted colors.
+ * Focuses on content with minimal decorative elements.
+ */
+
+/* Section headers - minimal clean style */
+.section-header {
+    font-weight: 500;
+    color: #27272a;
+    letter-spacing: 0;
+    border-bottom: none;
+}
+
+/* Contact header - minimal styling */
+.contact-header .name {
+    color: #09090b;
+    font-weight: 500;
+}
+
+.contact-header .headline {
+    color: #52525b;
+    font-weight: 400;
+}
+
+.contact-header .contact-info {
+    color: #71717a;
+}
+
+/* Entry styling */
+.entry-header .title {
+    color: #18181b;
+    font-weight: 500;
+}
+
+.entry-subheader {
+    color: #3f3f46;
+}
+
+.entry-subheader .company {
+    font-weight: 400;
+}
+
+/* Muted emphasis */
+strong, b {
+    font-weight: 500;
+}
+
+/* Blockquotes - minimal line style */
+blockquote {
+    margin: 8pt 0;
+    padding-left: 12pt;
+    border-left: 2px solid #d4d4d8;
+    color: #52525b;
+}
+
+/* Links - underlined in minimal style */
+a {
+    color: #18181b;
+    text-decoration: underline;
+}

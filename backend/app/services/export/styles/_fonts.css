@@ -1,0 +1,27 @@
+/*
+ * Font Definitions for PDF Export
+ *
+ * For PDF export, we rely on system fonts since embedding web fonts
+ * would require downloading and caching woff2 files.
+ *
+ * WeasyPrint uses fontconfig to find system fonts. The font-family
+ * declarations below map to commonly available system fonts.
+ */
+
+/* System font stacks for PDF generation */
+:root {
+    /* Sans-serif fonts - mapped to common system fonts */
+    --font-inter: "Inter", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    --font-roboto: "Roboto", "Helvetica Neue", Arial, sans-serif;
+    --font-open-sans: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+    --font-lato: "Lato", "Helvetica Neue", Arial, sans-serif;
+    --font-arial: Arial, "Helvetica Neue", sans-serif;
+    --font-helvetica: "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+    /* Serif fonts */
+    --font-times: "Times New Roman", Times, serif;
+    --font-georgia: Georgia, "Times New Roman", serif;
+
+    /* Monospace fonts */
+    --font-calibri: Calibri, "Segoe UI", Arial, sans-serif;
+}
