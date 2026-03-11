@@ -45,6 +45,7 @@ greenlet = "^3.3.1"
 # Task scheduling
 apscheduler = "^3.10.0"
 weasyprint = "^68.1"
+jinja2 = "^3.1.0"
 python-dateutil = "^2.9.0.post0"
 sse-starlette = "^2.0.0"
 
