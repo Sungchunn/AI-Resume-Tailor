@@ -23,6 +23,7 @@ export interface UserResponse {
   headline?: string | null;
   about_me?: string | null;
   about_me_generated_at?: string | null;
+  timezone?: string | null;
 }
 
 // Profile Types
@@ -36,13 +37,17 @@ export interface AboutMeResponse {
 }
 
 export interface UpdateProfileRequest {
+  full_name?: string | null;
   headline?: string | null;
   about_me?: string | null;
+  timezone?: string | null;
 }
 
 export interface ProfileResponse {
+  full_name?: string | null;
   headline?: string | null;
   about_me?: string | null;
+  timezone?: string | null;
 }
 
 export interface Token {
