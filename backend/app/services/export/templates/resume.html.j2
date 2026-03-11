@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume</title>
+    <style>
+        /* CSS Variables for customization */
+        :root {
+            --page-size: {{ page_size | default('letter') }};
+            --margin-top: {{ margin_top | default(0.75) }}in;
+            --margin-bottom: {{ margin_bottom | default(0.75) }}in;
+            --margin-left: {{ margin_left | default(0.75) }}in;
+            --margin-right: {{ margin_right | default(0.75) }}in;
+            --font-family: {{ font_family | default('Arial') }}, sans-serif;
+            --font-size: {{ font_size | default(11) }}pt;
+            --line-spacing: {{ line_spacing | default(1.15) }};
+            --section-spacing: {{ section_spacing | default(14) }}pt;
+            --entry-spacing: {{ entry_spacing | default(10) }}pt;
+        }
+
+        {{ fonts_css }}
+
+        {{ base_css }}
+
+        {{ template_css }}
+    </style>
+</head>
+<body>
+    {% import '_macros.html.j2' as macros %}
+
+    {# Contact Header #}
+    {{ macros.render_contact(resume.contact) }}
+
+    {# Summary #}
+    {{ macros.render_summary(resume.summary) }}
+
+    {# Dynamic sections #}
+    {% for section in resume.sections %}
+        {% if section.type == 'experience' %}
+            {{ macros.render_experience(section.entries, section.label | default('Experience')) }}
+        {% elif section.type == 'education' %}
+            {{ macros.render_education(section.entries, section.label | default('Education')) }}
+        {% elif section.type == 'skills' %}
+            {{ macros.render_skills(section.entries, section.label | default('Skills')) }}
+        {% elif section.type == 'highlights' %}
+            {{ macros.render_highlights(section.entries, section.label | default('Key Highlights')) }}
+        {% elif section.type == 'certifications' %}
+            {{ macros.render_certifications(section.entries, section.label | default('Certifications')) }}
+        {% elif section.type == 'projects' %}
+            {{ macros.render_projects(section.entries, section.label | default('Projects')) }}
+        {% else %}
+            {{ macros.render_generic(section.entries, section.label | default(section.type | title)) }}
+        {% endif %}
+    {% endfor %}
+</body>
+</html>
