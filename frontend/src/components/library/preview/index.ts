@@ -25,14 +25,12 @@
 
 // Main preview components
 export { ResumePreview, ResumePreviewStandalone } from "./ResumePreview";
-export { PagedResumePreview } from "./PagedResumePreview";
+export type { ResumePreviewHandle } from "./ResumePreview";
 
-// Page break calculation
-export { useBlockPageBreaks } from "./useBlockPageBreaks";
-export type {
-  BlockPageContent,
-  BlockPageBreakResult,
-} from "./useBlockPageBreaks";
+// Page break rulers and overflow detection
+export { PageBreakRuler } from "./PageBreakRuler";
+export { OverflowWarning } from "./OverflowWarning";
+export { useOverflowDetection } from "./useOverflowDetection";
 
 // Block renderer
 export { BlockRenderer, createBlockRenderer } from "./BlockRenderer";
