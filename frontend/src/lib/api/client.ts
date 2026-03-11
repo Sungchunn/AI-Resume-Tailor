@@ -278,7 +278,11 @@ export const resumeApi = {
   getExportTemplates: (): Promise<ExportTemplatesResponse> =>
     fetchApi("/api/resumes/export/templates"),
 
-  export: async (id: string, data: ResumeExportRequest): Promise<Blob> => {
+  export: async (id: string, data: ResumeExportRequest): Promise<{
+    blob: Blob;
+    pageCount: number;
+    overflows: boolean;
+  }> => {
     const response = await fetch(
       `${API_BASE_URL}/api/resumes/${id}/export`,
       {
@@ -294,7 +298,13 @@ export const resumeApi = {
       const error = await response.json().catch(() => ({ detail: "Export failed" }));
       throw new Error(error.detail || `HTTP ${response.status}`);
     }
-    return response.blob();
+
+    // Parse metadata headers
+    const pageCount = parseInt(response.headers.get("X-Page-Count") ?? "1", 10);
+    const overflows = response.headers.get("X-Overflows") === "true";
+
+    const blob = await response.blob();
+    return { blob, pageCount, overflows };
   },
 
   // Parse operations
