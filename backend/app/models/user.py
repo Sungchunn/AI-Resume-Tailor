@@ -24,6 +24,9 @@ class User(Base):
     about_me = Column(Text, nullable=True)
     about_me_generated_at = Column(DateTime(timezone=True), nullable=True)
 
+    # User preferences
+    timezone = Column(String(100), nullable=True, default="UTC")  # IANA timezone string
+
     # Relationships
     resumes = relationship("Resume", back_populates="owner", cascade="all, delete-orphan")
     job_descriptions = relationship("JobDescription", back_populates="owner", cascade="all, delete-orphan")
