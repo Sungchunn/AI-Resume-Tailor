@@ -1,0 +1,250 @@
+{#
+  Resume Section Macros for Jinja2 Template
+
+  These macros render individual resume sections with consistent formatting.
+  Each macro handles a specific section type (experience, education, skills, etc.)
+#}
+
+{# Render contact header with name, headline, and contact info #}
+{% macro render_contact(contact) %}
+{% if contact %}
+<div class="contact-header">
+    {% if contact.name %}
+    <div class="name">{{ contact.name }}</div>
+    {% endif %}
+    {% if contact.headline %}
+    <div class="headline">{{ contact.headline }}</div>
+    {% endif %}
+    <div class="contact-info">
+        {% if contact.email %}<span>{{ contact.email }}</span>{% endif %}
+        {% if contact.phone %}<span>{{ contact.phone }}</span>{% endif %}
+        {% if contact.location %}<span>{{ contact.location }}</span>{% endif %}
+        {% if contact.linkedin %}<span>{{ contact.linkedin }}</span>{% endif %}
+        {% if contact.website %}<span>{{ contact.website }}</span>{% endif %}
+    </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{# Render summary/objective section #}
+{% macro render_summary(summary, label="Summary") %}
+{% if summary %}
+<div class="section summary-section">
+    <h2 class="section-header">{{ label }}</h2>
+    <div class="summary-content">{{ summary }}</div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{# Render experience section with job entries #}
+{% macro render_experience(entries, label="Experience") %}
+{% if entries and entries|length > 0 %}
+<div class="section experience-section">
+    <h2 class="section-header">{{ label }}</h2>
+    {% for entry in entries %}
+    <div class="entry experience-entry">
+        <div class="entry-header">
+            <span class="title">{{ entry.title | default('') }}</span>
+            {% if entry.start_date or entry.end_date %}
+            <span class="date">{{ entry.start_date | default('') }}{% if entry.start_date and entry.end_date %} - {% endif %}{{ entry.end_date | default('Present') }}</span>
+            {% endif %}
+        </div>
+        <div class="entry-subheader">
+            <span class="company">{{ entry.company | default('') }}</span>
+            {% if entry.location %}
+            <span class="location">{{ entry.location }}</span>
+            {% endif %}
+        </div>
+        {% if entry.bullets and entry.bullets|length > 0 %}
+        <ul>
+            {% for bullet in entry.bullets %}
+            <li>{{ bullet }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% if entry.description %}
+        <p>{{ entry.description }}</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{# Render education section #}
+{% macro render_education(entries, label="Education") %}
+{% if entries and entries|length > 0 %}
+<div class="section education-section">
+    <h2 class="section-header">{{ label }}</h2>
+    {% for entry in entries %}
+    <div class="entry education-entry">
+        <div class="entry-header">
+            {% if entry.degree %}
+            <span class="title degree">{{ entry.degree }}{% if entry.field %}, <span class="field">{{ entry.field }}</span>{% endif %}</span>
+            {% endif %}
+            {% if entry.start_date or entry.end_date or entry.graduation_date %}
+            <span class="date">
+                {% if entry.graduation_date %}
+                {{ entry.graduation_date }}
+                {% else %}
+                {{ entry.start_date | default('') }}{% if entry.start_date and entry.end_date %} - {% endif %}{{ entry.end_date | default('') }}
+                {% endif %}
+            </span>
+            {% endif %}
+        </div>
+        <div class="entry-subheader">
+            <span class="company">{{ entry.institution | default(entry.school | default('')) }}</span>
+            {% if entry.location %}
+            <span class="location">{{ entry.location }}</span>
+            {% endif %}
+        </div>
+        {% if entry.gpa %}
+        <p>GPA: {{ entry.gpa }}</p>
+        {% endif %}
+        {% if entry.honors and entry.honors|length > 0 %}
+        <ul>
+            {% for honor in entry.honors %}
+            <li>{{ honor }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% if entry.bullets and entry.bullets|length > 0 %}
+        <ul>
+            {% for bullet in entry.bullets %}
+            <li>{{ bullet }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{# Render skills as inline list #}
+{% macro render_skills(entries, label="Skills") %}
+{% if entries and entries|length > 0 %}
+<div class="section skills-section">
+    <h2 class="section-header">{{ label }}</h2>
+    <ul class="skills-list">
+        {% for skill in entries %}
+        <li>{{ skill if skill is string else skill.name | default(skill) }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endmacro %}
+
+{# Render highlights/achievements as bullet list #}
+{% macro render_highlights(entries, label="Key Highlights") %}
+{% if entries and entries|length > 0 %}
+<div class="section highlights-section">
+    <h2 class="section-header">{{ label }}</h2>
+    <ul class="highlights-list">
+        {% for highlight in entries %}
+        <li>{{ highlight if highlight is string else highlight.text | default(highlight) }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endmacro %}
+
+{# Render certifications #}
+{% macro render_certifications(entries, label="Certifications") %}
+{% if entries and entries|length > 0 %}
+<div class="section certifications-section">
+    <h2 class="section-header">{{ label }}</h2>
+    {% for entry in entries %}
+    <div class="entry certification-entry">
+        <div class="entry-header">
+            <span class="title">{{ entry.name | default(entry.title | default('')) }}</span>
+            {% if entry.date or entry.issued_date %}
+            <span class="date">{{ entry.date | default(entry.issued_date | default('')) }}</span>
+            {% endif %}
+        </div>
+        {% if entry.issuer or entry.organization %}
+        <div class="entry-subheader">
+            <span class="company">{{ entry.issuer | default(entry.organization | default('')) }}</span>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{# Render projects section #}
+{% macro render_projects(entries, label="Projects") %}
+{% if entries and entries|length > 0 %}
+<div class="section projects-section">
+    <h2 class="section-header">{{ label }}</h2>
+    {% for entry in entries %}
+    <div class="entry project-entry">
+        <div class="entry-header">
+            <span class="title">{{ entry.name | default(entry.title | default('')) }}</span>
+            {% if entry.date or entry.dates %}
+            <span class="date">{{ entry.date | default(entry.dates | default('')) }}</span>
+            {% endif %}
+        </div>
+        {% if entry.technologies %}
+        <div class="entry-subheader">
+            <span class="company">{{ entry.technologies if entry.technologies is string else entry.technologies | join(', ') }}</span>
+        </div>
+        {% endif %}
+        {% if entry.description %}
+        <p>{{ entry.description }}</p>
+        {% endif %}
+        {% if entry.bullets and entry.bullets|length > 0 %}
+        <ul>
+            {% for bullet in entry.bullets %}
+            <li>{{ bullet }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% if entry.link %}
+        <p><a href="{{ entry.link }}">{{ entry.link }}</a></p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{# Generic section renderer for unknown/custom section types #}
+{% macro render_generic(entries, label) %}
+{% if entries %}
+<div class="section generic-section">
+    <h2 class="section-header">{{ label }}</h2>
+    {% if entries is string %}
+    <p>{{ entries }}</p>
+    {% elif entries is iterable and entries is not mapping %}
+    {% for entry in entries %}
+    {% if entry is string %}
+    <p>{{ entry }}</p>
+    {% elif entry is mapping %}
+    <div class="entry">
+        {% if entry.title or entry.name %}
+        <div class="entry-header">
+            <span class="title">{{ entry.title | default(entry.name | default('')) }}</span>
+            {% if entry.date %}
+            <span class="date">{{ entry.date }}</span>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% if entry.description %}
+        <p>{{ entry.description }}</p>
+        {% endif %}
+        {% if entry.bullets and entry.bullets|length > 0 %}
+        <ul>
+            {% for bullet in entry.bullets %}
+            <li>{{ bullet }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+</div>
+{% endif %}
+{% endmacro %}
