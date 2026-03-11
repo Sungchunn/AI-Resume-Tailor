@@ -434,6 +434,72 @@ def get_settings() -> Settings:
 
 ## Service Architecture
 
+### PDF Export Pipeline
+
+The PDF export system uses WeasyPrint with Jinja2 templates for generating styled resume documents.
+
+```mermaid
+flowchart TB
+    subgraph "API Layer"
+        A["/api/export/{id}"]
+        B["/api/resume_builds/{id}/export"]
+    end
+
+    subgraph "Service Layer"
+        C[ExportService]
+        D[ResumeTemplateRenderer]
+    end
+
+    subgraph "Template Layer"
+        E[Jinja2 Templates]
+        F[CSS Styles]
+    end
+
+    subgraph "Rendering"
+        G[WeasyPrint]
+        H[PDF Output]
+    end
+
+    A --> C
+    B --> C
+    C --> D
+    D --> E
+    D --> F
+    E --> G
+    F --> G
+    G --> H
+
+    style G fill:#f9f,stroke:#333
+```
+
+**Key Components:**
+
+1. **ExportService** (`services/export/service.py`)
+   - Entry point for all export operations
+   - Returns `PDFResult` with content, page_count, and overflow flag
+   - Supports PDF, DOCX, and TXT formats
+
+2. **ResumeTemplateRenderer** (`services/export/template_renderer.py`)
+   - Normalizes various input formats to `NormalizedResume` structure
+   - Renders HTML using Jinja2 templates
+   - Handles both tailored content and resume build formats
+
+3. **Templates** (`services/export/templates/`)
+   - `resume.html.j2` - Main template with CSS variables
+   - `_macros.html.j2` - Section rendering macros
+
+4. **Styles** (`services/export/styles/`)
+   - `_base.css` - Common styles and page setup
+   - `classic.css`, `modern.css`, `minimal.css` - Template variations
+
+**Response Headers:**
+
+PDF export endpoints include metadata headers:
+- `X-Page-Count` - Number of pages in generated PDF
+- `X-Overflows` - Whether content exceeds one page
+
+---
+
 ### AI-Powered Tailoring Flow
 
 ```mermaid
