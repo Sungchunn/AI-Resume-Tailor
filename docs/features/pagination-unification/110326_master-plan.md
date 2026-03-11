@@ -10,6 +10,7 @@ Remove the heuristic-based `useBlockPageBreaks` hook and `PagedResumePreview` co
 ### Problem Statement
 
 Currently there are two rendering paths:
+
 - **Preview page** uses `ResumePreview` - single container, browser handles layout
 - **Editor page** uses `PagedResumePreview` + `useBlockPageBreaks` - estimates heights with hardcoded pixel guesses
 
@@ -71,6 +72,7 @@ export interface ResumePreviewProps {
 **File:** `frontend/src/components/library/preview/ResumePreview.tsx`
 
 Changes:
+
 - Convert to `forwardRef` to expose the page container for height measurement
 - Add `interactive` prop handling
 - When `interactive={true}`, use `InteractiveBlockRenderer` instead of `BlockRenderer`
@@ -89,6 +91,7 @@ interface PageBreakRulerProps {
 ```
 
 Renders absolutely positioned dashed lines every 1122px:
+
 - Uses `pointer-events-none` so it doesn't interfere with clicks
 - Amber/orange color with opacity for subtle appearance
 - Badge showing "Page N starts here"
@@ -112,6 +115,7 @@ interface OverflowDetectionResult {
 ```
 
 Uses `ResizeObserver` + `MutationObserver` with debouncing to detect:
+
 - `scrollHeight > 1122px` = exceeds one page
 - `scrollHeight > 2244px` = exceeds two pages
 
@@ -120,6 +124,7 @@ Uses `ResizeObserver` + `MutationObserver` with debouncing to detect:
 **New file:** `frontend/src/components/library/preview/OverflowWarning.tsx`
 
 Renders an informational banner when content overflows:
+
 - Amber background, non-blocking
 - Shows estimated page count
 - Different message for export overflow vs live detection
@@ -171,6 +176,7 @@ Parse `X-Page-Count` and `X-Overflows` response headers.
 **File:** `frontend/src/components/export/ExportDialog.tsx`
 
 After successful export:
+
 - Check if `overflows === true`
 - Show warning: "Your resume is {page_count} pages. Consider enabling Fit to One Page or shortening your content."
 
@@ -184,6 +190,7 @@ After successful export:
 ### Step 8: Delete Deprecated Files
 
 Delete:
+
 - `frontend/src/components/library/preview/useBlockPageBreaks.ts`
 - `frontend/src/components/library/preview/PagedResumePreview.tsx`
 
@@ -244,6 +251,7 @@ Delete:
 ### Interactive Mode
 
 The existing `InteractiveBlockRenderer` handles:
+
 - Dashed selection box on hover
 - Up/down move arrows on left edge
 - Click-to-select functionality
