@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Panel, Group, Separator } from "react-resizable-panels";
 import { useBlockEditor } from "./BlockEditorContext";
 import { EditorHeader } from "./EditorHeader";
 import { ControlPanel } from "./ControlPanel";
-import { PagedResumePreview } from "../preview";
+import {
+  ResumePreview,
+  PageBreakRuler,
+  OverflowWarning,
+  useOverflowDetection,
+} from "../preview";
+import type { ResumePreviewHandle } from "../preview/ResumePreview";
 import ExportDialog from "@/components/export/ExportDialog";
 
 interface EditorLayoutProps {
@@ -59,6 +65,24 @@ export function EditorLayout({
 
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
+
+  // Preview ref for overflow detection
+  const previewRef = useRef<ResumePreviewHandle>(null);
+  const pageContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Update page container ref when preview ref changes
+  useEffect(() => {
+    pageContainerRef.current = previewRef.current?.getPageElement() ?? null;
+  });
+
+  // Overflow detection for multi-page warning
+  const { overflows, estimatedPageCount, contentHeight } = useOverflowDetection({
+    containerRef: pageContainerRef,
+    debounceMs: 500,
+  });
+
+  // Get current scale from preview
+  const currentScale = previewRef.current?.getScale() ?? 1;
 
   // Handle block click in preview
   const handlePreviewBlockClick = useCallback(
@@ -164,18 +188,32 @@ export function EditorLayout({
                   </button>
                 </div>
               )}
-              <PagedResumePreview
-                blocks={blocks}
-                style={style}
-                activeBlockId={activeBlockId}
-                hoveredBlockId={hoveredBlockId}
-                onBlockClick={handlePreviewBlockClick}
-                onBlockHover={handlePreviewBlockHover}
-                onMoveBlockUp={handleMoveBlockUp}
-                onMoveBlockDown={handleMoveBlockDown}
-                interactive={true}
-                showPageBorder={true}
-              />
+
+              {/* Overflow warning banner */}
+              {overflows && (
+                <OverflowWarning estimatedPageCount={estimatedPageCount} />
+              )}
+
+              {/* Preview with page break rulers */}
+              <div className="relative flex flex-col items-center">
+                <ResumePreview
+                  ref={previewRef}
+                  blocks={blocks}
+                  style={style}
+                  activeBlockId={activeBlockId}
+                  hoveredBlockId={hoveredBlockId}
+                  onBlockClick={handlePreviewBlockClick}
+                  onBlockHover={handlePreviewBlockHover}
+                  onMoveBlockUp={handleMoveBlockUp}
+                  onMoveBlockDown={handleMoveBlockDown}
+                  interactive={true}
+                  showPageBorder={true}
+                />
+                <PageBreakRuler
+                  contentHeight={contentHeight}
+                  scale={currentScale}
+                />
+              </div>
             </div>
           </Panel>
 
