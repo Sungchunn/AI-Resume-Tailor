@@ -102,7 +102,7 @@ export function ResumeTimeline({
         <div key={group.sortKey} className="relative">
           {/* Timeline connector line */}
           {groupIndex < groups.length - 1 && (
-            <div className="absolute left-[5.5rem] top-8 bottom-0 w-px bg-border dark:bg-zinc-600" />
+            <div className="absolute left-22 top-8 bottom-0 w-px bg-border dark:bg-zinc-600" />
           )}
 
           {/* Month-Year Header */}
@@ -128,7 +128,7 @@ export function ResumeTimeline({
           </div>
 
           {/* Resume cards for this month */}
-          <div className="ml-[7rem] space-y-3">
+          <div className="ml-28 space-y-3">
             {group.resumes.map((resume) => (
               <ResumeTimelineCard
                 key={resume.id}
