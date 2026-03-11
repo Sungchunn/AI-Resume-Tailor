@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ResumeResponse } from "@/lib/api/types";
+import { useTimezone } from "@/contexts/TimezoneContext";
 
 interface ResumeTimelineProps {
   resumes: ResumeResponse[];
@@ -31,7 +32,7 @@ function parseTimestamp(timestamp: string): Date {
  * Groups resumes by month-year (e.g., "March 2026")
  * Returns groups sorted in descending order (most recent first)
  */
-function groupResumesByMonth(resumes: ResumeResponse[]): TimelineGroup[] {
+function groupResumesByMonth(resumes: ResumeResponse[], timezone: string): TimelineGroup[] {
   const groups: Record<string, ResumeResponse[]> = {};
 
   for (const resume of resumes) {
@@ -40,9 +41,18 @@ function groupResumesByMonth(resumes: ResumeResponse[]): TimelineGroup[] {
     const monthYear = date.toLocaleDateString("en-US", {
       month: "long",
       year: "numeric",
+      timeZone: timezone,
     });
-    // Create sortable key (YYYY-MM format)
-    const sortKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    // Create sortable key (YYYY-MM format) - use timezone-aware date parts
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      timeZone: timezone,
+    });
+    const parts = formatter.formatToParts(date);
+    const year = parts.find((p) => p.type === "year")?.value || "";
+    const month = parts.find((p) => p.type === "month")?.value || "";
+    const sortKey = `${year}-${month}`;
 
     if (!groups[sortKey]) {
       groups[sortKey] = [];
@@ -57,6 +67,7 @@ function groupResumesByMonth(resumes: ResumeResponse[]): TimelineGroup[] {
       const label = date.toLocaleDateString("en-US", {
         month: "long",
         year: "numeric",
+        timeZone: timezone,
       });
       return { label, sortKey, resumes: groupResumes };
     })
@@ -75,7 +86,8 @@ export function ResumeTimeline({
   isSettingMaster,
   variant = "default",
 }: ResumeTimelineProps) {
-  const groups = groupResumesByMonth(resumes);
+  const { timezone } = useTimezone();
+  const groups = groupResumesByMonth(resumes, timezone);
 
   // Minimal variant - clean two-column layout like portfolio screenshot
   if (variant === "minimal") {
@@ -164,15 +176,16 @@ function MinimalResumeRow({
   isDeleting,
   isSettingMaster,
 }: MinimalResumeRowProps) {
+  const { formatDate, formatTime } = useTimezone();
   const createdDate = parseTimestamp(resume.created_at);
 
-  // Format as "Mon DD, YYYY" and time as "h:mm AM/PM"
-  const dateLabel = createdDate.toLocaleDateString("en-US", {
+  // Format as "Mon DD, YYYY" and time as "h:mm AM/PM" in user's timezone
+  const dateLabel = formatDate(createdDate, {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
-  const timeLabel = createdDate.toLocaleTimeString("en-US", {
+  const timeLabel = formatTime(createdDate, {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -255,8 +268,9 @@ function ResumeTimelineCard({
   isDeleting,
   isSettingMaster,
 }: ResumeTimelineCardProps) {
+  const { formatDate } = useTimezone();
   const lastUpdated = resume.updated_at || resume.created_at;
-  const formattedDate = parseTimestamp(lastUpdated).toLocaleDateString("en-US", {
+  const formattedDate = formatDate(lastUpdated, {
     month: "short",
     day: "numeric",
   });

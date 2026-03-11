@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useScheduleSettings, useUpdateScheduleSettings, useToggleSchedule, useTriggerScraper } from "@/lib/api/hooks";
+import { useTimezone } from "@/contexts/TimezoneContext";
 import type { ScheduleType, ScraperBatchResult } from "@/lib/api/types";
 
 const DAYS_OF_WEEK = [
@@ -50,11 +51,30 @@ const MINUTES = [
   { value: 45, label: ":45" },
 ];
 
+// Get a friendly timezone display name
+function getTimezoneDisplayName(tz: string): string {
+  // Map IANA timezone to friendly name
+  const tzMap: Record<string, string> = {
+    "America/New_York": "Eastern",
+    "America/Chicago": "Central",
+    "America/Denver": "Mountain",
+    "America/Los_Angeles": "Pacific",
+    "Asia/Bangkok": "Bangkok",
+    "Asia/Singapore": "Singapore",
+    "Asia/Tokyo": "Tokyo",
+    "Europe/London": "London",
+    "Europe/Paris": "Paris",
+    "UTC": "UTC",
+  };
+  return tzMap[tz] || tz.split("/").pop()?.replace(/_/g, " ") || tz;
+}
+
 export default function ScheduleSettings() {
   const { data: settings, isLoading } = useScheduleSettings();
   const { mutate: updateSettings, isPending: isUpdating } = useUpdateScheduleSettings();
   const { mutate: toggleSchedule, isPending: isToggling } = useToggleSchedule();
   const { mutate: triggerScraper, isPending: isTriggering } = useTriggerScraper();
+  const { timezone } = useTimezone();
 
   const [scheduleType, setScheduleType] = useState<ScheduleType>("daily");
   const [hour12, setHour12] = useState(2);
@@ -207,7 +227,7 @@ export default function ScheduleSettings() {
         {/* Time Selection */}
         <div>
           <label className="block text-sm font-medium text-foreground/80 mb-2">
-            Time (Bangkok)
+            Time ({getTimezoneDisplayName(timezone)})
           </label>
           <div className="flex items-center gap-2">
             <select
