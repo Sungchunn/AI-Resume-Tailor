@@ -44,6 +44,16 @@ export interface ResumePreviewProps {
   className?: string;
   scale?: number;
   showPageBorder?: boolean;
+  /** Currently hovered block ID (for interactive mode) */
+  hoveredBlockId?: string | null;
+  /** Callback when block hover state changes */
+  onBlockHover?: (blockId: string | null) => void;
+  /** Callback to move block up in order */
+  onMoveBlockUp?: (blockId: string) => void;
+  /** Callback to move block down in order */
+  onMoveBlockDown?: (blockId: string) => void;
+  /** Enable interactive mode with hover controls for reordering */
+  interactive?: boolean;
 }
 
 /**
