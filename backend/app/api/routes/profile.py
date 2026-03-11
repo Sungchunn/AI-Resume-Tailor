@@ -171,7 +171,7 @@ async def update_profile(
     current_user_id: Annotated[int, Depends(get_current_user_id)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ProfileResponse:
-    """Update user profile fields (headline, about_me).
+    """Update user profile fields (full_name, headline, about_me, timezone).
 
     Only provided fields will be updated. Pass null/None to clear a field.
     """
@@ -183,15 +183,21 @@ async def update_profile(
         )
 
     # Update only provided fields
+    if request.full_name is not None:
+        user.full_name = request.full_name if request.full_name else None
     if request.headline is not None:
         user.headline = request.headline if request.headline else None
     if request.about_me is not None:
         user.about_me = request.about_me if request.about_me else None
+    if request.timezone is not None:
+        user.timezone = request.timezone if request.timezone else "UTC"
 
     await db.commit()
     await db.refresh(user)
 
     return ProfileResponse(
+        full_name=user.full_name,
         headline=user.headline,
         about_me=user.about_me,
+        timezone=user.timezone,
     )
