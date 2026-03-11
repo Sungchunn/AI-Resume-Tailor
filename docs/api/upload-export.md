@@ -177,7 +177,16 @@ Binary file with appropriate headers:
 ```text
 Content-Type: application/pdf
 Content-Disposition: attachment; filename="tailored_resume.pdf"
+X-Page-Count: 1
+X-Overflows: false
 ```
+
+**Response Headers (PDF only):**
+
+| Header | Type | Description |
+| ------ | ---- | ----------- |
+| `X-Page-Count` | integer | Number of pages in the generated PDF |
+| `X-Overflows` | boolean | Whether content exceeds one page (`true`/`false`) |
 
 **Error Responses:**
 
@@ -293,7 +302,16 @@ Binary file with appropriate headers:
 ```text
 Content-Type: application/pdf
 Content-Disposition: attachment; filename="My_Resume.pdf"
+X-Page-Count: 1
+X-Overflows: false
 ```
+
+**Response Headers (PDF only):**
+
+| Header | Type | Description |
+| ------ | ---- | ----------- |
+| `X-Page-Count` | integer | Number of pages in the generated PDF |
+| `X-Overflows` | boolean | Whether content exceeds one page (`true`/`false`) |
 
 **Error Responses:**
 
