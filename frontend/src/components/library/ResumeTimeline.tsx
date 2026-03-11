@@ -20,6 +20,14 @@ interface TimelineGroup {
 }
 
 /**
+ * Parse timestamp ensuring UTC interpretation.
+ * Backend stores UTC but may omit 'Z' suffix.
+ */
+function parseTimestamp(timestamp: string): Date {
+  return new Date(timestamp.endsWith("Z") ? timestamp : timestamp + "Z");
+}
+
+/**
  * Groups resumes by month-year (e.g., "March 2026")
  * Returns groups sorted in descending order (most recent first)
  */
@@ -28,7 +36,7 @@ function groupResumesByMonth(resumes: ResumeResponse[]): TimelineGroup[] {
 
   for (const resume of resumes) {
     const dateToUse = resume.updated_at || resume.created_at;
-    const date = new Date(dateToUse);
+    const date = parseTimestamp(dateToUse);
     const monthYear = date.toLocaleDateString("en-US", {
       month: "long",
       year: "numeric",
@@ -156,7 +164,7 @@ function MinimalResumeRow({
   isDeleting,
   isSettingMaster,
 }: MinimalResumeRowProps) {
-  const createdDate = new Date(resume.created_at);
+  const createdDate = parseTimestamp(resume.created_at);
 
   // Format as "Mon DD, YYYY" and time as "h:mm AM/PM"
   const dateLabel = createdDate.toLocaleDateString("en-US", {
@@ -248,7 +256,7 @@ function ResumeTimelineCard({
   isSettingMaster,
 }: ResumeTimelineCardProps) {
   const lastUpdated = resume.updated_at || resume.created_at;
-  const formattedDate = new Date(lastUpdated).toLocaleDateString("en-US", {
+  const formattedDate = parseTimestamp(lastUpdated).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
   });
