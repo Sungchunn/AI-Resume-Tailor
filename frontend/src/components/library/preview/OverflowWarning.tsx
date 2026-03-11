@@ -23,7 +23,7 @@ export function OverflowWarning({
 
   return (
     <div className="mb-3 flex items-start gap-3 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-amber-800">
-      <AlertTriangle className="h-5 w-5 mt-0.5 text-amber-500 flex-shrink-0" />
+      <AlertTriangle className="h-5 w-5 mt-0.5 text-amber-500 shrink-0" />
       <div className="flex-1 text-sm">
         <p className="font-medium">
           {isFromExport
