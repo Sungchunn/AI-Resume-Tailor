@@ -1640,7 +1640,7 @@ function SkillInput({ onAdd }: { onAdd: (skill: string) => void }) {
       />
       <button
         type="submit"
-        className="px-3 py-1.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-md"
+        className="px-3 py-1.5 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-md"
       >
         Add
       </button>
