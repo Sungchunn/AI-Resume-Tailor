@@ -23,12 +23,14 @@ See: https://ai.google.dev/gemini-api/docs/embeddings
 """
 
 import asyncio
+import hashlib
+import time
 from abc import ABC, abstractmethod
 from enum import Enum
 from functools import lru_cache
-import hashlib
 
 from app.core.config import get_settings
+from app.services.ai.response import AIUsageMetrics, EmbeddingResponse, BatchEmbeddingResponse
 from app.services.core.pii_stripper import get_pii_stripper
 
 
@@ -71,6 +73,18 @@ class BaseEmbeddingService(ABC):
         """Return the embedding dimensions."""
         pass
 
+    @property
+    @abstractmethod
+    def provider_name(self) -> str:
+        """Return the provider name (e.g., 'openai', 'gemini')."""
+        pass
+
+    @property
+    @abstractmethod
+    def model_name(self) -> str:
+        """Return the model name being used."""
+        pass
+
     @abstractmethod
     async def _embed_impl(
         self,
@@ -79,6 +93,16 @@ class BaseEmbeddingService(ABC):
         title: str | None = None,
     ) -> list[float]:
         """Internal implementation of embedding generation."""
+        pass
+
+    @abstractmethod
+    async def _embed_impl_with_metrics(
+        self,
+        text: str,
+        task_type: EmbeddingTaskType,
+        title: str | None = None,
+    ) -> EmbeddingResponse:
+        """Internal implementation of embedding generation with metrics."""
         pass
 
     async def _embed(
@@ -101,6 +125,26 @@ class BaseEmbeddingService(ABC):
                 title = self._pii_stripper.strip(title)
 
         return await self._embed_impl(text, task_type, title)
+
+    async def _embed_with_metrics(
+        self,
+        text: str,
+        task_type: EmbeddingTaskType,
+        title: str | None = None,
+    ) -> EmbeddingResponse:
+        """
+        Generate embeddings with PII stripping and usage metrics.
+
+        SECURITY: PII is automatically stripped before embedding when
+        strip_pii=True (default).
+        """
+        # Strip PII before embedding (security measure)
+        if self._pii_stripper:
+            text = self._pii_stripper.strip(text)
+            if title:
+                title = self._pii_stripper.strip(title)
+
+        return await self._embed_impl_with_metrics(text, task_type, title)
 
     async def embed_document(self, content: str, title: str | None = None) -> list[float]:
         """
@@ -180,6 +224,73 @@ class BaseEmbeddingService(ABC):
 
         return embeddings
 
+    # --- Methods with metrics (for usage tracking) ---
+
+    async def embed_document_with_metrics(
+        self,
+        content: str,
+        title: str | None = None,
+    ) -> EmbeddingResponse:
+        """
+        Generate embedding for a DOCUMENT with usage metrics.
+
+        Use generate() for full response with metrics.
+        """
+        return await self._embed_with_metrics(
+            text=content,
+            task_type=EmbeddingTaskType.RETRIEVAL_DOCUMENT,
+            title=title,
+        )
+
+    async def embed_query_with_metrics(self, query: str) -> EmbeddingResponse:
+        """
+        Generate embedding for a QUERY with usage metrics.
+
+        Use this when you need both the embedding and usage metrics.
+        """
+        return await self._embed_with_metrics(
+            text=query,
+            task_type=EmbeddingTaskType.RETRIEVAL_QUERY,
+        )
+
+    async def embed_batch_documents_with_metrics(
+        self,
+        contents: list[str],
+        titles: list[str] | None = None,
+    ) -> BatchEmbeddingResponse:
+        """
+        Batch embed multiple documents with aggregated usage metrics.
+
+        Returns all embeddings and combined metrics.
+        """
+        if titles and len(titles) != len(contents):
+            raise ValueError("titles must have same length as contents")
+
+        embeddings = []
+        total_input_tokens = 0
+        total_latency_ms = 0
+
+        for i, content in enumerate(contents):
+            title = titles[i] if titles else None
+            response = await self.embed_document_with_metrics(content, title)
+            embeddings.append(response.embedding)
+            total_input_tokens += response.metrics.input_tokens
+            total_latency_ms += response.metrics.latency_ms
+
+        aggregated_metrics = AIUsageMetrics(
+            input_tokens=total_input_tokens,
+            output_tokens=0,
+            total_tokens=total_input_tokens,
+            latency_ms=total_latency_ms,
+        )
+
+        return BatchEmbeddingResponse(
+            embeddings=embeddings,
+            metrics=aggregated_metrics,
+            provider=self.provider_name,
+            model=self.model_name,
+        )
+
     @staticmethod
     def compute_content_hash(content: str) -> str:
         """
@@ -234,6 +345,14 @@ class GeminiEmbeddingService(BaseEmbeddingService):
     def dimensions(self) -> int:
         return self.EMBEDDING_DIMENSIONS
 
+    @property
+    def provider_name(self) -> str:
+        return "gemini"
+
+    @property
+    def model_name(self) -> str:
+        return self.model
+
     async def _embed_impl(
         self,
         text: str,
@@ -265,6 +384,58 @@ class GeminiEmbeddingService(BaseEmbeddingService):
             raise ValueError("Gemini API returned no embeddings")
         return list(result.embeddings[0].values)
 
+    async def _embed_impl_with_metrics(
+        self,
+        text: str,
+        task_type: EmbeddingTaskType,
+        title: str | None = None,
+    ) -> EmbeddingResponse:
+        from google.genai import types
+
+        # Prepare content - include title if provided for document embeddings
+        content = text
+        if title and task_type == EmbeddingTaskType.RETRIEVAL_DOCUMENT:
+            content = f"{title}\n\n{text}"
+
+        # Configure embedding request
+        config = types.EmbedContentConfig(
+            task_type=task_type.value,
+            output_dimensionality=self.EMBEDDING_DIMENSIONS,
+        )
+
+        start_time = time.perf_counter()
+
+        # Generate embedding (non-blocking)
+        result = await asyncio.to_thread(
+            self.client.models.embed_content,
+            model=self.model,
+            contents=content,
+            config=config,
+        )
+
+        latency_ms = int((time.perf_counter() - start_time) * 1000)
+
+        if not result.embeddings:
+            raise ValueError("Gemini API returned no embeddings")
+
+        # Extract token count if available
+        # Gemini embedding API may not return token counts
+        total_tokens = getattr(result, "total_tokens", 0) or 0
+
+        metrics = AIUsageMetrics(
+            input_tokens=total_tokens,
+            output_tokens=0,
+            total_tokens=total_tokens,
+            latency_ms=latency_ms,
+        )
+
+        return EmbeddingResponse(
+            embedding=list(result.embeddings[0].values),
+            metrics=metrics,
+            provider=self.provider_name,
+            model=self.model,
+        )
+
 
 class OpenAIEmbeddingService(BaseEmbeddingService):
     """
@@ -287,6 +458,14 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
     def dimensions(self) -> int:
         return self.EMBEDDING_DIMENSIONS
 
+    @property
+    def provider_name(self) -> str:
+        return "openai"
+
+    @property
+    def model_name(self) -> str:
+        return self.model
+
     async def _embed_impl(
         self,
         text: str,
@@ -306,6 +485,45 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
         )
 
         return result.data[0].embedding
+
+    async def _embed_impl_with_metrics(
+        self,
+        text: str,
+        task_type: EmbeddingTaskType,
+        title: str | None = None,
+    ) -> EmbeddingResponse:
+        # OpenAI doesn't have task_type, but we can still prepend title for context
+        content = text
+        if title and task_type == EmbeddingTaskType.RETRIEVAL_DOCUMENT:
+            content = f"{title}\n\n{text}"
+
+        start_time = time.perf_counter()
+
+        # Generate embedding (non-blocking)
+        result = await asyncio.to_thread(
+            self.client.embeddings.create,
+            model=self.model,
+            input=content,
+        )
+
+        latency_ms = int((time.perf_counter() - start_time) * 1000)
+
+        # Extract token usage from OpenAI response
+        total_tokens = result.usage.total_tokens if result.usage else 0
+
+        metrics = AIUsageMetrics(
+            input_tokens=total_tokens,
+            output_tokens=0,
+            total_tokens=total_tokens,
+            latency_ms=latency_ms,
+        )
+
+        return EmbeddingResponse(
+            embedding=result.data[0].embedding,
+            metrics=metrics,
+            provider=self.provider_name,
+            model=self.model,
+        )
 
 
 # Type alias for the service interface
