@@ -248,11 +248,13 @@ No response body.
 
 ```typescript
 {
-  id: string;                    // UUID
+  id: string;                    // MongoDB ObjectId
   title: string;
   raw_content: string;
-  owner_id: string;              // UUID of the user
-  parsed_content: object | null; // Parsed resume structure
+  user_id: number;               // User ID (FK to PostgreSQL users)
+  parsed: object | null;         // Parsed resume structure
+  parsed_verified: boolean;      // Whether parsed content has been verified
+  parsed_verified_at: string | null;  // ISO 8601 datetime when verified
   created_at: string;            // ISO 8601 datetime
   updated_at: string;            // ISO 8601 datetime
 }
@@ -288,6 +290,67 @@ When a resume is processed, the `parsed_content` field contains extracted inform
   "skills": ["Python", "AWS", "Kubernetes"]
 }
 ```
+
+---
+
+### Verify Parsed Resume
+
+Mark a resume's parsed content as verified by the user.
+
+```http
+PATCH /api/resumes/{resume_id}/verify-parsed
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+| --------- | ------ | ------------- |
+| `resume_id` | string | Resume identifier (MongoDB ObjectId) |
+
+**Prerequisites:**
+
+- Resume must exist and belong to the authenticated user
+- Resume must have parsed content (`parsed` field is not null)
+
+**Example Request:**
+
+```bash
+curl -X PATCH http://localhost:8000/api/resumes/65abc123def456789/verify-parsed \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response (200 OK):**
+
+Returns the updated `ResumeResponse` with `parsed_verified: true` and `parsed_verified_at` timestamp.
+
+```json
+{
+  "id": "65abc123def456789",
+  "title": "Senior Software Engineer Resume",
+  "raw_content": "...",
+  "user_id": 1,
+  "parsed": {...},
+  "parsed_verified": true,
+  "parsed_verified_at": "2026-03-12T10:30:00.000000Z",
+  "created_at": "2026-02-18T10:30:00.000000Z",
+  "updated_at": "2026-03-12T10:30:00.000000Z"
+}
+```
+
+**Error Responses:**
+
+| Status | Condition |
+| -------- | ----------- |
+| 400 | Resume must be parsed before it can be verified |
+| 403 | Resume belongs to another user |
+| 404 | Resume not found |
+
+**Usage Notes:**
+
+- This endpoint is idempotent - calling it on an already-verified resume returns the current state
+- Once verified, the resume can be used in tailoring flows
+- Tailoring is blocked for unverified resumes (see Parse-Once, Tailor-Many architecture)
+- The verification timestamp is automatically set when marking as verified
 
 ---
 
