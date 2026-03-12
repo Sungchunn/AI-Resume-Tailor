@@ -230,7 +230,7 @@ function MinimalResumeRow({
         >
           <EditIcon className="w-3.5 h-3.5" />
         </Link>
-        {!resume.is_master && (
+        {!resume.is_master && resume.parsed_verified && (
           <button
             onClick={() => onSetMaster(resume.id)}
             disabled={isSettingMaster}
@@ -316,7 +316,7 @@ function ResumeTimelineCard({
         >
           <EditIcon className="w-4 h-4" />
         </Link>
-        {!resume.is_master && (
+        {!resume.is_master && resume.parsed_verified && (
           <button
             onClick={() => onSetMaster(resume.id)}
             disabled={isSettingMaster}

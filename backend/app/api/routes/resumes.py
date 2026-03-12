@@ -175,13 +175,32 @@ async def set_master_resume(
     The master resume is the default resume used in tailoring flows.
     Only one resume can be the master at a time - setting a new master
     will automatically unset the previous one.
+
+    Prerequisites:
+    - Resume must be verified (parsed_verified = true)
     """
-    # set_master verifies ownership and handles the atomic update
-    resume = await resume_crud.set_master(mongo_db, id=resume_id, user_id=current_user_id)
-    if not resume:
+    # First verify ownership and check verification status
+    existing = await resume_crud.get(mongo_db, id=resume_id)
+    if not existing or existing.user_id != current_user_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Resume not found or not authorized",
+        )
+
+    # Check if resume is verified
+    if not getattr(existing, "parsed_verified", False):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Resume must be verified before setting as master. "
+                   "Please review and verify your parsed resume first.",
+        )
+
+    # set_master handles the atomic update
+    resume = await resume_crud.set_master(mongo_db, id=resume_id, user_id=current_user_id)
+    if not resume:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to set master resume",
         )
     return _to_response(resume)
 

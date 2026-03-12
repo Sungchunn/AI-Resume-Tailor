@@ -28,9 +28,11 @@ function TailorPageContent() {
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
 
-  const selectedResume = resumes?.find((r) => r.id === selectedResumeId);
+  // Only show verified resumes for tailoring
+  const verifiedResumes = resumes?.filter((r) => r.parsed_verified) ?? [];
+  const selectedResume = verifiedResumes.find((r) => r.id === selectedResumeId);
   const selectedJob = jobs?.find((j) => j.id === selectedJobId);
-  const hasResumes = resumes && resumes.length > 0;
+  const hasResumes = verifiedResumes.length > 0;
   const hasJobs = jobs && jobs.length > 0;
 
   // Check if we have a valid job listing from URL
@@ -99,15 +101,20 @@ function TailorPageContent() {
             Get Started with AI Tailoring
           </h3>
           <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-            To tailor a resume, you need at least one resume and one job
-            description. Add both to get started.
+            {!hasResumes && resumes && resumes.length > 0
+              ? "You have resumes, but none are verified yet. Verify a resume to enable tailoring."
+              : "To tailor a resume, you need at least one verified resume and one job description."}
           </p>
           <div className="flex items-center justify-center gap-4">
-            {!hasResumes && (
+            {!hasResumes && resumes && resumes.length > 0 ? (
+              <Link href="/library?tab=resumes" className="btn-primary">
+                View Resumes
+              </Link>
+            ) : !hasResumes ? (
               <Link href="/library/resumes/new" className="btn-primary">
                 Add Resume
               </Link>
-            )}
+            ) : null}
             {!hasJobs && !hasJobListingFromUrl && (
               <Link href="/library/jobs/new" className="btn-secondary">
                 Add Job Description
@@ -255,7 +262,7 @@ function TailorPageContent() {
                 </Link>
               </div>
               <div className="space-y-2 max-h-100 overflow-y-auto">
-                {resumes?.map((resume) => (
+                {verifiedResumes.map((resume) => (
                   <button
                     key={resume.id}
                     onClick={() => setSelectedResumeId(resume.id)}
