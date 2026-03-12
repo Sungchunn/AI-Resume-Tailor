@@ -6,7 +6,7 @@ Re-exports all analyzer classes for convenient importing.
 
 from .structure import StructureAnalyzer
 from .knockout import KnockoutAnalyzer
-from .keyword import KeywordAnalyzer
+from .keyword import KeywordAnalyzer  # keyword/ package
 from .content import ContentAnalyzer
 from .role import RoleAnalyzer
 
