@@ -80,7 +80,7 @@ export function SkillsEditor({ skills, onChange }: SkillsEditorProps) {
         <button
           type="submit"
           disabled={!inputValue.trim()}
-          className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed rounded-md transition-colors"
+          className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed rounded-md transition-colors"
         >
           Add
         </button>

@@ -289,7 +289,7 @@ function ErrorState({ id }: { id: string }) {
         <div className="mt-6 flex gap-3 justify-center">
           <Link
             href="/tailor"
-            className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-md"
+            className="btn-primary"
           >
             Back to Tailor
           </Link>

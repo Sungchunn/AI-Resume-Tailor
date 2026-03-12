@@ -239,7 +239,7 @@ export default function AdminScraperPage() {
                   onClick={() => setCount(preset)}
                   className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                     count === preset
-                      ? "bg-primary text-white"
+                      ? "bg-primary text-primary-foreground"
                       : "bg-muted text-foreground/80 hover:bg-accent"
                   }`}
                 >
@@ -287,7 +287,7 @@ export default function AdminScraperPage() {
             <button
               type="submit"
               disabled={isPending || !url || !isValidUrl}
-              className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="btn-primary px-5 py-2.5"
             >
               {isPending ? (
                 <>
