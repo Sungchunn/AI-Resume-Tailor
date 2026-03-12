@@ -99,6 +99,10 @@ export interface ResumeResponse extends ResumeBase {
   is_master: boolean; // Designates default resume for tailoring flows
   created_at: string;
   updated_at?: string | null;
+
+  // Parse-Once, Tailor-Many verification fields
+  parsed_verified: boolean;
+  parsed_verified_at: string | null;
 }
 
 export interface JobBase {
