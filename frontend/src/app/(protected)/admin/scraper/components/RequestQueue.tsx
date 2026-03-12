@@ -66,8 +66,8 @@ function ApproveModal({
                 }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    createPreset ? "translate-x-4" : "translate-x-0"
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out ${
+                    createPreset ? "translate-x-4 bg-primary-foreground" : "translate-x-0 bg-background"
                   }`}
                 />
               </button>
