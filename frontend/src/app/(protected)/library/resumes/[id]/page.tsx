@@ -358,10 +358,10 @@ export default function ResumeDetailPage({ params }: PageProps) {
 
         {activeTab === "plain" && resume.raw_content && (
           <div className="rounded-lg border border-border overflow-hidden bg-zinc-900 dark:bg-zinc-950">
-            <div className="max-h-[600px] overflow-auto">
+            <div className="max-h-150 overflow-auto">
               <div className="flex">
                 {/* Line Numbers Gutter */}
-                <div className="flex-shrink-0 bg-zinc-800 dark:bg-zinc-900 text-zinc-500 text-right select-none py-3 px-2 font-mono text-sm border-r border-zinc-700">
+                <div className="shrink-0 bg-zinc-800 dark:bg-zinc-900 text-zinc-500 text-right select-none py-3 px-2 font-mono text-sm border-r border-zinc-700">
                   {rawContentLines.map((_, index) => (
                     <div key={index} className="leading-6 h-6">
                       {index + 1}
@@ -382,7 +382,7 @@ export default function ResumeDetailPage({ params }: PageProps) {
         )}
 
         {activeTab === "formatted" && resume.raw_content && (
-          <div className="bg-muted rounded-lg p-4 border border-border max-h-[600px] overflow-auto text-sm leading-relaxed">
+          <div className="bg-muted rounded-lg p-4 border border-border max-h-150 overflow-auto text-sm leading-relaxed">
             {formattedContent}
           </div>
         )}
@@ -456,7 +456,7 @@ export default function ResumeDetailPage({ params }: PageProps) {
                 <div className="rounded-lg border border-border overflow-hidden bg-zinc-900 dark:bg-zinc-950 h-full">
                   <div className="flex h-full">
                     {/* Line Numbers Gutter */}
-                    <div className="flex-shrink-0 bg-zinc-800 dark:bg-zinc-900 text-zinc-500 text-right select-none py-3 px-2 font-mono text-sm border-r border-zinc-700">
+                    <div className="shrink-0 bg-zinc-800 dark:bg-zinc-900 text-zinc-500 text-right select-none py-3 px-2 font-mono text-sm border-r border-zinc-700">
                       {rawContentLines.map((_, index) => (
                         <div key={index} className="leading-6 h-6">
                           {index + 1}
