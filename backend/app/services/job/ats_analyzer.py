@@ -1077,15 +1077,15 @@ class ATSAnalyzer:
                 "Consider whether this role is a good fit or if you have transferable skills."
             )
 
-        return {
-            "format_score": 100,  # Not calculating format here, just keywords
-            "keyword_coverage": round(keyword_coverage, 2),
-            "matched_keywords": matched_keywords,
-            "missing_keywords": missing_keywords,
-            "missing_from_vault": missing_from_vault,
-            "warnings": warnings,
-            "suggestions": suggestions,
-        }
+        return ATSReportData(
+            format_score=100,  # Not calculating format here, just keywords
+            keyword_coverage=round(keyword_coverage, 2),
+            matched_keywords=matched_keywords,
+            missing_keywords=missing_keywords,
+            missing_from_vault=missing_from_vault,
+            warnings=warnings,
+            suggestions=suggestions,
+        )
 
     async def _extract_keywords(self, job_description: str) -> list[str]:
         """

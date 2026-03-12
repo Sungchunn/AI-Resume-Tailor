@@ -56,9 +56,9 @@ async def match_blocks(
     return MatchResponse(
         matches=[
             SemanticMatchResult(
-                block=BlockResponse.model_validate(m["block"]),
-                score=m["score"],
-                matched_keywords=m.get("matched_keywords", []),
+                block=BlockResponse.model_validate(m.block),
+                score=m.score,
+                matched_keywords=m.matched_keywords,
             )
             for m in matches
         ],
@@ -102,11 +102,11 @@ async def analyze_gaps(
     )
 
     return GapAnalysisResponse(
-        match_score=gap_analysis["match_score"],
-        skill_matches=gap_analysis["skill_matches"],
-        skill_gaps=gap_analysis["skill_gaps"],
-        keyword_coverage=gap_analysis["keyword_coverage"],
-        recommendations=gap_analysis["recommendations"],
+        match_score=gap_analysis.match_score,
+        skill_matches=gap_analysis.skill_matches,
+        skill_gaps=gap_analysis.skill_gaps,
+        keyword_coverage=gap_analysis.keyword_coverage,
+        recommendations=gap_analysis.recommendations,
     )
 
 
@@ -165,9 +165,9 @@ async def get_cached_match(
     result = MatchResponse(
         matches=[
             SemanticMatchResult(
-                block=BlockResponse.model_validate(m["block"]),
-                score=m["score"],
-                matched_keywords=m.get("matched_keywords", []),
+                block=BlockResponse.model_validate(m.block),
+                score=m.score,
+                matched_keywords=m.matched_keywords,
             )
             for m in matches
         ],

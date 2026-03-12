@@ -988,7 +988,7 @@ async def analyze_keywords(
     if request.resume_block_ids:
         resume_blocks = [
             block for block in vault_blocks
-            if block["id"] in request.resume_block_ids
+            if block.id in request.resume_block_ids
         ]
     else:
         resume_blocks = vault_blocks
@@ -1006,12 +1006,12 @@ async def analyze_keywords(
     )
 
     return ATSKeywordResponse(
-        keyword_coverage=result["keyword_coverage"],
-        matched_keywords=result["matched_keywords"],
-        missing_keywords=result["missing_keywords"],
-        missing_from_vault=result["missing_from_vault"],
-        warnings=result["warnings"],
-        suggestions=result["suggestions"],
+        keyword_coverage=result.keyword_coverage,
+        matched_keywords=result.matched_keywords,
+        missing_keywords=result.missing_keywords,
+        missing_from_vault=result.missing_from_vault,
+        warnings=result.warnings,
+        suggestions=result.suggestions,
     )
 
 
@@ -1046,7 +1046,7 @@ async def analyze_keywords_detailed(
         # Use specified block IDs
         resume_blocks = [
             block for block in vault_blocks
-            if block["id"] in request.resume_block_ids
+            if block.id in request.resume_block_ids
         ]
     else:
         # Use all vault blocks as resume
@@ -1488,11 +1488,11 @@ from sse_starlette.sse import EventSourceResponse
 class ATSProgressiveRequest(BaseModel):
     """Request for progressive ATS analysis with SSE streaming."""
 
-    resume_id: int | None = Field(None, description="Resume database ID")
-    job_id: int | None = Field(None, description="Job database ID")
-    resume_content: dict | None = Field(None, description="Raw resume content")
-    job_description: str | None = Field(None, description="Raw job description text")
-    job_content: dict | None = Field(None, description="Parsed job content for role proximity")
+    resume_id: int | None = Field(default=None, description="Resume database ID")
+    job_id: int | None = Field(default=None, description="Job database ID")
+    resume_content: dict | None = Field(default=None, description="Raw resume content")
+    job_description: str | None = Field(default=None, description="Raw job description text")
+    job_content: dict | None = Field(default=None, description="Parsed job content for role proximity")
 
 
 class ATSStageProgress(BaseModel):
@@ -1634,16 +1634,16 @@ async def analyze_progressive_ats(
                         "data": json.dumps({"error": "Job listing not found"})
                     }
                     return
-                job_description = job_listing.job_description or ""
+                job_description = str(job_listing.job_description or "")
                 effective_job_id = job_listing_id
                 # Build job_content from structured fields for role proximity
                 job_content = {
-                    "title": job_listing.job_title,
-                    "company": job_listing.company_name,
-                    "location": job_listing.location,
-                    "seniority": job_listing.seniority,
-                    "job_function": job_listing.job_function,
-                    "industry": job_listing.industry,
+                    "title": str(job_listing.job_title or ""),
+                    "company": str(job_listing.company_name or ""),
+                    "location": str(job_listing.location or ""),
+                    "seniority": str(job_listing.seniority or ""),
+                    "job_function": str(job_listing.job_function or ""),
+                    "industry": str(job_listing.industry or ""),
                     "description": job_description,
                 }
             elif job_id:
@@ -1655,15 +1655,16 @@ async def analyze_progressive_ats(
                         "data": json.dumps({"error": "Job not found or not authorized"})
                     }
                     return
-                job_description = job.raw_content or ""
+                job_description = str(job.raw_content or "")
                 effective_job_id = job_id
                 # Use parsed_content if available, otherwise build minimal dict
-                if job.parsed_content:
-                    job_content = job.parsed_content
+                parsed = job.parsed_content
+                if parsed and isinstance(parsed, dict):
+                    job_content = parsed
                 else:
                     job_content = {
-                        "title": job.title if hasattr(job, 'title') else "",
-                        "company": job.company if hasattr(job, 'company') else "",
+                        "title": str(getattr(job, 'title', "") or ""),
+                        "company": str(getattr(job, 'company', "") or ""),
                         "description": job_description,
                     }
 

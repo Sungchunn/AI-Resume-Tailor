@@ -19,21 +19,21 @@ from app.core.protocols import (
 
 
 def _block_to_data(block: ExperienceBlock) -> ExperienceBlockData:
-    """Convert ExperienceBlock model to ExperienceBlockData TypedDict."""
-    return {
-        "id": block.id,
-        "user_id": block.user_id,
-        "content": block.content,
-        "block_type": block.block_type,
-        "tags": block.tags or [],
-        "source_company": block.source_company,
-        "source_role": block.source_role,
-        "source_date_start": block.source_date_start.isoformat() if block.source_date_start else None,
-        "source_date_end": block.source_date_end.isoformat() if block.source_date_end else None,
-        "verified": block.verified,
-        "created_at": block.created_at.isoformat() if block.created_at else None,
-        "updated_at": block.updated_at.isoformat() if block.updated_at else None,
-    }
+    """Convert ExperienceBlock model to ExperienceBlockData Pydantic model."""
+    return ExperienceBlockData(
+        id=block.id,
+        user_id=block.user_id,
+        content=block.content,
+        block_type=block.block_type,
+        tags=block.tags or [],
+        source_company=block.source_company,
+        source_role=block.source_role,
+        source_date_start=block.source_date_start,
+        source_date_end=block.source_date_end,
+        verified=block.verified,
+        created_at=block.created_at,
+        updated_at=block.updated_at,
+    )
 
 
 class BlockRepository:
@@ -307,11 +307,11 @@ class BlockRepository:
         for row in result.all():
             block = row[0]
             similarity = row[1]
-            matches.append({
-                "block": _block_to_data(block),
-                "score": float(similarity) if similarity else 0.0,
-                "matched_keywords": [],  # Populated by SemanticMatcher service
-            })
+            matches.append(SemanticMatchData(
+                block=_block_to_data(block),
+                score=float(similarity) if similarity else 0.0,
+                matched_keywords=[],  # Populated by SemanticMatcher service
+            ))
 
         return matches
 

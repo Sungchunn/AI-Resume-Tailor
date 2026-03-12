@@ -79,40 +79,40 @@ class WriteBackService:
 
             if original_block:
                 # Calculate changes
-                if original_block["content"] != edited_content:
+                if original_block.content != edited_content:
                     changes.append("Content modified")
-                if original_block["block_type"] != block_type.value:
-                    changes.append(f"Type changed from {original_block['block_type']} to {block_type.value}")
-                if set(original_block.get("tags", [])) != set(tags):
+                if original_block.block_type != block_type.value:
+                    changes.append(f"Type changed from {original_block.block_type} to {block_type.value}")
+                if set(original_block.tags or []) != set(tags):
                     changes.append("Tags updated")
 
         # Build preview
-        now = datetime.now(timezone.utc).isoformat()
-        preview: ExperienceBlockData = {
-            "id": source_block_id or 0,  # 0 indicates new
-            "user_id": user_id,
-            "content": edited_content,
-            "block_type": block_type.value,
-            "tags": tags,
-            "source_company": original_block.get("source_company") if original_block else None,
-            "source_role": original_block.get("source_role") if original_block else None,
-            "source_date_start": original_block.get("source_date_start") if original_block else None,
-            "source_date_end": original_block.get("source_date_end") if original_block else None,
-            "verified": False,  # New/edited content needs re-verification
-            "created_at": original_block.get("created_at") if original_block else now,
-            "updated_at": now if original_block else None,
-        }
+        now = datetime.now(timezone.utc)
+        preview = ExperienceBlockData(
+            id=source_block_id or 0,  # 0 indicates new
+            user_id=user_id,
+            content=edited_content,
+            block_type=block_type.value,
+            tags=tags,
+            source_company=original_block.source_company if original_block else None,
+            source_role=original_block.source_role if original_block else None,
+            source_date_start=original_block.source_date_start if original_block else None,
+            source_date_end=original_block.source_date_end if original_block else None,
+            verified=False,  # New/edited content needs re-verification
+            created_at=original_block.created_at if original_block else now,
+            updated_at=now if original_block else None,
+        )
 
         action = "update" if original_block else "create"
         if not changes and original_block:
             changes.append("No changes detected")
 
-        return {
-            "action": action,
-            "preview": preview,
-            "original": original_block,
-            "changes": changes,
-        }
+        return WritebackProposalData(
+            action=action,
+            preview=preview,
+            original=original_block,
+            changes=changes,
+        )
 
     async def execute_writeback(
         self,
