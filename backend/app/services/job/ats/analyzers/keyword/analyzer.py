@@ -8,6 +8,7 @@ import re
 from typing import Any
 
 from app.core.protocols import ExperienceBlockData, ATSReportData
+from app.services.ai.response import AIResponse
 
 from ...constants import KeywordImportance
 from ...models import (
@@ -359,7 +360,8 @@ class KeywordAnalyzer:
         parsed_resume: dict[str, Any],
         job_description: str,
         vault_blocks: list[ExperienceBlockData],
-    ) -> EnhancedKeywordAnalysis:
+        return_metrics: bool = False,
+    ) -> EnhancedKeywordAnalysis | tuple[EnhancedKeywordAnalysis, AIResponse | None]:
         """
         Perform enhanced keyword analysis with Stage 2 scoring.
 
@@ -373,14 +375,17 @@ class KeywordAnalyzer:
             parsed_resume: Parsed resume content as structured dictionary
             job_description: Target job requirements text
             vault_blocks: All user's Vault blocks (for gap analysis)
+            return_metrics: If True, return (result, AIResponse) tuple
 
         Returns:
-            EnhancedKeywordAnalysis with weighted scores and detailed breakdown
+            EnhancedKeywordAnalysis with weighted scores and detailed breakdown.
+            If return_metrics=True, returns (EnhancedKeywordAnalysis, AIResponse | None).
         """
         # Extract keywords with enhanced importance
-        keywords_with_importance = await self._extractor.extract_keywords_with_importance_enhanced(
-            job_description
+        extraction_result = await self._extractor.extract_keywords_with_importance_enhanced(
+            job_description, return_metrics=True
         )
+        keywords_with_importance, ai_metrics = extraction_result
 
         # Build vault text for checking availability
         vault_text = " ".join(
@@ -568,7 +573,7 @@ class KeywordAnalyzer:
                 "Consider if you have transferable skills or if this role is a good fit."
             )
 
-        return EnhancedKeywordAnalysis(
+        result = EnhancedKeywordAnalysis(
             keyword_score=round(keyword_score, 1),
             raw_coverage=round(raw_coverage, 1),
             required_coverage=round(required_coverage, 2),
@@ -593,3 +598,5 @@ class KeywordAnalyzer:
             suggestions=suggestions,
             warnings=warnings,
         )
+
+        return (result, ai_metrics) if return_metrics else result

@@ -6,6 +6,7 @@ Orchestrates all ATS stages with real-time progress streaming.
 
 import json
 import time
+from dataclasses import asdict
 
 from fastapi import APIRouter, Depends, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -17,6 +18,8 @@ from app.crud.job import JobCRUD
 from app.crud.job_listing import JobListingRepository
 from app.crud.mongo.resume import ResumeCRUD as MongoResumeCRUD
 from app.services.core.cache import get_cache_service
+from app.services.ai import get_usage_tracker
+from app.services.ai.response import AIResponse, AccumulatedMetrics
 
 from app.schemas.ats import ATSProgressiveRequest
 
@@ -84,6 +87,8 @@ async def analyze_progressive_ats(
         effective_job_id: int | None = None
         parsed_resume_content: dict = {}
         job_description: str = ""
+        # Track AI metrics across all stages
+        accumulated_metrics = AccumulatedMetrics()
 
         # Stage metadata
         stages = [
@@ -219,6 +224,7 @@ async def analyze_progressive_ats(
                         "knockout_risks": cached_knockout_risks,
                         "from_cache": True,
                         "cached_at": cached_at,
+                        "ai_metrics": None,  # No AI calls on cache hit
                     })
                 }
                 return
@@ -251,7 +257,10 @@ async def analyze_progressive_ats(
                     elif stage_num == 1:
                         result = await execute_structure_analysis(request, user_id, db)
                     elif stage_num == 2:
-                        result = await execute_keyword_analysis(request, user_id, db)
+                        # Keyword analysis returns (result, ai_metrics) tuple
+                        result, ai_metrics = await execute_keyword_analysis(request, user_id, db)
+                        if ai_metrics:
+                            accumulated_metrics.add(ai_metrics)
                     elif stage_num == 3:
                         result = await execute_content_quality(request, user_id, db)
                     elif stage_num == 4:
@@ -327,6 +336,31 @@ async def analyze_progressive_ats(
                     knockout_data = knockout_result
                 knockout_risks = knockout_data.get("risks", [])
 
+            # Build ai_metrics for the response
+            ai_metrics_data = None
+            if accumulated_metrics.call_count > 0:
+                # Log AI usage to database
+                usage_tracker = get_usage_tracker()
+                ai_response = accumulated_metrics.to_ai_response()
+                await usage_tracker.log_generation(
+                    db=db,
+                    user_id=user_id,
+                    endpoint="/ats/analyze-progressive",
+                    response=ai_response,
+                )
+                await db.commit()
+
+                # Include metrics in response
+                ai_metrics_data = {
+                    "input_tokens": ai_response.metrics.input_tokens,
+                    "output_tokens": ai_response.metrics.output_tokens,
+                    "total_tokens": ai_response.metrics.total_tokens,
+                    "latency_ms": ai_response.metrics.latency_ms,
+                    "provider": ai_response.provider,
+                    "model": ai_response.model,
+                    "call_count": accumulated_metrics.call_count,
+                }
+
             yield {
                 "event": "complete",
                 "data": json.dumps({
@@ -338,6 +372,7 @@ async def analyze_progressive_ats(
                     "composite_score": composite_score.model_dump(),
                     "knockout_risks": knockout_risks,
                     "from_cache": False,
+                    "ai_metrics": ai_metrics_data,
                 })
             }
 

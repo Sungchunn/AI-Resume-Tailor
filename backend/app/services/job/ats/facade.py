@@ -9,6 +9,7 @@ from functools import lru_cache
 from typing import Any
 
 from app.core.protocols import ExperienceBlockData, ATSReportData
+from app.services.ai.response import AIResponse
 
 from .models import (
     KnockoutCheckResult,
@@ -158,7 +159,8 @@ class ATSAnalyzer:
         parsed_resume: dict[str, Any],
         job_description: str,
         vault_blocks: list[ExperienceBlockData],
-    ) -> EnhancedKeywordAnalysis:
+        return_metrics: bool = False,
+    ) -> EnhancedKeywordAnalysis | tuple[EnhancedKeywordAnalysis, AIResponse | None]:
         """
         Perform enhanced keyword analysis with Stage 2 scoring.
 
@@ -166,12 +168,14 @@ class ATSAnalyzer:
             parsed_resume: Parsed resume content as structured dictionary
             job_description: Target job requirements text
             vault_blocks: All user's Vault blocks (for gap analysis)
+            return_metrics: If True, return (result, AIResponse) tuple
 
         Returns:
-            EnhancedKeywordAnalysis with weighted scores and detailed breakdown
+            EnhancedKeywordAnalysis with weighted scores and detailed breakdown.
+            If return_metrics=True, returns (EnhancedKeywordAnalysis, AIResponse | None).
         """
         return await self._keyword_analyzer.analyze_keywords_enhanced(
-            parsed_resume, job_description, vault_blocks
+            parsed_resume, job_description, vault_blocks, return_metrics=return_metrics
         )
 
     # ============================================================
