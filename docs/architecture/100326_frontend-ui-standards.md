@@ -64,9 +64,79 @@ Use zinc greys to create clear visual separation between layers:
 
 ---
 
+## Buttons
+
+**CRITICAL:** Never hardcode `text-white` on primary buttons. In dark mode, `bg-primary` becomes white, causing invisible white-on-white text.
+
+### Use Utility Classes (Preferred)
+
+The codebase provides pre-styled button classes in `globals.css`. Always use these:
+
+```tsx
+// PRIMARY - Main actions (submit, save, confirm)
+<button className="btn-primary">Save Changes</button>
+
+// SECONDARY - Secondary actions (cancel, back)
+<button className="btn-secondary">Cancel</button>
+
+// GHOST - Minimal/subtle actions
+<button className="btn-ghost">Options</button>
+
+// DESTRUCTIVE - Dangerous actions (delete, remove)
+<button className="btn-destructive">Delete</button>
+```
+
+### Manual Styling (When Necessary)
+
+If you must style buttons manually, **always** use semantic color tokens:
+
+| Element | Correct | Wrong |
+| ----- | ----- | ----- |
+| Primary button text | `text-primary-foreground` | `text-white` |
+| Primary button bg | `bg-primary` | `bg-black` |
+| Secondary button | `bg-secondary text-secondary-foreground` | `bg-gray-200 text-gray-800` |
+
+```tsx
+// CORRECT - Uses semantic tokens that adapt to light/dark mode
+<button className="bg-primary text-primary-foreground hover:bg-primary/90">
+  Save Changes
+</button>
+
+// WRONG - Hardcoded colors break in dark mode
+<button className="bg-primary text-white hover:bg-primary/90">
+  Save Changes  {/* White text on white bg in dark mode! */}
+</button>
+```
+
+### Special Buttons (Amber, Red, Green)
+
+For semantic colors like warnings or success states, pair them correctly:
+
+```tsx
+// Warning/Amber button
+<button className="bg-amber-600 text-white hover:bg-amber-700">
+  Warning Action
+</button>
+
+// Success/Green button
+<button className="bg-green-600 text-white hover:bg-green-700">
+  Confirm
+</button>
+
+// Danger/Red button (or use btn-destructive)
+<button className="bg-red-600 text-white hover:bg-red-700">
+  Delete
+</button>
+```
+
+These explicit color pairs (e.g., `bg-amber-600 text-white`) are safe because the background is a fixed color, not a semantic token that changes between modes.
+
+---
+
 ## Key Principles
 
 1. **Layer separation:** Each nested layer should be visibly distinct from its parent
 2. **Brighter in dark mode:** Use explicit `dark:` classes to ensure adequate contrast
 3. **Vibrant accents:** Primary/active states should "pop" - use `blue-400` instead of muted blues
 4. **Consistent zinc scale:** Stick to the zinc grey palette for backgrounds (zinc-600 through zinc-800)
+5. **Never hardcode `text-white` with `bg-primary`:** Use `text-primary-foreground` for proper dark mode contrast
