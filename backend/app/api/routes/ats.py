@@ -4,822 +4,70 @@ ATS Analysis API Routes
 Provides endpoints for ATS (Applicant Tracking System) compatibility analysis.
 """
 
-from typing import Literal
+import json
+import time
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
+from sse_starlette.sse import EventSourceResponse
 
 from app.api.deps import get_current_user_id, get_current_user_id_sse, get_db, get_mongo_db
 from app.crud.block import BlockRepository
 from app.crud.job import JobCRUD
 from app.crud.job_listing import JobListingRepository
 from app.crud.mongo.resume import ResumeCRUD as MongoResumeCRUD
-from app.services.job.ats_analyzer import (
-    get_ats_analyzer,
-    KnockoutRiskType,
-    KnockoutSeverity,
-    KeywordMatch,
-    EnhancedKeywordDetail,
-    EnhancedKeywordAnalysis,
-    ContentQualityResult,
-    BulletAnalysis,
-    BlockTypeAnalysis,
-    QuantificationAnalysis,
-    ActionVerbAnalysis,
-    # Stage 4: Role Proximity
-    TitleMatchResult,
-    TrajectoryResult,
-    IndustryAlignmentResult,
-    RoleProximityResult,
-    TrajectoryType,
-)
+from app.services.job.ats_analyzer import get_ats_analyzer
 from app.services.resume.parser import ResumeParser
 from app.services.job.analyzer import JobAnalyzer
 from app.services.ai.client import get_ai_client
 from app.services.core.cache import get_cache_service
-from app.core.protocols import ATSReportData
+
+# Import all schemas from the modularized schema package
+from app.schemas.ats import (
+    # Stage 0: Knockout
+    KnockoutCheckRequest,
+    KnockoutCheckResponse,
+    KnockoutRiskResponse,
+    # Stage 1: Structure
+    ATSStructureRequest,
+    ATSStructureResponse,
+    SectionOrderDetails,
+    # Stage 2: Keywords
+    ATSKeywordRequest,
+    ATSKeywordResponse,
+    ATSTipsResponse,
+    KeywordDetailResponse,
+    ATSKeywordDetailedRequest,
+    ATSKeywordDetailedResponse,
+    KeywordMatchResponse,
+    EnhancedKeywordDetailResponse,
+    GapAnalysisItem,
+    ATSKeywordEnhancedRequest,
+    ATSKeywordEnhancedResponse,
+    # Stage 3: Content Quality
+    BlockTypeAnalysisResponse,
+    QuantificationAnalysisResponse,
+    ActionVerbAnalysisResponse,
+    ContentQualityRequest,
+    ContentQualityResponse,
+    # Stage 4: Role Proximity
+    RoleProximityRequest,
+    RoleProximityResponse,
+    TitleMatchResponse,
+    TrajectoryResponse,
+    IndustryAlignmentResponse,
+    # Progressive SSE
+    ATSProgressiveRequest,
+    ATSCompositeScore,
+)
 
 router = APIRouter()
 
 
-# Importance level types
-KeywordImportanceLevel = Literal["required", "preferred", "nice_to_have"]
-# Stage 2: Enhanced importance level with strongly_preferred
-KeywordImportanceLevelEnhanced = Literal["required", "strongly_preferred", "preferred", "nice_to_have"]
-
-
-class ATSStructureRequest(BaseModel):
-    """Request for ATS structure analysis."""
-
-    resume_content: dict = Field(
-        ..., description="Parsed resume content as dictionary"
-    )
-
-
-class SectionOrderDetails(BaseModel):
-    """Details about section order validation."""
-
-    detected_order: list[str] = Field(
-        ..., description="Sections in the order they appear in the resume"
-    )
-    expected_order: list[str] = Field(
-        ..., description="The standard expected order for detected sections"
-    )
-    deviation_type: Literal["standard", "minor", "major", "non_standard"] = Field(
-        ..., description="Type of deviation from standard order"
-    )
-    issues: list[str] = Field(
-        default_factory=list, description="Specific order issues found"
-    )
-
-
-class ATSStructureResponse(BaseModel):
-    """Response for ATS structure analysis."""
-
-    format_score: int = Field(..., description="Format compatibility score 0-100")
-    sections_found: list[str] = Field(
-        ..., description="Standard sections found in resume"
-    )
-    sections_missing: list[str] = Field(
-        ..., description="Standard sections missing from resume"
-    )
-    section_order_score: int = Field(
-        ...,
-        ge=75,
-        le=100,
-        description="Section order score (75-100). Scores: 100=standard, 95=minor deviation, 85=major deviation, 75=non-standard"
-    )
-    section_order_details: SectionOrderDetails = Field(
-        ..., description="Detailed section order analysis"
-    )
-    warnings: list[str] = Field(..., description="Potential issues found")
-    suggestions: list[str] = Field(..., description="Improvement suggestions")
-
-
-class ATSKeywordRequest(BaseModel):
-    """Request for ATS keyword analysis."""
-
-    job_description: str = Field(
-        ..., min_length=50, description="Job description to analyze against"
-    )
-    resume_block_ids: list[int] | None = Field(
-        None, description="Block IDs to use for resume (uses all if not provided)"
-    )
-
-
-class ATSKeywordResponse(BaseModel):
-    """Response for ATS keyword analysis."""
-
-    keyword_coverage: float = Field(
-        ..., ge=0, le=1, description="Keyword coverage 0-1"
-    )
-    matched_keywords: list[str] = Field(
-        ..., description="Keywords found in resume"
-    )
-    missing_keywords: list[str] = Field(
-        ..., description="Keywords in job but not in resume (available in vault)"
-    )
-    missing_from_vault: list[str] = Field(
-        ..., description="Keywords not found in user's vault"
-    )
-    warnings: list[str] = Field(..., description="Important warnings")
-    suggestions: list[str] = Field(..., description="Actionable suggestions")
-
-
-class ATSTipsResponse(BaseModel):
-    """Response for ATS optimization tips."""
-
-    tips: list[str] = Field(..., description="General ATS optimization tips")
-
-
-class KeywordDetailResponse(BaseModel):
-    """Detailed information about a single keyword."""
-
-    keyword: str = Field(..., description="The keyword/phrase")
-    importance: KeywordImportanceLevel = Field(
-        ..., description="Importance level: required, preferred, or nice_to_have"
-    )
-    found_in_resume: bool = Field(..., description="Whether keyword is in resume")
-    found_in_vault: bool = Field(..., description="Whether keyword is in vault")
-    frequency_in_job: int = Field(
-        ..., description="How many times keyword appears in job description"
-    )
-    context: str | None = Field(
-        None, description="Sample context from job description"
-    )
-
-
-class ATSKeywordDetailedRequest(BaseModel):
-    """Request for detailed ATS keyword analysis."""
-
-    job_description: str = Field(
-        ..., min_length=50, description="Job description to analyze against"
-    )
-    resume_content: str | None = Field(
-        None, description="Resume text content to analyze (uses vault blocks if not provided)"
-    )
-    resume_block_ids: list[int] | None = Field(
-        None, description="Block IDs to use for resume (uses all if not provided)"
-    )
-
-
-class ATSKeywordDetailedResponse(BaseModel):
-    """Detailed response for ATS keyword analysis with importance grouping."""
-
-    coverage_score: float = Field(
-        ..., ge=0, le=1, description="Overall keyword coverage 0-1"
-    )
-    required_coverage: float = Field(
-        ..., ge=0, le=1, description="Coverage of required keywords 0-1"
-    )
-    preferred_coverage: float = Field(
-        ..., ge=0, le=1, description="Coverage of preferred keywords 0-1"
-    )
-
-    # Grouped by importance
-    required_matched: list[str] = Field(
-        ..., description="Required keywords found in resume"
-    )
-    required_missing: list[str] = Field(
-        ..., description="Required keywords missing from resume"
-    )
-    preferred_matched: list[str] = Field(
-        ..., description="Preferred keywords found in resume"
-    )
-    preferred_missing: list[str] = Field(
-        ..., description="Preferred keywords missing from resume"
-    )
-    nice_to_have_matched: list[str] = Field(
-        ..., description="Nice-to-have keywords found in resume"
-    )
-    nice_to_have_missing: list[str] = Field(
-        ..., description="Nice-to-have keywords missing from resume"
-    )
-
-    # Vault availability
-    missing_available_in_vault: list[str] = Field(
-        ..., description="Missing keywords that exist in user's vault"
-    )
-    missing_not_in_vault: list[str] = Field(
-        ..., description="Missing keywords not found in vault"
-    )
-
-    # Full keyword details
-    all_keywords: list[KeywordDetailResponse] = Field(
-        ..., description="Detailed info for all extracted keywords"
-    )
-
-    # Suggestions and warnings
-    suggestions: list[str] = Field(..., description="Actionable suggestions")
-    warnings: list[str] = Field(..., description="Important warnings")
-
-
 # ============================================================
-# Stage 2: Enhanced Keyword Analysis Models
+# Stage 0: Knockout Check
 # ============================================================
-
-
-class KeywordMatchResponse(BaseModel):
-    """A single match of a keyword in the resume."""
-
-    section: str = Field(
-        ..., description="Section where the match was found (experience, skills, etc.)"
-    )
-    role_index: int | None = Field(
-        None, description="Index of the role (0 = most recent) if in experience section"
-    )
-    text_snippet: str | None = Field(
-        None, description="Text snippet around the match"
-    )
-
-
-class EnhancedKeywordDetailResponse(BaseModel):
-    """Enhanced keyword detail with Stage 2 scoring components."""
-
-    keyword: str = Field(..., description="The keyword/phrase")
-    importance: KeywordImportanceLevelEnhanced = Field(
-        ..., description="Importance level: required, strongly_preferred, preferred, or nice_to_have"
-    )
-    found_in_resume: bool = Field(..., description="Whether keyword is in resume")
-    found_in_vault: bool = Field(..., description="Whether keyword is in vault")
-    frequency_in_job: int = Field(
-        ..., description="How many times keyword appears in job description"
-    )
-    context: str | None = Field(
-        None, description="Sample context from job description"
-    )
-
-    # Stage 2 enhancements
-    matches: list[KeywordMatchResponse] = Field(
-        default_factory=list, description="All matches found in resume"
-    )
-    occurrence_count: int = Field(
-        default=0, description="Total occurrences in resume"
-    )
-
-    # Calculated scores
-    base_score: float = Field(default=0.0, description="Base score (0 or 1)")
-    placement_score: float = Field(
-        default=0.0, description="Placement weight score (Stage 2.1)"
-    )
-    density_score: float = Field(
-        default=0.0, description="Density multiplier score (Stage 2.2)"
-    )
-    recency_score: float = Field(
-        default=0.0, description="Recency weight score (Stage 2.3)"
-    )
-    importance_weight: float = Field(
-        default=1.0, description="Importance tier multiplier (Stage 2.4)"
-    )
-    weighted_score: float = Field(
-        default=0.0, description="Final weighted score for this keyword"
-    )
-
-
-class GapAnalysisItem(BaseModel):
-    """Gap analysis item for missing keywords."""
-
-    keyword: str = Field(..., description="The missing keyword")
-    importance: KeywordImportanceLevelEnhanced = Field(
-        ..., description="Importance level"
-    )
-    in_vault: bool = Field(..., description="Whether keyword exists in vault")
-    suggestion: str = Field(..., description="Suggestion for addressing the gap")
-
-
-class ATSKeywordEnhancedRequest(BaseModel):
-    """Request for Stage 2 enhanced ATS keyword analysis."""
-
-    job_description: str = Field(
-        ..., min_length=50, description="Job description to analyze against"
-    )
-    resume_id: int | None = Field(
-        None, description="Resume ID to analyze (uses parsed_content from database)"
-    )
-    resume_content: dict | None = Field(
-        None, description="Parsed resume content as dictionary (fallback if resume_id not provided)"
-    )
-
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {
-                    "job_description": "We are looking for a Senior Software Engineer with 5+ years of Python experience. Must have AWS and Docker expertise. Kubernetes experience is strongly preferred.",
-                    "resume_id": 123,
-                },
-            ]
-        }
-    }
-
-
-class ATSKeywordEnhancedResponse(BaseModel):
-    """Response for Stage 2 enhanced ATS keyword analysis."""
-
-    # Overall scores
-    keyword_score: float = Field(
-        ..., ge=0, le=100,
-        description="Final weighted keyword score (0-100) accounting for placement, density, recency, and importance"
-    )
-    raw_coverage: float = Field(
-        ..., ge=0, le=100,
-        description="Simple coverage percentage (matched/total * 100)"
-    )
-
-    # Coverage by importance tier
-    required_coverage: float = Field(
-        ..., ge=0, le=1, description="Coverage of required keywords (0-1)"
-    )
-    strongly_preferred_coverage: float = Field(
-        ..., ge=0, le=1, description="Coverage of strongly preferred keywords (0-1)"
-    )
-    preferred_coverage: float = Field(
-        ..., ge=0, le=1, description="Coverage of preferred keywords (0-1)"
-    )
-    nice_to_have_coverage: float = Field(
-        ..., ge=0, le=1, description="Coverage of nice-to-have keywords (0-1)"
-    )
-
-    # Score breakdown - how much each factor contributed
-    placement_contribution: float = Field(
-        ..., description="Placement weighting contribution to score (%)"
-    )
-    density_contribution: float = Field(
-        ..., description="Density scoring contribution to score (%)"
-    )
-    recency_contribution: float = Field(
-        ..., description="Recency weighting contribution to score (%)"
-    )
-
-    # Grouped by importance
-    required_matched: list[str] = Field(
-        ..., description="Required keywords found in resume"
-    )
-    required_missing: list[str] = Field(
-        ..., description="Required keywords missing from resume"
-    )
-    strongly_preferred_matched: list[str] = Field(
-        ..., description="Strongly preferred keywords found in resume"
-    )
-    strongly_preferred_missing: list[str] = Field(
-        ..., description="Strongly preferred keywords missing from resume"
-    )
-    preferred_matched: list[str] = Field(
-        ..., description="Preferred keywords found in resume"
-    )
-    preferred_missing: list[str] = Field(
-        ..., description="Preferred keywords missing from resume"
-    )
-    nice_to_have_matched: list[str] = Field(
-        ..., description="Nice-to-have keywords found in resume"
-    )
-    nice_to_have_missing: list[str] = Field(
-        ..., description="Nice-to-have keywords missing from resume"
-    )
-
-    # Vault availability
-    missing_available_in_vault: list[str] = Field(
-        ..., description="Missing keywords that exist in user's vault"
-    )
-    missing_not_in_vault: list[str] = Field(
-        ..., description="Missing keywords not found in vault"
-    )
-
-    # Gap analysis prioritized by importance
-    gap_list: list[GapAnalysisItem] = Field(
-        ..., description="Gap analysis sorted by importance (required first)"
-    )
-
-    # Full keyword details
-    all_keywords: list[EnhancedKeywordDetailResponse] = Field(
-        ..., description="Detailed info for all extracted keywords with Stage 2 scores"
-    )
-
-    # Suggestions and warnings
-    suggestions: list[str] = Field(..., description="Prioritized actionable suggestions")
-    warnings: list[str] = Field(..., description="Important warnings")
-
-
-# ============================================================
-# Knockout Check Models (Stage 0)
-# ============================================================
-
-
-class KnockoutCheckRequest(BaseModel):
-    """Request for knockout check analysis."""
-
-    resume_id: int | None = Field(
-        None, description="Resume ID to analyze (uses parsed_content from database)"
-    )
-    job_id: int | None = Field(
-        None, description="Job description ID to analyze against"
-    )
-    resume_content: str | None = Field(
-        None, description="Raw resume text (fallback if resume_id not provided)"
-    )
-    job_description: str | None = Field(
-        None, description="Raw job description text (fallback if job_id not provided)"
-    )
-
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {
-                    "resume_id": 123,
-                    "job_id": 456,
-                },
-                {
-                    "resume_content": "John Doe\nSoftware Engineer...",
-                    "job_description": "We are looking for a Senior Engineer with 5+ years...",
-                },
-            ]
-        }
-    }
-
-
-class KnockoutRiskResponse(BaseModel):
-    """A single knockout risk detected."""
-
-    risk_type: KnockoutRiskType = Field(
-        ..., description="Type of knockout risk"
-    )
-    severity: KnockoutSeverity = Field(
-        ..., description="Severity level: critical, warning, or info"
-    )
-    description: str = Field(
-        ..., description="Human-readable description of the risk"
-    )
-    job_requires: str = Field(
-        ..., description="What the job posting requires"
-    )
-    user_has: str | None = Field(
-        None, description="What the user's resume shows (if determinable)"
-    )
-
-
-class KnockoutCheckResponse(BaseModel):
-    """Response for knockout check analysis."""
-
-    passes_all_checks: bool = Field(
-        ..., description="True if no knockout risks detected"
-    )
-    risks: list[KnockoutRiskResponse] = Field(
-        default_factory=list,
-        description="List of knockout risks detected"
-    )
-    summary: str = Field(
-        ..., description="Summary of the knockout check results"
-    )
-    recommendation: str = Field(
-        ..., description="Recommended action for the user"
-    )
-    analysis: dict = Field(
-        default_factory=dict,
-        description="Detailed breakdown of each check (for debugging/advanced users)"
-    )
-
-
-# ============================================================
-# Stage 3: Content Quality Models
-# ============================================================
-
-
-class BulletAnalysisResponse(BaseModel):
-    """Analysis of a single resume bullet point."""
-
-    text: str = Field(..., description="The bullet point text")
-    has_quantification: bool = Field(
-        ..., description="Whether bullet contains quantified metrics"
-    )
-    has_action_verb: bool = Field(
-        ..., description="Whether bullet contains strong action verbs"
-    )
-    has_weak_phrase: bool = Field(
-        ..., description="Whether bullet contains weak/passive phrases"
-    )
-    action_verb_categories: list[str] = Field(
-        default_factory=list,
-        description="Categories of action verbs found (leadership, achievement, etc.)"
-    )
-    detected_metrics: list[str] = Field(
-        default_factory=list,
-        description="Specific metrics found in the bullet"
-    )
-    quality_score: float = Field(
-        ..., ge=0, le=1,
-        description="Individual bullet quality score (0-1)"
-    )
-
-
-class BlockTypeAnalysisResponse(BaseModel):
-    """Analysis of block types distribution."""
-
-    total_bullets: int = Field(..., description="Total number of bullets analyzed")
-    achievement_count: int = Field(
-        ..., description="Number of achievement-style bullets"
-    )
-    responsibility_count: int = Field(
-        ..., description="Number of responsibility-style bullets"
-    )
-    project_count: int = Field(
-        ..., description="Number of project-style bullets"
-    )
-    other_count: int = Field(..., description="Number of other bullets")
-    achievement_ratio: float = Field(
-        ..., ge=0, le=1,
-        description="Ratio of high-value (achievement + project) bullets"
-    )
-    quality_score: float = Field(
-        ..., ge=0, le=100,
-        description="Block type quality score (0-100)"
-    )
-
-
-class QuantificationAnalysisResponse(BaseModel):
-    """Analysis of quantification density."""
-
-    total_bullets: int = Field(..., description="Total number of bullets analyzed")
-    quantified_bullets: int = Field(
-        ..., description="Number of bullets containing metrics"
-    )
-    quantification_density: float = Field(
-        ..., ge=0, le=1,
-        description="Ratio of quantified bullets"
-    )
-    quality_score: float = Field(
-        ..., ge=0, le=100,
-        description="Quantification quality score (0-100)"
-    )
-    metrics_found: list[str] = Field(
-        default_factory=list,
-        description="List of metrics extracted from content"
-    )
-    bullets_needing_metrics: list[str] = Field(
-        default_factory=list,
-        description="Bullets that could benefit from adding metrics"
-    )
-
-
-class ActionVerbAnalysisResponse(BaseModel):
-    """Analysis of action verb usage."""
-
-    total_bullets: int = Field(..., description="Total number of bullets analyzed")
-    bullets_with_action_verbs: int = Field(
-        ..., description="Number of bullets with strong action verbs"
-    )
-    bullets_with_weak_phrases: int = Field(
-        ..., description="Number of bullets with weak/passive phrases"
-    )
-    action_verb_coverage: float = Field(
-        ..., ge=0, le=1,
-        description="Ratio of bullets with action verbs"
-    )
-    weak_phrase_ratio: float = Field(
-        ..., ge=0, le=1,
-        description="Ratio of bullets with weak phrases (lower is better)"
-    )
-    quality_score: float = Field(
-        ..., ge=0, le=100,
-        description="Action verb quality score (0-100)"
-    )
-    verb_category_distribution: dict[str, int] = Field(
-        default_factory=dict,
-        description="Count of action verbs by category"
-    )
-
-
-class ContentQualityRequest(BaseModel):
-    """Request for content quality analysis."""
-
-    resume_id: int | None = Field(
-        None, description="Resume ID to analyze (uses parsed_content from database)"
-    )
-    resume_content: dict | None = Field(
-        None, description="Parsed resume content as dictionary (fallback if resume_id not provided)"
-    )
-
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {
-                    "resume_id": 123,
-                },
-                {
-                    "resume_content": {
-                        "experience": [
-                            {
-                                "title": "Software Engineer",
-                                "company": "TechCorp",
-                                "bullets": [
-                                    "Led team of 5 engineers to deliver ML pipeline, reducing inference latency by 60%",
-                                    "Responsible for maintaining backend services",
-                                ]
-                            }
-                        ]
-                    }
-                },
-            ]
-        }
-    }
-
-
-class ContentQualityResponse(BaseModel):
-    """Response for Stage 3 content quality analysis."""
-
-    # Overall score
-    content_quality_score: float = Field(
-        ..., ge=0, le=100,
-        description="Overall content quality score (0-100)"
-    )
-
-    # Component scores
-    block_type_score: float = Field(
-        ..., ge=0, le=100,
-        description="Block type distribution score (0-100)"
-    )
-    quantification_score: float = Field(
-        ..., ge=0, le=100,
-        description="Quantification density score (0-100)"
-    )
-    action_verb_score: float = Field(
-        ..., ge=0, le=100,
-        description="Action verb usage score (0-100)"
-    )
-
-    # Component weights
-    block_type_weight: float = Field(
-        ..., description="Weight applied to block type score"
-    )
-    quantification_weight: float = Field(
-        ..., description="Weight applied to quantification score"
-    )
-    action_verb_weight: float = Field(
-        ..., description="Weight applied to action verb score"
-    )
-
-    # Detailed analyses
-    block_type_analysis: BlockTypeAnalysisResponse = Field(
-        ..., description="Detailed block type analysis"
-    )
-    quantification_analysis: QuantificationAnalysisResponse = Field(
-        ..., description="Detailed quantification analysis"
-    )
-    action_verb_analysis: ActionVerbAnalysisResponse = Field(
-        ..., description="Detailed action verb analysis"
-    )
-
-    # Summary stats
-    total_bullets_analyzed: int = Field(
-        ..., description="Total number of bullet points analyzed"
-    )
-    high_quality_bullets: int = Field(
-        ..., description="Number of high quality bullets (score > 0.7)"
-    )
-    low_quality_bullets: int = Field(
-        ..., description="Number of low quality bullets (score < 0.4)"
-    )
-
-    # Suggestions
-    suggestions: list[str] = Field(
-        default_factory=list, description="Actionable improvement suggestions"
-    )
-    warnings: list[str] = Field(
-        default_factory=list, description="Quality warnings to address"
-    )
-
-
-# ============================================================
-# Stage 4: Role Proximity Models
-# ============================================================
-
-
-class RoleProximityRequest(BaseModel):
-    """Request for Stage 4 role proximity analysis."""
-
-    resume_id: int | None = Field(
-        None, description="Resume ID to analyze (uses parsed_content from database)"
-    )
-    job_id: int | None = Field(
-        None, description="Job description ID to analyze against"
-    )
-    resume_content: dict | None = Field(
-        None, description="Parsed resume content as dictionary (fallback if resume_id not provided)"
-    )
-    job_content: dict | None = Field(
-        None, description="Parsed job content as dictionary (fallback if job_id not provided)"
-    )
-
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {
-                    "resume_id": 123,
-                    "job_id": 456,
-                },
-                {
-                    "resume_content": {
-                        "experience": [
-                            {"title": "Senior Software Engineer", "company": "TechCorp"},
-                            {"title": "Software Engineer", "company": "StartupInc"},
-                        ]
-                    },
-                    "job_content": {
-                        "title": "Staff Software Engineer",
-                        "company": "BigTech",
-                    },
-                },
-            ]
-        }
-    }
-
-
-class TitleMatchResponse(BaseModel):
-    """Title similarity analysis result."""
-
-    resume_title: str = Field(..., description="Most recent job title from resume")
-    job_title: str = Field(..., description="Target job title")
-    normalized_resume_title: str = Field(..., description="Normalized resume title")
-    normalized_job_title: str = Field(..., description="Normalized job title")
-    similarity_score: float = Field(
-        ..., ge=0, le=1, description="Semantic similarity (0-1)"
-    )
-    title_score: float = Field(
-        ..., ge=0, le=100, description="Title match score (0-100)"
-    )
-    resume_level: int = Field(..., description="Extracted seniority level from resume")
-    job_level: int = Field(..., description="Extracted seniority level from job")
-    level_gap: int = Field(..., description="Gap between job and resume level")
-    resume_function: str = Field(..., description="Functional category of resume title")
-    job_function: str = Field(..., description="Functional category of job title")
-    function_match: bool = Field(..., description="Whether functions match")
-
-
-class TrajectoryResponse(BaseModel):
-    """Career trajectory analysis result."""
-
-    trajectory_type: TrajectoryType = Field(
-        ..., description="Type of career trajectory"
-    )
-    modifier: int = Field(..., description="Score modifier (-20 to +20)")
-    current_level: int = Field(..., description="Current seniority level")
-    target_level: int = Field(..., description="Target job seniority level")
-    level_gap: int = Field(..., description="Gap between target and current")
-    level_progression: list[int] = Field(
-        ..., description="Historical level progression (oldest to newest)"
-    )
-    is_ascending: bool = Field(..., description="Whether career is progressing upward")
-    function_match: bool = Field(..., description="Whether moving in same function")
-    explanation: str = Field(..., description="Human-readable explanation")
-
-
-class IndustryAlignmentResponse(BaseModel):
-    """Industry alignment analysis result."""
-
-    resume_industries: list[str] = Field(
-        ..., description="Industries detected from resume"
-    )
-    most_recent_industry: str = Field(..., description="Most recent industry")
-    target_industry: str = Field(..., description="Target job industry")
-    alignment_type: Literal["same", "adjacent", "unrelated"] = Field(
-        ..., description="Type of alignment"
-    )
-    modifier: int = Field(..., description="Score modifier (0 to +10)")
-
-
-class RoleProximityResponse(BaseModel):
-    """Response for Stage 4 role proximity analysis."""
-
-    # Overall score
-    role_proximity_score: float = Field(
-        ..., ge=0, le=100,
-        description="Overall role proximity score (0-100)"
-    )
-
-    # Component results
-    title_match: TitleMatchResponse = Field(
-        ..., description="Title similarity analysis"
-    )
-    trajectory: TrajectoryResponse = Field(
-        ..., description="Career trajectory analysis"
-    )
-    industry_alignment: IndustryAlignmentResponse = Field(
-        ..., description="Industry alignment analysis"
-    )
-
-    # Human-readable summary
-    explanation: str = Field(
-        ..., description="Human-readable summary of the analysis"
-    )
-
-    # Actionable insights
-    concerns: list[str] = Field(
-        default_factory=list,
-        description="Potential concerns about role fit"
-    )
-    strengths: list[str] = Field(
-        default_factory=list,
-        description="Strengths for this role"
-    )
 
 
 @router.post("/knockout-check", response_model=KnockoutCheckResponse)
@@ -919,6 +167,11 @@ async def perform_knockout_check(
     )
 
 
+# ============================================================
+# Stage 1: Structure Analysis
+# ============================================================
+
+
 @router.post("/structure", response_model=ATSStructureResponse)
 async def analyze_structure(
     request: ATSStructureRequest,
@@ -958,6 +211,11 @@ async def analyze_structure(
         warnings=result["warnings"],
         suggestions=result["suggestions"],
     )
+
+
+# ============================================================
+# Stage 2: Keyword Analysis
+# ============================================================
 
 
 @router.post("/keywords", response_model=ATSKeywordResponse)
@@ -1245,6 +503,11 @@ async def get_ats_tips():
     return ATSTipsResponse(tips=tips)
 
 
+# ============================================================
+# Stage 3: Content Quality
+# ============================================================
+
+
 @router.post("/content-quality", response_model=ContentQualityResponse)
 async def analyze_content_quality(
     request: ContentQualityRequest,
@@ -1342,6 +605,11 @@ async def analyze_content_quality(
     )
 
 
+# ============================================================
+# Stage 4: Role Proximity
+# ============================================================
+
+
 @router.post("/role-proximity", response_model=RoleProximityResponse)
 async def analyze_role_proximity(
     request: RoleProximityRequest,
@@ -1391,7 +659,6 @@ async def analyze_role_proximity(
     analyzer = get_ats_analyzer()
     ai_client = get_ai_client()
     cache = get_cache_service()
-    resume_parser = ResumeParser(ai_client, cache)
     job_analyzer = JobAnalyzer(ai_client, cache)
 
     parsed_resume = None
@@ -1480,54 +747,6 @@ async def analyze_role_proximity(
 # Progressive ATS Analysis with Server-Sent Events (SSE)
 # ============================================================================
 
-import json
-import time
-from sse_starlette.sse import EventSourceResponse
-
-
-class ATSProgressiveRequest(BaseModel):
-    """Request for progressive ATS analysis with SSE streaming."""
-
-    resume_id: int | None = Field(default=None, description="Resume database ID")
-    job_id: int | None = Field(default=None, description="Job database ID")
-    resume_content: dict | None = Field(default=None, description="Raw resume content")
-    job_description: str | None = Field(default=None, description="Raw job description text")
-    job_content: dict | None = Field(default=None, description="Parsed job content for role proximity")
-
-
-class ATSStageProgress(BaseModel):
-    """Progress update for a single stage."""
-
-    stage: int = Field(..., description="Stage number (0-4)")
-    stage_name: str = Field(..., description="Human-readable stage name")
-    status: Literal["pending", "running", "completed", "failed"] = Field(..., description="Stage status")
-    progress_percent: int = Field(..., ge=0, le=100, description="Overall progress 0-100")
-    elapsed_ms: int | None = Field(None, description="Time taken for this stage in milliseconds")
-    result: dict | None = Field(None, description="Stage result data (only when status=completed)")
-    error: str | None = Field(None, description="Error message (only when status=failed)")
-
-
-class ATSCompositeScore(BaseModel):
-    """Final composite ATS score calculation."""
-
-    final_score: float = Field(..., ge=0, le=100, description="Weighted composite score")
-    stage_breakdown: dict[str, float] = Field(
-        ...,
-        description="Individual stage scores with weights applied"
-    )
-    weights_used: dict[str, float] = Field(
-        ...,
-        description="Weights applied to each stage"
-    )
-    normalization_applied: bool = Field(
-        ...,
-        description="True if some stages failed and weights were renormalized"
-    )
-    failed_stages: list[str] = Field(
-        default_factory=list,
-        description="Names of stages that failed (if any)"
-    )
-
 
 @router.get("/analyze-progressive")
 async def analyze_progressive_ats(
@@ -1572,9 +791,6 @@ async def analyze_progressive_ats(
     # Get cache service for ATS result caching
     cache = get_cache_service()
 
-    # Determine the effective job_id for this request
-    effective_job_id_for_request = job_id or job_listing_id
-
     async def event_generator():
         nonlocal resume_id, job_id, job_listing_id
         start_time = time.time()
@@ -1582,7 +798,6 @@ async def analyze_progressive_ats(
         failed_stages = []
         resume_content_hash: str | None = None
         effective_job_id: int | None = None
-        raw_resume_content: str = ""
         parsed_resume_content: dict = {}
         job_description: str = ""
 
@@ -1621,9 +836,6 @@ async def analyze_progressive_ats(
             resume_content_hash = cache.hash_content(raw_resume_content)
 
             # Fetch job description from job_listings or job_descriptions table
-            # Note: job_listings are public scraped data - no owner check needed.
-            # Unlike user-created jobs (which require owner_id verification),
-            # job listings can be used by any authenticated user for ATS analysis.
             job_content: dict = {}
             if job_listing_id:
                 job_listing_repo = JobListingRepository()
@@ -1636,7 +848,6 @@ async def analyze_progressive_ats(
                     return
                 job_description = str(job_listing.job_description or "")
                 effective_job_id = job_listing_id
-                # Build job_content from structured fields for role proximity
                 job_content = {
                     "title": str(job_listing.job_title or ""),
                     "company": str(job_listing.company_name or ""),
@@ -1657,7 +868,6 @@ async def analyze_progressive_ats(
                     return
                 job_description = str(job.raw_content or "")
                 effective_job_id = job_id
-                # Use parsed_content if available, otherwise build minimal dict
                 parsed = job.parsed_content
                 if parsed and isinstance(parsed, dict):
                     job_content = parsed
@@ -1678,7 +888,6 @@ async def analyze_progressive_ats(
             # Check cache before running analysis (skip if force_refresh is True)
             cached_result = None if force_refresh else await cache.get_ats_result(resume_content_hash, effective_job_id)
             if cached_result:
-                # Cache hit - stream cached results as fast playback
                 cached_at = cached_result.get("cached_at", "")
                 yield {
                     "event": "cache_hit",
@@ -1688,7 +897,6 @@ async def analyze_progressive_ats(
                     })
                 }
 
-                # Stream each cached stage result
                 cached_stages = cached_result.get("stage_results", {})
                 for idx, (stage_num, stage_key, stage_name) in enumerate(stages):
                     progress_percent = int(((idx + 1) / len(stages)) * 100)
@@ -1701,22 +909,19 @@ async def analyze_progressive_ats(
                                 "stage_name": stage_name,
                                 "status": "completed",
                                 "progress_percent": progress_percent,
-                                "elapsed_ms": 0,  # Cached, no time taken
+                                "elapsed_ms": 0,
                                 "result": cached_stages[stage_key],
                                 "from_cache": True,
                             })
                         }
                     else:
-                        # Stage was missing from cache (failed previously)
                         failed_stages.append(stage_name)
 
-                # Extract knockout risks from cached stage 0 result
                 cached_knockout_risks = []
                 cached_knockout = cached_stages.get("knockout-check", {})
                 if cached_knockout:
                     cached_knockout_risks = cached_knockout.get("risks", [])
 
-                # Emit cached composite score
                 composite_score = cached_result.get("composite_score", {})
                 yield {
                     "event": "complete",
@@ -1734,7 +939,6 @@ async def analyze_progressive_ats(
                 }
                 return
 
-            # Cache miss - emit event and run full analysis
             yield {
                 "event": "cache_miss",
                 "data": json.dumps({
@@ -1743,12 +947,10 @@ async def analyze_progressive_ats(
                 })
             }
 
-            # Execute each stage sequentially
             for idx, (stage_num, stage_key, stage_name) in enumerate(stages):
                 stage_start = time.time()
                 progress_percent = int((idx / len(stages)) * 100)
 
-                # Emit stage_start event
                 yield {
                     "event": "stage_start",
                     "data": json.dumps({
@@ -1760,7 +962,6 @@ async def analyze_progressive_ats(
                 }
 
                 try:
-                    # Call the appropriate internal method based on stage
                     if stage_num == 0:
                         result = await _execute_knockout_check(request, user_id, db)
                     elif stage_num == 1:
@@ -1775,10 +976,8 @@ async def analyze_progressive_ats(
                     stage_elapsed = int((time.time() - stage_start) * 1000)
                     progress_percent = int(((idx + 1) / len(stages)) * 100)
 
-                    # Store result for composite scoring
                     stage_results[stage_key] = result
 
-                    # Emit stage_complete event
                     yield {
                         "event": "stage_complete",
                         "data": json.dumps({
@@ -1792,7 +991,6 @@ async def analyze_progressive_ats(
                     }
 
                 except Exception as e:
-                    # Stage failed, but continue to next stage
                     stage_elapsed = int((time.time() - stage_start) * 1000)
                     failed_stages.append(stage_name)
 
@@ -1808,7 +1006,6 @@ async def analyze_progressive_ats(
                         })
                     }
 
-            # Calculate composite score
             yield {
                 "event": "score_calculation",
                 "data": json.dumps({
@@ -1822,10 +1019,7 @@ async def analyze_progressive_ats(
             composite_score = _calculate_composite_score(stage_results, failed_stages)
             total_elapsed = int((time.time() - start_time) * 1000)
 
-            # Cache results ONLY if all stages succeeded (no failed stages)
-            # This prevents caching partial/broken results during development
             if resume_content_hash and effective_job_id and stage_results and not failed_stages:
-                # Convert stage results to cacheable format
                 cacheable_stage_results = {}
                 for key, result in stage_results.items():
                     if hasattr(result, 'model_dump'):
@@ -1840,7 +1034,6 @@ async def analyze_progressive_ats(
                     stage_results=cacheable_stage_results,
                 )
 
-            # Extract knockout risks from stage 0 result
             knockout_risks = []
             knockout_result = stage_results.get("knockout-check")
             if knockout_result:
@@ -1850,7 +1043,6 @@ async def analyze_progressive_ats(
                     knockout_data = knockout_result
                 knockout_risks = knockout_data.get("risks", [])
 
-            # Emit complete event
             yield {
                 "event": "complete",
                 "data": json.dumps({
@@ -1866,7 +1058,6 @@ async def analyze_progressive_ats(
             }
 
         except Exception as e:
-            # Fatal error - abort entire analysis
             yield {
                 "event": "error",
                 "data": json.dumps({
@@ -1877,14 +1068,15 @@ async def analyze_progressive_ats(
     return EventSourceResponse(event_generator())
 
 
-# Helper methods to execute each stage
+# ============================================================================
+# Progressive Analysis Helper Functions
+# ============================================================================
+
+
 async def _execute_knockout_check(request: ATSProgressiveRequest, user_id: int, db: AsyncSession):
     """Execute Stage 0: Knockout Check."""
-    # Convert parsed resume dict to raw text for knockout check
-    # KnockoutCheckRequest expects resume_content as string, not dict
     resume_text = None
     if request.resume_content:
-        # Build text representation from parsed content
         parts = []
         contact = request.resume_content.get("contact", {})
         if contact:
@@ -1932,24 +1124,18 @@ async def _execute_knockout_check(request: ATSProgressiveRequest, user_id: int, 
         resume_content=resume_text,
         job_description=request.job_description,
     )
-    # Call the existing knockout check function
     return await perform_knockout_check(knockout_request, user_id, db)
 
 
 async def _execute_structure_analysis(request: ATSProgressiveRequest, user_id: int, db: AsyncSession):
     """Execute Stage 1: Structure Analysis."""
-    # Progressive endpoint always provides resume_content directly from MongoDB
     resume_content = request.resume_content or {}
-
     structure_request = ATSStructureRequest(resume_content=resume_content)
-    # analyze_structure only takes (request, user_id) - no db param needed
     return await analyze_structure(structure_request, user_id)
 
 
 async def _execute_keyword_analysis(request: ATSProgressiveRequest, user_id: int, db: AsyncSession):
     """Execute Stage 2: Enhanced Keyword Analysis."""
-    # ATSKeywordEnhancedRequest only takes job_description, resume_id, and resume_content
-    # (no job_id field)
     keyword_request = ATSKeywordEnhancedRequest(
         resume_id=request.resume_id,
         resume_content=request.resume_content,
@@ -1973,7 +1159,7 @@ async def _execute_role_proximity(request: ATSProgressiveRequest, user_id: int, 
         resume_id=request.resume_id,
         job_id=request.job_id,
         resume_content=request.resume_content,
-        job_content=request.job_content,  # Use job_content dict, not job_description string
+        job_content=request.job_content,
     )
     return await analyze_role_proximity(proximity_request, user_id, db)
 
@@ -1993,7 +1179,6 @@ def _calculate_composite_score(
 
     If stages fail, renormalize remaining weights to sum to 1.0.
     """
-    # Default weights
     weights = {
         "structure": 0.15,
         "keywords-enhanced": 0.40,
@@ -2001,7 +1186,6 @@ def _calculate_composite_score(
         "role-proximity": 0.20,
     }
 
-    # Extract scores from stage results
     scores = {}
     available_weight = 0.0
 
@@ -2009,7 +1193,6 @@ def _calculate_composite_score(
         if stage_key in stage_results:
             result = stage_results[stage_key]
 
-            # Extract score based on stage type
             if stage_key == "structure":
                 scores[stage_key] = float(result.format_score)
             elif stage_key == "keywords-enhanced":
@@ -2021,16 +1204,13 @@ def _calculate_composite_score(
 
             available_weight += weight
 
-    # Renormalize weights if some stages failed
     normalization_applied = available_weight < 1.0
     if normalization_applied and available_weight > 0:
         normalization_factor = 1.0 / available_weight
         weights = {k: v * normalization_factor if k in scores else 0 for k, v in weights.items()}
 
-    # Calculate weighted score
     final_score = sum(scores[k] * weights.get(k, 0) for k in scores) if scores else 0.0
 
-    # Create breakdown
     stage_breakdown = {
         k: round(scores[k] * weights.get(k, 0), 2) for k in scores
     }
