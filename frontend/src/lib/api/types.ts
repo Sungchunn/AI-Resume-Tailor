@@ -1166,3 +1166,73 @@ export interface ScraperRequestApproveRequest {
 export interface ScraperRequestRejectRequest {
   admin_notes: string;
 }
+
+// ============================================================================
+// AI Usage Dashboard Types
+// ============================================================================
+
+export interface AIUsageSummaryResponse {
+  total_requests: number;
+  successful_requests: number;
+  failed_requests: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
+  total_tokens: number;
+  total_cost_usd: number;
+  avg_latency_ms: number;
+  success_rate: number;
+  period_start: string;
+  period_end: string;
+}
+
+export interface EndpointUsageResponse {
+  endpoint: string;
+  request_count: number;
+  total_tokens: number;
+  total_cost_usd: number;
+  avg_latency_ms: number;
+  success_rate: number;
+}
+
+export interface ProviderUsageResponse {
+  provider: string;
+  model: string;
+  request_count: number;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  total_cost_usd: number;
+  avg_latency_ms: number;
+}
+
+export interface UserUsageResponse {
+  user_id: number;
+  user_email: string;
+  user_name: string | null;
+  request_count: number;
+  total_tokens: number;
+  total_cost_usd: number;
+}
+
+export interface TimeSeriesDataPoint {
+  timestamp: string;
+  request_count: number;
+  total_tokens: number;
+  total_cost_usd: number;
+  avg_latency_ms: number;
+}
+
+export interface TimeSeriesResponse {
+  granularity: "hour" | "day" | "week";
+  data: TimeSeriesDataPoint[];
+}
+
+export interface PricingConfigResponse {
+  id: number;
+  provider: string;
+  model: string;
+  input_cost_per_1k: number;
+  output_cost_per_1k: number;
+  effective_date: string;
+  is_active: boolean;
+}

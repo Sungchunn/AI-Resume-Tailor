@@ -130,6 +130,20 @@ export const queryKeys = {
     all: ["profile"] as const,
     aboutMe: () => [...queryKeys.profile.all, "aboutMe"] as const,
   },
+  aiUsage: {
+    all: ["aiUsage"] as const,
+    summary: (start: string, end: string) =>
+      [...queryKeys.aiUsage.all, "summary", start, end] as const,
+    byEndpoint: (start: string, end: string) =>
+      [...queryKeys.aiUsage.all, "byEndpoint", start, end] as const,
+    byProvider: (start: string, end: string) =>
+      [...queryKeys.aiUsage.all, "byProvider", start, end] as const,
+    byUser: (start: string, end: string, limit: number) =>
+      [...queryKeys.aiUsage.all, "byUser", start, end, limit] as const,
+    timeSeries: (start: string, end: string, granularity: string) =>
+      [...queryKeys.aiUsage.all, "timeSeries", start, end, granularity] as const,
+    pricing: () => [...queryKeys.aiUsage.all, "pricing"] as const,
+  },
 };
 
 // Resume Hooks
@@ -1120,6 +1134,58 @@ export function useUpdateProfile() {
       // Invalidate profile queries to show updated data
       queryClient.invalidateQueries({ queryKey: queryKeys.profile.all });
     },
+  });
+}
+
+// AI Usage Dashboard Hooks
+export function useAIUsageSummary(startDate: string, endDate: string) {
+  return useQuery({
+    queryKey: queryKeys.aiUsage.summary(startDate, endDate),
+    queryFn: () => adminApi.getAIUsageSummary(startDate, endDate),
+    enabled: !!startDate && !!endDate,
+  });
+}
+
+export function useAIUsageByEndpoint(startDate: string, endDate: string) {
+  return useQuery({
+    queryKey: queryKeys.aiUsage.byEndpoint(startDate, endDate),
+    queryFn: () => adminApi.getAIUsageByEndpoint(startDate, endDate),
+    enabled: !!startDate && !!endDate,
+  });
+}
+
+export function useAIUsageByProvider(startDate: string, endDate: string) {
+  return useQuery({
+    queryKey: queryKeys.aiUsage.byProvider(startDate, endDate),
+    queryFn: () => adminApi.getAIUsageByProvider(startDate, endDate),
+    enabled: !!startDate && !!endDate,
+  });
+}
+
+export function useAIUsageByUser(startDate: string, endDate: string, limit: number = 10) {
+  return useQuery({
+    queryKey: queryKeys.aiUsage.byUser(startDate, endDate, limit),
+    queryFn: () => adminApi.getAIUsageByUser(startDate, endDate, limit),
+    enabled: !!startDate && !!endDate,
+  });
+}
+
+export function useAIUsageTimeSeries(
+  startDate: string,
+  endDate: string,
+  granularity: "hour" | "day" | "week" = "day"
+) {
+  return useQuery({
+    queryKey: queryKeys.aiUsage.timeSeries(startDate, endDate, granularity),
+    queryFn: () => adminApi.getAIUsageTimeSeries(startDate, endDate, granularity),
+    enabled: !!startDate && !!endDate,
+  });
+}
+
+export function useAIPricing() {
+  return useQuery({
+    queryKey: queryKeys.aiUsage.pricing(),
+    queryFn: () => adminApi.getAIPricing(),
   });
 }
 
