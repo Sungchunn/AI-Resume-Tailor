@@ -9,7 +9,7 @@ import { ResumePreview } from "@/components/library/preview";
 import { parsedContentToBlocks, apiStyleToEditorStyle } from "@/lib/resume/transforms";
 import { DEFAULT_STYLE } from "@/lib/resume/defaults";
 import type { ParsedResumeContent } from "@/lib/resume/types";
-import { Edit, Trash2, Download, FileText, ChevronDown, ChevronUp, CheckCircle, AlertCircle } from "lucide-react";
+import { Edit, Trash2, Download, FileText, CheckCircle, AlertCircle, Copy, Check, Maximize2, X, Eye, Code, AlignLeft } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -21,7 +21,9 @@ export default function ResumeDetailPage({ params }: PageProps) {
   const { data: resume, isLoading, error } = useResume(resumeId);
   const deleteResume = useDeleteResume();
   const [showExportDialog, setShowExportDialog] = useState(false);
-  const [showRawContent, setShowRawContent] = useState(false);
+  const [activeTab, setActiveTab] = useState<"preview" | "plain" | "formatted">("preview");
+  const [copied, setCopied] = useState(false);
+  const [showFullScreen, setShowFullScreen] = useState(false);
 
   // Convert parsed to blocks for preview
   const blocks = useMemo(() => {
@@ -41,6 +43,70 @@ export default function ResumeDetailPage({ params }: PageProps) {
       router.push("/profile");
     }
   };
+
+  const handleCopyRawContent = async () => {
+    if (resume?.raw_content) {
+      await navigator.clipboard.writeText(resume.raw_content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleDownloadRawContent = () => {
+    if (resume?.raw_content) {
+      const blob = new Blob([resume.raw_content], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${resume.title || "resume"}-raw.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  // Split raw content into lines for code editor display
+  const rawContentLines = useMemo(() => {
+    if (!resume?.raw_content) return [];
+    return resume.raw_content.split("\n");
+  }, [resume?.raw_content]);
+
+  // Simple markdown-like formatting for "formatted" tab
+  const formattedContent = useMemo(() => {
+    if (!resume?.raw_content) return null;
+    const lines = resume.raw_content.split("\n");
+    return lines.map((line, index) => {
+      const trimmed = line.trim();
+      // Detect potential headers (ALL CAPS lines, or lines ending with colon)
+      const isHeader = /^[A-Z\s]{3,}$/.test(trimmed) || /^[A-Z][^a-z]*:$/.test(trimmed);
+      // Detect bullet points
+      const isBullet = /^[-•*]\s/.test(trimmed) || /^\d+[.)]\s/.test(trimmed);
+
+      if (!trimmed) {
+        return <div key={index} className="h-4" />;
+      }
+      if (isHeader) {
+        return (
+          <div key={index} className="font-semibold text-foreground mt-4 mb-2 text-base border-b border-border/50 pb-1">
+            {line}
+          </div>
+        );
+      }
+      if (isBullet) {
+        return (
+          <div key={index} className="pl-4 text-foreground/80">
+            {line}
+          </div>
+        );
+      }
+      return (
+        <div key={index} className="text-foreground/80">
+          {line}
+        </div>
+      );
+    });
+  }, [resume?.raw_content]);
 
   if (isLoading) {
     return (
@@ -173,14 +239,55 @@ export default function ResumeDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Resume Preview */}
+      {/* Resume Content - Unified 3-Tab View */}
       <div className="card">
+        {/* Header with Tabs and Actions */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-foreground">Resume Preview</h2>
+          {/* 3-Tab Switcher */}
+          <div className="flex gap-1 p-1 bg-muted rounded-lg">
+            <button
+              onClick={() => setActiveTab("preview")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                activeTab === "preview"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Eye className="w-4 h-4" />
+              Preview
+            </button>
+            {resume.raw_content && (
+              <>
+                <button
+                  onClick={() => setActiveTab("plain")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    activeTab === "plain"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Code className="w-4 h-4" />
+                  Plain Text
+                </button>
+                <button
+                  onClick={() => setActiveTab("formatted")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    activeTab === "formatted"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <AlignLeft className="w-4 h-4" />
+                  Formatted
+                </button>
+              </>
+            )}
+          </div>
 
+          {/* Actions */}
           <div className="flex items-center gap-2">
-            {/* Verification CTA */}
-            {resume.parsed && !resume.parsed_verified && (
+            {/* Verification CTA (only on preview tab) */}
+            {activeTab === "preview" && resume.parsed && !resume.parsed_verified && (
               <Link
                 href={`/library/resumes/${resumeId}/verify`}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors"
@@ -190,60 +297,189 @@ export default function ResumeDetailPage({ params }: PageProps) {
               </Link>
             )}
 
-            {!hasPreviewContent && resume.raw_content && (
-              <span className="text-xs text-amber-600 bg-amber-500/10 px-2 py-1 rounded">
-                Preview unavailable - edit to add structured content
-              </span>
+            {/* Raw content actions (only on plain/formatted tabs) */}
+            {(activeTab === "plain" || activeTab === "formatted") && resume.raw_content && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleCopyRawContent}
+                  className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                  title="Copy to clipboard"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </button>
+                <button
+                  onClick={handleDownloadRawContent}
+                  className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                  title="Download as .txt"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setShowFullScreen(true)}
+                  className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                  title="Full screen"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
+              </div>
             )}
           </div>
         </div>
 
-        {hasPreviewContent ? (
-          <div className="bg-muted rounded-lg p-4 overflow-auto">
+        {/* Tab Content */}
+        <div className="mt-8">
+        {activeTab === "preview" && (
+          hasPreviewContent ? (
             <ResumePreview
               blocks={blocks}
               style={style}
               showPageBorder={true}
             />
-          </div>
-        ) : (
-          <div className="bg-muted rounded-lg p-8 text-center">
-            <FileText className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
-            <p className="text-muted-foreground mb-4">
-              No structured content available for preview.
-            </p>
-            <Link
-              href={`/library/resumes/${resumeId}/edit`}
-              className="btn-primary inline-flex items-center gap-1.5"
-            >
-              <Edit className="h-4 w-4" />
-              Open Editor
-            </Link>
+          ) : (
+            <div className="bg-muted rounded-lg p-8 text-center">
+              <FileText className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
+              <p className="text-muted-foreground mb-4">
+                No structured content available for preview.
+              </p>
+              <Link
+                href={`/library/resumes/${resumeId}/edit`}
+                className="btn-primary inline-flex items-center gap-1.5"
+              >
+                <Edit className="h-4 w-4" />
+                Open Editor
+              </Link>
+            </div>
+          )
+        )}
+
+        {activeTab === "plain" && resume.raw_content && (
+          <div className="rounded-lg border border-border overflow-hidden bg-zinc-900 dark:bg-zinc-950">
+            <div className="max-h-[600px] overflow-auto">
+              <div className="flex">
+                {/* Line Numbers Gutter */}
+                <div className="flex-shrink-0 bg-zinc-800 dark:bg-zinc-900 text-zinc-500 text-right select-none py-3 px-2 font-mono text-sm border-r border-zinc-700">
+                  {rawContentLines.map((_, index) => (
+                    <div key={index} className="leading-6 h-6">
+                      {index + 1}
+                    </div>
+                  ))}
+                </div>
+                {/* Code Content */}
+                <pre className="flex-1 py-3 px-4 font-mono text-sm text-zinc-200 overflow-x-auto">
+                  {rawContentLines.map((line, index) => (
+                    <div key={index} className="leading-6 h-6 whitespace-pre">
+                      {line || " "}
+                    </div>
+                  ))}
+                </pre>
+              </div>
+            </div>
           </div>
         )}
+
+        {activeTab === "formatted" && resume.raw_content && (
+          <div className="bg-muted rounded-lg p-4 border border-border max-h-[600px] overflow-auto text-sm leading-relaxed">
+            {formattedContent}
+          </div>
+        )}
+        </div>
       </div>
 
-      {/* Raw Content (Collapsible) */}
-      {resume.raw_content && (
-        <div className="card mt-6">
-          <button
-            onClick={() => setShowRawContent(!showRawContent)}
-            className="w-full flex items-center justify-between text-left"
-          >
-            <h2 className="text-lg font-semibold text-foreground">Raw Content</h2>
-            {showRawContent ? (
-              <ChevronUp className="w-5 h-5 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-muted-foreground" />
-            )}
-          </button>
-          {showRawContent && (
-            <div className="mt-4">
-              <pre className="whitespace-pre-wrap font-mono text-sm text-foreground/80 bg-muted p-4 rounded-lg border border-border max-h-96 overflow-auto">
-                {resume.raw_content}
-              </pre>
+      {/* Full Screen Modal for Raw Content */}
+      {showFullScreen && resume.raw_content && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-background rounded-lg w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground">Raw Content</h3>
+              <div className="flex items-center gap-2">
+                {/* Tabs in modal */}
+                <div className="flex gap-1 p-1 bg-muted rounded-lg mr-4">
+                  <button
+                    onClick={() => setActiveTab("plain")}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      activeTab === "plain"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Code className="w-4 h-4" />
+                    Plain Text
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("formatted")}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      activeTab === "formatted"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <AlignLeft className="w-4 h-4" />
+                    Formatted
+                  </button>
+                </div>
+                <button
+                  onClick={handleCopyRawContent}
+                  className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                  title="Copy to clipboard"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </button>
+                <button
+                  onClick={handleDownloadRawContent}
+                  className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                  title="Download as .txt"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setShowFullScreen(false)}
+                  className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                  title="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-          )}
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-auto p-4">
+              {activeTab === "plain" ? (
+                <div className="rounded-lg border border-border overflow-hidden bg-zinc-900 dark:bg-zinc-950 h-full">
+                  <div className="flex h-full">
+                    {/* Line Numbers Gutter */}
+                    <div className="flex-shrink-0 bg-zinc-800 dark:bg-zinc-900 text-zinc-500 text-right select-none py-3 px-2 font-mono text-sm border-r border-zinc-700">
+                      {rawContentLines.map((_, index) => (
+                        <div key={index} className="leading-6 h-6">
+                          {index + 1}
+                        </div>
+                      ))}
+                    </div>
+                    {/* Code Content */}
+                    <pre className="flex-1 py-3 px-4 font-mono text-sm text-zinc-200 overflow-x-auto">
+                      {rawContentLines.map((line, index) => (
+                        <div key={index} className="leading-6 h-6 whitespace-pre">
+                          {line || " "}
+                        </div>
+                      ))}
+                    </pre>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-muted rounded-lg p-6 border border-border text-sm leading-relaxed h-full overflow-auto">
+                  {formattedContent}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
