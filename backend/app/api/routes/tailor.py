@@ -87,6 +87,22 @@ async def tailor_resume(
             detail="Not authorized to access this resume",
         )
 
+    # Check if resume is parsed
+    if not resume.parsed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Resume must be parsed before tailoring. Please parse your resume first.",
+        )
+
+    # Check if parsed content is verified
+    if not getattr(resume, "parsed_verified", False):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Resume parsed content must be verified before tailoring. "
+                   "Please review and verify your parsed resume.",
+            headers={"X-Redirect": f"/library/resumes/{request.resume_id}/verify"},
+        )
+
     # Get job content based on which source is provided (PostgreSQL)
     job_source_type: Literal["user_created", "job_listing"]
     job_title: str | None = None
