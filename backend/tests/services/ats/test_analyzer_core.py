@@ -3,23 +3,23 @@
 import pytest
 
 from app.services.job.ats import ATSAnalyzer, get_ats_analyzer
+from app.services.job.ats.analyzers import STANDARD_SECTIONS
 
 
 class TestATSAnalyzer:
     """Test ATSAnalyzer functionality."""
 
-    def test_standard_sections(self, analyzer):
-        """Should have standard section definitions."""
-        sections = analyzer.STANDARD_SECTIONS
-
-        assert "summary" in sections
-        assert "experience" in sections
-        assert "education" in sections
-        assert "skills" in sections
+    def test_standard_sections(self):
+        """Should have standard section definitions exported from analyzers."""
+        # STANDARD_SECTIONS is exported from analyzers module, not on ATSAnalyzer
+        assert "summary" in STANDARD_SECTIONS
+        assert "experience" in STANDARD_SECTIONS
+        assert "education" in STANDARD_SECTIONS
+        assert "skills" in STANDARD_SECTIONS
 
         # Should have aliases
-        assert "work experience" in sections["experience"]
-        assert "technical skills" in sections["skills"]
+        assert "work experience" in STANDARD_SECTIONS["experience"]
+        assert "technical skills" in STANDARD_SECTIONS["skills"]
 
 
 class TestATSAnalyzerSingleton:
