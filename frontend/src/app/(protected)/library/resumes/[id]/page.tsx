@@ -9,7 +9,7 @@ import { ResumePreview } from "@/components/library/preview";
 import { parsedContentToBlocks, apiStyleToEditorStyle } from "@/lib/resume/transforms";
 import { DEFAULT_STYLE } from "@/lib/resume/defaults";
 import type { ParsedResumeContent } from "@/lib/resume/types";
-import { Edit, Trash2, Download, FileText, ChevronDown, ChevronUp } from "lucide-react";
+import { Edit, Trash2, Download, FileText, ChevronDown, ChevronUp, CheckCircle, AlertCircle } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -117,7 +117,28 @@ export default function ResumeDetailPage({ params }: PageProps) {
       <div className="card mb-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">{resume.title}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-foreground">{resume.title}</h1>
+
+              {/* Verification Status Badge */}
+              {resume.parsed && (
+                resume.parsed_verified ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-green-500/10 text-green-600 dark:text-green-400">
+                    <CheckCircle className="w-3 h-3" />
+                    Verified
+                  </span>
+                ) : (
+                  <Link
+                    href={`/library/resumes/${resumeId}/verify`}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors"
+                  >
+                    <AlertCircle className="w-3 h-3" />
+                    Needs Verification
+                  </Link>
+                )
+              )}
+            </div>
+
             <p className="mt-1 text-sm text-muted-foreground">
               Created {new Date(resume.created_at).toLocaleDateString()}
               {resume.updated_at && (
@@ -156,11 +177,25 @@ export default function ResumeDetailPage({ params }: PageProps) {
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-foreground">Resume Preview</h2>
-          {!hasPreviewContent && resume.raw_content && (
-            <span className="text-xs text-amber-600 bg-amber-500/10 px-2 py-1 rounded">
-              Preview unavailable - edit to add structured content
-            </span>
-          )}
+
+          <div className="flex items-center gap-2">
+            {/* Verification CTA */}
+            {resume.parsed && !resume.parsed_verified && (
+              <Link
+                href={`/library/resumes/${resumeId}/verify`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors"
+              >
+                <AlertCircle className="w-4 h-4" />
+                Verify before tailoring
+              </Link>
+            )}
+
+            {!hasPreviewContent && resume.raw_content && (
+              <span className="text-xs text-amber-600 bg-amber-500/10 px-2 py-1 rounded">
+                Preview unavailable - edit to add structured content
+              </span>
+            )}
+          </div>
         </div>
 
         {hasPreviewContent ? (
