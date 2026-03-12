@@ -94,6 +94,7 @@ curl http://localhost:8000/api/resumes \
 | [ATS Analysis](ats.md) | `/v1/ats` | ATS compatibility checks |
 | [AI Chat](ai-chat.md) | `/v1/ai` | AI-powered section improvements and chat |
 | [Admin](admin.md) | `/api/admin` | Scraper and system administration |
+| [AI Usage Dashboard](ai-usage.md) | `/api/admin/ai-usage` | AI usage analytics and cost tracking |
 
 ## Request/Response Format
 

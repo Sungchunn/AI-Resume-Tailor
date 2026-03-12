@@ -884,5 +884,6 @@ curl -X POST http://localhost:8000/api/admin/scraper-requests/1/reject \
 
 ## Related Endpoints
 
+- [AI Usage Dashboard](ai-usage.md) - AI usage analytics and cost tracking
 - [Scraper Requests](scraper-requests.md) - User endpoints for submitting requests
 - [Job Listings](job-listings.md) - Browse scraped job listings
