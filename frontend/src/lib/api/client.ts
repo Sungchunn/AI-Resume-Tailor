@@ -87,6 +87,12 @@ import type {
   ScraperRequestAdminResponse,
   ScraperRequestApproveRequest,
   ScraperRequestRejectRequest,
+  AIUsageSummaryResponse,
+  EndpointUsageResponse,
+  ProviderUsageResponse,
+  UserUsageResponse,
+  TimeSeriesResponse,
+  PricingConfigResponse,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -850,6 +856,57 @@ export const adminApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  // AI Usage endpoints
+  getAIUsageSummary: async (startDate: string, endDate: string): Promise<AIUsageSummaryResponse> => {
+    const params = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate,
+    });
+    return fetchApi(`/api/admin/ai-usage/summary?${params}`);
+  },
+
+  getAIUsageByEndpoint: async (startDate: string, endDate: string): Promise<EndpointUsageResponse[]> => {
+    const params = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate,
+    });
+    return fetchApi(`/api/admin/ai-usage/by-endpoint?${params}`);
+  },
+
+  getAIUsageByProvider: async (startDate: string, endDate: string): Promise<ProviderUsageResponse[]> => {
+    const params = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate,
+    });
+    return fetchApi(`/api/admin/ai-usage/by-provider?${params}`);
+  },
+
+  getAIUsageByUser: async (startDate: string, endDate: string, limit: number = 10): Promise<UserUsageResponse[]> => {
+    const params = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate,
+      limit: limit.toString(),
+    });
+    return fetchApi(`/api/admin/ai-usage/by-user?${params}`);
+  },
+
+  getAIUsageTimeSeries: async (
+    startDate: string,
+    endDate: string,
+    granularity: "hour" | "day" | "week" = "day"
+  ): Promise<TimeSeriesResponse> => {
+    const params = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate,
+      granularity,
+    });
+    return fetchApi(`/api/admin/ai-usage/time-series?${params}`);
+  },
+
+  getAIPricing: async (): Promise<PricingConfigResponse[]> => {
+    return fetchApi(`/api/admin/ai-usage/pricing`);
+  },
 };
 
 // Export API for tailored resumes with style support
