@@ -3,12 +3,42 @@
 import pytest
 
 from app.services.job.ats import ATSAnalyzer
+from app.services.job.ats.analyzers import (
+    RoleAnalyzer,
+    ContentAnalyzer,
+    KnockoutAnalyzer,
+    KeywordAnalyzer,
+)
 
 
 @pytest.fixture
 def analyzer() -> ATSAnalyzer:
     """Create an ATSAnalyzer instance for tests."""
     return ATSAnalyzer()
+
+
+@pytest.fixture
+def role_analyzer() -> RoleAnalyzer:
+    """Create a RoleAnalyzer instance for role proximity tests."""
+    return RoleAnalyzer()
+
+
+@pytest.fixture
+def content_analyzer() -> ContentAnalyzer:
+    """Create a ContentAnalyzer instance for content quality tests."""
+    return ContentAnalyzer()
+
+
+@pytest.fixture
+def knockout_analyzer() -> KnockoutAnalyzer:
+    """Create a KnockoutAnalyzer instance for knockout check tests."""
+    return KnockoutAnalyzer()
+
+
+@pytest.fixture
+def keyword_analyzer() -> KeywordAnalyzer:
+    """Create a KeywordAnalyzer instance for keyword analysis tests."""
+    return KeywordAnalyzer()
 
 
 @pytest.fixture
