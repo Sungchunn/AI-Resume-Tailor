@@ -122,7 +122,7 @@ export function ResumeUploadModal({ open, onOpenChange }: ResumeUploadModalProps
   }, []);
 
   // Dropzone configuration
-  const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, isDragReject, open: openFilePicker } = useDropzone({
     onDrop,
     accept: ACCEPTED_FILE_TYPES,
     maxSize: MAX_FILE_SIZE,
@@ -250,7 +250,10 @@ export function ResumeUploadModal({ open, onOpenChange }: ResumeUploadModalProps
             <button
               type="button"
               className="mt-4 px-4 py-2 text-sm font-medium border border-input rounded-md hover:bg-accent transition-colors"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                openFilePicker();
+              }}
             >
               Browse File
             </button>
