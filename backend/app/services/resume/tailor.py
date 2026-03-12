@@ -10,6 +10,7 @@ import json
 import logging
 import re
 import uuid
+from dataclasses import asdict
 from typing import Any, TypedDict
 
 from pydantic import ValidationError
@@ -289,9 +290,13 @@ class TailoringService:
         # Generate tailored content
         result = await self._generate_tailoring(parsed_resume, parsed_job, focus_keywords)
 
-        # Cache the result
+        # Cache the result (convert ai_metrics dataclass to dict for JSON serialization)
+        cache_result = {
+            **result,
+            "ai_metrics": asdict(result["ai_metrics"]) if "ai_metrics" in result else None,
+        }
         await self.cache.set_tailored_result(
-            resume_id, job_id, resume_hash, job_hash, result
+            resume_id, job_id, resume_hash, job_hash, cache_result
         )
 
         return result
