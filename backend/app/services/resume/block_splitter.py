@@ -6,10 +6,12 @@ searchable experience blocks for the Vault.
 """
 
 import json
+import re
 from functools import lru_cache
 
 from app.core.protocols import SplitBlockData
 from app.services.ai.client import get_ai_client
+from app.services.ai.response import AIResponse
 
 
 SPLIT_SYSTEM_PROMPT = """You are a resume parsing expert. Your task is to split raw resume content into atomic experience blocks.
@@ -77,7 +79,8 @@ class BlockSplitter:
         raw_content: str,
         source_company: str | None = None,
         source_role: str | None = None,
-    ) -> list[SplitBlockData]:
+        return_metrics: bool = False,
+    ) -> list[SplitBlockData] | tuple[list[SplitBlockData], AIResponse | None]:
         """
         Split raw resume content into atomic blocks.
 
@@ -85,9 +88,10 @@ class BlockSplitter:
             raw_content: Raw resume text (can include multiple sections)
             source_company: Optional default company for blocks
             source_role: Optional default role for blocks
+            return_metrics: If True, return (result, metrics) tuple
 
         Returns:
-            List of SplitBlockData with content, type, and suggested tags
+            List of SplitBlockData if return_metrics=False, else (list, AIResponse | None)
         """
         # Build user prompt with context
         user_prompt = f"Split the following resume content into atomic blocks:\n\n{raw_content}"
@@ -101,7 +105,7 @@ class BlockSplitter:
             user_prompt = f"Context:\n{chr(10).join(context)}\n\n{user_prompt}"
 
         # Generate blocks using AI
-        response = await self.ai_client.generate_json(
+        ai_response = await self.ai_client.generate_json_with_metrics(
             system_prompt=SPLIT_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             max_tokens=4096,
@@ -109,11 +113,10 @@ class BlockSplitter:
 
         # Parse response
         try:
-            blocks = json.loads(response)
+            blocks = json.loads(ai_response.content)
         except json.JSONDecodeError:
             # Try to extract JSON from response if wrapped in markdown
-            import re
-            json_match = re.search(r'\[[\s\S]*\]', response)
+            json_match = re.search(r'\[[\s\S]*\]', ai_response.content)
             if json_match:
                 blocks = json.loads(json_match.group())
             else:
@@ -150,7 +153,7 @@ class BlockSplitter:
                 "source_role": block.get("source_role") or source_role,
             })
 
-        return result
+        return (result, ai_response) if return_metrics else result
 
     async def split_section(
         self,

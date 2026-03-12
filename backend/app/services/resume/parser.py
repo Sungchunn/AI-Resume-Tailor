@@ -1,8 +1,10 @@
 import json
 import hashlib
+import re
 from typing import TypedDict
 
 from app.services.ai.client import AIClient
+from app.services.ai.response import AIResponse
 from app.services.core.cache import CacheService
 
 
@@ -307,26 +309,36 @@ class ResumeParser:
         """Generate a hash of the content for cache keys."""
         return hashlib.sha256(content.encode()).hexdigest()
 
-    async def parse(self, raw_content: str) -> ParsedResume:
-        """Parse a resume into structured sections."""
+    async def parse(
+        self, raw_content: str, return_metrics: bool = False
+    ) -> ParsedResume | tuple[ParsedResume, AIResponse | None]:
+        """Parse a resume into structured sections.
+
+        Args:
+            raw_content: The raw resume text to parse
+            return_metrics: If True, return (result, metrics) tuple
+
+        Returns:
+            ParsedResume if return_metrics=False, else (ParsedResume, AIResponse | None)
+            Metrics are None when result is from cache.
+        """
         # Check cache first
         cached = await self.cache.get_parsed_resume(raw_content)
         if cached:
-            return cached
+            return (cached, None) if return_metrics else cached
 
         # Call AI to parse
-        response = await self.ai.generate_json(
+        ai_response = await self.ai.generate_json_with_metrics(
             system_prompt=RESUME_PARSER_SYSTEM_PROMPT,
             user_prompt=f"Parse the following resume:\n\n{raw_content}",
         )
 
         # Parse and validate JSON
         try:
-            parsed = json.loads(response)
+            parsed = json.loads(ai_response.content)
         except json.JSONDecodeError:
             # Try to extract JSON from response if wrapped in markdown
-            import re
-            json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', response)
+            json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', ai_response.content)
             if json_match:
                 parsed = json.loads(json_match.group(1))
             else:
@@ -335,7 +347,7 @@ class ResumeParser:
         # Cache the result
         await self.cache.set_parsed_resume(raw_content, parsed)
 
-        return parsed
+        return (parsed, ai_response) if return_metrics else parsed
 
     def get_content_hash(self, raw_content: str) -> str:
         """Get the content hash for a resume."""

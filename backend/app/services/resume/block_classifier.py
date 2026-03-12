@@ -10,6 +10,7 @@ from functools import lru_cache
 
 from app.core.protocols import BlockType
 from app.services.ai.client import get_ai_client
+from app.services.ai.response import AIResponse, AccumulatedMetrics
 
 
 CLASSIFY_SYSTEM_PROMPT = """You are an expert at classifying professional experience content.
@@ -83,17 +84,20 @@ class BlockClassifier:
     def __init__(self):
         self.ai_client = get_ai_client()
 
-    async def classify(self, content: str) -> BlockType:
+    async def classify(
+        self, content: str, return_metrics: bool = False
+    ) -> BlockType | tuple[BlockType, AIResponse | None]:
         """
         Classify a single block's type.
 
         Args:
             content: The block content text
+            return_metrics: If True, return (result, metrics) tuple
 
         Returns:
-            Classified BlockType
+            BlockType if return_metrics=False, else (BlockType, AIResponse | None)
         """
-        response = await self.ai_client.generate(
+        ai_response = await self.ai_client.generate_with_metrics(
             system_prompt=CLASSIFY_SYSTEM_PROMPT,
             user_prompt=f"Classify this content:\n\n{content}",
             max_tokens=50,
@@ -101,7 +105,7 @@ class BlockClassifier:
         )
 
         # Parse response
-        classification = response.strip().lower()
+        classification = ai_response.content.strip().lower()
 
         # Map to BlockType
         type_mapping = {
@@ -113,30 +117,37 @@ class BlockClassifier:
             "education": BlockType.EDUCATION,
         }
 
-        return type_mapping.get(classification, BlockType.RESPONSIBILITY)
+        result = type_mapping.get(classification, BlockType.RESPONSIBILITY)
+        return (result, ai_response) if return_metrics else result
 
-    async def classify_batch(self, contents: list[str]) -> list[BlockType]:
+    async def classify_batch(
+        self, contents: list[str], return_metrics: bool = False
+    ) -> list[BlockType] | tuple[list[BlockType], AIResponse | None]:
         """
         Classify multiple blocks efficiently.
 
         Args:
             contents: List of block content texts
+            return_metrics: If True, return (result, metrics) tuple
 
         Returns:
-            List of BlockTypes in same order as input
+            List of BlockTypes if return_metrics=False, else (list, AIResponse | None)
         """
         if not contents:
-            return []
+            return ([], None) if return_metrics else []
 
         if len(contents) == 1:
-            return [await self.classify(contents[0])]
+            single_result = await self.classify(contents[0], return_metrics=return_metrics)
+            if return_metrics:
+                return ([single_result[0]], single_result[1])
+            return [single_result]
 
         # Build numbered prompt
         numbered_items = "\n".join(
             f"{i+1}. {content}" for i, content in enumerate(contents)
         )
 
-        response = await self.ai_client.generate_json(
+        ai_response = await self.ai_client.generate_json_with_metrics(
             system_prompt=BATCH_CLASSIFY_SYSTEM_PROMPT,
             user_prompt=f"Classify these items:\n\n{numbered_items}",
             max_tokens=500,
@@ -144,10 +155,11 @@ class BlockClassifier:
 
         # Parse response
         try:
-            classifications = json.loads(response)
+            classifications = json.loads(ai_response.content)
         except json.JSONDecodeError:
-            # Fallback to individual classification
-            return [await self.classify(c) for c in contents]
+            # Fallback to individual classification (metrics from batch call still returned)
+            result = [await self.classify(c) for c in contents]
+            return (result, ai_response) if return_metrics else result
 
         # Map to BlockTypes
         type_mapping = {
@@ -167,19 +179,22 @@ class BlockClassifier:
             else:
                 result.append(BlockType.RESPONSIBILITY)
 
-        return result
+        return (result, ai_response) if return_metrics else result
 
-    async def suggest_tags(self, content: str) -> list[str]:
+    async def suggest_tags(
+        self, content: str, return_metrics: bool = False
+    ) -> list[str] | tuple[list[str], AIResponse | None]:
         """
         Suggest taxonomy tags for a block based on content.
 
         Args:
             content: The block content text
+            return_metrics: If True, return (result, metrics) tuple
 
         Returns:
-            List of suggested tags (lowercase, hyphenated)
+            List of tags if return_metrics=False, else (list, AIResponse | None)
         """
-        response = await self.ai_client.generate_json(
+        ai_response = await self.ai_client.generate_json_with_metrics(
             system_prompt=TAGS_SYSTEM_PROMPT,
             user_prompt=f"Suggest tags for:\n\n{content}",
             max_tokens=200,
@@ -187,19 +202,20 @@ class BlockClassifier:
 
         # Parse response
         try:
-            tags = json.loads(response)
+            tags = json.loads(ai_response.content)
             if isinstance(tags, list):
                 # Normalize tags
-                return [
+                result = [
                     tag.strip().lower().replace(" ", "-")
                     for tag in tags
                     if isinstance(tag, str) and tag.strip()
                 ][:5]
+                return (result, ai_response) if return_metrics else result
         except json.JSONDecodeError:
             pass
 
         # Fallback: empty list
-        return []
+        return ([], ai_response) if return_metrics else []
 
     async def suggest_tags_batch(self, contents: list[str]) -> list[list[str]]:
         """

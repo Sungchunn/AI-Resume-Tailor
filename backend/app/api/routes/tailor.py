@@ -42,6 +42,7 @@ from app.services import (
     TailoringService,
     TailoringValidationError,
 )
+from app.services.ai import get_usage_tracker
 from app.services.ai.client import AIServiceError
 
 router = APIRouter()
@@ -151,6 +152,18 @@ async def tailor_resume(
             original_parsed=resume.parsed.model_dump() if resume.parsed else {},
             focus_keywords=request.focus_keywords,
         )
+
+        # Log AI usage metrics
+        if "ai_metrics" in result:
+            usage_tracker = get_usage_tracker()
+            await usage_tracker.log_generation(
+                db=pg,
+                user_id=current_user_id,
+                endpoint="/tailor",
+                response=result["ai_metrics"],
+            )
+            await pg.commit()
+
     except TailoringValidationError as e:
         # AI output failed Pydantic validation even after retry
         raise HTTPException(
