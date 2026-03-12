@@ -50,6 +50,8 @@ def _to_response(doc) -> ResumeResponse:
             size_bytes=doc.original_file.size_bytes,
         ) if doc.original_file else None,
         is_master=getattr(doc, "is_master", False),
+        parsed_verified=getattr(doc, "parsed_verified", False),
+        parsed_verified_at=getattr(doc, "parsed_verified_at", None),
         created_at=doc.created_at,
         updated_at=doc.updated_at,
     )
