@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 // Hamburger icon component with animated transitions
 const HamburgerIcon = ({ isOpen }: { isOpen: boolean }) => (
@@ -197,8 +198,9 @@ export function Header() {
           )}
         </div>
 
-        {/* Right side - Auth buttons */}
+        {/* Right side - Theme toggle and Auth buttons */}
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <Link
             href="/signup"
             className="text-sm font-medium px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-colors"
