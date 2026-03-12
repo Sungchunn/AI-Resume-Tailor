@@ -321,6 +321,12 @@ export const resumeApi = {
     fetchApi(`/api/resumes/${id}/set-master`, {
       method: "PATCH",
     }),
+
+  // Parse-Once, Tailor-Many verification
+  verifyParsed: (id: string): Promise<ResumeResponse> =>
+    fetchApi(`/api/resumes/${id}/verify-parsed`, {
+      method: "PATCH",
+    }),
 };
 
 // Job API

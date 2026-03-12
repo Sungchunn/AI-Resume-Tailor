@@ -196,6 +196,23 @@ export function useSetMasterResume() {
   });
 }
 
+/**
+ * Hook to mark a resume's parsed content as verified.
+ * Part of Parse-Once, Tailor-Many architecture.
+ */
+export function useVerifyResumeParsed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => resumeApi.verifyParsed(id),
+    onSuccess: (_, id) => {
+      // Invalidate resume queries to refetch with updated verification status
+      queryClient.invalidateQueries({ queryKey: queryKeys.resumes.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.resumes.list() });
+    },
+  });
+}
+
 export function useExportTemplates() {
   return useQuery({
     queryKey: [...queryKeys.resumes.all, "exportTemplates"] as const,
