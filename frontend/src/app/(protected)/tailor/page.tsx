@@ -265,7 +265,15 @@ function TailorPageContent() {
                         : "border-border hover:border-border/80"
                     }`}
                   >
-                    <div className="font-medium text-foreground">{resume.title}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-foreground">{resume.title}</span>
+                      {resume.is_master && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">
+                          <StarIconFilled className="h-2.5 w-2.5" />
+                          Master
+                        </span>
+                      )}
+                    </div>
                     <div className="text-sm text-muted-foreground mt-1">
                       Created {new Date(resume.created_at).toLocaleDateString()}
                     </div>
@@ -385,5 +393,17 @@ export default function TailorPage() {
     >
       <TailorPageContent />
     </Suspense>
+  );
+}
+
+function StarIconFilled({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path
+        fillRule="evenodd"
+        d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"
+        clipRule="evenodd"
+      />
+    </svg>
   );
 }
