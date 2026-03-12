@@ -271,6 +271,10 @@ class ResumeDocument(BaseModel):
     style: StyleSettings | None = None
     original_file: OriginalFile | None = None
 
+    # Verification status for Parse-Once, Tailor-Many architecture
+    parsed_verified: bool = False
+    parsed_verified_at: datetime | None = None
+
     model_config = {
         "populate_by_name": True,
         "arbitrary_types_allowed": True,
@@ -304,3 +308,4 @@ class ResumeUpdate(BaseModel):
     parsed: ParsedContent | None = None
     style: StyleSettings | None = None
     is_master: bool | None = None
+    parsed_verified: bool | None = None
