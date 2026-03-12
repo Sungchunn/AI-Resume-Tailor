@@ -227,7 +227,7 @@ export function EditorToolbar({ editor, onAIRequest, isAILoading }: EditorToolba
 
             {/* AI Dropdown Menu */}
             {showAIMenu && hasSelection && (
-              <div className="absolute top-full left-0 mt-1 py-1 bg-popover border border-border rounded-md shadow-lg z-50 min-w-[160px]">
+              <div className="absolute top-full left-0 mt-1 py-1 bg-popover border border-border rounded-md shadow-lg z-50 min-w-40">
                 <div className="px-2 py-1 text-xs font-medium text-muted-foreground border-b border-border mb-1">
                   AI Improvements
                 </div>

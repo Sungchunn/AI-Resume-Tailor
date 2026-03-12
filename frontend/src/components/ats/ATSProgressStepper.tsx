@@ -25,7 +25,7 @@ export default function ATSProgressStepper({ className = '' }: ATSProgressSteppe
     <div className={`ats-progress-stepper ${className}`}>
       <div className="relative w-full h-2 bg-neutral-800 rounded-full overflow-hidden mb-8">
         <motion.div
-          className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 to-purple-600"
+          className="absolute inset-y-0 left-0 bg-linear-to-r from-purple-500 to-purple-600"
           initial={{ width: 0 }}
           animate={{ width: `${overallProgress}%` }}
           transition={{ duration: 0.3 }}
@@ -76,7 +76,7 @@ export default function ATSProgressStepper({ className = '' }: ATSProgressSteppe
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
-          className="min-h-[200px]"
+          className="min-h-50"
         >
           <StageResultCard stageData={stages[currentStage]} />
         </motion.div>
