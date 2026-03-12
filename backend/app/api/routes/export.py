@@ -1,13 +1,12 @@
-import json
 from enum import Enum
 
+from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
-from sqlalchemy.ext.asyncio import AsyncSession
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from app.api.deps import get_db_session, get_current_user_id
-from app.crud import resume_crud
-from app.crud.tailor import tailored_resume_crud
+from app.api.deps import get_mongo_db, get_current_user_id
+from app.crud.mongo import tailored_resume_crud
 from app.schemas.export import FitToPageRequest, FitToPageResponse, PageSize, StyleReduction
 from app.services.export.service import get_export_service
 from app.services.export.fit_to_page import get_fit_to_page_service
@@ -24,7 +23,7 @@ class ExportFormat(str, Enum):
 
 @router.get("/{tailored_id}")
 async def export_tailored_resume(
-    tailored_id: int,
+    tailored_id: str,
     format: ExportFormat = ExportFormat.PDF,
     # Style parameters
     font_size: int = Query(11, ge=8, le=16, description="Base font size in points"),
@@ -35,28 +34,35 @@ async def export_tailored_resume(
     line_spacing: float = Query(1.4, ge=1.1, le=2.0, description="Line height multiplier"),
     page_size: PageSize = Query(PageSize.LETTER, description="Page size"),
     template: str = Query("classic", description="Style template"),
-    db: AsyncSession = Depends(get_db_session),
+    mongo: AsyncIOMotorDatabase = Depends(get_mongo_db),
     current_user_id: int = Depends(get_current_user_id),
 ) -> Response:
     """Export a tailored resume in the specified format."""
+    # Validate ObjectId format
+    if not ObjectId.is_valid(tailored_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tailored resume not found",
+        )
+
     # Get the tailored resume
-    tailored = await tailored_resume_crud.get(db, id=tailored_id)
+    tailored = await tailored_resume_crud.get(mongo, id=tailored_id)
     if not tailored:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tailored resume not found",
         )
 
-    # Verify ownership through original resume
-    resume = await resume_crud.get(db, id=tailored.resume_id)
-    if not resume or resume.owner_id != current_user_id:
+    # Verify ownership (user_id is stored directly on TailoredResumeDocument)
+    if tailored.user_id != current_user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this tailored resume",
         )
 
-    # Parse the stored content
-    tailored_content = json.loads(tailored.tailored_content)
+    # Use finalized_data if available, otherwise fall back to tailored_data
+    # MongoDB stores these as dicts directly (no JSON parsing needed)
+    tailored_content = tailored.finalized_data or tailored.tailored_data
 
     # Generate the export
     export_service = get_export_service()
