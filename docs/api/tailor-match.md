@@ -125,6 +125,24 @@ curl -X POST http://localhost:8000/api/tailor \
 }
 ```
 
+**Prerequisites:**
+
+- Resume must have parsed content (`parsed` field is not null)
+- Resume parsed content must be verified (`parsed_verified` is true)
+
+**Error Responses:**
+
+| Status | Condition | Headers |
+| -------- | ----------- | --------- |
+| 400 | Resume must be parsed before tailoring | - |
+| 400 | Resume parsed content must be verified | `X-Redirect: /library/resumes/{resume_id}/verify` |
+| 403 | Resume or job belongs to another user | - |
+| 404 | Resume or job not found | - |
+
+**X-Redirect Header:**
+
+When tailoring is blocked due to unverified parsed content, the response includes an `X-Redirect` header indicating where the user should be redirected to verify the resume.
+
 ---
 
 ### Quick Match
