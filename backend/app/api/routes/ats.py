@@ -12,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_id, get_current_user_id_sse, get_db, get_mongo_db
 from app.crud.block import BlockRepository
-from app.crud.resume import ResumeCRUD
 from app.crud.job import JobCRUD
 from app.crud.job_listing import JobListingRepository
 from app.crud.mongo.resume import ResumeCRUD as MongoResumeCRUD
@@ -861,30 +860,13 @@ async def perform_knockout_check(
     parsed_resume = None
     parsed_job = None
 
-    # Get parsed resume
-    if request.resume_id:
-        resume_repo = ResumeCRUD()
-        resume = await resume_repo.get(db, id=request.resume_id)
-        if not resume or resume.owner_id != user_id:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Resume with id {request.resume_id} not found"
-            )
-        if resume.parsed_content:
-            parsed_resume = resume.parsed_content
-        elif resume.raw_content:
-            parsed_resume = await resume_parser.parse(resume.raw_content)
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail="Resume has no content to analyze"
-            )
-    elif request.resume_content:
+    # Get parsed resume (resume_id lookup removed - use progressive endpoint for DB lookups)
+    if request.resume_content:
         parsed_resume = await resume_parser.parse(request.resume_content)
     else:
         raise HTTPException(
             status_code=400,
-            detail="Either resume_id or resume_content must be provided"
+            detail="resume_content must be provided. Use /analyze-progressive endpoint for database lookups."
         )
 
     # Get parsed job
@@ -1164,35 +1146,13 @@ async def analyze_keywords_enhanced(
     # Get vault blocks for gap analysis
     vault_blocks = await block_repo.list_blocks(db, user_id=user_id, limit=500)
 
-    # Get parsed resume
-    parsed_resume = None
-
-    if request.resume_id:
-        resume_repo = ResumeCRUD()
-        resume = await resume_repo.get(db, id=request.resume_id)
-        if not resume or resume.owner_id != user_id:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Resume with id {request.resume_id} not found"
-            )
-        if resume.parsed_content:
-            parsed_resume = resume.parsed_content
-        elif resume.raw_content:
-            ai_client = get_ai_client()
-            cache = get_cache_service()
-            resume_parser = ResumeParser(ai_client, cache)
-            parsed_resume = await resume_parser.parse(resume.raw_content)
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail="Resume has no content to analyze"
-            )
-    elif request.resume_content:
+    # Get parsed resume (resume_id lookup removed - use progressive endpoint for DB lookups)
+    if request.resume_content:
         parsed_resume = request.resume_content
     else:
         raise HTTPException(
             status_code=400,
-            detail="Either resume_id or resume_content must be provided"
+            detail="resume_content must be provided. Use /analyze-progressive endpoint for database lookups."
         )
 
     # Perform enhanced keyword analysis
@@ -1327,35 +1287,13 @@ async def analyze_content_quality(
     """
     analyzer = get_ats_analyzer()
 
-    parsed_resume = None
-
-    # Get parsed resume
-    if request.resume_id:
-        resume_repo = ResumeCRUD()
-        resume = await resume_repo.get(db, id=request.resume_id)
-        if not resume or resume.owner_id != user_id:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Resume with id {request.resume_id} not found"
-            )
-        if resume.parsed_content:
-            parsed_resume = resume.parsed_content
-        elif resume.raw_content:
-            ai_client = get_ai_client()
-            cache = get_cache_service()
-            resume_parser = ResumeParser(ai_client, cache)
-            parsed_resume = await resume_parser.parse(resume.raw_content)
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail="Resume has no content to analyze"
-            )
-    elif request.resume_content:
+    # Get parsed resume (resume_id lookup removed - use progressive endpoint for DB lookups)
+    if request.resume_content:
         parsed_resume = request.resume_content
     else:
         raise HTTPException(
             status_code=400,
-            detail="Either resume_id or resume_content must be provided"
+            detail="resume_content must be provided. Use /analyze-progressive endpoint for database lookups."
         )
 
     # Perform content quality analysis
@@ -1459,30 +1397,13 @@ async def analyze_role_proximity(
     parsed_resume = None
     parsed_job = None
 
-    # Get parsed resume
-    if request.resume_id:
-        resume_repo = ResumeCRUD()
-        resume = await resume_repo.get(db, id=request.resume_id)
-        if not resume or resume.owner_id != user_id:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Resume with id {request.resume_id} not found"
-            )
-        if resume.parsed_content:
-            parsed_resume = resume.parsed_content
-        elif resume.raw_content:
-            parsed_resume = await resume_parser.parse(resume.raw_content)
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail="Resume has no content to analyze"
-            )
-    elif request.resume_content:
+    # Get parsed resume (resume_id lookup removed - use progressive endpoint for DB lookups)
+    if request.resume_content:
         parsed_resume = request.resume_content
     else:
         raise HTTPException(
             status_code=400,
-            detail="Either resume_id or resume_content must be provided"
+            detail="resume_content must be provided. Use /analyze-progressive endpoint for database lookups."
         )
 
     # Get parsed job
@@ -2016,15 +1937,8 @@ async def _execute_knockout_check(request: ATSProgressiveRequest, user_id: int, 
 
 async def _execute_structure_analysis(request: ATSProgressiveRequest, user_id: int, db: AsyncSession):
     """Execute Stage 1: Structure Analysis."""
-    # Get parsed resume content
-    if request.resume_id:
-        resume_repo = ResumeCRUD()
-        resume = await resume_repo.get(db, id=request.resume_id)
-        if not resume or resume.owner_id != user_id:
-            raise HTTPException(status_code=404, detail="Resume not found")
-        resume_content = resume.parsed_content or {}
-    else:
-        resume_content = request.resume_content or {}
+    # Progressive endpoint always provides resume_content directly from MongoDB
+    resume_content = request.resume_content or {}
 
     structure_request = ATSStructureRequest(resume_content=resume_content)
     # analyze_structure only takes (request, user_id) - no db param needed
