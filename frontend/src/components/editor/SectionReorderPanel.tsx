@@ -166,7 +166,7 @@ function SortableItem({ id, index }: SortableItemProps) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
         </svg>
       </button>
-      <span className="flex-shrink-0 text-muted-foreground">
+      <span className="shrink-0 text-muted-foreground">
         {SECTION_ICONS[id] || SECTION_ICONS.summary}
       </span>
       <span className="flex-1 text-sm font-medium text-foreground/80">

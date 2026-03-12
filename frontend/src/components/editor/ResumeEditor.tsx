@@ -428,10 +428,10 @@ export function ResumeEditor({
             isAILoading={isAILoading}
           />
         )}
-        <div className="overflow-y-auto max-h-[600px]">
+        <div className="overflow-y-auto max-h-">
           <EditorContent
             editor={editor}
-            className="[&_.ProseMirror]:min-h-[400px] [&_.ProseMirror]:focus:outline-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-muted-foreground/60 [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none"
+            className="[&_.ProseMirror]:min-h-100 [&_.ProseMirror]:focus:outline-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-muted-foreground/60 [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none"
             data-placeholder={placeholder}
           />
         </div>

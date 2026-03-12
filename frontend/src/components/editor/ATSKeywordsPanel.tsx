@@ -401,7 +401,7 @@ export function ATSKeywordsPanel({
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 p-4 border-b border-border">
+      <div className="shrink-0 p-4 border-b border-border">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-foreground">ATS Keywords</h3>
           <button
@@ -428,11 +428,11 @@ export function ATSKeywordsPanel({
 
       {/* Warnings */}
       {analysis.warnings.length > 0 && (
-        <div className="flex-shrink-0 p-3 bg-yellow-50 border-b border-yellow-100">
+        <div className="shrink-0 p-3 bg-yellow-50 border-b border-yellow-100">
           {analysis.warnings.map((warning, idx) => (
             <div key={idx} className="flex items-start gap-2 text-xs">
               <svg
-                className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5"
+                className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
