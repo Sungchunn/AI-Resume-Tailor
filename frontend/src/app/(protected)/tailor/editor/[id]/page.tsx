@@ -63,6 +63,19 @@ export default function TailoredEditorPage({ params }: PageProps) {
   // Use ATS score if available, otherwise fall back to semantic match score
   const displayScore = atsCompositeScore ?? tailored?.match_score ?? null;
 
+  // Build back URL based on job source
+  const backUrl = useMemo(() => {
+    if (!tailored) return "/tailor";
+    const resumeId = tailored.resume_id;
+    if (tailored.job_listing_id) {
+      return `/tailor/analyze?resume_id=${resumeId}&job_listing_id=${tailored.job_listing_id}`;
+    }
+    if (tailored.job_id) {
+      return `/tailor/analyze?resume_id=${resumeId}&job_id=${tailored.job_id}`;
+    }
+    return "/tailor";
+  }, [tailored]);
+
   // Get initial style from API
   const initialStyle = useMemo(() => {
     if (!tailored?.style_settings) return null;
@@ -107,7 +120,7 @@ export default function TailoredEditorPage({ params }: PageProps) {
   return (
     <div className="h-screen flex flex-col">
       {/* Back button */}
-      <div className="flex-shrink-0 bg-card px-4 pt-3">
+      <div className="shrink-0 bg-card px-4 pt-3">
         <Link
           href={`/tailor/verify/${id}`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
@@ -118,16 +131,16 @@ export default function TailoredEditorPage({ params }: PageProps) {
       </div>
 
       {/* Flow Stepper */}
-      <div className="flex-shrink-0 bg-card border-b border-border">
+      <div className="shrink-0 bg-card border-b border-border">
         <TailorFlowStepper
           currentStep="editor"
-          completedSteps={["select", "analyze", "verify"]}
+          completedSteps={["select", "analyze"]}
           className="py-2"
         />
       </div>
 
       {/* Header */}
-      <div className="flex-shrink-0 bg-card border-b border-border px-4 py-2">
+      <div className="shrink-0 bg-card border-b border-border px-4 py-2">
         <div className="flex items-center justify-between">
           <div className="text-sm">
             {tailored.job_title && (
@@ -197,7 +210,7 @@ function LoadingState() {
   return (
     <div className="h-screen flex flex-col">
       {/* Header Skeleton */}
-      <div className="flex-shrink-0 bg-card border-b border-border px-4 py-2">
+      <div className="shrink-0 bg-card border-b border-border px-4 py-2">
         <div className="flex items-center justify-between">
           <div className="h-8 w-32 bg-muted rounded animate-pulse" />
           <div className="h-8 w-24 bg-muted rounded animate-pulse" />
@@ -208,7 +221,7 @@ function LoadingState() {
       <div className="flex-1 flex">
         {/* Left Panel - Preview */}
         <div className="flex-1 p-4 bg-muted/30">
-          <div className="max-w-[8.5in] mx-auto bg-white shadow-lg rounded-sm p-8 space-y-6">
+          <div className="max-w-204 mx-auto bg-white shadow-lg rounded-sm p-8 space-y-6">
             <div className="h-8 w-3/4 bg-muted rounded animate-pulse" />
             <div className="space-y-2">
               <div className="h-4 w-full bg-muted rounded animate-pulse" />
@@ -227,7 +240,7 @@ function LoadingState() {
         </div>
 
         {/* Right Panel - Control Panel */}
-        <div className="w-[400px] border-l border-border bg-card">
+        <div className="w-100 border-l border-border bg-card">
           <div className="p-4 space-y-4">
             <div className="h-10 w-full bg-muted rounded animate-pulse" />
             <div className="space-y-3">

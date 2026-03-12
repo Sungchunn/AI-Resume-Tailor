@@ -165,8 +165,8 @@ function AnalyzePageContent() {
           };
 
       const result = await tailorResume.mutateAsync(request);
-      // Navigate directly to verify page (Step 3: Verify Sections)
-      router.push(`/tailor/verify/${result.id}`);
+      // Navigate directly to editor (Step 3: Review & Edit)
+      router.push(`/tailor/editor/${result.id}`);
     } catch {
       // Error is handled by mutation state
     }
