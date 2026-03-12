@@ -390,7 +390,7 @@ export function ATSKeywordsPanel({
       <div className="h-full flex flex-col items-center justify-center p-4 text-center">
         <button
           onClick={runAnalysis}
-          className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+          className="btn-primary"
         >
           Analyze Keywords
         </button>

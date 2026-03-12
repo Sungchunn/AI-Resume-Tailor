@@ -76,7 +76,7 @@ export default function ImportWizardPage() {
           <div
             className={`flex items-center justify-center w-10 h-10 rounded-full ${
               step === "input"
-                ? "bg-primary text-white"
+                ? "bg-primary text-primary-foreground"
                 : "bg-green-500 text-white"
             }`}
           >
@@ -89,7 +89,7 @@ export default function ImportWizardPage() {
           <div
             className={`flex items-center justify-center w-10 h-10 rounded-full ${
               step === "review"
-                ? "bg-primary text-white"
+                ? "bg-primary text-primary-foreground"
                 : step === "complete"
                 ? "bg-green-500 text-white"
                 : "bg-muted text-muted-foreground"

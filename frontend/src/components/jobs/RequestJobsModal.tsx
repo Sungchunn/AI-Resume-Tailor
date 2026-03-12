@@ -298,7 +298,7 @@ export function RequestJobsModal({ isOpen, onClose }: RequestJobsModalProps) {
                 <button
                   type="submit"
                   disabled={isCreating || !url || !isValidUrl}
-                  className="w-full py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >
                   {isCreating ? (
                     <>

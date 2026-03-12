@@ -142,7 +142,7 @@ export default function PresetForm({ preset, onClose }: PresetFormProps) {
                             onClick={() => setCount(presetValue)}
                             className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                               count === presetValue
-                                ? "bg-primary text-white"
+                                ? "bg-primary text-primary-foreground"
                                 : "bg-muted text-foreground/80 hover:bg-muted"
                             }`}
                           >
@@ -194,7 +194,7 @@ export default function PresetForm({ preset, onClose }: PresetFormProps) {
               <button
                 type="submit"
                 disabled={!isValid || isPending}
-                className="inline-flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary/90 sm:ml-3 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 sm:ml-3 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isPending
                   ? isEditing
