@@ -6,7 +6,7 @@ Orchestrates all ATS stages with real-time progress streaming.
 
 import json
 import time
-from dataclasses import asdict
+from dataclasses import asdict, is_dataclass
 
 from fastapi import APIRouter, Depends, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -271,6 +271,14 @@ async def analyze_progressive_ats(
 
                     stage_results[stage_key] = result
 
+                    # Serialize result: Pydantic models use model_dump(), dataclasses use asdict()
+                    if hasattr(result, 'model_dump'):
+                        serialized_result = result.model_dump()
+                    elif is_dataclass(result):
+                        serialized_result = asdict(result)
+                    else:
+                        serialized_result = result
+
                     yield {
                         "event": "stage_complete",
                         "data": json.dumps({
@@ -279,7 +287,7 @@ async def analyze_progressive_ats(
                             "status": "completed",
                             "progress_percent": progress_percent,
                             "elapsed_ms": stage_elapsed,
-                            "result": result.model_dump() if hasattr(result, 'model_dump') else result,
+                            "result": serialized_result,
                         })
                     }
 
@@ -317,6 +325,8 @@ async def analyze_progressive_ats(
                 for key, result in stage_results.items():
                     if hasattr(result, 'model_dump'):
                         cacheable_stage_results[key] = result.model_dump()
+                    elif is_dataclass(result):
+                        cacheable_stage_results[key] = asdict(result)
                     else:
                         cacheable_stage_results[key] = result
 
