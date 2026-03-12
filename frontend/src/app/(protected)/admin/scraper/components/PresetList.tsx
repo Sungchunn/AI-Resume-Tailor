@@ -148,8 +148,8 @@ export default function PresetList() {
                   title={preset.is_active ? "Pause preset" : "Activate preset"}
                 >
                   <span
-                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                      preset.is_active ? "translate-x-4" : "translate-x-0"
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out ${
+                      preset.is_active ? "translate-x-4 bg-primary-foreground" : "translate-x-0 bg-background"
                     }`}
                   />
                 </button>
