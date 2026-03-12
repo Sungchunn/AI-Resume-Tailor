@@ -10,7 +10,12 @@ class TestAnalyzeStructure:
 
     def test_complete_resume(self, analyzer):
         """Should score well for complete resume."""
+        # Contact must be first to avoid section order warnings
         resume = {
+            "contact": {
+                "email": "test@example.com",
+                "phone": "555-123-4567",
+            },
             "summary": "Experienced developer...",
             "experience": [
                 {"company": "TechCorp", "title": "Engineer"}
@@ -21,10 +26,6 @@ class TestAnalyzeStructure:
             "skills": ["Python", "AWS"],
             "certifications": ["AWS Certified"],
             "projects": ["Open source contributor"],
-            "contact": {
-                "email": "test@example.com",
-                "phone": "555-123-4567",
-            },
         }
 
         result = analyzer.analyze_structure(resume)
