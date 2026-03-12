@@ -571,10 +571,10 @@ async def preview_writeback(
     )
 
     return WritebackProposal(
-        action=proposal["action"],
-        preview=proposal["preview"],
-        original=proposal["original"],
-        changes=proposal["changes"],
+        action=proposal.action,
+        preview=proposal.preview,
+        original=proposal.original,
+        changes=proposal.changes,
     )
 
 

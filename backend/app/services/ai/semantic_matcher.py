@@ -138,16 +138,16 @@ class SemanticMatcher:
         # Enhance matches with keyword information
         enhanced_matches = []
         for match in matches:
-            block_content = match["block"]["content"].lower()
+            block_content = match.block.content.lower()
             matched_keywords = [
                 kw for kw in job_keywords
                 if kw.lower() in block_content
             ]
-            enhanced_matches.append({
-                "block": match["block"],
-                "score": match["score"],
-                "matched_keywords": matched_keywords,
-            })
+            enhanced_matches.append(SemanticMatchData(
+                block=match.block,
+                score=match.score,
+                matched_keywords=matched_keywords,
+            ))
 
         return enhanced_matches
 
@@ -197,7 +197,7 @@ class SemanticMatcher:
         """
         # Format matched blocks for prompt
         blocks_text = "\n\n".join(
-            f"Block (score: {m['score']:.2f}):\n{m['block']['content']}"
+            f"Block (score: {m.score:.2f}):\n{m.block.content}"
             for m in matched_blocks[:10]  # Limit to top 10 for prompt size
         )
 
@@ -214,22 +214,22 @@ class SemanticMatcher:
 
         try:
             analysis = json.loads(response)
-            return {
-                "match_score": min(100, max(0, int(analysis.get("match_score", 50)))),
-                "skill_matches": analysis.get("skill_matches", []),
-                "skill_gaps": analysis.get("skill_gaps", []),
-                "keyword_coverage": min(1.0, max(0.0, float(analysis.get("keyword_coverage", 0.5)))),
-                "recommendations": analysis.get("recommendations", []),
-            }
+            return GapAnalysisData(
+                match_score=min(100, max(0, int(analysis.get("match_score", 50)))),
+                skill_matches=analysis.get("skill_matches", []),
+                skill_gaps=analysis.get("skill_gaps", []),
+                keyword_coverage=min(1.0, max(0.0, float(analysis.get("keyword_coverage", 0.5)))),
+                recommendations=analysis.get("recommendations", []),
+            )
         except (json.JSONDecodeError, TypeError, ValueError):
             # Return default analysis on error
-            return {
-                "match_score": 50,
-                "skill_matches": [],
-                "skill_gaps": [],
-                "keyword_coverage": 0.5,
-                "recommendations": ["Unable to analyze - please try again"],
-            }
+            return GapAnalysisData(
+                match_score=50,
+                skill_matches=[],
+                skill_gaps=[],
+                keyword_coverage=0.5,
+                recommendations=["Unable to analyze - please try again"],
+            )
 
     async def find_best_blocks_for_keywords(
         self,
