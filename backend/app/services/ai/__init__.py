@@ -7,15 +7,33 @@ from app.services.ai.embedding import (
     get_embedding_service,
     EMBEDDING_DIMENSIONS,
 )
+from app.services.ai.response import (
+    AIResponse,
+    AIUsageMetrics,
+    EmbeddingResponse,
+    BatchEmbeddingResponse,
+)
 from app.services.ai.semantic_matcher import SemanticMatcher, get_semantic_matcher
+from app.services.ai.usage_tracker import AIUsageTracker, get_usage_tracker
 
 __all__ = [
+    # Client
     "AIClient",
     "get_ai_client",
+    # Embedding
     "EmbeddingService",
     "EmbeddingTaskType",
     "get_embedding_service",
     "EMBEDDING_DIMENSIONS",
+    # Response types
+    "AIResponse",
+    "AIUsageMetrics",
+    "EmbeddingResponse",
+    "BatchEmbeddingResponse",
+    # Usage tracking
+    "AIUsageTracker",
+    "get_usage_tracker",
+    # Semantic matching
     "SemanticMatcher",
     "get_semantic_matcher",
 ]
