@@ -421,10 +421,36 @@ function AnalyzePageContent() {
         )}
       </AnimatePresence>
 
+      {/* Resume Verification Warning */}
+      {resume && !resume.parsed_verified && (
+        <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-medium text-amber-800 dark:text-amber-300">
+                Resume Verification Required
+              </p>
+              <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+                Your resume needs to be verified before tailoring. Please review the parsed content to ensure accuracy.
+              </p>
+              <Link
+                href={`/library/resumes/${resumeId}/verify`}
+                className="inline-flex items-center gap-1 text-sm font-medium text-amber-700 dark:text-amber-300 hover:underline mt-2"
+              >
+                Verify Resume
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* CTA Section */}
       <div className="flex items-center justify-between pt-4 border-t border-border">
         <div className="text-sm text-muted-foreground">
-          {(atsComplete || atsStream.isComplete || (!jobListingIdNum && jobIdNum)) ? (
+          {resume && !resume.parsed_verified ? (
+            <span>Resume verification required before tailoring</span>
+          ) : (atsComplete || atsStream.isComplete || (!jobListingIdNum && jobIdNum)) ? (
             selectedKeywords.length > 0 ? (
               <span>
                 {selectedKeywords.length} skill
@@ -443,6 +469,7 @@ function AnalyzePageContent() {
         <button
           onClick={handleGenerateTailored}
           disabled={
+            (resume && !resume.parsed_verified) ||
             !(atsComplete || atsStream.isComplete || (!jobListingIdNum && jobIdNum)) ||
             tailorResume.isPending
           }
