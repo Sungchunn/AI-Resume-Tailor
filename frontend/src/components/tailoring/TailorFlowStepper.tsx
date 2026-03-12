@@ -2,7 +2,11 @@
  * TailorFlowStepper Component
  *
  * A horizontal 3-step progress indicator for the tailor flow wizard.
- * Shows the user's progress through: Select Resume → Analyze Match → Editor
+ * Shows the user's progress through: Select Resume → Analyze Match → Review & Edit
+ *
+ * Note: The "Verify Sections" step was removed as part of the
+ * Parse-Once, Tailor-Many architecture. Verification now happens
+ * in the Library flow before tailoring.
  *
  * Features:
  * - Horizontal layout with circles connected by lines
@@ -16,7 +20,7 @@
 // Types
 // ============================================================================
 
-export type TailorFlowStep = "select" | "analyze" | "verify" | "editor";
+export type TailorFlowStep = "select" | "analyze" | "editor";
 
 interface TailorFlowStepConfig {
   step: TailorFlowStep;
@@ -40,8 +44,7 @@ interface TailorFlowStepperProps {
 const TAILOR_STEPS: TailorFlowStepConfig[] = [
   { step: "select", label: "Select Resume", number: 1 },
   { step: "analyze", label: "Analyze Match", number: 2 },
-  { step: "verify", label: "Verify Sections", number: 3 },
-  { step: "editor", label: "Editor", number: 4 },
+  { step: "editor", label: "Review & Edit", number: 3 },
 ];
 
 // ============================================================================
