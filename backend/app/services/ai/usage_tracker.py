@@ -73,7 +73,7 @@ class AIUsageTracker:
         db: AsyncSession,
         user_id: int | None,
         endpoint: str,
-        response: AIResponse,
+        response: AIResponse | dict,
         success: bool = True,
         error_message: str | None = None,
     ) -> AIUsageLog:
@@ -83,7 +83,7 @@ class AIUsageTracker:
             db: Database session
             user_id: ID of the user who made the request (None for system ops)
             endpoint: API endpoint that triggered this call
-            response: The AI response with metrics
+            response: The AI response with metrics (AIResponse object or dict from cache)
             success: Whether the call succeeded
             error_message: Error message if failed
 
@@ -93,15 +93,30 @@ class AIUsageTracker:
         Note:
             Caller is responsible for committing the session.
         """
+        # Extract metrics from AIResponse object or dict (from cache)
+        if isinstance(response, dict):
+            provider = response["provider"]
+            model = response["model"]
+            metrics = response["metrics"]
+            input_tokens = metrics["input_tokens"]
+            output_tokens = metrics["output_tokens"]
+            total_tokens = metrics["total_tokens"]
+            latency_ms = metrics["latency_ms"]
+        else:
+            provider = response.provider
+            model = response.model
+            input_tokens = response.metrics.input_tokens
+            output_tokens = response.metrics.output_tokens
+            total_tokens = response.metrics.total_tokens
+            latency_ms = response.metrics.latency_ms
+
         # Get current pricing
-        input_rate, output_rate = await self.get_current_pricing(
-            db, response.provider, response.model
-        )
+        input_rate, output_rate = await self.get_current_pricing(db, provider, model)
 
         # Calculate cost
         cost = self.calculate_cost(
-            response.metrics.input_tokens,
-            response.metrics.output_tokens,
+            input_tokens,
+            output_tokens,
             input_rate,
             output_rate,
         )
@@ -110,14 +125,14 @@ class AIUsageTracker:
         log = AIUsageLog(
             user_id=user_id,
             endpoint=endpoint,
-            provider=response.provider,
-            model=response.model,
+            provider=provider,
+            model=model,
             operation_type="generation",
-            input_tokens=response.metrics.input_tokens,
-            output_tokens=response.metrics.output_tokens,
-            total_tokens=response.metrics.total_tokens,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=total_tokens,
             cost_usd=cost,
-            latency_ms=response.metrics.latency_ms,
+            latency_ms=latency_ms,
             success=success,
             error_message=error_message,
         )
