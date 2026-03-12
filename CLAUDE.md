@@ -360,6 +360,70 @@ export default function MyNewPage() {
 }
 ```
 
+### 14. AI Usage Tracking
+
+**ALWAYS log AI usage metrics when making AI API calls.**
+
+- Every AI call (OpenAI, embedding services, etc.) must have its usage tracked
+- Use `return_metrics=True` when calling AI services to get metrics back
+- Log metrics using `AIUsageTracker.log_generation()` in route handlers
+- This enables cost monitoring and usage analytics per user/endpoint
+
+**Services with metrics support:**
+
+- `ResumeParser.parse(raw_content, return_metrics=True)`
+- `JobAnalyzer.analyze(raw_content, return_metrics=True)`
+- `TailoringService` (returns metrics in `TailoringResult["ai_metrics"]`)
+- `SemanticMatcher.extract_keywords()`, `analyze_gaps()`
+- `BlockSplitter.split()`, `BlockClassifier.classify()`, `suggest_tags()`
+- `KeywordExtractor.extract_keywords()`, `extract_keywords_with_importance()`
+- `SuggestionGenerator.generate_suggestions()`, `suggest_single_bullet()`
+
+```python
+# CORRECT - Track AI usage in route handlers
+from app.services.ai import get_usage_tracker
+
+@router.post("/my-ai-endpoint")
+async def my_endpoint(
+    db: AsyncSession = Depends(get_db),
+    current_user_id: int = Depends(get_current_user_id),
+):
+    ai_client = get_ai_client()
+    usage_tracker = get_usage_tracker()
+
+    # Use _with_metrics variant for direct AI client calls
+    ai_response = await ai_client.generate_json_with_metrics(
+        system_prompt="...",
+        user_prompt="...",
+    )
+
+    # Log the usage
+    await usage_tracker.log_generation(
+        db=db,
+        user_id=current_user_id,
+        endpoint="/my-ai-endpoint",
+        response=ai_response,
+    )
+    await db.commit()
+
+    return process_response(ai_response.content)
+
+
+# CORRECT - Track usage from services that support return_metrics
+parser = ResumeParser(ai_client, cache)
+result, metrics = await parser.parse(raw_content, return_metrics=True)
+
+if metrics:  # None if result was cached
+    await usage_tracker.log_generation(
+        db=db, user_id=user_id, endpoint="/parse", response=metrics
+    )
+    await db.commit()
+
+
+# WRONG - AI call without tracking
+response = await ai_client.generate_json(...)  # No metrics captured!
+```
+
 ---
 
 ## Development Workflow
