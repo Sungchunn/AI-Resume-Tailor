@@ -121,6 +121,11 @@ class ResumeCRUD:
             update_data["style"] = obj_in.style.model_dump()
         if obj_in.is_master is not None:
             update_data["is_master"] = obj_in.is_master
+        if obj_in.parsed_verified is not None:
+            update_data["parsed_verified"] = obj_in.parsed_verified
+            # Set timestamp when marking as verified
+            if obj_in.parsed_verified is True:
+                update_data["parsed_verified_at"] = datetime.now(timezone.utc)
 
         if not update_data:
             # No fields to update, just return current document
