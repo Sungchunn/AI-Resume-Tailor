@@ -170,7 +170,7 @@ Change lines 109-118:
 
 ```tsx
 // OLD
-<div className="flex-shrink-0 bg-card px-4 pt-3">
+<div className="shrink-0 bg-card px-4 pt-3">
   <Link
     href={`/tailor/verify/${id}`}
     className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
@@ -181,7 +181,7 @@ Change lines 109-118:
 </div>
 
 // NEW
-<div className="flex-shrink-0 bg-card px-4 pt-3">
+<div className="shrink-0 bg-card px-4 pt-3">
   <Link
     href={backUrl}
     className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
@@ -215,7 +215,7 @@ Change lines 120-127:
 
 ```tsx
 // OLD
-<div className="flex-shrink-0 bg-card border-b border-border">
+<div className="shrink-0 bg-card border-b border-border">
   <TailorFlowStepper
     currentStep="editor"
     completedSteps={["select", "analyze", "verify"]}
@@ -224,7 +224,7 @@ Change lines 120-127:
 </div>
 
 // NEW
-<div className="flex-shrink-0 bg-card border-b border-border">
+<div className="shrink-0 bg-card border-b border-border">
   <TailorFlowStepper
     currentStep="editor"
     completedSteps={["select", "analyze"]}
