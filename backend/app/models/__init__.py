@@ -11,6 +11,8 @@ from app.models.scraper_run import ScraperRun
 from app.models.scraper_preset import ScraperPreset
 from app.models.scraper_schedule_settings import ScraperScheduleSettings
 from app.models.scraper_request import ScraperRequest, RequestStatus
+from app.models.ai_usage_log import AIUsageLog
+from app.models.ai_pricing_config import AIPricingConfig
 
 # Backward compatibility alias
 Workshop = ResumeBuild
@@ -31,4 +33,6 @@ __all__ = [
     "ScraperScheduleSettings",
     "ScraperRequest",
     "RequestStatus",
+    "AIUsageLog",
+    "AIPricingConfig",
 ]
