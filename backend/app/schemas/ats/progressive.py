@@ -12,11 +12,11 @@ from pydantic import BaseModel, Field
 class ATSProgressiveRequest(BaseModel):
     """Request for progressive ATS analysis with SSE streaming."""
 
-    resume_id: int | None = Field(None, description="Resume database ID")
-    job_id: int | None = Field(None, description="Job database ID")
-    resume_content: dict | None = Field(None, description="Raw resume content")
-    job_description: str | None = Field(None, description="Raw job description text")
-    job_content: dict | None = Field(None, description="Parsed job content for role proximity")
+    resume_id: int | None = Field(default=None, description="Resume database ID")
+    job_id: int | None = Field(default=None, description="Job database ID")
+    resume_content: dict | None = Field(default=None, description="Raw resume content")
+    job_description: str | None = Field(default=None, description="Raw job description text")
+    job_content: dict | None = Field(default=None, description="Parsed job content for role proximity")
 
 
 class ATSStageProgress(BaseModel):
