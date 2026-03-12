@@ -17,7 +17,7 @@ from app.crud.block import BlockRepository
 from app.crud.job import JobCRUD
 from app.crud.job_listing import JobListingRepository
 from app.crud.mongo.resume import ResumeCRUD as MongoResumeCRUD
-from app.services.job.ats_analyzer import get_ats_analyzer
+from app.services.job.ats import get_ats_analyzer
 from app.services.resume.parser import ResumeParser
 from app.services.job.analyzer import JobAnalyzer
 from app.services.ai.client import get_ai_client

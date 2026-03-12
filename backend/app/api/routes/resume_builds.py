@@ -264,7 +264,7 @@ async def generate_suggestions(
     improvements to the resume content. Suggestions are Vault-constrained
     and will only use facts from the user's experience blocks.
     """
-    from app.services.job.diff_engine import get_diff_engine
+    from app.services.job.diff import get_diff_engine
 
     resume_build = await resume_build_repository.get(
         db, resume_build_id=resume_build_id, user_id=current_user_id
@@ -335,7 +335,7 @@ async def suggest_bullet(
     this doesn't store suggestions as pending diffs - it returns immediately
     for the user to accept or dismiss.
     """
-    from app.services.job.diff_engine import get_diff_engine
+    from app.services.job.diff import get_diff_engine
 
     # Verify resume build exists and user has access
     resume_build = await resume_build_repository.get(

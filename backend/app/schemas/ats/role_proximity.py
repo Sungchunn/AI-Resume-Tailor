@@ -11,7 +11,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.services.job.ats_analyzer import TrajectoryType
+from app.services.job.ats import TrajectoryType
 
 
 class RoleProximityRequest(BaseModel):

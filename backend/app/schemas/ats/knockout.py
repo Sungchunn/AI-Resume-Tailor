@@ -6,7 +6,7 @@ Request/response models for binary disqualifier detection.
 
 from pydantic import BaseModel, Field
 
-from app.services.job.ats_analyzer import KnockoutRiskType, KnockoutSeverity
+from app.services.job.ats import KnockoutRiskType, KnockoutSeverity
 
 
 class KnockoutCheckRequest(BaseModel):
