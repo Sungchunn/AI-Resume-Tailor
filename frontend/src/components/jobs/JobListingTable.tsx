@@ -71,7 +71,7 @@ export function JobListingTable({ listings }: JobListingTableProps) {
               <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                 Posted
               </th>
-              <th className="text-left py-3 px-4 font-medium text-muted-foreground w-12">
+              <th className="text-left py-3 px-4 font-medium text-muted-foreground w-16">
                 {/* Logo column */}
               </th>
               <th className="text-left py-3 px-4 font-medium text-muted-foreground">
@@ -108,14 +108,14 @@ export function JobListingTable({ listings }: JobListingTableProps) {
                     <img
                       src={listing.company_logo}
                       alt=""
-                      className="w-8 h-8 rounded object-contain border border-border dark:border-zinc-600"
+                      className="w-14 h-14 -my-3 rounded object-contain"
                       loading="lazy"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
                       }}
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded bg-muted dark:bg-zinc-700 flex items-center justify-center text-muted-foreground text-xs font-medium">
+                    <div className="w-14 h-14 -my-3 rounded bg-muted dark:bg-zinc-700 flex items-center justify-center text-muted-foreground text-sm font-medium">
                       {listing.company_name?.charAt(0)?.toUpperCase() || "?"}
                     </div>
                   )}
@@ -156,7 +156,7 @@ export function JobListingTable({ listings }: JobListingTableProps) {
                 {/* Seniority */}
                 <td className="py-3 px-4">
                   {listing.seniority ? (
-                    <span className="px-2 py-0.5 bg-muted dark:bg-zinc-700 rounded-full text-xs capitalize text-muted-foreground">
+                    <span className="px-2 py-0.5 bg-muted dark:bg-zinc-700 rounded-full text-xs capitalize text-muted-foreground whitespace-nowrap">
                       {listing.seniority}
                     </span>
                   ) : (
