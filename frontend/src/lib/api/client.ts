@@ -864,7 +864,7 @@ export const exportApi = {
    * Export a tailored resume with style parameters.
    */
   exportTailored: async (
-    tailoredId: number,
+    tailoredId: string,
     params: TailoredExportParams = {}
   ): Promise<Blob> => {
     const searchParams = new URLSearchParams();
