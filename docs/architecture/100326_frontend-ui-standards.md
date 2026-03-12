@@ -133,6 +133,65 @@ These explicit color pairs (e.g., `bg-amber-600 text-white`) are safe because th
 
 ---
 
+## Toggle Switches
+
+**CRITICAL:** Never use `bg-white` for toggle thumbs when the track uses `bg-primary`. In dark mode, `bg-primary` becomes white, causing an invisible white-on-white thumb.
+
+### The Problem
+
+Toggle switches typically have:
+- **Track:** The background pill that indicates ON/OFF state
+- **Thumb:** The circular knob that slides left/right
+
+Common (broken) implementation:
+
+```tsx
+// WRONG - White thumb becomes invisible on white track in dark mode
+<button className={`... ${isActive ? "bg-primary" : "bg-muted"}`}>
+  <span className="... bg-white" />  {/* Always white thumb */}
+</button>
+```
+
+In dark mode:
+- `bg-primary` = white (track when ON)
+- `bg-white` = white (thumb)
+- Result: Invisible thumb!
+
+### Correct Implementation
+
+Use `bg-primary-foreground` for the thumb, which adapts to contrast with the track:
+
+```tsx
+// CORRECT - Thumb color adapts to contrast with track
+<button
+  type="button"
+  onClick={handleToggle}
+  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+    isActive ? "bg-primary" : "bg-muted"
+  }`}
+>
+  <span className="sr-only">Toggle setting</span>
+  <span
+    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out ${
+      isActive
+        ? "translate-x-5 bg-primary-foreground"  // ON: contrasts with bg-primary
+        : "translate-x-0 bg-background"          // OFF: contrasts with bg-muted
+    }`}
+  />
+</button>
+```
+
+### Color Behavior
+
+| Mode | Track (ON) | Thumb (ON) | Track (OFF) | Thumb (OFF) |
+| ----- | ----- | ----- | ----- | ----- |
+| Light | `bg-primary` (dark) | `bg-primary-foreground` (white) | `bg-muted` (gray) | `bg-background` (white) |
+| Dark | `bg-primary` (white) | `bg-primary-foreground` (black) | `bg-muted` (dark gray) | `bg-background` (dark) |
+
+This ensures the thumb is always visible against the track in both modes.
+
+---
+
 ## Key Principles
 
 1. **Layer separation:** Each nested layer should be visibly distinct from its parent
