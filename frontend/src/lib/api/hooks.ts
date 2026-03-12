@@ -1252,28 +1252,39 @@ export function useATSProgressiveAnalysis() {
         console.log("ATS analysis cache miss, running fresh analysis for job:", data.job_id);
       });
 
+      // Helper to convert snake_case SSE data to camelCase for store
+      const transformStageData = (data: Record<string, unknown>) => ({
+        stage: data.stage as number,
+        stageName: data.stage_name as string,
+        status: data.status as 'pending' | 'running' | 'completed' | 'failed',
+        progressPercent: (data.progress_percent as number) ?? 0,
+        elapsedMs: data.elapsed_ms as number | undefined,
+        result: data.result,
+        error: data.error as string | undefined,
+      });
+
       eventSource.addEventListener("stage_start", (e: Event) => {
         const customEvent = e as MessageEvent;
         const data = JSON.parse(customEvent.data);
-        store.updateStage(data);
+        store.updateStage(transformStageData(data));
       });
 
       eventSource.addEventListener("stage_complete", (e: Event) => {
         const customEvent = e as MessageEvent;
         const data = JSON.parse(customEvent.data);
-        store.updateStage(data);
+        store.updateStage(transformStageData(data));
       });
 
       eventSource.addEventListener("stage_error", (e: Event) => {
         const customEvent = e as MessageEvent;
         const data = JSON.parse(customEvent.data);
-        store.updateStage(data);
+        store.updateStage(transformStageData(data));
       });
 
       eventSource.addEventListener("score_calculation", (e: Event) => {
         const customEvent = e as MessageEvent;
         const data = JSON.parse(customEvent.data);
-        store.updateStage(data);
+        store.updateStage(transformStageData(data));
       });
 
       eventSource.addEventListener("complete", (e: Event) => {

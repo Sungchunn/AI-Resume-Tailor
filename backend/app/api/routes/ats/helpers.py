@@ -4,22 +4,25 @@ ATS Analysis Helper Functions
 Shared execution helpers for the progressive ATS analysis endpoint.
 """
 
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.crud.block import BlockRepository
 from app.schemas.ats import (
     ATSProgressiveRequest,
     KnockoutCheckRequest,
     ATSStructureRequest,
-    ATSKeywordEnhancedRequest,
     ContentQualityRequest,
     RoleProximityRequest,
     ATSCompositeScore,
 )
+from app.services.ai.response import AIResponse
+from app.services.job.ats import get_ats_analyzer
 
 # Import endpoint functions from stage modules
 from app.api.routes.ats.knockout import perform_knockout_check
 from app.api.routes.ats.structure import analyze_structure
-from app.api.routes.ats.keywords import analyze_keywords_enhanced
 from app.api.routes.ats.content_quality import analyze_content_quality
 from app.api.routes.ats.role_proximity import analyze_role_proximity
 
@@ -91,14 +94,27 @@ async def execute_structure_analysis(
 
 async def execute_keyword_analysis(
     request: ATSProgressiveRequest, user_id: int, db: AsyncSession
-):
-    """Execute Stage 2: Enhanced Keyword Analysis."""
-    keyword_request = ATSKeywordEnhancedRequest(
-        resume_id=request.resume_id,
-        resume_content=request.resume_content,
+) -> tuple[Any, AIResponse | None]:
+    """Execute Stage 2: Enhanced Keyword Analysis.
+
+    Returns:
+        Tuple of (EnhancedKeywordAnalysis result, AIResponse metrics or None)
+    """
+    analyzer = get_ats_analyzer()
+    block_repo = BlockRepository()
+
+    # Get vault blocks for gap analysis
+    vault_blocks = await block_repo.list_blocks(db, user_id=user_id, limit=500)
+
+    # Perform enhanced keyword analysis with metrics
+    result, ai_metrics = await analyzer.analyze_keywords_enhanced(
+        parsed_resume=request.resume_content or {},
         job_description=request.job_description or "",
+        vault_blocks=vault_blocks,
+        return_metrics=True,
     )
-    return await analyze_keywords_enhanced(keyword_request, user_id, db)
+
+    return result, ai_metrics
 
 
 async def execute_content_quality(
