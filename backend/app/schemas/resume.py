@@ -54,6 +54,8 @@ class ResumeResponse(BaseModel):
     style: dict[str, Any] | None = None
     original_file: OriginalFileInfo | None = None
     is_master: bool = False  # Designates default resume for tailoring flows
+    parsed_verified: bool = False
+    parsed_verified_at: datetime | None = None
     created_at: datetime
     updated_at: datetime | None = None
 
@@ -77,6 +79,8 @@ class ResumeResponse(BaseModel):
                 size_bytes=doc.original_file.size_bytes,
             ) if doc.original_file else None,
             is_master=getattr(doc, "is_master", False),
+            parsed_verified=getattr(doc, "parsed_verified", False),
+            parsed_verified_at=getattr(doc, "parsed_verified_at", None),
             created_at=doc.created_at,
             updated_at=doc.updated_at,
         )
