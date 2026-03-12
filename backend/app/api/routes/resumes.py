@@ -186,6 +186,62 @@ async def set_master_resume(
     return _to_response(resume)
 
 
+@router.patch("/{resume_id}/verify-parsed", response_model=ResumeResponse)
+async def verify_parsed_resume(
+    resume_id: str,
+    mongo_db: AsyncIOMotorDatabase = Depends(get_mongo_db),
+    current_user_id: int = Depends(get_current_user_id),
+) -> ResumeResponse:
+    """Mark a resume's parsed content as verified by the user.
+
+    Prerequisites:
+    - Resume must exist and belong to the current user
+    - Resume must have parsed content (parsed != None)
+
+    Once verified, the resume can be used in tailoring flows.
+    Tailoring will be blocked for unverified resumes.
+    """
+    # Fetch resume
+    resume = await resume_crud.get(mongo_db, id=resume_id)
+    if not resume:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume not found",
+        )
+
+    # Verify ownership
+    if resume.user_id != current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this resume",
+        )
+
+    # Ensure resume is parsed
+    if not resume.parsed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Resume must be parsed before it can be verified",
+        )
+
+    # Already verified - return current state
+    if resume.parsed_verified:
+        return _to_response(resume)
+
+    # Update verification status
+    update_data = MongoResumeUpdate(parsed_verified=True)
+
+    # Note: The CRUD layer automatically sets parsed_verified_at when parsed_verified is True
+    updated = await resume_crud.update(mongo_db, id=resume_id, obj_in=update_data)
+
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to verify resume",
+        )
+
+    return _to_response(updated)
+
+
 @router.get("/export/templates", response_model=ExportTemplatesResponse)
 async def get_export_templates() -> ExportTemplatesResponse:
     """Get available export style templates."""
