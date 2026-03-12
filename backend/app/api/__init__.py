@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     admin,
+    admin_ai_usage,
     ai,
     ats,
     auth,
@@ -11,11 +12,11 @@ from app.api.routes import (
     jobs,
     match,
     profile,
+    resume_builds,
     resumes,
     scraper_requests,
     tailor,
     upload,
-    resume_builds,
 )
 
 api_router = APIRouter()
@@ -29,7 +30,9 @@ api_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 # Phase 2: Vault & Resume Build API
 api_router.include_router(blocks.router, prefix="/v1/blocks", tags=["blocks"])
 api_router.include_router(match.router, prefix="/v1/match", tags=["match"])
-api_router.include_router(resume_builds.router, prefix="/v1/resume-builds", tags=["resume-builds"])
+api_router.include_router(
+    resume_builds.router, prefix="/v1/resume-builds", tags=["resume-builds"]
+)
 
 # Phase 5: ATS Analysis
 api_router.include_router(ats.router, prefix="/v1/ats", tags=["ats"])
@@ -41,10 +44,17 @@ api_router.include_router(ai.router, prefix="/v1/ai", tags=["ai"])
 api_router.include_router(profile.router, prefix="/v1/profile", tags=["profile"])
 
 # Job Listings (system-wide jobs from external sources)
-api_router.include_router(job_listings.router, prefix="/job-listings", tags=["job-listings"])
+api_router.include_router(
+    job_listings.router, prefix="/job-listings", tags=["job-listings"]
+)
 
 # Scraper Requests (user-submitted job URL requests)
 api_router.include_router(scraper_requests.router, tags=["scraper-requests"])
 
 # Admin endpoints (scheduler management)
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
+
+# Admin AI Usage Dashboard
+api_router.include_router(
+    admin_ai_usage.router, prefix="/admin", tags=["admin-ai-usage"]
+)
