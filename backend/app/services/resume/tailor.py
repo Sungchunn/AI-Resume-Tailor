@@ -17,6 +17,7 @@ from pydantic import ValidationError
 from app.core.config import get_settings
 from app.models.mongo.resume import ParsedContent
 from app.services.ai.client import AIClient, AIServiceError
+from app.services.ai.response import AIResponse, AccumulatedMetrics
 from app.services.core.cache import CacheService
 from app.services.resume.parser import ResumeParser, ParsedResume
 from app.services.job.analyzer import JobAnalyzer, ParsedJob
@@ -32,12 +33,13 @@ class TailoringValidationError(Exception):
         self.validation_errors = validation_errors or []
 
 
-class TailoringResult(TypedDict):
+class TailoringResult(TypedDict, total=False):
     """Result of tailoring a resume.
 
     Two Copies Architecture:
     - tailored_content: Complete tailored resume (same structure as ParsedContent)
     - No suggestions array - frontend does diffing client-side
+    - ai_metrics: Optional accumulated metrics for usage tracking
     """
 
     tailored_content: dict[str, Any]  # Complete tailored resume (ParsedContent structure)
@@ -45,6 +47,7 @@ class TailoringResult(TypedDict):
     skill_matches: list[str]
     skill_gaps: list[str]
     keyword_coverage: float
+    ai_metrics: AIResponse  # Accumulated metrics for logging (optional)
 
 
 # System prompt for Two Copies architecture
@@ -306,6 +309,7 @@ class TailoringService:
         - Preserves IDs from original
         - Validates against ParsedContent Pydantic model
         - Retries once if validation fails
+        - Tracks AI usage metrics for logging
 
         Args:
             parsed_resume: Structured resume data
@@ -321,10 +325,15 @@ class TailoringService:
 
         user_prompt = self._build_tailoring_prompt(parsed_resume, parsed_job, focus_keywords)
 
+        # Track metrics across attempts
+        accumulated_metrics = AccumulatedMetrics()
+
         # First attempt
         try:
-            result = await self._attempt_tailoring(user_prompt)
+            result, response = await self._attempt_tailoring(user_prompt)
+            accumulated_metrics.add(response)
             tailored = self._validate_and_extract(result, parsed_resume)
+            tailored["ai_metrics"] = accumulated_metrics.to_ai_response()
             return tailored
         except (json.JSONDecodeError, ValueError, ValidationError) as first_error:
             logger.warning(
@@ -338,8 +347,10 @@ class TailoringService:
 
             # Second attempt with error feedback
             try:
-                result = await self._attempt_tailoring(retry_prompt)
+                result, response = await self._attempt_tailoring(retry_prompt)
+                accumulated_metrics.add(response)
                 tailored = self._validate_and_extract(result, parsed_resume)
+                tailored["ai_metrics"] = accumulated_metrics.to_ai_response()
                 logger.info("Tailoring succeeded on retry attempt")
                 return tailored
             except (json.JSONDecodeError, ValueError, ValidationError) as second_error:
@@ -450,10 +461,16 @@ Output format (ensure valid JSON):
   "keyword_coverage": number
 }}"""
 
-    async def _attempt_tailoring(self, user_prompt: str) -> dict[str, Any]:
-        """Make a single tailoring attempt and parse the response."""
+    async def _attempt_tailoring(
+        self, user_prompt: str
+    ) -> tuple[dict[str, Any], AIResponse]:
+        """Make a single tailoring attempt and parse the response.
+
+        Returns:
+            Tuple of (parsed result dict, AIResponse with metrics)
+        """
         settings = get_settings()
-        response = await self.ai.generate_json(
+        ai_response = await self.ai.generate_json_with_metrics(
             system_prompt=TAILORING_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             max_tokens=settings.ai_max_tokens,
@@ -461,16 +478,16 @@ Output format (ensure valid JSON):
 
         # Parse JSON response
         try:
-            result = json.loads(response)
+            result = json.loads(ai_response.content)
         except json.JSONDecodeError:
             # Try to extract JSON from response if wrapped in markdown
-            json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', response)
+            json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', ai_response.content)
             if json_match:
                 result = json.loads(json_match.group(1))
             else:
-                raise ValueError(f"Failed to parse AI response as JSON: {response[:200]}...")
+                raise ValueError(f"Failed to parse AI response as JSON: {ai_response.content[:200]}...")
 
-        return result
+        return result, ai_response
 
     def _validate_and_extract(
         self,

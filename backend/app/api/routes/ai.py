@@ -3,8 +3,9 @@
 import json
 import re
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user_id
+from app.api.deps import get_current_user_id, get_db
 from app.schemas.ai import (
     ImproveSectionRequest,
     ImproveSectionResponse,
@@ -12,6 +13,7 @@ from app.schemas.ai import (
     ChatResponse,
 )
 from app.services import get_ai_client
+from app.services.ai import get_usage_tracker
 
 router = APIRouter()
 
@@ -86,6 +88,7 @@ def parse_ai_json_response(response: str) -> dict:
 async def improve_section(
     request: ImproveSectionRequest,
     current_user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
 ) -> ImproveSectionResponse:
     """Improve a resume section using AI based on user instructions.
 
@@ -93,6 +96,7 @@ async def improve_section(
     then returns an AI-improved version of that section.
     """
     ai_client = get_ai_client()
+    usage_tracker = get_usage_tracker()
 
     # Build the user prompt
     job_context_text = ""
@@ -109,13 +113,22 @@ User Instruction: {request.instruction}{job_context_text}
 Improve the content according to the user's instruction while maintaining accuracy."""
 
     try:
-        response = await ai_client.generate_json(
+        ai_response = await ai_client.generate_json_with_metrics(
             system_prompt=SECTION_IMPROVEMENT_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             max_tokens=4096,
         )
 
-        result = parse_ai_json_response(response)
+        # Log AI usage
+        await usage_tracker.log_generation(
+            db=db,
+            user_id=current_user_id,
+            endpoint="/ai/improve-section",
+            response=ai_response,
+        )
+        await db.commit()
+
+        result = parse_ai_json_response(ai_response.content)
 
         return ImproveSectionResponse(
             improved_content=result.get("improved_content", request.section_content),
@@ -139,6 +152,7 @@ Improve the content according to the user's instruction while maintaining accura
 async def chat(
     request: ChatRequest,
     current_user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
 ) -> ChatResponse:
     """Conversational AI chat for resume improvement.
 
@@ -146,6 +160,7 @@ async def chat(
     with optional section context for targeted advice.
     """
     ai_client = get_ai_client()
+    usage_tracker = get_usage_tracker()
 
     # Build conversation context
     context_parts = []
@@ -178,13 +193,22 @@ User's current message: {request.message}
 Respond helpfully to the user's message."""
 
     try:
-        response = await ai_client.generate_json(
+        ai_response = await ai_client.generate_json_with_metrics(
             system_prompt=CHAT_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             max_tokens=4096,
         )
 
-        result = parse_ai_json_response(response)
+        # Log AI usage
+        await usage_tracker.log_generation(
+            db=db,
+            user_id=current_user_id,
+            endpoint="/ai/chat",
+            response=ai_response,
+        )
+        await db.commit()
+
+        result = parse_ai_json_response(ai_response.content)
 
         return ChatResponse(
             message=result.get("message", "I can help you improve your resume. What would you like to work on?"),

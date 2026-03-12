@@ -19,6 +19,7 @@ from app.schemas.profile import (
     ProfileResponse,
 )
 from app.services import get_ai_client
+from app.services.ai import get_usage_tracker
 
 router = APIRouter()
 
@@ -122,6 +123,7 @@ async def generate_about_me(
 
     # Generate the about me blurb
     ai_client = get_ai_client()
+    usage_tracker = get_usage_tracker()
 
     user_prompt = f"""Please write a personal "About Me" paragraph based on this resume:
 
@@ -130,13 +132,21 @@ async def generate_about_me(
 Remember: Write in first person, be warm and engaging, and keep it 50-100 words."""
 
     try:
-        response = await ai_client.generate_json(
+        ai_response = await ai_client.generate_json_with_metrics(
             system_prompt=ABOUT_ME_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             max_tokens=500,
         )
 
-        result = parse_ai_json_response(response)
+        # Log AI usage
+        await usage_tracker.log_generation(
+            db=db,
+            user_id=current_user_id,
+            endpoint="/profile/generate-about-me",
+            response=ai_response,
+        )
+
+        result = parse_ai_json_response(ai_response.content)
         about_me_text = result.get("about_me", "")
 
         if not about_me_text:

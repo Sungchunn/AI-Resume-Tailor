@@ -18,6 +18,7 @@ from app.core.protocols import (
 from app.crud.block import block_repository
 from app.services.ai.embedding import get_embedding_service
 from app.services.ai.client import get_ai_client
+from app.services.ai.response import AIResponse, AccumulatedMetrics
 
 
 KEYWORD_EXTRACTION_PROMPT = """You are an expert at extracting key requirements from job descriptions.
@@ -151,30 +152,34 @@ class SemanticMatcher:
 
         return enhanced_matches
 
-    async def extract_keywords(self, job_description: str) -> list[str]:
+    async def extract_keywords(
+        self, job_description: str, return_metrics: bool = False
+    ) -> list[str] | tuple[list[str], AIResponse | None]:
         """
         Extract key requirements from a job description.
 
         Args:
             job_description: Full job description text
+            return_metrics: If True, return (result, metrics) tuple
 
         Returns:
-            List of extracted keywords
+            List of keywords if return_metrics=False, else (list, AIResponse | None)
         """
-        response = await self.ai_client.generate_json(
+        ai_response = await self.ai_client.generate_json_with_metrics(
             system_prompt=KEYWORD_EXTRACTION_PROMPT,
             user_prompt=f"Extract keywords from:\n\n{job_description}",
             max_tokens=500,
         )
 
         try:
-            keywords = json.loads(response)
+            keywords = json.loads(ai_response.content)
             if isinstance(keywords, list):
-                return [kw.strip() for kw in keywords if isinstance(kw, str)]
+                result = [kw.strip() for kw in keywords if isinstance(kw, str)]
+                return (result, ai_response) if return_metrics else result
         except json.JSONDecodeError:
             pass
 
-        return []
+        return ([], ai_response) if return_metrics else []
 
     async def analyze_gaps(
         self,
@@ -182,7 +187,8 @@ class SemanticMatcher:
         user_id: int,
         job_description: str,
         matched_blocks: list[SemanticMatchData],
-    ) -> GapAnalysisData:
+        return_metrics: bool = False,
+    ) -> GapAnalysisData | tuple[GapAnalysisData, AIResponse | None]:
         """
         Analyze skill gaps between job requirements and matched experience.
 
@@ -191,9 +197,10 @@ class SemanticMatcher:
             user_id: User ID for context
             job_description: Target job requirements
             matched_blocks: Already-matched blocks from semantic search
+            return_metrics: If True, return (result, metrics) tuple
 
         Returns:
-            Gap analysis with match score, skill matches/gaps, and recommendations
+            GapAnalysisData if return_metrics=False, else (GapAnalysisData, AIResponse | None)
         """
         # Format matched blocks for prompt
         blocks_text = "\n\n".join(
@@ -206,30 +213,32 @@ class SemanticMatcher:
             matched_blocks=blocks_text[:3000],  # Limit size
         )
 
-        response = await self.ai_client.generate_json(
+        ai_response = await self.ai_client.generate_json_with_metrics(
             system_prompt="",  # Prompt includes system instructions
             user_prompt=prompt,
             max_tokens=1000,
         )
 
         try:
-            analysis = json.loads(response)
-            return GapAnalysisData(
+            analysis = json.loads(ai_response.content)
+            result = GapAnalysisData(
                 match_score=min(100, max(0, int(analysis.get("match_score", 50)))),
                 skill_matches=analysis.get("skill_matches", []),
                 skill_gaps=analysis.get("skill_gaps", []),
                 keyword_coverage=min(1.0, max(0.0, float(analysis.get("keyword_coverage", 0.5)))),
                 recommendations=analysis.get("recommendations", []),
             )
+            return (result, ai_response) if return_metrics else result
         except (json.JSONDecodeError, TypeError, ValueError):
             # Return default analysis on error
-            return GapAnalysisData(
+            default_result = GapAnalysisData(
                 match_score=50,
                 skill_matches=[],
                 skill_gaps=[],
                 keyword_coverage=0.5,
                 recommendations=["Unable to analyze - please try again"],
             )
+            return (default_result, ai_response) if return_metrics else default_result
 
     async def find_best_blocks_for_keywords(
         self,

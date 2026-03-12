@@ -14,6 +14,7 @@ from app.core.protocols import (
     WorkshopData,
 )
 from app.services.ai.client import get_ai_client
+from app.services.ai.response import AIResponse, AccumulatedMetrics
 
 from .prompts import SINGLE_BULLET_SUGGESTION_PROMPT, DIFF_SUGGESTION_PROMPT
 
@@ -36,7 +37,8 @@ class SuggestionGenerator:
         available_blocks: list[ExperienceBlockData],
         max_suggestions: int = 10,
         focus_sections: list[str] | None = None,
-    ) -> dict[str, Any]:
+        return_metrics: bool = False,
+    ) -> dict[str, Any] | tuple[dict[str, Any], AIResponse | None]:
         """
         Generate diff suggestions for a workshop.
 
@@ -49,9 +51,11 @@ class SuggestionGenerator:
             available_blocks: User's Vault blocks to draw from
             max_suggestions: Maximum suggestions to generate
             focus_sections: Optional sections to focus on
+            return_metrics: If True, return (result, metrics) tuple
 
         Returns:
-            Dict with "suggestions" and "gaps" keys
+            Dict with "suggestions" and "gaps" keys if return_metrics=False,
+            else (dict, AIResponse | None)
         """
         # Format vault blocks for prompt
         vault_text = self._format_blocks_for_prompt(available_blocks)
@@ -72,7 +76,7 @@ class SuggestionGenerator:
         prompt += f"\n\nGenerate up to {max_suggestions} suggestions."
 
         # Generate suggestions
-        response = await self.ai_client.generate_json(
+        ai_response = await self.ai_client.generate_json_with_metrics(
             system_prompt="",  # Instructions are in the prompt
             user_prompt=prompt,
             max_tokens=4000,
@@ -80,17 +84,19 @@ class SuggestionGenerator:
 
         # Parse response
         try:
-            result = json.loads(response)
+            result = json.loads(ai_response.content)
         except json.JSONDecodeError:
             # Try to extract JSON from response
-            json_match = re.search(r'\{[\s\S]*\}', response)
+            json_match = re.search(r'\{[\s\S]*\}', ai_response.content)
             if json_match:
                 try:
                     result = json.loads(json_match.group())
                 except json.JSONDecodeError:
-                    return {"suggestions": [], "gaps": ["Error parsing AI response"]}
+                    error_result = {"suggestions": [], "gaps": ["Error parsing AI response"]}
+                    return (error_result, ai_response) if return_metrics else error_result
             else:
-                return {"suggestions": [], "gaps": ["Error parsing AI response"]}
+                error_result = {"suggestions": [], "gaps": ["Error parsing AI response"]}
+                return (error_result, ai_response) if return_metrics else error_result
 
         # Extract and validate suggestions
         suggestions = []
@@ -110,14 +116,16 @@ class SuggestionGenerator:
         else:
             gaps = []
 
-        return {"suggestions": suggestions, "gaps": gaps}
+        final_result = {"suggestions": suggestions, "gaps": gaps}
+        return (final_result, ai_response) if return_metrics else final_result
 
     async def suggest_single_bullet(
         self,
         bullet_text: str,
         entry_context: dict[str, str],
         job_description: str,
-    ) -> dict[str, Any]:
+        return_metrics: bool = False,
+    ) -> dict[str, Any] | tuple[dict[str, Any], AIResponse | None]:
         """
         Generate a suggestion for a single bullet point.
 
@@ -128,18 +136,21 @@ class SuggestionGenerator:
             bullet_text: The current bullet point text
             entry_context: Context about the experience entry (title, company, date_range)
             job_description: Target job requirements
+            return_metrics: If True, return (result, metrics) tuple
 
         Returns:
-            Dict with original, suggested, reason, and impact fields
+            Dict with original, suggested, reason, and impact fields if return_metrics=False,
+            else (dict, AIResponse | None)
         """
         # Skip very short bullet text
         if len(bullet_text.strip()) < 10:
-            return {
+            short_result = {
                 "original": bullet_text,
                 "suggested": bullet_text,
                 "reason": "Bullet too short to suggest improvements",
                 "impact": "low",
             }
+            return (short_result, None) if return_metrics else short_result
 
         # Build prompt
         prompt = SINGLE_BULLET_SUGGESTION_PROMPT.format(
@@ -151,7 +162,7 @@ class SuggestionGenerator:
         )
 
         # Generate suggestion
-        response = await self.ai_client.generate_json(
+        ai_response = await self.ai_client.generate_json_with_metrics(
             system_prompt="",
             user_prompt=prompt,
             max_tokens=1000,
@@ -159,27 +170,29 @@ class SuggestionGenerator:
 
         # Parse response
         try:
-            result = json.loads(response)
+            result = json.loads(ai_response.content)
         except json.JSONDecodeError:
             # Try to extract JSON from response
-            json_match = re.search(r'\{[\s\S]*\}', response)
+            json_match = re.search(r'\{[\s\S]*\}', ai_response.content)
             if json_match:
                 try:
                     result = json.loads(json_match.group())
                 except json.JSONDecodeError:
-                    return {
+                    error_result = {
                         "original": bullet_text,
                         "suggested": bullet_text,
                         "reason": "Could not parse AI response",
                         "impact": "low",
                     }
+                    return (error_result, ai_response) if return_metrics else error_result
             else:
-                return {
+                error_result = {
                     "original": bullet_text,
                     "suggested": bullet_text,
                     "reason": "Could not parse AI response",
                     "impact": "low",
                 }
+                return (error_result, ai_response) if return_metrics else error_result
 
         # Validate and normalize result
         suggested = result.get("suggested", bullet_text)
@@ -189,12 +202,13 @@ class SuggestionGenerator:
         if impact not in ["high", "medium", "low"]:
             impact = "medium"
 
-        return {
+        final_result = {
             "original": bullet_text,
             "suggested": suggested,
             "reason": reason,
             "impact": impact,
         }
+        return (final_result, ai_response) if return_metrics else final_result
 
     def _format_blocks_for_prompt(
         self,
