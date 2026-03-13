@@ -65,10 +65,11 @@ async def test_create_resume_with_file_metadata(client: AsyncClient):
     )
     assert response.status_code == 201
     data = response.json()
-    assert data["original_file_key"] == "users/1/resumes/abc123_resume.pdf"
-    assert data["original_filename"] == "John_Resume_2024.pdf"
-    assert data["file_type"] == "pdf"
-    assert data["file_size_bytes"] == 102400
+    # File metadata is nested under original_file
+    assert data["original_file"]["storage_key"] == "users/1/resumes/abc123_resume.pdf"
+    assert data["original_file"]["filename"] == "John_Resume_2024.pdf"
+    assert data["original_file"]["file_type"] == "pdf"
+    assert data["original_file"]["size_bytes"] == 102400
 
 
 @pytest.mark.asyncio
@@ -85,7 +86,7 @@ async def test_create_resume_with_docx_file_type(client: AsyncClient):
     )
     assert response.status_code == 201
     data = response.json()
-    assert data["file_type"] == "docx"
+    assert data["original_file"]["file_type"] == "docx"
 
 
 @pytest.mark.asyncio
@@ -100,12 +101,15 @@ async def test_update_resume_html_content(client: AsyncClient):
             "html_content": "<p>Original HTML</p>",
         },
     )
-    resume_id = create_response.json()["id"]
+    create_data = create_response.json()
+    resume_id = create_data["id"]
+    version = create_data["version"]
 
     # Update the HTML content
     response = await client.put(
         f"/api/resumes/{resume_id}",
         json={
+            "version": version,
             "html_content": "<p>Updated HTML with <strong>formatting</strong></p>",
         },
     )
@@ -134,20 +138,22 @@ async def test_update_resume_preserves_file_metadata(client: AsyncClient):
             "file_size_bytes": 50000,
         },
     )
-    resume_id = create_response.json()["id"]
+    create_data = create_response.json()
+    resume_id = create_data["id"]
+    version = create_data["version"]
 
     # Update title only
     response = await client.put(
         f"/api/resumes/{resume_id}",
-        json={"title": "Updated Title"},
+        json={"version": version, "title": "Updated Title"},
     )
     assert response.status_code == 200
     data = response.json()
-    # File metadata should be preserved
-    assert data["original_file_key"] == "users/1/resumes/original.pdf"
-    assert data["original_filename"] == "original.pdf"
-    assert data["file_type"] == "pdf"
-    assert data["file_size_bytes"] == 50000
+    # File metadata should be preserved (via original_file object)
+    assert data["original_file"]["storage_key"] == "users/1/resumes/original.pdf"
+    assert data["original_file"]["filename"] == "original.pdf"
+    assert data["original_file"]["file_type"] == "pdf"
+    assert data["original_file"]["size_bytes"] == 50000
 
 
 @pytest.mark.asyncio
@@ -171,8 +177,8 @@ async def test_get_resume_includes_html_content(client: AsyncClient):
     assert response.status_code == 200
     data = response.json()
     assert data["html_content"] == "<h1>Full Resume</h1><p>Plain text</p>"
-    assert data["original_filename"] == "test.pdf"
-    assert data["file_type"] == "pdf"
+    assert data["original_file"]["filename"] == "test.pdf"
+    assert data["original_file"]["file_type"] == "pdf"
 
 
 @pytest.mark.asyncio

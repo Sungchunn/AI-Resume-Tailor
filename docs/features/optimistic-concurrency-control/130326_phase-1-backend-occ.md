@@ -1,7 +1,7 @@
 # Phase 1: Backend Optimistic Concurrency Control
 
 **Created:** 2026-03-13
-**Status:** Planning
+**Status:** Complete
 **Parent:** [Master Plan](./130326_master-plan.md)
 
 ---
@@ -254,7 +254,7 @@ async def get(
 
 **File:** `backend/app/schemas/resume.py`
 
-### ResumeUpdate
+### ResumeUpdate1
 
 Add required version field:
 
@@ -337,7 +337,7 @@ def from_mongo(cls, doc) -> "ResumeResponse":
 
 **File:** `backend/app/api/routes/resumes.py`
 
-### Import Exception
+### Import Exception1
 
 ```python
 from app.crud.mongo.exceptions import VersionConflictError
