@@ -121,6 +121,8 @@ function findOptimalCompactness(
 
 **Tradeoff:** Binary search requires applying styles and measuring at each step, but max 7 iterations vs 25 is a significant improvement for DOM-based measurement where each iteration forces a reflow.
 
+See [Tradeoff 1: Accuracy vs. Performance](./130326_tradeoff-1-accuracy-vs-performance.md) for the mathematical proof of binary search feasibility based on the monotonicity of the height function.
+
 ---
 
 ## Implementation Plan
@@ -349,29 +351,66 @@ const { status, reductions } = useFitToPageWithDOM({
 )}
 ```
 
-### Step 5: Add Debounced Style Persistence
+### Step 5: Add Debounced Style Persistence with Race Condition Protection
 
 **File:** `frontend/src/components/library/editor/BlockEditorProvider.tsx`
 
-Add effect to persist style changes when auto-fit adjusts them:
+Add effect to persist style changes when auto-fit adjusts them, with save operation lock to prevent race conditions:
 
 ```typescript
 const lastSavedStyleRef = useRef<string>(JSON.stringify(state.style));
+const pendingAutoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+const saveInProgressRef = useRef<boolean>(false);
 
+// Cancel any pending auto-save
+const cancelPendingAutoSave = useCallback(() => {
+  if (pendingAutoSaveRef.current) {
+    clearTimeout(pendingAutoSaveRef.current);
+    pendingAutoSaveRef.current = null;
+  }
+}, []);
+
+// Manual save handler - cancels auto-save and acquires lock
+const handleManualSave = useCallback(async () => {
+  cancelPendingAutoSave();
+  if (saveInProgressRef.current) return;
+
+  saveInProgressRef.current = true;
+  try {
+    await save();
+    lastSavedStyleRef.current = JSON.stringify(state.style);
+  } finally {
+    saveInProgressRef.current = false;
+  }
+}, [save, state.style, cancelPendingAutoSave]);
+
+// Auto-save effect with lock awareness
 useEffect(() => {
   if (!state.fitToOnePage || !state.isDirty) return;
 
   const currentStyleHash = JSON.stringify(state.style);
   if (currentStyleHash === lastSavedStyleRef.current) return;
 
-  const timer = setTimeout(() => {
-    save();
-    lastSavedStyleRef.current = currentStyleHash;
+  cancelPendingAutoSave();
+
+  pendingAutoSaveRef.current = setTimeout(async () => {
+    if (saveInProgressRef.current) return; // Manual save in progress
+
+    saveInProgressRef.current = true;
+    try {
+      await save();
+      lastSavedStyleRef.current = JSON.stringify(state.style);
+    } finally {
+      saveInProgressRef.current = false;
+      pendingAutoSaveRef.current = null;
+    }
   }, 2000); // 2-second debounce
 
-  return () => clearTimeout(timer);
-}, [state.style, state.fitToOnePage, state.isDirty, save]);
+  return () => cancelPendingAutoSave();
+}, [state.style, state.fitToOnePage, state.isDirty, save, cancelPendingAutoSave]);
 ```
+
+See [Tradeoff 3: Eager Persistence](./130326_tradeoff-3-eager-persistence.md) for detailed race condition scenarios and the full solution.
 
 ### Step 6: View Page Compatibility
 
@@ -412,6 +451,9 @@ Since edit/tailor pages persist the auto-fitted styles, the view page will displ
 | Early exit | Skip search entirely if original style fits |
 | Debounced observers | 500ms debounce on ResizeObserver/MutationObserver |
 | Hash comparison | Only persist if style actually changed |
+| Save operation lock | Prevents concurrent save requests (manual save cancels pending auto-save) |
+
+See [Tradeoff 3: Eager Persistence](./130326_tradeoff-3-eager-persistence.md) for detailed race condition analysis and mitigation.
 
 ---
 
@@ -460,3 +502,42 @@ When content exceeds one page even at minimum style settings:
 1. Add excessive content (e.g., 20+ experience entries)
 2. **Expected:** Warning appears indicating minimum reached
 3. **Verify:** Content renders at minimum sizes, user prompted to reduce content
+
+---
+
+## Testing Strategy
+
+### Why Unit Tests Are Insufficient
+
+DOM-based measurement cannot be validated with JSDOM or mocked refs because:
+
+- JSDOM does not compute `scrollHeight`, `offsetHeight`, or layout properties
+- Mocked measurements don't verify that CSS produces the expected overflow
+- Font rendering and line breaks depend on actual browser font metrics
+
+See [Tradeoff 2: Coupling Preview to Auto-Fit](./130326_tradeoff-2-coupling-preview-to-autofit.md) for detailed analysis.
+
+### Playwright Integration Tests (Required)
+
+| Scenario | Validation |
+| -------- | ---------- |
+| Content fits on one page | No scaling applied, contentHeight ≤ pageHeight |
+| Slight overflow (1-10%) | Binary search finds minimal scale reduction |
+| Moderate overflow (10-50%) | Scaling converges without excessive iterations |
+| Severe overflow (>50%) | Falls back to minimum threshold |
+| Dynamic content changes | Re-triggers auto-fit when blocks added/removed |
+
+**Test suite location:** `frontend/e2e/fit-to-page.spec.ts` (to be created)
+
+---
+
+## Related Documents
+
+| Document | Purpose |
+| -------- | ------- |
+| [Tradeoffs Summary](./130326_tradeoffs-summary.md) | Index of all engineering tradeoffs |
+| [Tradeoff 1: Accuracy vs. Performance](./130326_tradeoff-1-accuracy-vs-performance.md) | Binary search proof, DOM measurement cost |
+| [Tradeoff 2: Coupling Preview to Auto-Fit](./130326_tradeoff-2-coupling-preview-to-autofit.md) | Ref pattern justification, testing strategy |
+| [Tradeoff 3: Eager Persistence](./130326_tradeoff-3-eager-persistence.md) | Race condition mitigation, LLM integration |
+| [Tradeoff 4: Default-On vs. Opt-In](./130326_tradeoff-4-default-on-vs-optin.md) | Migration strategy for existing resumes |
+| [Tradeoff 5: Synchronous Measurement](./130326_tradeoff-5-synchronous-measurement.md) | Double RAF timing, React concurrent mode |
