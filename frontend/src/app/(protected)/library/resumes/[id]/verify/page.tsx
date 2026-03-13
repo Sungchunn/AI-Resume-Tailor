@@ -97,7 +97,7 @@ export default function VerifyResumePage({ params }: PageProps) {
 
   // Handle save and verify
   const handleSaveAndVerify = useCallback(async () => {
-    if (!content) return;
+    if (!content || !resume) return;
 
     try {
       // If there are changes, save them first
@@ -105,6 +105,7 @@ export default function VerifyResumePage({ params }: PageProps) {
         await updateResume.mutateAsync({
           id,
           data: {
+            version: resume.version ?? 1,
             parsed_content: content as Record<string, unknown>,
           },
         });
@@ -119,7 +120,7 @@ export default function VerifyResumePage({ params }: PageProps) {
       console.error("Failed to save and verify:", err);
       alert("Failed to verify resume. Please try again.");
     }
-  }, [content, hasChanges, id, updateResume, verifyResume, router]);
+  }, [content, hasChanges, id, resume, updateResume, verifyResume, router]);
 
   // Loading state
   if (isLoading) {
