@@ -157,7 +157,24 @@ Validation errors include detailed field-level information:
 {
   "detail": "Cleanup is already running on another instance"
 }
+
+// Version conflict (Optimistic Concurrency Control)
+{
+  "detail": {
+    "error": "version_conflict",
+    "message": "Resume was modified by another session. Please refresh and try again.",
+    "expected_version": 2
+  }
+}
 ```
+
+**Handling Version Conflicts:**
+
+Version conflicts occur when using optimistic concurrency control (OCC) on resources like resumes. When a client sends an update with an outdated version number:
+
+1. The server returns HTTP 409 with `error: "version_conflict"`
+2. `expected_version` indicates the current server version
+3. Client should fetch fresh data and retry or prompt user to resolve
 
 ---
 
@@ -191,6 +208,16 @@ async function apiRequest(endpoint: string, options: RequestInit) {
 
       case 404:
         throw new NotFoundError(error.detail);
+
+      case 409:
+        // Version conflict (OCC)
+        if (error.detail?.error === 'version_conflict') {
+          throw new VersionConflictError(
+            error.detail.message,
+            error.detail.expected_version
+          );
+        }
+        throw new ConflictError(error.detail);
 
       case 422:
         // Validation errors

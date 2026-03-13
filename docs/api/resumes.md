@@ -146,7 +146,7 @@ curl "http://localhost:8000/api/resumes?skip=0&limit=20" \
 
 ### Update Resume
 
-Update an existing resume.
+Update an existing resume with optimistic concurrency control.
 
 ```http
 PUT /api/resumes/{resume_id}
@@ -156,22 +156,27 @@ PUT /api/resumes/{resume_id}
 
 | Parameter | Type | Description |
 | --------- | ------ | ------------- |
-| `resume_id` | UUID | Resume identifier |
+| `resume_id` | string | Resume identifier (MongoDB ObjectId) |
 
 **Request Body:**
 
-| Field | Type | Required |
-| ----- | ------ | ---------- |
-| `title` | string | No |
-| `raw_content` | string | No |
+| Field | Type | Required | Description |
+| ----- | ------ | ---------- | ------------- |
+| `version` | integer | **Yes** | Current version for optimistic concurrency control |
+| `title` | string | No | Resume title |
+| `raw_content` | string | No | Resume content text |
+| `html_content` | string | No | HTML-formatted content |
+| `parsed_content` | object | No | Parsed resume structure |
+| `style` | object | No | Style settings |
 
 **Example Request:**
 
 ```bash
-curl -X PUT http://localhost:8000/api/resumes/550e8400-e29b-41d4-a716-446655440000 \
+curl -X PUT http://localhost:8000/api/resumes/65abc123def456789 \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
+    "version": 1,
     "title": "Staff Software Engineer Resume",
     "raw_content": "Updated resume content..."
   }'
@@ -179,14 +184,50 @@ curl -X PUT http://localhost:8000/api/resumes/550e8400-e29b-41d4-a716-4466554400
 
 **Response (200 OK):**
 
-Returns the updated resume.
+Returns the updated resume with incremented version.
+
+```json
+{
+  "id": "65abc123def456789",
+  "title": "Staff Software Engineer Resume",
+  "raw_content": "Updated resume content...",
+  "user_id": 1,
+  "version": 2,
+  "created_at": "2026-02-18T10:30:00.000000Z",
+  "updated_at": "2026-03-13T10:30:00.000000Z"
+}
+```
 
 **Error Responses:**
 
 | Status | Condition |
 | -------- | ----------- |
-| 403 | Resume belongs to another user |
-| 404 | Resume not found |
+| 404 | Resume not found or not authorized |
+| 409 | Version conflict - resume was modified by another session |
+
+**Version Conflict Response (409):**
+
+When another session modifies the resume between fetch and update:
+
+```json
+{
+  "detail": {
+    "error": "version_conflict",
+    "message": "Resume was modified by another session. Please refresh and try again.",
+    "expected_version": 2
+  }
+}
+```
+
+**Optimistic Concurrency Control:**
+
+The `version` field implements OCC to prevent lost updates when multiple browser tabs or sessions edit the same resume:
+
+1. Client fetches resume and receives current `version` (e.g., 1)
+2. Client sends update with `version: 1`
+3. If server version matches, update succeeds and version increments to 2
+4. If server version differs (another session updated first), HTTP 409 is returned
+5. Client should refresh data and retry or prompt user to resolve conflict
 
 ---
 
@@ -239,8 +280,12 @@ No response body.
 
 ```typescript
 {
-  title?: string;       // Resume title, optional
-  raw_content?: string; // Resume text content, optional
+  version: number;        // Required - current version for OCC
+  title?: string;         // Resume title, optional
+  raw_content?: string;   // Resume text content, optional
+  html_content?: string;  // HTML-formatted content, optional
+  parsed_content?: object; // Parsed resume structure, optional
+  style?: object;         // Style settings, optional
 }
 ```
 
@@ -251,10 +296,15 @@ No response body.
   id: string;                    // MongoDB ObjectId
   title: string;
   raw_content: string;
+  html_content: string | null;   // HTML-formatted content
   user_id: number;               // User ID (FK to PostgreSQL users)
   parsed: object | null;         // Parsed resume structure
+  style: object | null;          // Style settings
+  original_file: OriginalFileInfo | null; // Original upload info
+  is_master: boolean;            // Default resume for tailoring flows
   parsed_verified: boolean;      // Whether parsed content has been verified
   parsed_verified_at: string | null;  // ISO 8601 datetime when verified
+  version: number;               // Document version for OCC (default: 1)
   created_at: string;            // ISO 8601 datetime
   updated_at: string;            // ISO 8601 datetime
 }
