@@ -152,7 +152,6 @@ On first load after feature launch:
 ## Recommendation
 
 **Use Option B: New Resumes Only**
-
 Rationale:
 
 1. **No breaking changes** - Existing users' resumes behave identically
