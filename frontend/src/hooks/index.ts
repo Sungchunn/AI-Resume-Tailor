@@ -10,3 +10,9 @@ export { useInlineSuggestion } from "./useInlineSuggestion";
 export type { EntryContext, BulletSuggestion } from "./useInlineSuggestion";
 export { useResumeUploadFlow } from "./useResumeUploadFlow";
 export type { UseResumeUploadFlowOptions, UploadFlowHandle } from "./useResumeUploadFlow";
+export { useSaveCoordinator } from "./useSaveCoordinator";
+export type {
+  SaveCoordinatorState,
+  UseSaveCoordinatorOptions,
+  UseSaveCoordinatorReturn,
+} from "./useSaveCoordinator";
