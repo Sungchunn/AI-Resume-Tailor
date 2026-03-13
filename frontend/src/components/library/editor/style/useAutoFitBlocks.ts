@@ -19,6 +19,7 @@ export interface AutoFitStatus {
   state: AutoFitState;
   message?: string;
   reductions?: string[];
+  compactnessLevel?: number;
 }
 
 export interface AutoFitReduction {
@@ -33,6 +34,8 @@ export interface UseAutoFitBlocksOptions {
   style: BlockEditorStyle;
   enabled: boolean;
   onStyleChange: (style: Partial<BlockEditorStyle>) => void;
+  /** Optional DOM-based measurement function. If provided, uses binary search with DOM measurement. */
+  measureFn?: () => number;
 }
 
 export interface UseAutoFitBlocksResult {
@@ -42,7 +45,7 @@ export interface UseAutoFitBlocksResult {
 }
 
 // Minimum values to preserve readability
-const MINIMUMS = {
+export const MINIMUMS = {
   fontSizeBody: 8,
   fontSizeHeading: 12,
   fontSizeSubheading: 9,
@@ -51,14 +54,8 @@ const MINIMUMS = {
   entrySpacing: 4,
 } as const;
 
-// Maximum iterations to prevent infinite loops
-const MAX_ITERATIONS = 25;
-
-// Reduction step (5% per iteration)
-const REDUCTION_FACTOR = 0.95;
-
-// Page height in pixels (11 inches at 96 DPI, minus typical margins)
-const PAGE_HEIGHT = 11 * 96; // 1056px
+// Page height in pixels (11 inches at 96 DPI)
+export const PAGE_HEIGHT = 11 * 96; // 1056px
 
 // Progressive reduction phases (order matters - least impactful first)
 const REDUCTION_PHASES = [
@@ -67,6 +64,204 @@ const REDUCTION_PHASES = [
   { property: "lineSpacing", label: "Line height", min: MINIMUMS.lineSpacing },
   { property: "fontSizeBody", label: "Body font", min: MINIMUMS.fontSizeBody },
 ] as const;
+
+// ============================================================================
+// COMPACTNESS SCALE UTILITIES
+// ============================================================================
+
+/**
+ * Convert compactness level (0-100) to style values.
+ * Level 0 = most spacious (original styles), Level 100 = most compact (all minimums).
+ *
+ * The scale preserves "least impactful first" ordering:
+ * - Levels 0-25:   sectionSpacing reduced (max → min)
+ * - Levels 25-50:  entrySpacing reduced (max → min)
+ * - Levels 50-75:  lineSpacing reduced (max → min)
+ * - Levels 75-100: fontSizeBody reduced (max → min) + proportional heading/subheading
+ */
+export function compactnessToStyle(
+  level: number,
+  originalStyle: BlockEditorStyle
+): BlockEditorStyle {
+  const style = { ...originalStyle };
+
+  // Clamp level to valid range
+  const clampedLevel = Math.max(0, Math.min(100, level));
+
+  // Phase 1: sectionSpacing (levels 0-25)
+  if (clampedLevel > 0) {
+    const phaseProgress = Math.min(clampedLevel / 25, 1);
+    const range = originalStyle.sectionSpacing - MINIMUMS.sectionSpacing;
+    style.sectionSpacing = originalStyle.sectionSpacing - range * phaseProgress;
+  }
+
+  // Phase 2: entrySpacing (levels 25-50)
+  if (clampedLevel > 25) {
+    const phaseProgress = Math.min((clampedLevel - 25) / 25, 1);
+    const range = originalStyle.entrySpacing - MINIMUMS.entrySpacing;
+    style.entrySpacing = originalStyle.entrySpacing - range * phaseProgress;
+  }
+
+  // Phase 3: lineSpacing (levels 50-75)
+  if (clampedLevel > 50) {
+    const phaseProgress = Math.min((clampedLevel - 50) / 25, 1);
+    const range = originalStyle.lineSpacing - MINIMUMS.lineSpacing;
+    style.lineSpacing = originalStyle.lineSpacing - range * phaseProgress;
+  }
+
+  // Phase 4: fontSizeBody (levels 75-100) + proportional heading/subheading
+  if (clampedLevel > 75) {
+    const phaseProgress = Math.min((clampedLevel - 75) / 25, 1);
+    const bodyRange = originalStyle.fontSizeBody - MINIMUMS.fontSizeBody;
+    const newBody = originalStyle.fontSizeBody - bodyRange * phaseProgress;
+    const ratio = newBody / originalStyle.fontSizeBody;
+
+    style.fontSizeBody = newBody;
+    style.fontSizeHeading = Math.max(MINIMUMS.fontSizeHeading, originalStyle.fontSizeHeading * ratio);
+    style.fontSizeSubheading = Math.max(MINIMUMS.fontSizeSubheading, originalStyle.fontSizeSubheading * ratio);
+  }
+
+  return style;
+}
+
+/**
+ * Calculate which style properties have been reduced and by how much.
+ * Returns an array of reductions for UI display.
+ */
+export function calculateReductions(
+  compactnessLevel: number,
+  originalStyle: BlockEditorStyle
+): AutoFitReduction[] {
+  const reductions: AutoFitReduction[] = [];
+  const adjustedStyle = compactnessToStyle(compactnessLevel, originalStyle);
+
+  // Check each phase for reductions
+  if (compactnessLevel > 0 && adjustedStyle.sectionSpacing < originalStyle.sectionSpacing) {
+    reductions.push({
+      property: "sectionSpacing",
+      from: originalStyle.sectionSpacing,
+      to: adjustedStyle.sectionSpacing,
+      label: "Section spacing",
+    });
+  }
+
+  if (compactnessLevel > 25 && adjustedStyle.entrySpacing < originalStyle.entrySpacing) {
+    reductions.push({
+      property: "entrySpacing",
+      from: originalStyle.entrySpacing,
+      to: adjustedStyle.entrySpacing,
+      label: "Entry spacing",
+    });
+  }
+
+  if (compactnessLevel > 50 && adjustedStyle.lineSpacing < originalStyle.lineSpacing) {
+    reductions.push({
+      property: "lineSpacing",
+      from: originalStyle.lineSpacing,
+      to: adjustedStyle.lineSpacing,
+      label: "Line height",
+    });
+  }
+
+  if (compactnessLevel > 75 && adjustedStyle.fontSizeBody < originalStyle.fontSizeBody) {
+    reductions.push({
+      property: "fontSizeBody",
+      from: originalStyle.fontSizeBody,
+      to: adjustedStyle.fontSizeBody,
+      label: "Body font",
+    });
+  }
+
+  return reductions;
+}
+
+// ============================================================================
+// MEASUREMENT UTILITIES
+// ============================================================================
+
+/**
+ * Wrap a measurement function with double RAF to ensure DOM has settled.
+ * This prevents reading stale layout values after style changes.
+ */
+export function measureWithRAF(measureFn: () => number): Promise<number> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        resolve(measureFn());
+      });
+    });
+  });
+}
+
+// ============================================================================
+// BINARY SEARCH ALGORITHM
+// ============================================================================
+
+export interface BinarySearchResult {
+  level: number;
+  style: BlockEditorStyle;
+  fits: boolean;
+}
+
+/**
+ * Binary search to find minimum compactness level that fits content on one page.
+ * Complexity: O(log n) where n = 100 levels = max 7 iterations.
+ *
+ * The algorithm relies on the monotonicity of the height function:
+ * - If content fits at compactness level c, it will fit at all levels > c
+ * - This allows binary search to efficiently find the optimal level
+ *
+ * @param measureHeight - Async function that applies style and returns content height
+ * @param targetHeight - Maximum allowed height (page height minus margins)
+ * @param originalStyle - The user's original style settings
+ * @returns The minimum compactness level that fits, the resulting style, and whether it fits
+ */
+export async function findOptimalCompactness(
+  measureHeight: (style: BlockEditorStyle) => Promise<number>,
+  targetHeight: number,
+  originalStyle: BlockEditorStyle
+): Promise<BinarySearchResult> {
+  // First check: does original style fit?
+  const originalHeight = await measureHeight(originalStyle);
+  if (originalHeight <= targetHeight) {
+    return { level: 0, style: originalStyle, fits: true };
+  }
+
+  let low = 0;
+  let high = 100;
+  let result = 100; // Default to maximum compactness
+
+  // Binary search for minimum compactness
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const testStyle = compactnessToStyle(mid, originalStyle);
+    const height = await measureHeight(testStyle);
+
+    if (height <= targetHeight) {
+      result = mid; // This level fits, try less compact
+      high = mid - 1;
+    } else {
+      low = mid + 1; // Need more compact
+    }
+  }
+
+  // Check if result actually fits
+  const finalStyle = compactnessToStyle(result, originalStyle);
+  const finalHeight = await measureHeight(finalStyle);
+  const fits = finalHeight <= targetHeight;
+
+  return { level: result, style: finalStyle, fits };
+}
+
+// ============================================================================
+// LEGACY: ESTIMATION-BASED HEIGHT CALCULATION
+// ============================================================================
+
+// Maximum iterations for linear algorithm (legacy fallback)
+const MAX_ITERATIONS = 25;
+
+// Reduction step for linear algorithm (5% per iteration)
+const REDUCTION_FACTOR = 0.95;
 
 /**
  * Estimate content height based on blocks and style
@@ -211,13 +406,20 @@ function estimateContentHeight(
 }
 
 /**
- * Hook to automatically adjust styles to fit content on one page
+ * Hook to automatically adjust styles to fit content on one page.
+ *
+ * Two modes of operation:
+ * 1. DOM-based (recommended): When `measureFn` is provided, uses binary search O(log n)
+ *    with actual DOM measurements for maximum accuracy.
+ * 2. Estimation-based (legacy): When `measureFn` is not provided, uses linear O(n)
+ *    algorithm with mathematical height estimation.
  */
 export function useAutoFitBlocks({
   blocks,
   style,
   enabled,
   onStyleChange,
+  measureFn,
 }: UseAutoFitBlocksOptions): UseAutoFitBlocksResult {
   const [status, setStatus] = useState<AutoFitStatus>({ state: "idle" });
   const [reductions, setReductions] = useState<AutoFitReduction[]>([]);
@@ -237,7 +439,7 @@ export function useAutoFitBlocks({
     return PAGE_HEIGHT - (s.marginTop + s.marginBottom) * 96;
   }, []);
 
-  // Run progressive auto-fit algorithm
+  // Run auto-fit algorithm (binary search with DOM or linear with estimation)
   useEffect(() => {
     if (!enabled) {
       setStatus({ state: "idle" });
@@ -251,100 +453,174 @@ export function useAutoFitBlocks({
     isProcessingRef.current = true;
 
     const targetHeight = getTargetHeight(style);
-    const currentHeight = estimateContentHeight(blocks, style);
 
-    if (currentHeight <= targetHeight) {
-      setStatus({ state: "fitted", reductions: [] });
-      setReductions([]);
-      setAdjustedStyle(style);
-      isProcessingRef.current = false;
-      return;
+    // Choose algorithm based on whether measureFn is provided
+    if (measureFn) {
+      // DOM-based binary search algorithm (O(log n))
+      runBinarySearchAutoFit(measureFn, targetHeight, style);
+    } else {
+      // Estimation-based linear algorithm (O(n)) - legacy fallback
+      runLinearAutoFit(targetHeight, style);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, blocks, style, getTargetHeight, measureFn]);
 
-    setStatus({ state: "fitting" });
+  /**
+   * Binary search algorithm with DOM measurement.
+   * Max 7 iterations for 100 compactness levels.
+   */
+  const runBinarySearchAutoFit = useCallback(
+    async (measure: () => number, targetHeight: number, currentStyle: BlockEditorStyle) => {
+      setStatus({ state: "fitting" });
 
-    // Working copy of style
-    const workingStyle = { ...style };
-    const appliedReductions: AutoFitReduction[] = [];
-    let height = currentHeight;
-    let iterations = 0;
-    let phaseIndex = 0;
+      try {
+        // Create measurement function that waits for RAF
+        const measureHeight = async (testStyle: BlockEditorStyle): Promise<number> => {
+          // Apply the test style temporarily
+          onStyleChange(testStyle);
+          // Wait for double RAF to ensure DOM has settled
+          return measureWithRAF(measure);
+        };
 
-    while (height > targetHeight && iterations < MAX_ITERATIONS) {
-      iterations++;
-
-      const currentPhase = REDUCTION_PHASES[phaseIndex];
-      if (!currentPhase) break;
-
-      const propKey = currentPhase.property as keyof BlockEditorStyle;
-      const currentValue = workingStyle[propKey] as number;
-
-      if (currentValue > currentPhase.min) {
-        const newValue = Math.max(
-          currentPhase.min,
-          Number((currentValue * REDUCTION_FACTOR).toFixed(2))
+        const result = await findOptimalCompactness(
+          measureHeight,
+          targetHeight,
+          currentStyle
         );
 
-        // Track reduction
-        const existingReduction = appliedReductions.find(
-          (r) => r.property === currentPhase.property
-        );
-        if (existingReduction) {
-          existingReduction.to = newValue;
+        const appliedReductions = calculateReductions(result.level, currentStyle);
+
+        // Apply final style
+        setAdjustedStyle(result.style);
+        setReductions(appliedReductions);
+
+        // Only call onStyleChange if we actually made changes
+        if (result.level > 0) {
+          onStyleChange(result.style);
+        }
+
+        if (result.fits) {
+          setStatus({
+            state: "fitted",
+            reductions: appliedReductions.map((r) => r.label),
+            compactnessLevel: result.level,
+          });
         } else {
-          appliedReductions.push({
-            property: currentPhase.property,
-            from: currentValue,
-            to: newValue,
-            label: currentPhase.label,
+          setStatus({
+            state: "minimum_reached",
+            message: "Content still exceeds one page at minimum settings. Consider removing or condensing content.",
+            compactnessLevel: result.level,
           });
         }
+      } finally {
+        isProcessingRef.current = false;
+      }
+    },
+    [onStyleChange]
+  );
 
-        (workingStyle as unknown as Record<string, number>)[propKey] = newValue;
+  /**
+   * Linear algorithm with estimation (legacy fallback).
+   * O(n) with max 25 iterations.
+   */
+  const runLinearAutoFit = useCallback(
+    (targetHeight: number, currentStyle: BlockEditorStyle) => {
+      const currentHeight = estimateContentHeight(blocks, currentStyle);
 
-        // Scale related font sizes when body font changes
-        if (currentPhase.property === "fontSizeBody") {
-          const ratio = newValue / currentValue;
-          workingStyle.fontSizeHeading = Math.max(
-            MINIMUMS.fontSizeHeading,
-            Math.round(workingStyle.fontSizeHeading * ratio)
-          );
-          workingStyle.fontSizeSubheading = Math.max(
-            MINIMUMS.fontSizeSubheading,
-            Math.round(workingStyle.fontSizeSubheading * ratio)
-          );
-        }
-      } else {
-        // Move to next phase when current is at minimum
-        phaseIndex++;
+      if (currentHeight <= targetHeight) {
+        setStatus({ state: "fitted", reductions: [] });
+        setReductions([]);
+        setAdjustedStyle(currentStyle);
+        isProcessingRef.current = false;
+        return;
       }
 
-      height = estimateContentHeight(blocks, workingStyle);
-    }
+      setStatus({ state: "fitting" });
 
-    // Apply final adjusted style
-    setAdjustedStyle(workingStyle);
-    setReductions(appliedReductions);
+      // Working copy of style
+      const workingStyle = { ...currentStyle };
+      const appliedReductions: AutoFitReduction[] = [];
+      let height = currentHeight;
+      let iterations = 0;
+      let phaseIndex = 0;
 
-    // Notify parent of style change
-    if (appliedReductions.length > 0) {
-      onStyleChange(workingStyle);
-    }
+      while (height > targetHeight && iterations < MAX_ITERATIONS) {
+        iterations++;
 
-    if (height <= targetHeight) {
-      setStatus({
-        state: "fitted",
-        reductions: appliedReductions.map((r) => r.label),
-      });
-    } else {
-      setStatus({
-        state: "minimum_reached",
-        message: "Content still exceeds one page at minimum settings. Consider removing or condensing content.",
-      });
-    }
+        const currentPhase = REDUCTION_PHASES[phaseIndex];
+        if (!currentPhase) break;
 
-    isProcessingRef.current = false;
-  }, [enabled, blocks, style, getTargetHeight, onStyleChange]);
+        const propKey = currentPhase.property as keyof BlockEditorStyle;
+        const currentValue = workingStyle[propKey] as number;
+
+        if (currentValue > currentPhase.min) {
+          const newValue = Math.max(
+            currentPhase.min,
+            Number((currentValue * REDUCTION_FACTOR).toFixed(2))
+          );
+
+          // Track reduction
+          const existingReduction = appliedReductions.find(
+            (r) => r.property === currentPhase.property
+          );
+          if (existingReduction) {
+            existingReduction.to = newValue;
+          } else {
+            appliedReductions.push({
+              property: currentPhase.property,
+              from: currentValue,
+              to: newValue,
+              label: currentPhase.label,
+            });
+          }
+
+          (workingStyle as unknown as Record<string, number>)[propKey] = newValue;
+
+          // Scale related font sizes when body font changes
+          if (currentPhase.property === "fontSizeBody") {
+            const ratio = newValue / currentValue;
+            workingStyle.fontSizeHeading = Math.max(
+              MINIMUMS.fontSizeHeading,
+              Math.round(workingStyle.fontSizeHeading * ratio)
+            );
+            workingStyle.fontSizeSubheading = Math.max(
+              MINIMUMS.fontSizeSubheading,
+              Math.round(workingStyle.fontSizeSubheading * ratio)
+            );
+          }
+        } else {
+          // Move to next phase when current is at minimum
+          phaseIndex++;
+        }
+
+        height = estimateContentHeight(blocks, workingStyle);
+      }
+
+      // Apply final adjusted style
+      setAdjustedStyle(workingStyle);
+      setReductions(appliedReductions);
+
+      // Notify parent of style change
+      if (appliedReductions.length > 0) {
+        onStyleChange(workingStyle);
+      }
+
+      if (height <= targetHeight) {
+        setStatus({
+          state: "fitted",
+          reductions: appliedReductions.map((r) => r.label),
+        });
+      } else {
+        setStatus({
+          state: "minimum_reached",
+          message: "Content still exceeds one page at minimum settings. Consider removing or condensing content.",
+        });
+      }
+
+      isProcessingRef.current = false;
+    },
+    [blocks, onStyleChange]
+  );
 
   // When style changes externally while not enabled, sync adjusted style
   useEffect(() => {
