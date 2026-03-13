@@ -7,13 +7,14 @@ from sqlalchemy.pool import StaticPool
 from sqlalchemy import event
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.types import JSON
+from mongomock_motor import AsyncMongoMockClient
 
 # Disable rate limiting for tests
 os.environ["RATE_LIMIT_ENABLED"] = "false"
 
 from app.main import app
 from app.db.session import Base
-from app.api.deps import get_current_user_id, get_db_session
+from app.api.deps import get_current_user_id, get_db_session, get_mongo_db
 from app.models.user import User
 
 # Use SQLite for testing
@@ -84,7 +85,18 @@ async def db_session():
 
 
 @pytest_asyncio.fixture
-async def client(db_session: AsyncSession):
+async def mongo_db():
+    """Create a fresh MongoDB mock database for each test."""
+    client = AsyncMongoMockClient()
+    db = client["test_database"]
+    yield db
+    # Clean up collections after test
+    for collection_name in await db.list_collection_names():
+        await db[collection_name].drop()
+
+
+@pytest_asyncio.fixture
+async def client(db_session: AsyncSession, mongo_db):
     """Create test client with overridden dependencies."""
 
     async def override_get_db():
@@ -98,8 +110,12 @@ async def client(db_session: AsyncSession):
     async def override_get_current_user_id():
         return 1
 
+    def override_get_mongo_db():
+        return mongo_db
+
     app.dependency_overrides[get_db_session] = override_get_db
     app.dependency_overrides[get_current_user_id] = override_get_current_user_id
+    app.dependency_overrides[get_mongo_db] = override_get_mongo_db
 
     async with AsyncClient(
         transport=ASGITransport(app=app),
