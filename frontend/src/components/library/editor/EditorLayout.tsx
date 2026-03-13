@@ -9,6 +9,7 @@ import {
   ResumePreview,
   PageBreakRuler,
   OverflowWarning,
+  MinimumReachedWarning,
   useOverflowDetection,
 } from "../preview";
 import type { ResumePreviewHandle } from "../preview/ResumePreview";
@@ -60,8 +61,10 @@ export function EditorLayout({
     redo,
     canUndo,
     canRedo,
+    setAutoFitMeasureFn,
+    autoFitStatus,
   } = useBlockEditor();
-  const { blocks, activeBlockId, hoveredBlockId, style } = state;
+  const { blocks, activeBlockId, hoveredBlockId, style, fitToOnePage } = state;
 
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
@@ -74,6 +77,23 @@ export function EditorLayout({
   useEffect(() => {
     pageContainerRef.current = previewRef.current?.getPageElement() ?? null;
   });
+
+  // Set up DOM measurement function for auto-fit
+  // This enables accurate binary search (O(log n)) instead of estimation (O(n))
+  // See /docs/features/fit-to-one-page/130326_tradeoff-5-synchronous-measurement.md
+  useEffect(() => {
+    const measureFn = () => {
+      const pageElement = previewRef.current?.getPageElement();
+      return pageElement?.scrollHeight ?? 0;
+    };
+
+    setAutoFitMeasureFn(measureFn);
+
+    // Cleanup: remove measurement function on unmount
+    return () => {
+      setAutoFitMeasureFn(null);
+    };
+  }, [setAutoFitMeasureFn]);
 
   // Overflow detection for multi-page warning
   const { overflows, estimatedPageCount, contentHeight } = useOverflowDetection({
@@ -189,8 +209,13 @@ export function EditorLayout({
                 </div>
               )}
 
-              {/* Overflow warning banner */}
-              {overflows && (
+              {/* Minimum reached warning - auto-fit is enabled but can't fit content */}
+              {fitToOnePage && autoFitStatus.state === "minimum_reached" && (
+                <MinimumReachedWarning message={autoFitStatus.message} />
+              )}
+
+              {/* Overflow warning - only when auto-fit is disabled */}
+              {!fitToOnePage && overflows && (
                 <OverflowWarning estimatedPageCount={estimatedPageCount} />
               )}
 

@@ -293,12 +293,21 @@ export function BlockEditorProvider({
     dispatch(blockEditorActions.setFitToOnePage(enabled));
   }, []);
 
-  // Auto-fit hook
+  // DOM measurement function for accurate auto-fit
+  // Set by EditorLayout once the preview ref is available
+  const [autoFitMeasureFn, setAutoFitMeasureFnState] = useState<(() => number) | null>(null);
+
+  const setAutoFitMeasureFn = useCallback((fn: (() => number) | null) => {
+    setAutoFitMeasureFnState(() => fn);
+  }, []);
+
+  // Auto-fit hook - uses DOM measurement when available, falls back to estimation
   const { status: autoFitStatus, reductions: autoFitReductions } = useAutoFitBlocks({
     blocks: state.blocks,
     style: state.style,
     enabled: state.fitToOnePage,
     onStyleChange: updateStyle,
+    measureFn: autoFitMeasureFn ?? undefined,
   });
 
   // BroadcastChannel for cross-tab sync
@@ -452,6 +461,7 @@ export function BlockEditorProvider({
       setFitToOnePage,
       autoFitStatus,
       autoFitReductions,
+      setAutoFitMeasureFn,
       save,
       isSaving: coordinatorIsSaving || (state.isLoading && isSavingRef.current),
       hasConflict,
@@ -481,6 +491,7 @@ export function BlockEditorProvider({
       setFitToOnePage,
       autoFitStatus,
       autoFitReductions,
+      setAutoFitMeasureFn,
       save,
       coordinatorIsSaving,
       hasConflict,
