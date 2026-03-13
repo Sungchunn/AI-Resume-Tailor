@@ -179,14 +179,14 @@ async function findOptimalCompactness(...) {
 }
 ```
 
-### Pros
+### Pros1
 
 | Benefit | Explanation |
 | ------- | ----------- |
 | Explicit control | Forces React to commit immediately |
 | No async complexity | Measurement happens synchronously |
 
-### Cons
+### Cons1
 
 | Drawback | Explanation |
 | -------- | ----------- |
