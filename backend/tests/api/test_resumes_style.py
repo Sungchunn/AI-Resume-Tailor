@@ -42,7 +42,9 @@ async def test_update_resume_with_style(client: AsyncClient):
             "raw_content": "Original text",
         },
     )
-    resume_id = create_response.json()["id"]
+    create_data = create_response.json()
+    resume_id = create_data["id"]
+    version = create_data["version"]
 
     # Update with style settings
     style_settings = {
@@ -59,7 +61,7 @@ async def test_update_resume_with_style(client: AsyncClient):
 
     response = await client.put(
         f"/api/resumes/{resume_id}",
-        json={"style": style_settings},
+        json={"version": version, "style": style_settings},
     )
     assert response.status_code == 200
     data = response.json()
@@ -79,7 +81,9 @@ async def test_update_resume_with_parsed_content(client: AsyncClient):
             "raw_content": "John Doe\nSoftware Engineer",
         },
     )
-    resume_id = create_response.json()["id"]
+    create_data = create_response.json()
+    resume_id = create_data["id"]
+    version = create_data["version"]
 
     # Update with parsed_content
     parsed_content = {
@@ -103,11 +107,12 @@ async def test_update_resume_with_parsed_content(client: AsyncClient):
 
     response = await client.put(
         f"/api/resumes/{resume_id}",
-        json={"parsed_content": parsed_content},
+        json={"version": version, "parsed_content": parsed_content},
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["parsed_content"] == parsed_content
+    # Note: parsed is the response field name, not parsed_content
+    assert data["parsed"] == parsed_content
 
 
 @pytest.mark.asyncio
@@ -121,7 +126,9 @@ async def test_get_resume_includes_style(client: AsyncClient):
             "raw_content": "Content",
         },
     )
-    resume_id = create_response.json()["id"]
+    create_data = create_response.json()
+    resume_id = create_data["id"]
+    version = create_data["version"]
 
     # Update with style
     style_settings = {
@@ -130,7 +137,7 @@ async def test_get_resume_includes_style(client: AsyncClient):
     }
     await client.put(
         f"/api/resumes/{resume_id}",
-        json={"style": style_settings},
+        json={"version": version, "style": style_settings},
     )
 
     # Retrieve the resume
@@ -151,22 +158,23 @@ async def test_update_title_preserves_style(client: AsyncClient):
             "raw_content": "Content",
         },
     )
-    resume_id = create_response.json()["id"]
+    create_data = create_response.json()
+    resume_id = create_data["id"]
 
-    # Update with style
+    # Update with style (version 1 -> 2)
     style_settings = {
         "font_family": "Arial",
         "margin_top": 1.0,
     }
     await client.put(
         f"/api/resumes/{resume_id}",
-        json={"style": style_settings},
+        json={"version": 1, "style": style_settings},
     )
 
-    # Update title only
+    # Update title only (version 2 -> 3)
     response = await client.put(
         f"/api/resumes/{resume_id}",
-        json={"title": "Updated Title"},
+        json={"version": 2, "title": "Updated Title"},
     )
     assert response.status_code == 200
     data = response.json()
@@ -186,7 +194,9 @@ async def test_combined_update_style_and_parsed_content(client: AsyncClient):
             "raw_content": "Content",
         },
     )
-    resume_id = create_response.json()["id"]
+    create_data = create_response.json()
+    resume_id = create_data["id"]
+    version = create_data["version"]
 
     # Update with both style and parsed_content
     style_settings = {
@@ -201,6 +211,7 @@ async def test_combined_update_style_and_parsed_content(client: AsyncClient):
     response = await client.put(
         f"/api/resumes/{resume_id}",
         json={
+            "version": version,
             "style": style_settings,
             "parsed_content": parsed_content,
         },
@@ -208,7 +219,8 @@ async def test_combined_update_style_and_parsed_content(client: AsyncClient):
     assert response.status_code == 200
     data = response.json()
     assert data["style"] == style_settings
-    assert data["parsed_content"] == parsed_content
+    # Note: parsed is the response field name, not parsed_content
+    assert data["parsed"] == parsed_content
 
 
 @pytest.mark.asyncio
@@ -222,7 +234,9 @@ async def test_style_with_all_settings(client: AsyncClient):
             "raw_content": "Content",
         },
     )
-    resume_id = create_response.json()["id"]
+    create_data = create_response.json()
+    resume_id = create_data["id"]
+    version = create_data["version"]
 
     # Update with comprehensive style settings
     full_style = {
@@ -241,7 +255,7 @@ async def test_style_with_all_settings(client: AsyncClient):
 
     response = await client.put(
         f"/api/resumes/{resume_id}",
-        json={"style": full_style},
+        json={"version": version, "style": full_style},
     )
     assert response.status_code == 200
     data = response.json()
@@ -259,18 +273,19 @@ async def test_update_style_to_null(client: AsyncClient):
             "raw_content": "Content",
         },
     )
-    resume_id = create_response.json()["id"]
+    create_data = create_response.json()
+    resume_id = create_data["id"]
 
-    # Add style
+    # Add style (version 1 -> 2)
     await client.put(
         f"/api/resumes/{resume_id}",
-        json={"style": {"font_family": "Arial"}},
+        json={"version": 1, "style": {"font_family": "Arial"}},
     )
 
-    # Clear style by setting to null
+    # Clear style by setting to null (version 2 -> 3)
     response = await client.put(
         f"/api/resumes/{resume_id}",
-        json={"style": None},
+        json={"version": 2, "style": None},
     )
     assert response.status_code == 200
     data = response.json()
@@ -295,13 +310,15 @@ async def test_list_resumes_includes_style(client: AsyncClient):
             "raw_content": "Content 2",
         },
     )
-    resume_2_id = create_response.json()["id"]
+    create_data = create_response.json()
+    resume_2_id = create_data["id"]
+    version = create_data["version"]
 
     # Add style to second resume
     style_settings = {"font_family": "Helvetica"}
     await client.put(
         f"/api/resumes/{resume_2_id}",
-        json={"style": style_settings},
+        json={"version": version, "style": style_settings},
     )
 
     response = await client.get("/api/resumes")
