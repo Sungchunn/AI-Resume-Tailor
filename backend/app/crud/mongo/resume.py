@@ -6,6 +6,7 @@ from typing import Any
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from app.crud.mongo.exceptions import VersionConflictError
 from app.models.mongo.resume import (
     ResumeDocument,
     ResumeCreate,
@@ -42,6 +43,7 @@ class ResumeCRUD:
             "style": obj_in.style.model_dump() if obj_in.style else None,
             "original_file": obj_in.original_file.model_dump() if obj_in.original_file else None,
             "is_master": obj_in.is_master,
+            "version": 1,  # Initialize version at 1 for OCC
             "created_at": now,
             "updated_at": now,
         }
@@ -68,7 +70,14 @@ class ResumeCRUD:
         if not ObjectId.is_valid(id):
             return None
         doc = await db[self.collection_name].find_one({"_id": ObjectId(id)}, projection)
-        return ResumeDocument(**doc) if doc else None
+        if not doc:
+            return None
+
+        # Lazy migration: treat missing version as 1
+        if "version" not in doc:
+            doc["version"] = 1
+
+        return ResumeDocument(**doc)
 
     async def get_by_user(
         self,
@@ -95,6 +104,12 @@ class ResumeCRUD:
             .limit(limit)
         )
         docs = await cursor.to_list(length=limit)
+
+        # Lazy migration: treat missing version as 1
+        for doc in docs:
+            if "version" not in doc:
+                doc["version"] = 1
+
         return [ResumeDocument(**doc) for doc in docs]
 
     async def update(
@@ -103,7 +118,19 @@ class ResumeCRUD:
         id: str,
         obj_in: ResumeUpdate,
     ) -> ResumeDocument | None:
-        """Update an existing resume."""
+        """Update an existing resume with optimistic concurrency control.
+
+        Args:
+            db: MongoDB database instance
+            id: Resume ObjectId as string
+            obj_in: Update data, optionally including version field for OCC
+
+        Returns:
+            Updated ResumeDocument if successful
+
+        Raises:
+            VersionConflictError: If version is provided and doesn't match current version
+        """
         if not ObjectId.is_valid(id):
             return None
 
@@ -133,12 +160,41 @@ class ResumeCRUD:
 
         update_data["updated_at"] = datetime.now(timezone.utc)
 
+        # Build filter - include version check if version provided (OCC)
+        filter_query: dict[str, Any] = {"_id": ObjectId(id)}
+        if obj_in.version is not None:
+            filter_query["version"] = obj_in.version
+
+        # Build update operations
+        update_ops: dict[str, Any] = {"$set": update_data}
+        if obj_in.version is not None:
+            # Atomically increment version when using OCC
+            update_ops["$inc"] = {"version": 1}
+
         result = await db[self.collection_name].find_one_and_update(
-            {"_id": ObjectId(id)},
-            {"$set": update_data},
+            filter_query,
+            update_ops,
             return_document=True,
         )
-        return ResumeDocument(**result) if result else None
+
+        if result is None:
+            # If version was provided and no match, check if document exists
+            if obj_in.version is not None:
+                existing = await self.get(db, id)
+                if existing is not None:
+                    # Document exists but version didn't match - conflict!
+                    raise VersionConflictError(
+                        document_id=id,
+                        expected_version=obj_in.version,
+                    )
+            # Document doesn't exist
+            return None
+
+        # Lazy migration for result
+        if "version" not in result:
+            result["version"] = 1
+
+        return ResumeDocument(**result)
 
     async def delete(
         self,
@@ -239,7 +295,14 @@ class ResumeCRUD:
         doc = await db[self.collection_name].find_one(
             {"user_id": user_id, "is_master": True}
         )
-        return ResumeDocument(**doc) if doc else None
+        if not doc:
+            return None
+
+        # Lazy migration: treat missing version as 1
+        if "version" not in doc:
+            doc["version"] = 1
+
+        return ResumeDocument(**doc)
 
     async def get_master_or_latest(
         self,
@@ -264,6 +327,9 @@ class ResumeCRUD:
             projection,
         )
         if master:
+            # Lazy migration: treat missing version as 1
+            if "version" not in master:
+                master["version"] = 1
             return ResumeDocument(**master)
 
         # Fall back to most recently updated
@@ -274,7 +340,15 @@ class ResumeCRUD:
             .limit(1)
         )
         docs = await cursor.to_list(length=1)
-        return ResumeDocument(**docs[0]) if docs else None
+        if not docs:
+            return None
+
+        doc = docs[0]
+        # Lazy migration: treat missing version as 1
+        if "version" not in doc:
+            doc["version"] = 1
+
+        return ResumeDocument(**doc)
 
 
 # Singleton instance
