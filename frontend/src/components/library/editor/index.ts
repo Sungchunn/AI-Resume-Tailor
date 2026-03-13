@@ -12,8 +12,13 @@ export {
   useActiveBlock,
   useBlockEditorStyle,
   useHasUnsavedChanges,
+  useHasConflict,
+  useCurrentVersion,
   type BlockEditorContextValue,
 } from "./BlockEditorContext";
+
+// Conflict resolution
+export { ConflictModal } from "./ConflictModal";
 
 // Provider
 export {

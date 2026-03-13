@@ -48,6 +48,12 @@ export interface BlockEditorContextValue {
   save: () => Promise<void>;
   isSaving: boolean;
 
+  // Conflict state (OCC)
+  /** Whether a version conflict has been detected */
+  hasConflict: boolean;
+  /** Current document version */
+  currentVersion: number;
+
   // Undo/Redo
   canUndo: boolean;
   canRedo: boolean;
@@ -111,4 +117,20 @@ export function useBlockEditorStyle(): BlockEditorStyle {
 export function useHasUnsavedChanges(): boolean {
   const { state } = useBlockEditor();
   return state.isDirty;
+}
+
+/**
+ * Hook to check if there's a version conflict
+ */
+export function useHasConflict(): boolean {
+  const { hasConflict } = useBlockEditor();
+  return hasConflict;
+}
+
+/**
+ * Hook to get the current document version
+ */
+export function useCurrentVersion(): number {
+  const { currentVersion } = useBlockEditor();
+  return currentVersion;
 }
