@@ -264,6 +264,9 @@ class ResumeDocument(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
+    # Version field for Optimistic Concurrency Control
+    version: int = Field(default=1, description="Document version for OCC")
+
     raw_content: str
     html_content: str | None = None
 
@@ -301,6 +304,9 @@ class ResumeCreate(BaseModel):
 
 class ResumeUpdate(BaseModel):
     """Schema for updating an existing resume."""
+
+    # Required version for OCC - client must provide current version
+    version: int | None = None
 
     title: str | None = None
     raw_content: str | None = None
