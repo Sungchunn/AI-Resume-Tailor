@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useState,
   useEffect,
   useCallback,
   useReducer,
@@ -8,6 +9,7 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import { BlockEditorContext, type BlockEditorContextValue } from "./BlockEditorContext";
 import { blockEditorReducer, blockEditorActions } from "./blockEditorReducer";
 import type {
@@ -31,6 +33,9 @@ import {
 } from "@/lib/resume/transforms";
 import { useUndoRedo } from "@/components/workshop/hooks/useUndoRedo";
 import { useAutoFitBlocks, type AutoFitStatus, type AutoFitReduction } from "./style/useAutoFitBlocks";
+import { useSaveCoordinator } from "@/hooks/useSaveCoordinator";
+import { useResumeBroadcast } from "./hooks/useResumeBroadcast";
+import { ConflictModal } from "./ConflictModal";
 
 /**
  * State subset that is tracked for undo/redo
@@ -57,10 +62,13 @@ export interface BlockEditorProviderProps {
   initialParsedContent?: ParsedResumeContent | null;
   /** Initial style settings from the backend */
   initialStyle?: Record<string, unknown> | null;
+  /** Initial document version from the backend (for OCC) */
+  initialVersion?: number;
   /** Callback when save is triggered */
   onSave?: (data: {
     parsedContent: ParsedResumeContent;
     style: Record<string, unknown>;
+    version: number;
   }) => Promise<void>;
   /** Children to render */
   children: ReactNode;
@@ -80,9 +88,18 @@ export function BlockEditorProvider({
   resumeId,
   initialParsedContent,
   initialStyle,
+  initialVersion = 1,
   onSave,
   children,
 }: BlockEditorProviderProps) {
+  const router = useRouter();
+
+  // Track current document version (for OCC)
+  const [currentVersion, setCurrentVersion] = useState(initialVersion);
+
+  // Track if conflict came from BroadcastChannel (vs HTTP 409)
+  const [hasExternalConflict, setHasExternalConflict] = useState(false);
+
   // Initialize state with error handling
   const initialBlocks = useMemo(() => {
     try {
@@ -266,25 +283,73 @@ export function BlockEditorProvider({
     onStyleChange: updateStyle,
   });
 
-  // Save handler
+  // BroadcastChannel for cross-tab sync
+  const { broadcast } = useResumeBroadcast({
+    resumeId,
+    onSaveFromOtherTab: (message) => {
+      // Another tab saved successfully
+      if (message.version && message.version > currentVersion) {
+        console.log(
+          `[BlockEditor] Stale version detected: local=${currentVersion}, remote=${message.version}`
+        );
+        // Trigger conflict state
+        setHasExternalConflict(true);
+      }
+    },
+  });
+
+  // Save coordinator with OCC
+  const {
+    executeSave,
+    hasConflict: hasSaveConflict,
+    isSaving: coordinatorIsSaving,
+    clearConflict,
+  } = useSaveCoordinator({
+    resumeId,
+    onSaveSuccess: (newVersion) => {
+      setCurrentVersion(newVersion);
+      dispatch(blockEditorActions.setDirty(false));
+      // Notify other tabs
+      broadcast("SAVE_COMPLETED", newVersion);
+    },
+    onConflict: () => {
+      // Notify other tabs (informational)
+      broadcast("VERSION_CONFLICT");
+    },
+  });
+
+  // Combined conflict state
+  const hasConflict = hasSaveConflict || hasExternalConflict;
+
+  // Save handler with version tracking
   const save = useCallback(async () => {
-    if (!onSave || isSavingRef.current) return;
+    if (isSavingRef.current || hasConflict) return;
 
     isSavingRef.current = true;
     dispatch(blockEditorActions.setLoading(true));
 
     try {
+      broadcast("SAVE_STARTED");
+
       const parsedContent = blocksToParsedContent(state.blocks);
       const apiStyle = editorStyleToApiStyle(state.style);
 
-      await onSave({
-        parsedContent,
+      // Call executeSave which handles OCC
+      const newVersion = await executeSave({
+        version: currentVersion,
+        parsed_content: parsedContent as Record<string, unknown>,
         style: apiStyle,
       });
 
-      dispatch(blockEditorActions.setDirty(false));
-      dispatch(blockEditorActions.setError(null));
+      if (newVersion) {
+        dispatch(blockEditorActions.setError(null));
+        // Call optional onSave callback for custom behavior
+        if (onSave) {
+          await onSave({ parsedContent, style: apiStyle, version: newVersion });
+        }
+      }
     } catch (err) {
+      broadcast("SAVE_FAILED");
       const errorMessage =
         err instanceof Error ? err.message : "Failed to save";
       dispatch(blockEditorActions.setError(errorMessage));
@@ -292,7 +357,14 @@ export function BlockEditorProvider({
       dispatch(blockEditorActions.setLoading(false));
       isSavingRef.current = false;
     }
-  }, [state.blocks, state.style, onSave]);
+  }, [state.blocks, state.style, currentVersion, hasConflict, onSave, executeSave, broadcast]);
+
+  // Handle refresh after conflict
+  const handleConflictRefresh = useCallback(() => {
+    clearConflict();
+    setHasExternalConflict(false);
+    router.refresh();
+  }, [clearConflict, router]);
 
   // Utility functions
   const getBlockById = useCallback(
@@ -337,7 +409,9 @@ export function BlockEditorProvider({
       autoFitStatus,
       autoFitReductions,
       save,
-      isSaving: state.isLoading && isSavingRef.current,
+      isSaving: coordinatorIsSaving || (state.isLoading && isSavingRef.current),
+      hasConflict,
+      currentVersion,
       canUndo,
       canRedo,
       undo,
@@ -364,6 +438,9 @@ export function BlockEditorProvider({
       autoFitStatus,
       autoFitReductions,
       save,
+      coordinatorIsSaving,
+      hasConflict,
+      currentVersion,
       canUndo,
       canRedo,
       undo,
@@ -377,6 +454,9 @@ export function BlockEditorProvider({
   return (
     <BlockEditorContext.Provider value={contextValue}>
       {children}
+
+      {/* Conflict Modal - blocks interaction when conflict detected */}
+      <ConflictModal isOpen={hasConflict} onRefresh={handleConflictRefresh} />
     </BlockEditorContext.Provider>
   );
 }

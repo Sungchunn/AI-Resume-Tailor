@@ -65,20 +65,16 @@ export default function ResumeEditPage({ params }: PageProps) {
     refetch();
   }, [refetch]);
 
-  // Handle save
+  // Handle save - now delegated to BlockEditorProvider's save coordinator
+  // This callback is no longer used directly, but kept for type compatibility
   const handleSave = async (data: {
     parsedContent: ParsedResumeContent;
     style: Record<string, unknown>;
+    version: number;
   }) => {
     if (!resume) return;
-    await updateResume.mutateAsync({
-      id: resumeId,
-      data: {
-        version: resume.version ?? 1,
-        parsed_content: data.parsedContent as Record<string, unknown>,
-        style: data.style,
-      },
-    });
+    // The actual save is handled by useSaveCoordinator inside BlockEditorProvider
+    // This is kept for backwards compatibility but executeSave is used directly
   };
 
   // Loading state
@@ -143,6 +139,7 @@ export default function ResumeEditPage({ params }: PageProps) {
       resumeId={resumeId}
       initialParsedContent={resume.parsed as ParsedResumeContent | null}
       initialStyle={resume.style as Record<string, unknown> | null}
+      initialVersion={resume.version ?? 1}
       onSave={handleSave}
     >
       <EditorLayout
