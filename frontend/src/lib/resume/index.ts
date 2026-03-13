@@ -51,6 +51,7 @@ export {
   blocksToParsedContent,
   apiStyleToEditorStyle,
   editorStyleToApiStyle,
+  extractFitToOnePage,
   insertBlockAfter,
   removeBlock,
   reorderBlocks,

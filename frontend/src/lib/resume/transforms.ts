@@ -552,7 +552,8 @@ export function apiStyleToEditorStyle(
  * Convert frontend BlockEditorStyle to API format
  */
 export function editorStyleToApiStyle(
-  style: BlockEditorStyle
+  style: BlockEditorStyle,
+  fitToOnePage?: boolean
 ): Record<string, unknown> {
   return {
     font_family: style.fontFamily,
@@ -566,7 +567,22 @@ export function editorStyleToApiStyle(
     line_spacing: style.lineSpacing,
     section_spacing: style.sectionSpacing,
     entry_spacing: style.entrySpacing,
+    // Include fit_to_one_page setting for persistence
+    ...(fitToOnePage !== undefined && { fit_to_one_page: fitToOnePage }),
   };
+}
+
+/**
+ * Extract fitToOnePage setting from API style
+ * Returns undefined if not set (for null coalescing in provider)
+ */
+export function extractFitToOnePage(
+  apiStyle: Record<string, unknown> | null | undefined
+): boolean | undefined {
+  if (!apiStyle) return undefined;
+  const value = apiStyle.fit_to_one_page;
+  if (typeof value === "boolean") return value;
+  return undefined;
 }
 
 /**
