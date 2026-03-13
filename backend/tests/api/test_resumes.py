@@ -16,7 +16,8 @@ async def test_create_resume(client: AsyncClient):
     data = response.json()
     assert data["title"] == "Software Engineer Resume"
     assert data["raw_content"] == "John Doe\nSoftware Engineer\n5 years experience..."
-    assert data["owner_id"] == 1
+    assert data["user_id"] == 1
+    assert data["version"] == 1  # New resumes start at version 1
     assert "id" in data
     assert "created_at" in data
 
@@ -84,23 +85,58 @@ async def test_list_resumes(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_update_resume(client: AsyncClient):
-    """Test updating a resume."""
+    """Test updating a resume with optimistic concurrency control."""
     # Create a resume
     create_response = await client.post(
         "/api/resumes",
         json={"title": "Original Title", "raw_content": "Original content"},
     )
-    resume_id = create_response.json()["id"]
+    create_data = create_response.json()
+    resume_id = create_data["id"]
+    version = create_data["version"]
 
-    # Update the resume
+    assert version == 1  # New resumes start at version 1
+
+    # Update the resume with correct version
     response = await client.put(
         f"/api/resumes/{resume_id}",
-        json={"title": "Updated Title"},
+        json={"version": version, "title": "Updated Title"},
     )
     assert response.status_code == 200
     data = response.json()
     assert data["title"] == "Updated Title"
     assert data["raw_content"] == "Original content"
+    assert data["version"] == 2  # Version should be incremented
+
+
+@pytest.mark.asyncio
+async def test_update_resume_version_conflict(client: AsyncClient):
+    """Test that stale version causes 409 Conflict."""
+    # Create a resume
+    create_response = await client.post(
+        "/api/resumes",
+        json={"title": "Original Title", "raw_content": "Original content"},
+    )
+    create_data = create_response.json()
+    resume_id = create_data["id"]
+
+    # First update succeeds (version 1 -> 2)
+    response1 = await client.put(
+        f"/api/resumes/{resume_id}",
+        json={"version": 1, "title": "First Update"},
+    )
+    assert response1.status_code == 200
+    assert response1.json()["version"] == 2
+
+    # Second update with stale version (still using 1) should fail
+    response2 = await client.put(
+        f"/api/resumes/{resume_id}",
+        json={"version": 1, "title": "Stale Update"},
+    )
+    assert response2.status_code == 409
+    error_data = response2.json()["detail"]
+    assert error_data["error"] == "version_conflict"
+    assert error_data["expected_version"] == 1
 
 
 @pytest.mark.asyncio
