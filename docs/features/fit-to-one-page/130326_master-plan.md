@@ -46,6 +46,8 @@ The existing `useAutoFitBlocks` reduces styles in this order (least impact first
 3. **Line spacing** (min: 1.05)
 4. **Body font size** (min: 8pt) - also scales heading/subheading proportionally
 
+**Current Complexity:** O(n) linear iteration - reduces by 5% per step until fit.
+
 ### Gap
 
 The `useAutoFitBlocks` hook uses `estimateContentHeight()` which calculates height mathematically. This is imprecise because:
@@ -56,15 +58,136 @@ The `useAutoFitBlocks` hook uses `estimateContentHeight()` which calculates heig
 
 The `useOverflowDetection` hook already does DOM measurement but only for **detection**, not for driving auto-fit.
 
+### Algorithm Improvement: Binary Search (O(log n))
+
+**Problem with linear approach:** Each 5% reduction requires a measurement. Worst case = 25 iterations.
+
+**Solution:** Use binary search with a unified "compactness scale" to achieve O(log n) complexity.
+
+#### Compactness Scale Design
+
+Map all style properties to a single 0-100 scale where:
+
+- **Level 0** = Original styles (most spacious)
+- **Level 100** = All minimums (most compact)
+
+The scale preserves the "least impactful first" ordering:
+
+| Level Range | Property Reduced | Interpolation |
+| ----------- | ---------------- | ------------- |
+| 0-25 | sectionSpacing | max → min |
+| 25-50 | entrySpacing | max → min |
+| 50-75 | lineSpacing | max → min |
+| 75-100 | fontSizeBody | max → min (+ proportional heading/subheading) |
+
+#### Binary Search Algorithm
+
+```typescript
+function findOptimalCompactness(
+  measureFn: () => number,
+  targetHeight: number,
+  originalStyle: BlockEditorStyle
+): number {
+  let low = 0;
+  let high = 100;
+  let result = 100; // Default to maximum compactness
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const testStyle = compactnessToStyle(mid, originalStyle);
+
+    // Apply style and measure
+    applyStyle(testStyle);
+    const height = measureFn();
+
+    if (height <= targetHeight) {
+      result = mid; // This level fits, try less compact
+      high = mid - 1;
+    } else {
+      low = mid + 1; // Too tall, need more compact
+    }
+  }
+
+  return result;
+}
+```
+
+#### Complexity Analysis
+
+| Approach | Best Case | Worst Case | Typical |
+| -------- | --------- | ---------- | ------- |
+| Linear (current) | O(1) fits immediately | O(n) ~25 iterations | O(n) |
+| Binary Search | O(1) fits immediately | O(log 100) = 7 iterations | O(log n) |
+
+**Tradeoff:** Binary search requires applying styles and measuring at each step, but max 7 iterations vs 25 is a significant improvement for DOM-based measurement where each iteration forces a reflow.
+
 ---
 
 ## Implementation Plan
 
-### Step 1: Enhance `useAutoFitBlocks` with DOM Measurement
+### Step 1: Implement Compactness Scale and Binary Search
 
 **File:** `frontend/src/components/library/editor/style/useAutoFitBlocks.ts`
 
-Add optional `measureFn` parameter to the options interface:
+#### 1a. Add Compactness Scale Utilities
+
+```typescript
+// Style property ranges (original values → minimums)
+const STYLE_RANGES = {
+  sectionSpacing: { max: 24, min: 6 },   // Levels 0-25
+  entrySpacing: { max: 16, min: 4 },     // Levels 25-50
+  lineSpacing: { max: 1.5, min: 1.05 },  // Levels 50-75
+  fontSizeBody: { max: 12, min: 8 },     // Levels 75-100
+} as const;
+
+/**
+ * Convert compactness level (0-100) to style values
+ * Level 0 = most spacious, Level 100 = most compact
+ */
+function compactnessToStyle(
+  level: number,
+  originalStyle: BlockEditorStyle
+): BlockEditorStyle {
+  const style = { ...originalStyle };
+
+  // Phase 1: sectionSpacing (levels 0-25)
+  if (level > 0) {
+    const phaseProgress = Math.min(level / 25, 1);
+    const range = originalStyle.sectionSpacing - STYLE_RANGES.sectionSpacing.min;
+    style.sectionSpacing = originalStyle.sectionSpacing - range * phaseProgress;
+  }
+
+  // Phase 2: entrySpacing (levels 25-50)
+  if (level > 25) {
+    const phaseProgress = Math.min((level - 25) / 25, 1);
+    const range = originalStyle.entrySpacing - STYLE_RANGES.entrySpacing.min;
+    style.entrySpacing = originalStyle.entrySpacing - range * phaseProgress;
+  }
+
+  // Phase 3: lineSpacing (levels 50-75)
+  if (level > 50) {
+    const phaseProgress = Math.min((level - 50) / 25, 1);
+    const range = originalStyle.lineSpacing - STYLE_RANGES.lineSpacing.min;
+    style.lineSpacing = originalStyle.lineSpacing - range * phaseProgress;
+  }
+
+  // Phase 4: fontSizeBody (levels 75-100) + proportional heading/subheading
+  if (level > 75) {
+    const phaseProgress = Math.min((level - 75) / 25, 1);
+    const bodyRange = originalStyle.fontSizeBody - STYLE_RANGES.fontSizeBody.min;
+    const newBody = originalStyle.fontSizeBody - bodyRange * phaseProgress;
+    const ratio = newBody / originalStyle.fontSizeBody;
+
+    style.fontSizeBody = newBody;
+    style.fontSizeHeading = Math.max(12, originalStyle.fontSizeHeading * ratio);
+    style.fontSizeSubheading = Math.max(9, originalStyle.fontSizeSubheading * ratio);
+  }
+
+  return style;
+}
+```
+
+#### 1b. Add Binary Search Algorithm
 
 ```typescript
 interface UseAutoFitBlocksOptions {
@@ -72,24 +195,61 @@ interface UseAutoFitBlocksOptions {
   style: BlockEditorStyle;
   enabled: boolean;
   onStyleChange: (style: Partial<BlockEditorStyle>) => void;
-  measureFn?: () => number;  // NEW: Optional DOM-based measurement
+  measureFn?: () => number;  // Optional DOM-based measurement
+}
+
+/**
+ * Binary search to find minimum compactness level that fits
+ * Complexity: O(log n) where n = 100 levels = max 7 iterations
+ */
+async function findOptimalCompactness(
+  measureHeight: () => Promise<number>,
+  applyStyle: (style: BlockEditorStyle) => void,
+  targetHeight: number,
+  originalStyle: BlockEditorStyle
+): Promise<{ level: number; style: BlockEditorStyle }> {
+  let low = 0;
+  let high = 100;
+  let result = 0;
+
+  // First check: does original style fit?
+  applyStyle(originalStyle);
+  const originalHeight = await measureHeight();
+  if (originalHeight <= targetHeight) {
+    return { level: 0, style: originalStyle };
+  }
+
+  // Binary search for minimum compactness
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const testStyle = compactnessToStyle(mid, originalStyle);
+
+    applyStyle(testStyle);
+    const height = await measureHeight();
+
+    if (height <= targetHeight) {
+      result = mid;
+      high = mid - 1; // Try less compact
+    } else {
+      low = mid + 1; // Need more compact
+    }
+  }
+
+  return {
+    level: result,
+    style: compactnessToStyle(result, originalStyle),
+  };
 }
 ```
 
-**Modifications:**
-
-1. When `measureFn` is provided, use it instead of `estimateContentHeight()`
-2. Add double `requestAnimationFrame` wrapper to ensure DOM has settled before measuring
-3. Add stability check: stop iteration if height change < 2px between measurements
-
-**Key code pattern:**
+#### 1c. Add RAF-wrapped Measurement
 
 ```typescript
-const measureWithRAF = (): Promise<number> => {
+const measureWithRAF = (measureFn: () => number): Promise<number> => {
   return new Promise((resolve) => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        resolve(measureFn ? measureFn() : estimateContentHeight(blocks, workingStyle));
+        resolve(measureFn());
       });
     });
   });
@@ -234,7 +394,7 @@ Since edit/tailor pages persist the auto-fitted styles, the view page will displ
 
 | File | Change |
 | ---- | ------ |
-| `frontend/src/components/library/editor/style/useAutoFitBlocks.ts` | Add `measureFn` parameter, RAF wrapper, stability check |
+| `frontend/src/components/library/editor/style/useAutoFitBlocks.ts` | Replace linear algorithm with binary search + compactness scale, add `measureFn` parameter |
 | `frontend/src/components/library/editor/style/useFitToPageWithDOM.ts` | **NEW** - DOM bridge hook |
 | `frontend/src/lib/resume/defaults.ts` | Change `fitToOnePage` default to `true` |
 | `frontend/src/components/library/editor/EditorLayout.tsx` | Integrate DOM-based auto-fit, update warnings |
@@ -248,8 +408,8 @@ Since edit/tailor pages persist the auto-fitted styles, the view page will displ
 | ---------- | ----------- |
 | `isProcessingRef` | Prevents re-entrancy during a single adjustment cycle |
 | Double RAF | Ensures DOM has settled before measuring |
-| Stability threshold | Stop iteration if height change < 2px |
-| Max iterations | Hard limit of 25 iterations (existing) |
+| Binary search bounds | Guaranteed max 7 iterations (log₂ 100) vs previous 25 |
+| Early exit | Skip search entirely if original style fits |
 | Debounced observers | 500ms debounce on ResizeObserver/MutationObserver |
 | Hash comparison | Only persist if style actually changed |
 
