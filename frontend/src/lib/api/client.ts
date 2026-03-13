@@ -1,3 +1,4 @@
+import { VersionConflictError } from "./errors";
 import type {
   ResumeCreate,
   ResumeUpdate,
@@ -194,6 +195,19 @@ async function fetchApi<T>(
         throw new Error("Session expired. Please log in again.");
       }
     }
+  }
+
+  // Handle 409 Conflict (version mismatch)
+  if (response.status === 409) {
+    const errorBody = await response.json().catch(() => ({}));
+    if (errorBody.detail?.error === "version_conflict") {
+      throw new VersionConflictError(
+        errorBody.detail.expected_version,
+        errorBody.detail.message
+      );
+    }
+    // Non-version 409 errors
+    throw new Error(errorBody.detail?.message || "Conflict error");
   }
 
   if (!response.ok) {

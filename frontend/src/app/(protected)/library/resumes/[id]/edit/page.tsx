@@ -70,9 +70,11 @@ export default function ResumeEditPage({ params }: PageProps) {
     parsedContent: ParsedResumeContent;
     style: Record<string, unknown>;
   }) => {
+    if (!resume) return;
     await updateResume.mutateAsync({
       id: resumeId,
       data: {
+        version: resume.version ?? 1,
         parsed_content: data.parsedContent as Record<string, unknown>,
         style: data.style,
       },

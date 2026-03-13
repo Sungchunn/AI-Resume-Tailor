@@ -14,6 +14,7 @@ import {
   profileApi,
   tokenManager,
 } from "./client";
+import { VersionConflictError, isVersionConflictError } from "./errors";
 import type {
   ResumeCreate,
   ResumeUpdate,
@@ -174,15 +175,29 @@ export function useCreateResume() {
   });
 }
 
-export function useUpdateResume() {
+export interface UseUpdateResumeOptions {
+  /**
+   * Callback invoked when a version conflict (HTTP 409) occurs.
+   * Use this to show conflict UI.
+   */
+  onVersionConflict?: (error: VersionConflictError) => void;
+}
+
+export function useUpdateResume(options?: UseUpdateResumeOptions) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: ResumeUpdate }) =>
       resumeApi.update(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.resumes.detail(id) });
+    onSuccess: (updatedResume, { id }) => {
+      // Update cache with new data (includes new version)
+      queryClient.setQueryData(queryKeys.resumes.detail(id), updatedResume);
       queryClient.invalidateQueries({ queryKey: queryKeys.resumes.list() });
+    },
+    onError: (error) => {
+      if (isVersionConflictError(error) && options?.onVersionConflict) {
+        options.onVersionConflict(error);
+      }
     },
   });
 }

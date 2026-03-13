@@ -75,6 +75,7 @@ export interface ResumeCreate extends ResumeBase {
 }
 
 export interface ResumeUpdate {
+  version: number; // Required for OCC (optimistic concurrency control)
   title?: string;
   raw_content?: string;
   html_content?: string;
@@ -103,6 +104,9 @@ export interface ResumeResponse extends ResumeBase {
   // Parse-Once, Tailor-Many verification fields
   parsed_verified: boolean;
   parsed_verified_at: string | null;
+
+  // OCC (optimistic concurrency control)
+  version: number;
 }
 
 export interface JobBase {
