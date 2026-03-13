@@ -8,6 +8,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.api.deps import get_mongo_db, get_current_user_id
 from app.crud.mongo import resume_crud
+from app.crud.mongo.exceptions import VersionConflictError
 from app.db.mongodb import get_mongodb
 from app.models.mongo.resume import (
     ResumeCreate as MongoResumeCreate,
@@ -54,6 +55,7 @@ def _to_response(doc) -> ResumeResponse:
         parsed_verified_at=getattr(doc, "parsed_verified_at", None),
         created_at=doc.created_at,
         updated_at=doc.updated_at,
+        version=getattr(doc, "version", 1),  # Include version for OCC
     )
 
 
@@ -122,7 +124,15 @@ async def update_resume(
     mongo_db: AsyncIOMotorDatabase = Depends(get_mongo_db),
     current_user_id: int = Depends(get_current_user_id),
 ) -> ResumeResponse:
-    """Update a resume."""
+    """Update a resume with optimistic concurrency control.
+
+    Returns:
+        Updated resume on success
+
+    Raises:
+        404: Resume not found or not authorized
+        409: Version conflict - resume was modified by another session
+    """
     # Verify ownership
     if not await resume_crud.exists(mongo_db, id=resume_id, user_id=current_user_id):
         raise HTTPException(
@@ -130,21 +140,34 @@ async def update_resume(
             detail="Resume not found or not authorized",
         )
 
-    # Build update object
-    update_data = MongoResumeUpdate(
-        title=resume_in.title,
-        raw_content=resume_in.raw_content,
-        html_content=resume_in.html_content,
-        parsed=ParsedContent(**resume_in.parsed_content) if resume_in.parsed_content else None,
-        style=StyleSettings(**resume_in.style) if resume_in.style else None,
-    )
-    updated_resume = await resume_crud.update(mongo_db, id=resume_id, obj_in=update_data)
-    if not updated_resume:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resume not found",
+    try:
+        # Build update object with version for OCC
+        update_data = MongoResumeUpdate(
+            version=resume_in.version,  # Pass version for OCC
+            title=resume_in.title,
+            raw_content=resume_in.raw_content,
+            html_content=resume_in.html_content,
+            parsed=ParsedContent(**resume_in.parsed_content) if resume_in.parsed_content else None,
+            style=StyleSettings(**resume_in.style) if resume_in.style else None,
         )
-    return _to_response(updated_resume)
+        updated_resume = await resume_crud.update(mongo_db, id=resume_id, obj_in=update_data)
+        if not updated_resume:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Resume not found",
+            )
+        return _to_response(updated_resume)
+
+    except VersionConflictError as e:
+        # Handle version conflict with HTTP 409
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error": "version_conflict",
+                "message": "Resume was modified by another session. Please refresh and try again.",
+                "expected_version": e.expected_version,
+            },
+        )
 
 
 @router.delete("/{resume_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -436,7 +459,7 @@ async def run_parse_task(
         # Update database (MongoDB)
         mongo_db = get_mongodb()
         update_data = MongoResumeUpdate(
-            parsed=ParsedContent(**parsed_content) if parsed_content else None,
+            parsed=ParsedContent.model_validate(parsed_content) if parsed_content else None,
         )
         await resume_crud.update(mongo_db, id=resume_id, obj_in=update_data)
 
