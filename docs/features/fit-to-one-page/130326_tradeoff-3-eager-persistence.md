@@ -175,6 +175,204 @@ The user expectation is that auto-fit "just works." Requiring manual save breaks
 | Hash comparison | Skips save if styles unchanged |
 | `isProcessingRef` | Prevents saves during active auto-fit |
 | Optimistic UI | Show "Saving..." indicator during auto-save |
+| **Save operation lock** | Prevents concurrent save requests (see below) |
+
+---
+
+## Critical: Race Condition Mitigation
+
+### The Problem
+
+Hash comparison alone is insufficient. Consider this timeline:
+
+```text
+T=0:     User edits content
+T=100:   Auto-fit adjusts styles (hash = "abc123")
+T=100:   Debounce timer starts (2000ms)
+T=1900:  User clicks "Save" button
+T=1900:  Manual save request starts (in-flight)
+T=2100:  Debounce timer fires
+T=2100:  Auto-save sees hash matches, but manual save is STILL IN FLIGHT
+T=2100:  Auto-save sends request anyway (race condition!)
+T=2150:  Manual save completes
+T=2200:  Auto-save completes (duplicate write, potential overwrite)
+```
+
+The hash comparison checks `lastSavedStyleRef.current`, but this ref is only updated **after** the save completes. During the network request, both operations think they need to save.
+
+### Solution: Save Operation Lock with Auto-Save Cancellation
+
+```typescript
+// In BlockEditorProvider
+const lastSavedStyleRef = useRef<string>(JSON.stringify(state.style));
+const pendingAutoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+const saveInProgressRef = useRef<boolean>(false);
+
+// Cancel any pending auto-save
+const cancelPendingAutoSave = useCallback(() => {
+  if (pendingAutoSaveRef.current) {
+    clearTimeout(pendingAutoSaveRef.current);
+    pendingAutoSaveRef.current = null;
+  }
+}, []);
+
+// Manual save handler - cancels auto-save and acquires lock
+const handleManualSave = useCallback(async () => {
+  // 1. Cancel any pending auto-save immediately
+  cancelPendingAutoSave();
+
+  // 2. If save already in progress, queue this request or skip
+  if (saveInProgressRef.current) {
+    console.warn('Save already in progress, skipping duplicate');
+    return;
+  }
+
+  // 3. Acquire lock
+  saveInProgressRef.current = true;
+
+  try {
+    await save();
+    lastSavedStyleRef.current = JSON.stringify(state.style);
+  } finally {
+    // 4. Release lock
+    saveInProgressRef.current = false;
+  }
+}, [save, state.style, cancelPendingAutoSave]);
+
+// Auto-save effect with lock awareness
+useEffect(() => {
+  if (!state.fitToOnePage || !state.isDirty) return;
+
+  const currentStyleHash = JSON.stringify(state.style);
+  if (currentStyleHash === lastSavedStyleRef.current) return;
+
+  // Clear any existing timer (debounce reset)
+  cancelPendingAutoSave();
+
+  pendingAutoSaveRef.current = setTimeout(async () => {
+    // Check lock before attempting save
+    if (saveInProgressRef.current) {
+      // Manual save in progress - abort auto-save entirely
+      // The manual save will persist the current state
+      return;
+    }
+
+    // Re-check hash (state may have changed during debounce)
+    const latestHash = JSON.stringify(state.style);
+    if (latestHash === lastSavedStyleRef.current) return;
+
+    // Acquire lock
+    saveInProgressRef.current = true;
+
+    try {
+      await save();
+      lastSavedStyleRef.current = latestHash;
+    } finally {
+      saveInProgressRef.current = false;
+      pendingAutoSaveRef.current = null;
+    }
+  }, 2000);
+
+  return () => cancelPendingAutoSave();
+}, [state.style, state.fitToOnePage, state.isDirty, save, cancelPendingAutoSave]);
+```
+
+### Lock Behavior Summary
+
+| Event | Action |
+| ----- | ------ |
+| Manual save triggered | Cancel pending auto-save, acquire lock, save |
+| Auto-save timer fires | Check lock; if locked, abort silently |
+| Save completes | Release lock, update hash ref |
+| New content change | Reset debounce timer (existing behavior) |
+
+### Why This Works
+
+1. **Manual save always wins:** Clicking "Save" immediately cancels pending auto-saves
+2. **No duplicate requests:** Lock prevents concurrent API calls
+3. **No lost updates:** Manual save persists current state; auto-save was going to save the same thing anyway
+4. **No wasted API calls:** Auto-save checks lock and aborts if manual save is handling it
+
+---
+
+## Future Consideration: LLM Line-by-Line Suggestions
+
+This architecture becomes critical when LLM suggestions are implemented. Consider:
+
+```text
+T=0:     User requests LLM suggestion for bullet point
+T=100:   LLM streams partial suggestion (state update 1)
+T=200:   LLM streams more (state update 2)
+T=300:   LLM streams more (state update 3)
+...
+T=2000:  LLM completes
+T=2100:  User reviews and clicks "Accept"
+T=2100:  Auto-save timer from T=100 fires (2000ms)
+T=2100:  Race condition with acceptance save!
+```
+
+### LLM Suggestion Safeguards
+
+| Safeguard | Implementation |
+| --------- | -------------- |
+| Suspend auto-save during streaming | Set `isStreamingRef.current = true` during LLM response |
+| Reset debounce on stream complete | Clear timers when `isStreaming` transitions to false |
+| Accept/Reject as manual save | User action triggers `handleManualSave`, not auto-save |
+| Optimistic lock during review | `isReviewingRef` prevents saves while user reviews suggestions |
+
+```typescript
+// Extended for LLM suggestions
+const isStreamingRef = useRef<boolean>(false);
+const isReviewingRef = useRef<boolean>(false);
+
+// In auto-save effect
+if (saveInProgressRef.current || isStreamingRef.current || isReviewingRef.current) {
+  return; // Don't auto-save during LLM operations
+}
+```
+
+### State Machine for Save Operations
+
+```text
+                    ┌─────────────┐
+                    │    IDLE     │
+                    └──────┬──────┘
+                           │
+           ┌───────────────┼───────────────┐
+           │               │               │
+           ▼               ▼               ▼
+    ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+    │  DEBOUNCING │ │   SAVING    │ │  STREAMING  │
+    │ (auto-save) │ │  (locked)   │ │    (LLM)    │
+    └──────┬──────┘ └──────┬──────┘ └──────┬──────┘
+           │               │               │
+           │               │               ▼
+           │               │        ┌─────────────┐
+           │               │        │  REVIEWING  │
+           │               │        │    (LLM)    │
+           │               │        └──────┬──────┘
+           │               │               │
+           └───────────────┴───────────────┘
+                           │
+                           ▼
+                    ┌─────────────┐
+                    │    IDLE     │
+                    └─────────────┘
+```
+
+**Transitions:**
+
+- IDLE → DEBOUNCING: Content change detected
+- DEBOUNCING → SAVING: Timer expires, lock acquired
+- DEBOUNCING → IDLE: Manual save cancels timer
+- IDLE → SAVING: Manual save triggered
+- SAVING → IDLE: API call completes
+- IDLE → STREAMING: LLM request starts
+- STREAMING → REVIEWING: LLM completes
+- REVIEWING → SAVING: User accepts suggestion
+- REVIEWING → IDLE: User rejects suggestion
+
+---
 
 ### Additional Consideration: Undo Support
 
@@ -184,8 +382,8 @@ For future enhancement, consider storing style history:
 interface StyleHistory {
   timestamp: number;
   style: BlockEditorStyle;
-  trigger: 'manual' | 'auto-fit';
+  trigger: 'manual' | 'auto-fit' | 'llm-accept';
 }
 ```
 
-This would allow users to revert unwanted auto-fit changes.
+This would allow users to revert unwanted auto-fit or LLM changes.
