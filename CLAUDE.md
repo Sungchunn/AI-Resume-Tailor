@@ -66,6 +66,10 @@ Keep the root directory clean - only `README.md` and `CLAUDE.md` at project root
 │   ├── database-rules.md          # Database conventions
 │   └── ai-integration.md          # AI/ML integration design
 │
+├── /testing                   # E2E and integration test documentation
+│   ├── DDMMYY_playwright-infrastructure.md  # Playwright setup and patterns
+│   └── DDMMYY_<feature>-tests.md            # Feature-specific test plans
+│
 └── /api                       # API reference documentation
     ├── overview.md                # API introduction
     └── [endpoint].md              # Per-endpoint documentation
@@ -76,6 +80,7 @@ Keep the root directory clean - only `README.md` and `CLAUDE.md` at project root
 | `/planning` | Project-level roadmaps, milestones, assessments | Implementation plans, phase breakdowns, project reviews |
 | `/features` | Feature-specific implementation docs | New feature plans, proposals, phase docs |
 | `/architecture` | System design, technical decisions | Tech stack choices, design patterns, cross-cutting concerns |
+| `/testing` | E2E and Playwright test documentation | Test infrastructure, feature test plans, page objects |
 | `/api` | API reference for consumers | Endpoint docs, schemas, error codes |
 
 #### Feature Documentation: Subdirectory Convention
@@ -424,6 +429,61 @@ if metrics:  # None if result was cached
 response = await ai_client.generate_json(...)  # No metrics captured!
 ```
 
+### 15. Playwright E2E Testing
+
+**Use Playwright for features requiring real browser behavior (DOM measurements, font rendering, visual regression).**
+
+#### When to Use Playwright vs Jest/JSDOM
+
+| Capability | JSDOM | Playwright |
+| ---------- | ----- | ---------- |
+| CSS layout engine (`scrollHeight`, `offsetHeight`) | No | Yes |
+| Font rendering and line wrapping | No | Yes |
+| Real browser interactions | No | Yes |
+| Visual regression testing | No | Yes |
+
+#### Documentation Requirements
+
+When implementing Playwright tests for a feature:
+
+1. **Create test plan doc:** `/docs/testing/DDMMYY_<feature>-tests.md`
+2. **Reference infrastructure:** Link to `playwright-infrastructure.md` for patterns
+3. **Include prerequisites:** List required `data-testid` attributes to add
+4. **Define test scope:** Tables of pages and behaviors to validate
+
+#### Implementation Procedure
+
+1. **Add `data-testid` attributes** to components under test (use pattern: `<component>-<element>[-<modifier>]`)
+2. **Create page object** in `frontend/e2e/fixtures/page-objects/<PageName>Page.ts`
+3. **Create test data factory** in `frontend/e2e/fixtures/test-data/<entity>.fixture.ts` (if needed)
+4. **Add project to `playwright.config.ts`** (if feature needs specific viewport/settings)
+5. **Write test files** in `frontend/e2e/<feature-name>/`
+6. **Update infrastructure doc** if new patterns are established
+
+#### File Structure
+
+```text
+frontend/e2e/
+├── <feature-name>/           # Feature-specific tests
+│   └── *.spec.ts
+├── fixtures/
+│   ├── page-objects/         # Encapsulate page interactions
+│   │   └── <PageName>Page.ts
+│   └── test-data/            # Test data factories
+│       └── <entity>.fixture.ts
+└── helpers/                  # Shared utilities
+    └── <utility>.ts
+```
+
+#### Running Tests
+
+```bash
+cd frontend
+npx playwright test e2e/<feature>    # Run feature tests
+npx playwright test --ui             # Interactive UI mode
+npx playwright show-report           # View test report
+```
+
 ---
 
 ## Development Workflow
@@ -442,6 +502,7 @@ response = await ai_client.generate_json(...)  # No metrics captured!
 3. Ensure documentation is updated in `/docs/` if needed:
    - **API changes:** Update `/docs/api/` for any endpoint, schema, or error code changes
    - **Architecture changes:** Update `/docs/architecture/` for any system design, pattern, or data flow changes
+   - **E2E test changes:** Update `/docs/testing/` for new Playwright tests or infrastructure changes
 4. Use clear, descriptive commit messages with scope prefix
 
 ### Commit Message Format
@@ -456,6 +517,7 @@ Valid scopes:
 - `backend:` - Changes to `/backend` (FastAPI, Python, API)
 - `database:` - Database schema, migrations, Redis config
 - `infra:` - Docker, CI/CD, deployment configs
+- `test:` - E2E/Playwright tests (use `frontend:` if tests are part of feature work)
 - `docs:` - Documentation only changes
 
 For changes spanning multiple areas, use the primary scope or combine:
@@ -533,4 +595,11 @@ poetry run pytest             # Run tests
 
 # Type sync
 ./scripts/generate-client.sh  # Generate TS types from OpenAPI
+
+# Playwright E2E tests (from /frontend)
+npx playwright test              # Run all E2E tests
+npx playwright test e2e/<feature>  # Run specific feature tests
+npx playwright test --ui         # Interactive UI mode
+npx playwright show-report       # View HTML report
+npx playwright test --update-snapshots  # Update visual baselines
 ```
