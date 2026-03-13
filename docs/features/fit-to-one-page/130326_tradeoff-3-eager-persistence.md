@@ -200,81 +200,92 @@ T=2200:  Auto-save completes (duplicate write, potential overwrite)
 
 The hash comparison checks `lastSavedStyleRef.current`, but this ref is only updated **after** the save completes. During the network request, both operations think they need to save.
 
+### Data Integrity Architecture
+
+To handle both **race conditions** (within a single tab) and **"Last Write Wins" (LWW) data clobbering** (across multiple tabs or devices), we extract the save coordination logic into a dedicated custom hook: `useSaveCoordinator`.
+
+This hook centralizes:
+
+| Concern | Solution |
+| ------- | -------- |
+| Debounce management | Single timer ref with proper cleanup |
+| Save operation lock | Prevents concurrent API calls within a tab |
+| AI streaming awareness | Suspends auto-save during LLM operations |
+| Optimistic Concurrency Control (OCC) | Passes `version` to API; 409 on mismatch |
+| BroadcastChannel | Notifies other tabs in same browser when save completes |
+
 ### Solution: Save Operation Lock with Auto-Save Cancellation
 
 ```typescript
-// In BlockEditorProvider
-const lastSavedStyleRef = useRef<string>(JSON.stringify(state.style));
-const pendingAutoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-const saveInProgressRef = useRef<boolean>(false);
+// Extracted to a custom hook: src/hooks/useSaveCoordinator.ts
+// Handles Debounce, Locks, AI Streaming, and Data Clobbering (OCC/Broadcast)
 
-// Cancel any pending auto-save
-const cancelPendingAutoSave = useCallback(() => {
-  if (pendingAutoSaveRef.current) {
-    clearTimeout(pendingAutoSaveRef.current);
-    pendingAutoSaveRef.current = null;
-  }
-}, []);
+export function useSaveCoordinator({ state, saveToApi, broadcastChannel, isStreaming }) {
+  const lastSavedStyleRef = useRef<string>(JSON.stringify(state.style));
+  const pendingAutoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveInProgressRef = useRef<boolean>(false);
 
-// Manual save handler - cancels auto-save and acquires lock
-const handleManualSave = useCallback(async () => {
-  // 1. Cancel any pending auto-save immediately
-  cancelPendingAutoSave();
+  // Core execution logic with OCC and Broadcasting
+  const executeSave = useCallback(async () => {
+    if (saveInProgressRef.current) return;
 
-  // 2. If save already in progress, queue this request or skip
-  if (saveInProgressRef.current) {
-    console.warn('Save already in progress, skipping duplicate');
-    return;
-  }
-
-  // 3. Acquire lock
-  saveInProgressRef.current = true;
-
-  try {
-    await save();
-    lastSavedStyleRef.current = JSON.stringify(state.style);
-  } finally {
-    // 4. Release lock
-    saveInProgressRef.current = false;
-  }
-}, [save, state.style, cancelPendingAutoSave]);
-
-// Auto-save effect with lock awareness
-useEffect(() => {
-  if (!state.fitToOnePage || !state.isDirty) return;
-
-  const currentStyleHash = JSON.stringify(state.style);
-  if (currentStyleHash === lastSavedStyleRef.current) return;
-
-  // Clear any existing timer (debounce reset)
-  cancelPendingAutoSave();
-
-  pendingAutoSaveRef.current = setTimeout(async () => {
-    // Check lock before attempting save
-    if (saveInProgressRef.current) {
-      // Manual save in progress - abort auto-save entirely
-      // The manual save will persist the current state
-      return;
-    }
-
-    // Re-check hash (state may have changed during debounce)
-    const latestHash = JSON.stringify(state.style);
-    if (latestHash === lastSavedStyleRef.current) return;
-
-    // Acquire lock
     saveInProgressRef.current = true;
-
     try {
-      await save();
-      lastSavedStyleRef.current = latestHash;
+      // 1. Pass the current version for Optimistic Concurrency Control
+      const newVersion = await saveToApi(state, state.version);
+
+      // 2. Update local hash only on success
+      lastSavedStyleRef.current = JSON.stringify(state.style);
+
+      // 3. Shout to other tabs (Same Browser Fix)
+      broadcastChannel.postMessage({ type: 'SAVED', version: newVersion });
+
+    } catch (error) {
+      if (error.status === 409) {
+        // Version mismatch! Do not update hash. UI will handle freezing.
+        console.error("Data clobbering prevented.");
+      }
     } finally {
       saveInProgressRef.current = false;
+    }
+  }, [state, saveToApi, broadcastChannel]);
+
+  // Manual save handler
+  const handleManualSave = useCallback(async () => {
+    if (pendingAutoSaveRef.current) {
+      clearTimeout(pendingAutoSaveRef.current);
       pendingAutoSaveRef.current = null;
     }
-  }, 2000);
+    await executeSave();
+  }, [executeSave]);
 
-  return () => cancelPendingAutoSave();
-}, [state.style, state.fitToOnePage, state.isDirty, save, cancelPendingAutoSave]);
+  // Auto-save effect
+  useEffect(() => {
+    // Abort if AI is streaming, fit is off, or no changes
+    if (isStreaming || !state.fitToOnePage || !state.isDirty) return;
+
+    const currentStyleHash = JSON.stringify(state.style);
+    if (currentStyleHash === lastSavedStyleRef.current) return;
+
+    if (pendingAutoSaveRef.current) {
+      clearTimeout(pendingAutoSaveRef.current);
+    }
+
+    pendingAutoSaveRef.current = setTimeout(() => {
+      // Check lock AND streaming state before firing
+      if (!saveInProgressRef.current && !isStreaming) {
+        executeSave();
+      }
+      pendingAutoSaveRef.current = null;
+    }, 2000);
+
+    return () => {
+      if (pendingAutoSaveRef.current) clearTimeout(pendingAutoSaveRef.current);
+    };
+  }, [state.style, state.fitToOnePage, state.isDirty, isStreaming, executeSave]);
+
+  return { handleManualSave };
+}
 ```
 
 ### Lock Behavior Summary

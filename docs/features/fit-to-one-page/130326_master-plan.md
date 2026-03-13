@@ -351,64 +351,88 @@ const { status, reductions } = useFitToPageWithDOM({
 )}
 ```
 
-### Step 5: Add Debounced Style Persistence with Race Condition Protection
+### Step 5: Add Save Coordination with Data Integrity
 
-**File:** `frontend/src/components/library/editor/BlockEditorProvider.tsx`
+**File:** `frontend/src/hooks/useSaveCoordinator.ts` **(NEW)**
 
-Add effect to persist style changes when auto-fit adjusts them, with save operation lock to prevent race conditions:
+Extract save coordination into a dedicated hook that handles debouncing, locks, AI streaming awareness, and cross-tab data integrity:
 
 ```typescript
-const lastSavedStyleRef = useRef<string>(JSON.stringify(state.style));
-const pendingAutoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-const saveInProgressRef = useRef<boolean>(false);
+// Handles Debounce, Locks, AI Streaming, and Data Clobbering (OCC/Broadcast)
 
-// Cancel any pending auto-save
-const cancelPendingAutoSave = useCallback(() => {
-  if (pendingAutoSaveRef.current) {
-    clearTimeout(pendingAutoSaveRef.current);
-    pendingAutoSaveRef.current = null;
-  }
-}, []);
+export function useSaveCoordinator({ state, saveToApi, broadcastChannel, isStreaming }) {
+  const lastSavedStyleRef = useRef<string>(JSON.stringify(state.style));
+  const pendingAutoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveInProgressRef = useRef<boolean>(false);
 
-// Manual save handler - cancels auto-save and acquires lock
-const handleManualSave = useCallback(async () => {
-  cancelPendingAutoSave();
-  if (saveInProgressRef.current) return;
-
-  saveInProgressRef.current = true;
-  try {
-    await save();
-    lastSavedStyleRef.current = JSON.stringify(state.style);
-  } finally {
-    saveInProgressRef.current = false;
-  }
-}, [save, state.style, cancelPendingAutoSave]);
-
-// Auto-save effect with lock awareness
-useEffect(() => {
-  if (!state.fitToOnePage || !state.isDirty) return;
-
-  const currentStyleHash = JSON.stringify(state.style);
-  if (currentStyleHash === lastSavedStyleRef.current) return;
-
-  cancelPendingAutoSave();
-
-  pendingAutoSaveRef.current = setTimeout(async () => {
-    if (saveInProgressRef.current) return; // Manual save in progress
+  // Core execution logic with OCC and Broadcasting
+  const executeSave = useCallback(async () => {
+    if (saveInProgressRef.current) return;
 
     saveInProgressRef.current = true;
     try {
-      await save();
+      // 1. Pass the current version for Optimistic Concurrency Control
+      const newVersion = await saveToApi(state, state.version);
+
+      // 2. Update local hash only on success
       lastSavedStyleRef.current = JSON.stringify(state.style);
+
+      // 3. Notify other tabs in same browser
+      broadcastChannel.postMessage({ type: 'SAVED', version: newVersion });
+
+    } catch (error) {
+      if (error.status === 409) {
+        // Version mismatch - UI will handle conflict resolution
+        console.error("Data clobbering prevented.");
+      }
     } finally {
       saveInProgressRef.current = false;
+    }
+  }, [state, saveToApi, broadcastChannel]);
+
+  // Manual save handler
+  const handleManualSave = useCallback(async () => {
+    if (pendingAutoSaveRef.current) {
+      clearTimeout(pendingAutoSaveRef.current);
       pendingAutoSaveRef.current = null;
     }
-  }, 2000); // 2-second debounce
+    await executeSave();
+  }, [executeSave]);
 
-  return () => cancelPendingAutoSave();
-}, [state.style, state.fitToOnePage, state.isDirty, save, cancelPendingAutoSave]);
+  // Auto-save effect
+  useEffect(() => {
+    if (isStreaming || !state.fitToOnePage || !state.isDirty) return;
+
+    const currentStyleHash = JSON.stringify(state.style);
+    if (currentStyleHash === lastSavedStyleRef.current) return;
+
+    if (pendingAutoSaveRef.current) clearTimeout(pendingAutoSaveRef.current);
+
+    pendingAutoSaveRef.current = setTimeout(() => {
+      if (!saveInProgressRef.current && !isStreaming) {
+        executeSave();
+      }
+      pendingAutoSaveRef.current = null;
+    }, 2000);
+
+    return () => {
+      if (pendingAutoSaveRef.current) clearTimeout(pendingAutoSaveRef.current);
+    };
+  }, [state.style, state.fitToOnePage, state.isDirty, isStreaming, executeSave]);
+
+  return { handleManualSave };
+}
 ```
+
+**Key Features:**
+
+| Concern | Solution |
+| ------- | -------- |
+| Debounce management | Single timer ref with proper cleanup |
+| Save operation lock | Prevents concurrent API calls within a tab |
+| AI streaming awareness | Suspends auto-save during LLM operations |
+| Optimistic Concurrency Control | Passes `version` to API; 409 on mismatch |
+| BroadcastChannel | Notifies other tabs when save completes |
 
 See [Tradeoff 3: Eager Persistence](./130326_tradeoff-3-eager-persistence.md) for detailed race condition scenarios and the full solution.
 
@@ -435,9 +459,10 @@ Since edit/tailor pages persist the auto-fitted styles, the view page will displ
 | ---- | ------ |
 | `frontend/src/components/library/editor/style/useAutoFitBlocks.ts` | Replace linear algorithm with binary search + compactness scale, add `measureFn` parameter |
 | `frontend/src/components/library/editor/style/useFitToPageWithDOM.ts` | **NEW** - DOM bridge hook |
+| `frontend/src/hooks/useSaveCoordinator.ts` | **NEW** - Save coordination with OCC and BroadcastChannel |
 | `frontend/src/lib/resume/defaults.ts` | Change `fitToOnePage` default to `true` |
 | `frontend/src/components/library/editor/EditorLayout.tsx` | Integrate DOM-based auto-fit, update warnings |
-| `frontend/src/components/library/editor/BlockEditorProvider.tsx` | Add debounced style persistence |
+| `frontend/src/components/library/editor/BlockEditorProvider.tsx` | Use `useSaveCoordinator` hook |
 
 ---
 
@@ -452,8 +477,10 @@ Since edit/tailor pages persist the auto-fitted styles, the view page will displ
 | Debounced observers | 500ms debounce on ResizeObserver/MutationObserver |
 | Hash comparison | Only persist if style actually changed |
 | Save operation lock | Prevents concurrent save requests (manual save cancels pending auto-save) |
+| Optimistic Concurrency Control | Version check prevents cross-tab/device data clobbering (409 on mismatch) |
+| BroadcastChannel | Notifies other tabs in same browser when save completes |
 
-See [Tradeoff 3: Eager Persistence](./130326_tradeoff-3-eager-persistence.md) for detailed race condition analysis and mitigation.
+See [Tradeoff 3: Eager Persistence](./130326_tradeoff-3-eager-persistence.md) for detailed race condition analysis and data integrity architecture.
 
 ---
 
