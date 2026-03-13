@@ -13,3 +13,7 @@ export {
   type UseAutoFitBlocksOptions,
   type UseAutoFitBlocksResult,
 } from "./useAutoFitBlocks";
+export {
+  useFitToPageWithDOM,
+  type UseFitToPageWithDOMOptions,
+} from "./useFitToPageWithDOM";
