@@ -969,6 +969,7 @@ Week 8: Drop old column after validation
 - [Backend Architecture](./architecture/backend-architecture.md)
 - [Implementation Plan](./planning/implementation-plan.md)
 - [API Documentation](./api/) (TODO)
+- [Testing Infrastructure](./testing/) - Playwright E2E test patterns and feature test plans
 
 ### C. Decision Log
 
