@@ -146,6 +146,9 @@ Key rules:
 - **Bold headers:** End with colon: `**Error Responses:**` not `**Error Responses**`
 - **Code blocks:** Always specify language: ` ```json ` or ` ```text `, never bare ` ``` `
 - **Headers:** Always include blank line after `#`, `##`, `###` before body text
+- **Unique headings (MD024):** Never use duplicate heading text within a single file. Add context to make headings unique:
+  - WRONG: Multiple `## Verification` headings in the same file
+  - CORRECT: `## Stage 1 Verification`, `## Stage 2 Verification` or split into separate files
 
 ### 4. Context Management
 
