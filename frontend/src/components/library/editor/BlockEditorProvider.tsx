@@ -34,6 +34,7 @@ import {
 import { useUndoRedo } from "@/components/workshop/hooks/useUndoRedo";
 import { useAutoFitBlocks, type AutoFitStatus, type AutoFitReduction } from "./style/useAutoFitBlocks";
 import { useSaveCoordinator } from "@/hooks/useSaveCoordinator";
+import { useAutoSaveStyles } from "@/hooks/useAutoSaveStyles";
 import { useResumeBroadcast } from "./hooks/useResumeBroadcast";
 import { ConflictModal } from "./ConflictModal";
 
@@ -321,9 +322,13 @@ export function BlockEditorProvider({
   // Combined conflict state
   const hasConflict = hasSaveConflict || hasExternalConflict;
 
-  // Save handler with version tracking
-  const save = useCallback(async () => {
-    if (isSavingRef.current || hasConflict) return;
+  /**
+   * Core save execution logic.
+   * Used by both manual save and auto-save.
+   * Returns true on success, false on failure.
+   */
+  const performSave = useCallback(async (): Promise<boolean> => {
+    if (isSavingRef.current || hasConflict) return false;
 
     isSavingRef.current = true;
     dispatch(blockEditorActions.setLoading(true));
@@ -347,17 +352,38 @@ export function BlockEditorProvider({
         if (onSave) {
           await onSave({ parsedContent, style: apiStyle, version: newVersion });
         }
+        return true;
       }
+      return false;
     } catch (err) {
       broadcast("SAVE_FAILED");
       const errorMessage =
         err instanceof Error ? err.message : "Failed to save";
       dispatch(blockEditorActions.setError(errorMessage));
+      return false;
     } finally {
       dispatch(blockEditorActions.setLoading(false));
       isSavingRef.current = false;
     }
   }, [state.blocks, state.style, currentVersion, hasConflict, onSave, executeSave, broadcast]);
+
+  // Auto-save styles when fitToOnePage is enabled
+  // This implements eager persistence with debouncing and race condition mitigation
+  const { handleManualSave: autoSaveHandleManualSave } = useAutoSaveStyles({
+    style: state.style,
+    fitToOnePage: state.fitToOnePage,
+    isDirty: state.isDirty,
+    isFitting: autoFitStatus.state === "fitting",
+    hasConflict,
+    executeSave: performSave,
+    debounceMs: 2000,
+  });
+
+  // Save handler: delegates to auto-save hook's handleManualSave
+  // This cancels any pending auto-save before executing the save
+  const save = useCallback(async () => {
+    await autoSaveHandleManualSave();
+  }, [autoSaveHandleManualSave]);
 
   // Handle refresh after conflict
   const handleConflictRefresh = useCallback(() => {

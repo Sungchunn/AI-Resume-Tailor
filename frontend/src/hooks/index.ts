@@ -16,3 +16,8 @@ export type {
   UseSaveCoordinatorOptions,
   UseSaveCoordinatorReturn,
 } from "./useSaveCoordinator";
+export { useAutoSaveStyles } from "./useAutoSaveStyles";
+export type {
+  UseAutoSaveStylesOptions,
+  UseAutoSaveStylesReturn,
+} from "./useAutoSaveStyles";
