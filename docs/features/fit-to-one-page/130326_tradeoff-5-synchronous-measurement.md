@@ -24,6 +24,19 @@ const measureWithRAF = (measureFn: () => number): Promise<number> => {
 
 ---
 
+## Algorithm Complexity Impact
+
+The choice of search algorithm directly impacts how many synchronous measurements are performed. See [Tradeoff 1: Accuracy vs Performance](./130326_tradeoff-1-accuracy-vs-performance.md) for the full mathematical proof.
+
+| Algorithm | Max Measurements | Complexity |
+| --------- | ---------------- | ---------- |
+| Linear (5% steps) | 25 | O(n) |
+| Binary Search | 7 | O(log n) |
+
+Binary search reduces synchronous measurement overhead by ~14x in worst case, making the double RAF approach practical.
+
+---
+
 ## Why Double RAF?
 
 ### Browser Rendering Pipeline

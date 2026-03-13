@@ -27,6 +27,123 @@ The fit-to-one-page feature requires measuring content height to determine when 
 
 ---
 
+## Algorithm Complexity Analysis
+
+### Current Linear Algorithm: O(n)
+
+The existing implementation reduces styles by 5% increments until content fits:
+
+| Case | Iterations | Complexity |
+| ---- | ---------- | ---------- |
+| Best | 1 (already fits) | O(1) |
+| Worst | ~25 (reduce to minimum) | O(n) |
+| Average | ~12.5 | O(n) |
+
+Where n = number of discrete style levels (approximately 100 when using 1% increments, or 25 with 5% increments).
+
+### Binary Search Algorithm: O(log n)
+
+Binary search achieves logarithmic complexity by halving the search space each iteration:
+
+| Case | Iterations | Complexity |
+| ---- | ---------- | ---------- |
+| Best | 1 (already fits) | O(1) |
+| Worst | ⌈log₂(100)⌉ = 7 | O(log n) |
+| Average | ~3.5 | O(log n) |
+
+**Improvement factor:** n / log₂(n) = 100 / 7 ≈ **14x fewer iterations**
+
+---
+
+## Mathematical Proof: Binary Search Feasibility
+
+### Definitions
+
+Let:
+
+- `c` ∈ [0, 100] = compactness level (0 = original styles, 100 = maximum compactness)
+- `h(c)` = content height at compactness level c (in pixels)
+- `T` = target page height (fixed constant, e.g., 1056px for US Letter)
+- `fits(c)` = predicate function: returns true iff h(c) ≤ T
+
+### Theorem: Monotonicity of fits(c)
+
+**Claim:** If `fits(c₁) = true`, then `fits(c₂) = true` for all `c₂ ≥ c₁`.
+
+**Proof:**
+
+The compactness scale maps to style properties that monotonically reduce content height:
+
+1. **Font sizes decrease:** Smaller fonts → fewer line wraps → shorter text blocks
+2. **Spacing decreases:** Less vertical space between sections/entries
+3. **Line heights decrease:** Denser text rendering
+
+For any two compactness levels where c₂ > c₁:
+
+```text
+h(c₂) ≤ h(c₁)    (height is non-increasing with compactness)
+```
+
+Therefore:
+
+```text
+fits(c₁) = true
+    ⟹ h(c₁) ≤ T           (by definition of fits)
+    ⟹ h(c₂) ≤ h(c₁) ≤ T   (by monotonicity of h)
+    ⟹ fits(c₂) = true     (by definition of fits)    ∎
+```
+
+### Corollary: Search Space Partition
+
+The search space [0, 100] partitions into exactly two contiguous regions:
+
+```text
+[0, c* - 1]:  fits(c) = false   (content overflows)
+[c*, 100]:    fits(c) = true    (content fits)
+```
+
+Where `c*` is the minimum compactness level that achieves fit.
+
+### Binary Search Correctness
+
+Given the monotonic partition, binary search correctly finds `c*`:
+
+```text
+function findMinimumCompactness():
+    low = 0, high = 100, result = 100
+
+    while low ≤ high:
+        mid = ⌊(low + high) / 2⌋
+
+        if fits(mid):
+            result = mid       // mid works, try to find smaller
+            high = mid - 1     // search left half
+        else:
+            low = mid + 1      // mid doesn't work, search right half
+
+    return result
+```
+
+**Loop invariant:** `c* ∈ [low, high] ∪ {result}`
+
+**Termination:** Search space halves each iteration → terminates in ⌈log₂(n)⌉ iterations.
+
+### Complexity Derivation
+
+For a search space of size n:
+
+```text
+Iterations = ⌈log₂(n)⌉
+
+For n = 101 (levels 0-100):
+    ⌈log₂(101)⌉ = ⌈6.66⌉ = 7 iterations maximum
+```
+
+**Time Complexity:** O(log n)
+**Space Complexity:** O(1)
+
+---
+
 ## DOM Measurement Cost Analysis
 
 Each DOM measurement via `scrollHeight` forces the browser to perform a synchronous layout calculation. The iteration cycle:
