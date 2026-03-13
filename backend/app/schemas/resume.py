@@ -26,6 +26,9 @@ class ResumeCreate(ResumeBase):
 
 
 class ResumeUpdate(BaseModel):
+    # Version required for OCC - client must provide current version
+    version: int = Field(..., description="Current version for optimistic concurrency control")
+
     title: str | None = Field(None, min_length=1, max_length=255)
     raw_content: str | None = Field(None, min_length=1)
     html_content: str | None = None
@@ -59,6 +62,9 @@ class ResumeResponse(BaseModel):
     created_at: datetime
     updated_at: datetime | None = None
 
+    # Version field for OCC
+    version: int = Field(default=1, description="Document version for optimistic concurrency control")
+
     model_config = {"from_attributes": True}
 
     @classmethod
@@ -83,6 +89,7 @@ class ResumeResponse(BaseModel):
             parsed_verified_at=getattr(doc, "parsed_verified_at", None),
             created_at=doc.created_at,
             updated_at=doc.updated_at,
+            version=getattr(doc, "version", 1),  # Include version (lazy migration)
         )
 
 
