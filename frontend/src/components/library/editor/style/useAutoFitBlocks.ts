@@ -180,13 +180,48 @@ export function calculateReductions(
 // ============================================================================
 
 /**
+ * Threshold for considering height changes as "stable" (measurement noise).
+ * If the height difference is less than this, the algorithm considers it converged.
+ */
+export const STABILITY_THRESHOLD_PX = 2;
+
+/**
+ * Warning threshold for timing anomalies (ms).
+ * If double RAF takes longer than this, it may indicate concurrent mode interference.
+ */
+const TIMING_WARNING_THRESHOLD_MS = 100;
+
+/**
  * Wrap a measurement function with double RAF to ensure DOM has settled.
  * This prevents reading stale layout values after style changes.
+ *
+ * Why double RAF?
+ * - First RAF: Wait for current frame's paint
+ * - Second RAF: Wait for next frame, after React commit
+ *
+ * This pattern ensures:
+ * 1. React has committed DOM changes
+ * 2. Browser has calculated layout
+ * 3. scrollHeight reflects new styles
+ *
+ * @see /docs/features/fit-to-one-page/130326_tradeoff-5-synchronous-measurement.md
  */
 export function measureWithRAF(measureFn: () => number): Promise<number> {
   return new Promise((resolve) => {
+    const startTime = performance.now();
+
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
+        const elapsed = performance.now() - startTime;
+
+        // Flag if timing is suspiciously long (concurrent mode interference?)
+        if (elapsed > TIMING_WARNING_THRESHOLD_MS) {
+          console.warn(
+            `[Auto-fit] Measurement delayed: ${elapsed.toFixed(1)}ms. ` +
+            `This may indicate React concurrent mode interference or heavy rendering.`
+          );
+        }
+
         resolve(measureFn());
       });
     });
@@ -211,10 +246,17 @@ export interface BinarySearchResult {
  * - If content fits at compactness level c, it will fit at all levels > c
  * - This allows binary search to efficiently find the optimal level
  *
+ * Safeguards (per tradeoff-5):
+ * - Max 7 iterations (log₂ 100)
+ * - Stability threshold: stops if height change < 2px (measurement noise)
+ * - Early exit if original style fits
+ *
  * @param measureHeight - Async function that applies style and returns content height
  * @param targetHeight - Maximum allowed height (page height minus margins)
  * @param originalStyle - The user's original style settings
  * @returns The minimum compactness level that fits, the resulting style, and whether it fits
+ *
+ * @see /docs/features/fit-to-one-page/130326_tradeoff-5-synchronous-measurement.md
  */
 export async function findOptimalCompactness(
   measureHeight: (style: BlockEditorStyle) => Promise<number>,
@@ -230,12 +272,25 @@ export async function findOptimalCompactness(
   let low = 0;
   let high = 100;
   let result = 100; // Default to maximum compactness
+  let lastHeight = originalHeight;
+  let iterationCount = 0;
+  const maxIterations = 10; // Safety cap (slightly above theoretical max of 7)
 
   // Binary search for minimum compactness
-  while (low <= high) {
+  while (low <= high && iterationCount < maxIterations) {
+    iterationCount++;
     const mid = Math.floor((low + high) / 2);
     const testStyle = compactnessToStyle(mid, originalStyle);
     const height = await measureHeight(testStyle);
+
+    // Stability threshold: if height barely changed, consider it converged
+    // This handles measurement noise and prevents unnecessary iterations
+    if (Math.abs(height - lastHeight) < STABILITY_THRESHOLD_PX && height <= targetHeight) {
+      result = mid;
+      break;
+    }
+
+    lastHeight = height;
 
     if (height <= targetHeight) {
       result = mid; // This level fits, try less compact
@@ -249,6 +304,14 @@ export async function findOptimalCompactness(
   const finalStyle = compactnessToStyle(result, originalStyle);
   const finalHeight = await measureHeight(finalStyle);
   const fits = finalHeight <= targetHeight;
+
+  // Log iteration count in development for monitoring
+  if (process.env.NODE_ENV === "development") {
+    console.log(
+      `[Auto-fit] Binary search completed in ${iterationCount} iterations. ` +
+      `Level: ${result}, Fits: ${fits}`
+    );
+  }
 
   return { level: result, style: finalStyle, fits };
 }

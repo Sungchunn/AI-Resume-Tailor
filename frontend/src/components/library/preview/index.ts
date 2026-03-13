@@ -30,6 +30,7 @@ export type { ResumePreviewHandle } from "./ResumePreview";
 // Page break rulers and overflow detection
 export { PageBreakRuler } from "./PageBreakRuler";
 export { OverflowWarning } from "./OverflowWarning";
+export { MinimumReachedWarning } from "./MinimumReachedWarning";
 export { useOverflowDetection } from "./useOverflowDetection";
 
 // Block renderer

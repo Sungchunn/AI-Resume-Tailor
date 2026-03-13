@@ -43,6 +43,13 @@ export interface BlockEditorContextValue {
   setFitToOnePage: (enabled: boolean) => void;
   autoFitStatus: AutoFitStatus;
   autoFitReductions: AutoFitReduction[];
+  /**
+   * Set the DOM measurement function for accurate auto-fit.
+   * Called from EditorLayout once the preview ref is available.
+   * When set, the auto-fit algorithm uses DOM-based binary search (O(log n))
+   * instead of estimation-based linear search (O(n)).
+   */
+  setAutoFitMeasureFn: (fn: (() => number) | null) => void;
 
   // Persistence
   save: () => Promise<void>;
