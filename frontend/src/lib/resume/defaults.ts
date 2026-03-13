@@ -446,6 +446,7 @@ export function createStarterBlocks(): AnyResumeBlock[] {
 
 /**
  * Create an empty block editor state
+ * New resumes default to fitToOnePage: true for auto-fit behavior
  */
 export function createEmptyState(): BlockEditorState {
   return {
@@ -456,12 +457,13 @@ export function createEmptyState(): BlockEditorState {
     isDirty: false,
     isLoading: false,
     error: null,
-    fitToOnePage: false,
+    fitToOnePage: true,
   };
 }
 
 /**
  * Create initial state with starter blocks
+ * New resumes default to fitToOnePage: true for auto-fit behavior
  */
 export function createInitialState(): BlockEditorState {
   return {
@@ -472,7 +474,7 @@ export function createInitialState(): BlockEditorState {
     isDirty: false,
     isLoading: false,
     error: null,
-    fitToOnePage: false,
+    fitToOnePage: true,
   };
 }
 

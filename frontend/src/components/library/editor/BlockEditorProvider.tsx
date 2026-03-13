@@ -30,6 +30,7 @@ import {
   blocksToParsedContent,
   apiStyleToEditorStyle,
   editorStyleToApiStyle,
+  extractFitToOnePage,
 } from "@/lib/resume/transforms";
 import { useUndoRedo } from "@/components/workshop/hooks/useUndoRedo";
 import { useAutoFitBlocks, type AutoFitStatus, type AutoFitReduction } from "./style/useAutoFitBlocks";
@@ -126,14 +127,30 @@ export function BlockEditorProvider({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Extract fitToOnePage from API style for existing resumes
+  // Option B: New resumes get true (from createEmptyState), existing resumes without
+  // the setting explicitly saved get false to preserve current behavior
+  const initialFitToOnePage = useMemo(() => {
+    const isExistingResume = initialParsedContent != null || initialStyle != null;
+    if (!isExistingResume) {
+      // New resume: use default from createEmptyState (true)
+      return true;
+    }
+    // Existing resume: use saved value or default to false
+    return extractFitToOnePage(initialStyle) ?? false;
+    // Only compute on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const initialState: BlockEditorState = useMemo(
     () => ({
       ...createEmptyState(),
       blocks: initialBlocks,
       style: initialEditorStyle,
       isLoading: false,
+      fitToOnePage: initialFitToOnePage,
     }),
-    [initialBlocks, initialEditorStyle]
+    [initialBlocks, initialEditorStyle, initialFitToOnePage]
   );
 
   const [state, dispatch] = useReducer(blockEditorReducer, initialState);
@@ -337,7 +354,8 @@ export function BlockEditorProvider({
       broadcast("SAVE_STARTED");
 
       const parsedContent = blocksToParsedContent(state.blocks);
-      const apiStyle = editorStyleToApiStyle(state.style);
+      // Include fitToOnePage setting in the persisted style
+      const apiStyle = editorStyleToApiStyle(state.style, state.fitToOnePage);
 
       // Call executeSave which handles OCC
       const newVersion = await executeSave({
@@ -365,7 +383,7 @@ export function BlockEditorProvider({
       dispatch(blockEditorActions.setLoading(false));
       isSavingRef.current = false;
     }
-  }, [state.blocks, state.style, currentVersion, hasConflict, onSave, executeSave, broadcast]);
+  }, [state.blocks, state.style, state.fitToOnePage, currentVersion, hasConflict, onSave, executeSave, broadcast]);
 
   // Auto-save styles when fitToOnePage is enabled
   // This implements eager persistence with debouncing and race condition mitigation

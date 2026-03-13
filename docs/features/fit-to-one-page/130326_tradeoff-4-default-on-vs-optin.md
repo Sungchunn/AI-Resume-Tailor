@@ -1,7 +1,7 @@
 # Tradeoff 4: Default-On vs. Opt-In
 
 **Created:** 2026-03-13
-**Status:** Analysis
+**Status:** Implemented
 **Risk Level:** Medium
 
 ---
