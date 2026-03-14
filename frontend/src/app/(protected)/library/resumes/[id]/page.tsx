@@ -489,7 +489,6 @@ export default function ResumeDetailPage({ params }: PageProps) {
       {/* Export Dialog */}
       {showExportDialog && (
         <ExportDialog
-          resumeId={resumeId}
           resumeTitle={resume.title}
           onClose={() => setShowExportDialog(false)}
           previewElement={previewRef.current?.getPageElement()}
