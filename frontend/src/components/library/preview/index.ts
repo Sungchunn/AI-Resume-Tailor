@@ -43,6 +43,14 @@ export {
 } from "./useBlockMeasurement";
 export type { UseMeasurementResult } from "./useBlockMeasurement";
 
+// Page assignment algorithm (for paginated preview)
+export {
+  useBlockPagination,
+  wouldBlockFit,
+  getBlockPageNumber,
+} from "./useBlockPagination";
+export type { PageAssignment, PaginationResult } from "./useBlockPagination";
+
 // Block renderer
 export { BlockRenderer, createBlockRenderer } from "./BlockRenderer";
 export { InteractiveBlockRenderer } from "./InteractiveBlockRenderer";
