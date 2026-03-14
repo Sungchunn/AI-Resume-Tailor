@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ChevronLeftIcon } from "@/components/icons";
 import { useWorkshop } from "./WorkshopContext";
@@ -8,6 +8,11 @@ import { useWizardOptional } from "./wizard";
 import { MatchScoreBadge } from "./MatchScoreBadge";
 import { ScoreDisplay, ATSScoreBadge } from "./ScoreDisplay";
 import ExportDialog from "@/components/export/ExportDialog";
+import {
+  tailoredContentToParsedContent,
+  parsedContentToBlocks,
+  apiStyleToEditorStyle,
+} from "@/lib/resume/transforms";
 
 interface WorkshopHeaderProps {
   compact?: boolean;
@@ -22,6 +27,17 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
     ? `Tailored Resume #${state.tailoredId}`
     : "Resume Workshop";
   const hasJobId = !!state.tailoredResume?.job_id;
+
+  // Convert TailoredContent to blocks for client-side PDF export
+  const blocks = useMemo(() => {
+    const parsedContent = tailoredContentToParsedContent(state.content);
+    return parsedContentToBlocks(parsedContent);
+  }, [state.content]);
+
+  // Convert ResumeStyle to BlockEditorStyle for client-side PDF export
+  const editorStyle = useMemo(() => {
+    return apiStyleToEditorStyle(state.styleSettings as Record<string, unknown>);
+  }, [state.styleSettings]);
 
   const headerHeight = compact ? "h-12" : "h-14";
   const titleClasses = compact
@@ -109,6 +125,8 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
           resumeId={state.tailoredResume.resume_id}
           resumeTitle={title}
           onClose={() => setShowExportDialog(false)}
+          blocks={blocks}
+          style={editorStyle}
         />
       )}
     </header>

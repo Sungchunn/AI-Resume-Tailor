@@ -1,14 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { AlertTriangle } from "lucide-react";
 import { useExportResume, useExportTemplates } from "@/lib/api/hooks";
 import type { ExportStyleTemplate, ExportFormat } from "@/lib/api/types";
+import type { AnyResumeBlock, BlockEditorStyle } from "@/lib/resume/types";
+import { ResumePreviewStandalone } from "@/components/library/preview";
+import { exportToPdf } from "@/lib/pdf-export";
 
 interface ExportDialogProps {
   resumeId: string;
   resumeTitle: string;
   onClose: () => void;
+  /** Blocks for client-side PDF export */
+  blocks?: AnyResumeBlock[];
+  /** Style settings for client-side PDF export */
+  style?: BlockEditorStyle;
 }
 
 const FONT_OPTIONS = [
@@ -31,9 +38,14 @@ export default function ExportDialog({
   resumeId,
   resumeTitle,
   onClose,
+  blocks,
+  style,
 }: ExportDialogProps) {
   const { data: templatesData } = useExportTemplates();
-  const { mutate: exportResume, isPending } = useExportResume();
+  const { mutate: exportResume, isPending: isBackendPending } = useExportResume();
+
+  // Ref for hidden preview element (used for client-side PDF)
+  const previewRef = useRef<HTMLDivElement>(null);
 
   // Export options state
   const [format, setFormat] = useState<ExportFormat>("pdf");
@@ -42,6 +54,7 @@ export default function ExportDialog({
   const [fontSize, setFontSize] = useState(11);
   const [margins, setMargins] = useState(0.75);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isClientExporting, setIsClientExporting] = useState(false);
 
   // Overflow warning state (shown after export completes)
   const [overflowInfo, setOverflowInfo] = useState<{
@@ -49,10 +62,38 @@ export default function ExportDialog({
     show: boolean;
   } | null>(null);
 
-  const handleExport = () => {
+  // Combined pending state
+  const isPending = isBackendPending || isClientExporting;
+
+  // Check if we can use client-side PDF export
+  const canUseClientPdf = blocks && blocks.length > 0 && style;
+
+  const handleExport = async () => {
     // Clear any previous overflow warning
     setOverflowInfo(null);
 
+    // Use client-side PDF export when blocks/style are available
+    if (format === "pdf" && canUseClientPdf && previewRef.current) {
+      setIsClientExporting(true);
+      try {
+        const safeTitle = resumeTitle.replace(/[^a-zA-Z0-9-_ ]/g, "_");
+        const result = await exportToPdf(previewRef.current, `${safeTitle}.pdf`);
+
+        // Show overflow warning if more than one page
+        if (result.pageCount > 1) {
+          setOverflowInfo({ pageCount: result.pageCount, show: true });
+        } else {
+          onClose();
+        }
+      } catch (error) {
+        alert(`Export failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+      } finally {
+        setIsClientExporting(false);
+      }
+      return;
+    }
+
+    // Fall back to backend export (DOCX or when blocks not available)
     exportResume(
       {
         resumeId,
@@ -415,6 +456,24 @@ export default function ExportDialog({
           </div>
         </div>
       </div>
+
+      {/* Hidden preview for client-side PDF capture */}
+      {canUseClientPdf && format === "pdf" && (
+        <div
+          style={{
+            position: "absolute",
+            left: "-9999px",
+            top: 0,
+            width: "816px", // 8.5" at 96 DPI
+            overflow: "hidden",
+          }}
+          aria-hidden="true"
+        >
+          <div ref={previewRef}>
+            <ResumePreviewStandalone blocks={blocks} style={style} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

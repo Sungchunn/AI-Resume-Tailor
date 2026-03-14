@@ -262,6 +262,8 @@ export function EditorLayout({
           resumeId={resumeId}
           resumeTitle={title}
           onClose={() => setShowExportDialog(false)}
+          blocks={blocks}
+          style={style}
         />
       )}
     </div>
