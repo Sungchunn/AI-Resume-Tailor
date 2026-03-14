@@ -156,7 +156,7 @@ export class ResumeEditorPage {
 | `moderateOverflow` | 10-50% overflow | `fitted` with multiple reductions |
 | `severeOverflow` | >50% overflow | `minimum_reached` with warning |
 
-### Implementation
+### Resume Factory Implementation
 
 ```typescript
 export interface ResumeTestConfig {
@@ -258,7 +258,7 @@ export function generateResumeContent(config: ResumeTestConfig) {
 | `measurePageFit` | Get height measurements | `(page) → Promise<{ contentHeight, clientHeight, fits }>` |
 | `captureConsoleLogs` | Intercept console for assertions | `(page, filter) → string[]` |
 
-### Implementation
+### Helper Utilities Implementation
 
 ```typescript
 import { Page, expect } from "@playwright/test";

@@ -134,14 +134,14 @@ test.describe("Fit to One Page - Measurement", () => {
 
 **File:** `e2e/fit-to-page/convergence.spec.ts`
 
-### Test Matrix
+### Convergence Test Matrix
 
 | Test Name | Scenario | Key Assertions |
 | --------- | -------- | -------------- |
 | `converges in max 7 iterations` | moderateOverflow | Parse console log, iterations <= 7 |
 | `no timing warnings during normal operation` | moderateOverflow | No "Measurement delayed" in console |
 
-### Implementation
+### Convergence Implementation
 
 ```typescript
 import { test, expect } from "@playwright/test";
@@ -187,7 +187,7 @@ test.describe("Binary Search Convergence", () => {
 
 **File:** `e2e/fit-to-page/persistence.spec.ts`
 
-### Test Matrix
+### Persistence Test Matrix
 
 | Test Name | Scenario | Key Assertions |
 | --------- | -------- | -------------- |
@@ -195,7 +195,7 @@ test.describe("Binary Search Convergence", () => {
 | `no save during fitting` | Any overflow | savesDuringFit === 0 |
 | `preference persists across reload` | Any | After reload, toggle aria-checked="true" |
 
-### Implementation
+### Persistence Implementation
 
 ```typescript
 import { test, expect } from "@playwright/test";
@@ -274,7 +274,7 @@ test.describe("Auto-Save and Persistence", () => {
 
 **File:** `e2e/fit-to-page/integration.spec.ts`
 
-### Test Matrix
+### Integration Test Matrix
 
 | Test Name | Route | Key Assertions |
 | --------- | ----- | -------------- |
@@ -282,7 +282,7 @@ test.describe("Auto-Save and Persistence", () => {
 | `works on edit page` | `/library/resumes/[id]/edit` | status in [fitted, minimum_reached] |
 | `works on tailor editor` | `/tailor/editor/[id]` | status in [fitted, minimum_reached] |
 
-### Implementation
+### Integration Implementation
 
 ```typescript
 import { test, expect } from "@playwright/test";
