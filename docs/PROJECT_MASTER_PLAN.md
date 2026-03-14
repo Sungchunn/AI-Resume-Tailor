@@ -28,6 +28,7 @@
 ### The Problem with Current AI Resume Tools
 
 Most AI resume builders suffer from **"Generative Slop"**:
+
 - AI invents accomplishments the user never achieved
 - Metrics appear from nowhere ("increased sales by 47%")
 - Generic bullet points that could apply to anyone
@@ -45,7 +46,7 @@ This transforms the AI from an unreliable content generator into a **precision r
 ### Current State vs. Target Architecture
 
 | Aspect | Current Implementation | Target Architecture |
-|--------|----------------------|---------------------|
+| --- | --- | --- |
 | Resume Storage | Monolithic JSON blob in `parsed_content` | Atomic Experience Blocks with embeddings |
 | AI Approach | Full rewrite/generation | Diff-based, line-by-line suggestions |
 | Retrieval | None (AI sees full resume) | RAG with pgvector semantic search |
@@ -59,7 +60,7 @@ This transforms the AI from an unreliable content generator into a **precision r
 
 ### Mental Model
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                        USER'S UNIVERSE                          │
 │                                                                 │
@@ -103,7 +104,7 @@ The Workshop is where **tailored resumes are crafted**:
 
 When users edit content in the Workshop:
 
-```
+```text
 User edits bullet in Workshop
          │
          ▼
@@ -138,23 +139,25 @@ Re-embed      │
 
 #### User Problems We Solve
 
-| Problem                           | Solution                                                                                   |
-| --------------------------------- | ------------------------------------------------------------------------------------------ |
-| "AI writes things I never did"    | Vault-only retrieval, no hallucination                                                     |
-| "I lose my authentic voice"       | AI suggests, user decides, user can talk to the AI with chatbot to suggest tone or changes |
-| "Generic bullets that fit anyone" | Semantic matching to job requirements                                                      |
-| "Starting from scratch each time" | Vault persists across all applications                                                     |
-| "Don't know what to include"      | AI recommends based on job analysis                                                        |
+| Problem | Solution |
+| --- | --- |
+| "AI writes things I never did" | Vault-only retrieval, no hallucination |
+| "I lose my authentic voice" | AI suggests, user decides, user can talk to the AI with chatbot to suggest tone or changes |
+| "Generic bullets that fit anyone" | Semantic matching to job requirements |
+| "Starting from scratch each time" | Vault persists across all applications |
+| "Don't know what to include" | AI recommends based on job analysis |
 
 #### User Personas
 
-**Primary: The Intentional Job Seeker**
+##### Primary: The Intentional Job Seeker
+
 - Applies to 5-15 jobs per search
 - Values quality over speed
 - Wants control over their narrative
 - Frustrated by generic AI output
 
-**Secondary: The Career Documenter**
+##### Secondary: The Career Documenter
+
 - Updates resume quarterly
 - Tracks achievements in real-time
 - Wants a "career journal" that compounds
@@ -162,7 +165,7 @@ Re-embed      │
 #### Feature Priority Matrix
 
 | Feature | Impact | Effort | Priority |
-|---------|--------|--------|----------|
+| --- | --- | --- | --- |
 | Atomic Experience Blocks | High | High | P0 |
 | Semantic Job Matching | High | Medium | P0 |
 | Diff-Based Suggestions | High | Medium | P1 |
@@ -174,7 +177,7 @@ Re-embed      │
 
 #### System Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │                           FRONTEND (Next.js)                        │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │
@@ -208,7 +211,7 @@ Re-embed      │
 #### Key Technical Decisions
 
 | Decision | Choice | Rationale |
-|----------|--------|-----------|
+| --- | --- | --- |
 | Vector Store | pgvector + HNSW | Single DB, O(log n) ANN queries, transactional with blocks |
 | Embedding Model | Gemini text-embedding-004 | 768 native dimensions, task_type support for asymmetric retrieval |
 | Index Type | HNSW (m=16, ef_construction=64) | Better recall than IVFFlat, no training required, consistent performance |
@@ -218,7 +221,7 @@ Re-embed      │
 
 #### API Endpoints (Target State)
 
-```
+```bash
 # Vault Operations
 POST   /api/v1/blocks              # Create experience block
 GET    /api/v1/blocks              # List all blocks (paginated)
@@ -251,7 +254,7 @@ POST   /api/v1/export/docx         # Export workshop as DOCX
 #### Revenue Model Options
 
 | Model | Description | Pros | Cons |
-|-------|-------------|------|------|
+| --- | --- | --- | --- |
 | Freemium + Export | Free Vault, pay for PDF/DOCX | Low friction | Limited conversion |
 | Usage-Based | Pay per AI suggestion batch | Aligned with value | Unpredictable |
 | Subscription | Monthly access to all features | Predictable revenue | Higher churn |
@@ -260,7 +263,7 @@ POST   /api/v1/export/docx         # Export workshop as DOCX
 #### Competitive Differentiation
 
 | Competitor | Approach | Our Advantage |
-|------------|----------|---------------|
+| --- | --- | --- |
 | Generic AI tools | Full generation | No hallucination, user control |
 | Traditional builders | Templates | AI-powered matching |
 | ATS optimizers | Keyword stuffing | Semantic understanding |
@@ -277,7 +280,7 @@ POST   /api/v1/export/docx         # Export workshop as DOCX
 #### Data Classification
 
 | Data Type | Classification | Storage | Access |
-|-----------|---------------|---------|--------|
+| --- | --- | --- | --- |
 | User credentials | Critical | Hashed (bcrypt) | Auth only |
 | Experience blocks | Sensitive | Encrypted at rest | User only |
 | Embeddings | Internal | Plain (no PII) | System |
@@ -285,7 +288,7 @@ POST   /api/v1/export/docx         # Export workshop as DOCX
 
 #### PII Handling Pipeline
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────┐
 │                    PII STRIPPING PIPELINE                    │
 │                                                              │
@@ -304,21 +307,21 @@ POST   /api/v1/export/docx         # Export workshop as DOCX
 
 #### Security Requirements
 
-| Requirement           | Implementation                      |
-| --------------------- | ----------------------------------- |
-| Authentication        | JWT with refresh tokens             |
-| Authorization         | Row-level security in PostgreSQL    |
-| Encryption at Rest    | PostgreSQL TDE or application-level |
-| Encryption in Transit | TLS 1.3 everywhere                  |
-| Rate Limiting         | Redis-based, per-user               |
-| Audit Logging         | All CRUD operations logged          |
-| Data Portability      | Full export in JSON format          |
-| Right to Deletion     | Hard delete with cascade            |
+| Requirement | Implementation |
+| --- | --- |
+| Authentication | JWT with refresh tokens |
+| Authorization | Row-level security in PostgreSQL |
+| Encryption at Rest | PostgreSQL TDE or application-level |
+| Encryption in Transit | TLS 1.3 everywhere |
+| Rate Limiting | Redis-based, per-user |
+| Audit Logging | All CRUD operations logged |
+| Data Portability | Full export in JSON format |
+| Right to Deletion | Hard delete with cascade |
 
 #### Threat Model
 
 | Threat | Mitigation |
-|--------|------------|
+| --- | --- |
 | Embedding inversion attacks | PII stripped before embedding |
 | Unauthorized block access | Row-level security, user_id checks |
 | AI prompt injection | Structured prompts, input validation |
@@ -464,7 +467,7 @@ class ExperienceBlock(Base):
 ### Block Types Taxonomy
 
 | Type | Description | Example |
-|------|-------------|---------|
+| --- | --- | --- |
 | `achievement` | Quantified accomplishment | "Increased test coverage from 45% to 92%" |
 | `responsibility` | Ongoing duty | "Managed team of 5 engineers" |
 | `skill` | Technical/soft skill | "Python, FastAPI, PostgreSQL" |
@@ -573,7 +576,7 @@ CREATE INDEX ix_blocks_user_type ON experience_blocks(user_id, block_type);
 
 ### Journey 1: Vault Ingestion
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │                      VAULT INGESTION FLOW                           │
 │                                                                     │
@@ -594,6 +597,7 @@ CREATE INDEX ix_blocks_user_type ON experience_blocks(user_id, block_type);
 ```
 
 **Steps:**
+
 1. User uploads existing resume (PDF, DOCX, or LinkedIn export)
 2. System parses document structure
 3. Content split into atomic blocks (one accomplishment = one block)
@@ -605,7 +609,7 @@ CREATE INDEX ix_blocks_user_type ON experience_blocks(user_id, block_type);
 
 ### Journey 2: Job Matching
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────┐
 │                       JOB MATCHING FLOW                            │
 │                                                                    │
@@ -633,6 +637,7 @@ CREATE INDEX ix_blocks_user_type ON experience_blocks(user_id, block_type);
 ```
 
 **Steps:**
+
 1. User pastes job description
 2. System extracts key requirements (skills, experience, keywords)
 3. Job description embedded
@@ -642,7 +647,7 @@ CREATE INDEX ix_blocks_user_type ON experience_blocks(user_id, block_type);
 
 ### Journey 3: Precision Tuning
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │                      PRECISION TUNING FLOW                          │
 │                                                                     │
@@ -677,6 +682,7 @@ CREATE INDEX ix_blocks_user_type ON experience_blocks(user_id, block_type);
 ```
 
 **Steps:**
+
 1. User views Workshop with pulled blocks
 2. Clicks "Request Suggestions" for AI assistance
 3. AI analyzes job requirements vs. current content
@@ -824,7 +830,10 @@ stateDiagram-v2
 ## Implementation Roadmap
 
 ### Phase 0: Foundation (Current)
-**Status: COMPLETE**
+
+#### Status
+
+COMPLETE
 
 - [x] Project structure (monorepo)
 - [x] Docker Compose setup
@@ -835,10 +844,11 @@ stateDiagram-v2
 - [x] Basic resume parsing
 
 ### Phase 1: Atomic Blocks Migration
-**Target: Weeks 1-3**
+
+#### Target: Weeks 1-3
 
 | Task | Description | Effort |
-|------|-------------|--------|
+| --- | --- | --- |
 | Schema design | Create experience_blocks table | S |
 | pgvector setup | Install extension, create indexes | S |
 | Block CRUD API | Endpoints for create/read/update/delete | M |
@@ -846,16 +856,18 @@ stateDiagram-v2
 | Block type classifier | AI-assisted classification | M |
 | Verification UI | User confirms block accuracy | M |
 
-**Deliverables:**
+#### Phase 1 Deliverables
+
 - Users can view Vault with atomic blocks
 - Existing resumes migrated to new schema
 - Block CRUD fully functional
 
 ### Phase 2: Embedding & Retrieval
-**Target: Weeks 4-6**
+
+#### Target: Weeks 4-6
 
 | Task | Description | Effort |
-|------|-------------|--------|
+| --- | --- | --- |
 | PII stripper | Detect and redact PII before embedding | M |
 | Embedding service | Generate/update embeddings | M |
 | Embedding API integration | OpenAI text-embedding-3-small | S |
@@ -863,16 +875,18 @@ stateDiagram-v2
 | Job description parser | Extract requirements from JD | M |
 | Match API | /match endpoint with relevance scores | M |
 
-**Deliverables:**
+#### Phase 2 Deliverables
+
 - All blocks have embeddings
 - Job descriptions can be analyzed
 - Semantic matching functional
 
 ### Phase 3: Workshop & Suggestions
-**Target: Weeks 7-10**
+
+#### Target: Weeks 7-10
 
 | Task | Description | Effort |
-|------|-------------|--------|
+| --- | --- | --- |
 | Workshop model | Create/manage workshop state | M |
 | Pull blocks UI | Select/pull blocks into workshop | M |
 | Diff engine | JSON Patch generation/application | L |
@@ -881,16 +895,18 @@ stateDiagram-v2
 | Accept/reject UI | Inline diff controls | M |
 | Write-back flow | Save edits to Vault | S |
 
-**Deliverables:**
+#### Phase 3 Deliverables
+
 - Full workshop workflow functional
 - AI suggestions as inline diffs
 - Write-back loop complete
 
 ### Phase 4: Polish & Production
-**Target: Weeks 11-14**
+
+#### Target: Weeks 11-14
 
 | Task | Description | Effort |
-|------|-------------|--------|
+| --- | --- | --- |
 | Export service | PDF/DOCX generation | M |
 | ATS compatibility | Structural validation + keyword analysis (see Appendix D) | M |
 | Rate limiting | Per-user API limits | S |
@@ -899,14 +915,15 @@ stateDiagram-v2
 | Security audit | Penetration testing | L |
 | Documentation | API docs, user guide | M |
 
-**Deliverables:**
+#### Phase 4 Deliverables
+
 - Production-ready system
 - Full documentation
 - Security validated
 
 ### Migration Strategy
 
-```
+```text
 Week 1: Deploy new schema alongside existing
         ↓
 Week 2: Run migration script (backfill blocks)
@@ -927,12 +944,13 @@ Week 8: Drop old column after validation
 ## Success Metrics
 
 ### North Star Metric
+
 **Resume Quality Score**: User-reported satisfaction with final exported resume (1-10)
 
 ### Leading Indicators
 
 | Metric | Target | Measurement |
-|--------|--------|-------------|
+| --- | --- | --- |
 | Vault Activation | 70% of signups create 5+ blocks | Database query |
 | Suggestion Acceptance Rate | >40% suggestions accepted | API logs |
 | Workshop Completion Rate | >60% workshops exported | Funnel analysis |
@@ -942,7 +960,7 @@ Week 8: Drop old column after validation
 ### Guardrail Metrics
 
 | Metric | Threshold | Action if Breached |
-|--------|-----------|-------------------|
+| --- | --- | --- |
 | Hallucination reports | <1% of exports | Pause suggestions, audit prompts |
 | PII in embeddings | 0 incidents | Immediate hotfix |
 | API latency p99 | <2 seconds | Scale infrastructure |
@@ -955,7 +973,7 @@ Week 8: Drop old column after validation
 ### A. Glossary
 
 | Term | Definition |
-|------|------------|
+| --- | --- |
 | **Vault** | User's permanent repository of verified career facts |
 | **Workshop** | Active workspace for tailoring resume to specific job |
 | **Block** | Atomic unit of career information (one fact/achievement) |
@@ -974,7 +992,7 @@ Week 8: Drop old column after validation
 ### C. Decision Log
 
 | Date | Decision | Rationale |
-|------|----------|-----------|
+| --- | --- | --- |
 | 2024-XX-XX | pgvector over Pinecone | Simpler ops, transactional with Postgres |
 | 2024-XX-XX | JSON Patch for diffs | Standard format, reversible operations |
 | 2024-XX-XX | Gemini over GPT-4 | Cost-effective, good enough quality |
@@ -989,7 +1007,7 @@ Week 8: Drop old column after validation
 #### Major ATS Players
 
 | ATS | Market Share | Known Quirks |
-|-----|--------------|--------------|
+| --- | --- | --- |
 | Workday | ~30% enterprise | Struggles with tables, multi-column layouts |
 | Greenhouse | Popular in tech | Better parsing, still hates headers in footers |
 | Lever | Startups | Relatively modern parser |
@@ -999,7 +1017,7 @@ Week 8: Drop old column after validation
 
 #### What's Actually "Standard" (Loose Conventions)
 
-```
+```text
 SAFE:
 ├── Single column layout
 ├── Standard section headers ("Experience", "Education", "Skills")
@@ -1018,14 +1036,14 @@ RISKY:
 #### What We Will Implement
 
 | Tier | Capability | Achievable? |
-|------|------------|-------------|
+| --- | --- | --- |
 | **Tier 1: Structural Compliance** | Enforce single-column templates, standard headers, clean PDF output | ✅ Yes |
 | **Tier 2: Keyword Analysis** | Extract JD keywords, show match %, flag gaps user could fill from Vault | ✅ Yes |
 | **Tier 3: Multi-ATS Testing** | Test against real ATS APIs, partner with vendors | ❌ Not without major investment |
 
 #### What We Will NOT Claim
 
-```
+```text
 ❌ "Guaranteed to pass Workday"
 ❌ "100% ATS compatible"
 ❌ "Works with all ATS systems"
@@ -1034,7 +1052,7 @@ RISKY:
 
 #### What We WILL Communicate to Users
 
-```
+```text
 ✅ "Follows ATS-safe formatting conventions"
 ✅ "X% keyword match with job description"
 ✅ "Missing keywords you could add: [list]"
@@ -1044,6 +1062,7 @@ RISKY:
 #### Implementation Details
 
 **Structural Validation Checks:**
+
 - Single column layout enforced in templates
 - No images/graphics in exportable area
 - Contact info in document body (not header/footer)
@@ -1052,6 +1071,7 @@ RISKY:
 - No text boxes or floating elements
 
 **Keyword Analysis Engine:**
+
 ```python
 def analyze_keyword_match(resume_blocks: List[Block], job_description: str) -> ATSReport:
     """
@@ -1064,7 +1084,8 @@ def analyze_keyword_match(resume_blocks: List[Block], job_description: str) -> A
 ```
 
 **User-Facing Output:**
-```
+
+```text
 ┌─────────────────────────────────────────────────────┐
 │ ATS Compatibility Report                            │
 ├─────────────────────────────────────────────────────┤
