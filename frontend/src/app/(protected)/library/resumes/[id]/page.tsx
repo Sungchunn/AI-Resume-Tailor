@@ -489,6 +489,8 @@ export default function ResumeDetailPage({ params }: PageProps) {
           resumeId={resumeId}
           resumeTitle={resume.title}
           onClose={() => setShowExportDialog(false)}
+          blocks={blocks}
+          style={style}
         />
       )}
     </div>
