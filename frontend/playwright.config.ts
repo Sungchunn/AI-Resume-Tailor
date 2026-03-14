@@ -52,6 +52,16 @@ export default defineConfig({
       use: { ...devices["Desktop Safari"] },
     },
 
+    /* Fit-to-page tests - requires consistent viewport for PDF/page measurements */
+    {
+      name: "fit-to-page",
+      testDir: "./e2e/fit-to-page",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1280, height: 900 },
+      },
+    },
+
     /* Visual regression tests - only run in Chromium for consistency */
     {
       name: "visual-regression",
@@ -59,7 +69,7 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         /* Use consistent viewport for visual tests */
-        viewport: { width: 1280, height: 720 },
+        viewport: { width: 1280, height: 900 },
         /* Disable animations for visual consistency */
         launchOptions: {
           args: ["--disable-animations", "--force-prefers-reduced-motion"],
