@@ -5,9 +5,10 @@ import type { BaseBlockPreviewProps } from "../types";
 interface SkillsPreviewProps extends BaseBlockPreviewProps<string[]> {}
 
 /**
- * SkillsPreview - Renders skills as comma-separated inline text
+ * SkillsPreview - Renders skills as inline list items
  *
- * More space-efficient than flexbox layout with pipe separators.
+ * Uses semantic <ul>/<li> with display:inline for compactness while
+ * maintaining proper HTML structure and future extensibility.
  */
 export function SkillsPreview({ content, style }: SkillsPreviewProps) {
   if (!content || content.length === 0) {
@@ -22,9 +23,17 @@ export function SkillsPreview({ content, style }: SkillsPreviewProps) {
   }
 
   return (
-    <p style={{ fontSize: style.bodyFontSize }}>
-      {filteredSkills.join(", ")}
-    </p>
+    <ul
+      className="list-none p-0 m-0"
+      style={{ fontSize: style.bodyFontSize }}
+    >
+      {filteredSkills.map((skill, idx) => (
+        <li key={idx} className="inline">
+          {skill}
+          {idx < filteredSkills.length - 1 && ", "}
+        </li>
+      ))}
+    </ul>
   );
 }
 
