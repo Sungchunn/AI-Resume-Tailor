@@ -1566,7 +1566,7 @@ sequenceDiagram
     end
 ```
 
-### 6.2 Resume Tailoring Flow (3-Step Wizard)
+### 6.2 Resume Tailoring Flow
 
 The tailor flow was redesigned into a linear 3-step wizard experience:
 
