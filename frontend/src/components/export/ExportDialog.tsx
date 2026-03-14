@@ -1,132 +1,67 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { AlertTriangle } from "lucide-react";
-import { useExportResume, useExportTemplates } from "@/lib/api/hooks";
-import type { ExportStyleTemplate, ExportFormat } from "@/lib/api/types";
-import type { AnyResumeBlock, BlockEditorStyle } from "@/lib/resume/types";
-import { ResumePreviewStandalone } from "@/components/library/preview";
-import { exportToPdf } from "@/lib/pdf-export";
+import { useState } from "react";
+import { FileText, FileDown, X } from "lucide-react";
+import { useExportResume } from "@/lib/api/hooks";
+import { printElement } from "@/lib/pdf-export";
 
 interface ExportDialogProps {
   resumeId: string;
   resumeTitle: string;
   onClose: () => void;
-  /** Blocks for client-side PDF export */
-  blocks?: AnyResumeBlock[];
-  /** Style settings for client-side PDF export */
-  style?: BlockEditorStyle;
+  /** Reference to the preview element for PDF export */
+  previewElement?: HTMLElement | null;
 }
-
-const FONT_OPTIONS = [
-  { value: "Arial", label: "Arial" },
-  { value: "Times New Roman", label: "Times New Roman" },
-  { value: "Calibri", label: "Calibri" },
-  { value: "Georgia", label: "Georgia" },
-  { value: "Helvetica", label: "Helvetica" },
-];
-
-const FONT_SIZE_OPTIONS = [9, 10, 11, 12, 13, 14];
-
-const MARGIN_OPTIONS = [
-  { value: 0.5, label: "Narrow (0.5 in)" },
-  { value: 0.75, label: "Normal (0.75 in)" },
-  { value: 1.0, label: "Wide (1 in)" },
-];
 
 export default function ExportDialog({
   resumeId,
   resumeTitle,
   onClose,
-  blocks,
-  style,
+  previewElement,
 }: ExportDialogProps) {
-  const { data: templatesData } = useExportTemplates();
-  const { mutate: exportResume, isPending: isBackendPending } = useExportResume();
+  const { mutate: exportResume, isPending: isDocxPending } = useExportResume();
+  const [isPdfExporting, setIsPdfExporting] = useState(false);
 
-  // Ref for hidden preview element (used for client-side PDF)
-  const previewRef = useRef<HTMLDivElement>(null);
-
-  // Export options state
-  const [format, setFormat] = useState<ExportFormat>("pdf");
-  const [template, setTemplate] = useState<ExportStyleTemplate>("classic");
-  const [fontFamily, setFontFamily] = useState("Arial");
-  const [fontSize, setFontSize] = useState(11);
-  const [margins, setMargins] = useState(0.75);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [isClientExporting, setIsClientExporting] = useState(false);
-
-  // Overflow warning state (shown after export completes)
-  const [overflowInfo, setOverflowInfo] = useState<{
-    pageCount: number;
-    show: boolean;
-  } | null>(null);
-
-  // Combined pending state
-  const isPending = isBackendPending || isClientExporting;
-
-  // Check if we can use client-side PDF export
-  const canUseClientPdf = blocks && blocks.length > 0 && style;
-
-  const handleExport = async () => {
-    // Clear any previous overflow warning
-    setOverflowInfo(null);
-
-    // Use client-side PDF export when blocks/style are available
-    if (format === "pdf" && canUseClientPdf && previewRef.current) {
-      setIsClientExporting(true);
-      try {
-        const safeTitle = resumeTitle.replace(/[^a-zA-Z0-9-_ ]/g, "_");
-        const result = await exportToPdf(previewRef.current, `${safeTitle}.pdf`);
-
-        // Show overflow warning if more than one page
-        if (result.pageCount > 1) {
-          setOverflowInfo({ pageCount: result.pageCount, show: true });
-        } else {
-          onClose();
-        }
-      } catch (error) {
-        alert(`Export failed: ${error instanceof Error ? error.message : "Unknown error"}`);
-      } finally {
-        setIsClientExporting(false);
-      }
+  const handlePdfExport = () => {
+    if (!previewElement) {
+      alert("Preview not available");
       return;
     }
 
-    // Fall back to backend export (DOCX or when blocks not available)
+    setIsPdfExporting(true);
+    const safeTitle = resumeTitle.replace(/[^a-zA-Z0-9-_ ]/g, "_");
+    printElement(previewElement, safeTitle);
+    setIsPdfExporting(false);
+    onClose();
+  };
+
+  const handleDocxExport = () => {
     exportResume(
       {
         resumeId,
         data: {
-          format,
-          template,
-          font_family: fontFamily,
-          font_size: fontSize,
-          margin_top: margins,
-          margin_bottom: margins,
-          margin_left: margins,
-          margin_right: margins,
+          format: "docx",
+          template: "classic",
+          font_family: "Arial",
+          font_size: 11,
+          margin_top: 0.75,
+          margin_bottom: 0.75,
+          margin_left: 0.75,
+          margin_right: 0.75,
         },
       },
       {
         onSuccess: (result) => {
-          // Create download link
           const url = window.URL.createObjectURL(result.blob);
           const link = document.createElement("a");
           link.href = url;
           const safeTitle = resumeTitle.replace(/[^a-zA-Z0-9-_ ]/g, "_");
-          link.download = `${safeTitle}.${format}`;
+          link.download = `${safeTitle}.docx`;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
           window.URL.revokeObjectURL(url);
-
-          // Show overflow warning if needed, otherwise close
-          if (result.overflows) {
-            setOverflowInfo({ pageCount: result.pageCount, show: true });
-          } else {
-            onClose();
-          }
+          onClose();
         },
         onError: (error) => {
           alert(`Export failed: ${error.message}`);
@@ -135,15 +70,9 @@ export default function ExportDialog({
     );
   };
 
-  const templates = templatesData?.templates ?? [
-    { name: "classic", description: "Traditional professional style" },
-    { name: "modern", description: "Contemporary design with accent colors" },
-    { name: "minimal", description: "Clean, ATS-friendly formatting" },
-  ];
-
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+      <div className="flex min-h-full items-center justify-center p-4">
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
@@ -151,329 +80,59 @@ export default function ExportDialog({
         />
 
         {/* Modal */}
-        <div className="relative transform overflow-hidden rounded-lg bg-card text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
-          <div className="bg-card px-4 pb-4 pt-5 sm:p-6">
+        <div className="relative transform overflow-hidden rounded-lg bg-card text-left shadow-xl transition-all w-full max-w-sm">
+          <div className="px-6 py-5">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">
-                  Export Resume
-                </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Choose format and style options
-                </p>
-              </div>
+              <h3 className="text-lg font-semibold text-foreground">
+                Export Resume
+              </h3>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-md bg-card text-muted-foreground/60 hover:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="rounded-md text-muted-foreground/60 hover:text-muted-foreground"
               >
-                <span className="sr-only">Close</span>
-                <svg
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Overflow Warning (shown after export) */}
-            {overflowInfo?.show && (
-              <div className="mb-6 flex items-start gap-3 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-amber-800">
-                <AlertTriangle className="h-5 w-5 mt-0.5 text-amber-500 shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">
-                    Your exported resume is {overflowInfo.pageCount} pages.
-                  </p>
-                  <p className="mt-1 text-sm text-amber-700">
-                    Most recruiters prefer one-page resumes. Consider using smaller
-                    font sizes, narrower margins, or shortening your content.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="mt-2 text-sm font-medium text-amber-700 hover:text-amber-900 underline"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Format Selection */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-foreground/80 mb-2">
-                Format
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setFormat("pdf")}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-colors ${
-                    format === "pdf"
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border hover:border-input"
-                  }`}
-                >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                    />
-                  </svg>
-                  <span className="font-medium">PDF</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormat("docx")}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-colors ${
-                    format === "docx"
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border hover:border-input"
-                  }`}
-                >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                    />
-                  </svg>
-                  <span className="font-medium">Word (.docx)</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Template Selection */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-foreground/80 mb-2">
-                Style Template
-              </label>
-              <div className="space-y-2">
-                {templates.map((t) => (
-                  <button
-                    key={t.name}
-                    type="button"
-                    onClick={() =>
-                      setTemplate(t.name as ExportStyleTemplate)
-                    }
-                    className={`w-full flex items-start gap-3 px-4 py-3 rounded-lg border-2 text-left transition-colors ${
-                      template === t.name
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-input"
-                    }`}
-                  >
-                    <div
-                      className={`mt-0.5 h-4 w-4 rounded-full border-2 flex items-center justify-center ${
-                        template === t.name
-                          ? "border-primary"
-                          : "border-input"
-                      }`}
-                    >
-                      {template === t.name && (
-                        <div className="h-2 w-2 rounded-full bg-primary" />
-                      )}
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground capitalize">
-                        {t.name}
-                      </span>
-                      <p className="text-sm text-muted-foreground">{t.description}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Advanced Options Toggle */}
-            <button
-              type="button"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
-            >
-              <svg
-                className={`h-4 w-4 transition-transform ${
-                  showAdvanced ? "rotate-90" : ""
-                }`}
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
+            {/* Export Options */}
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={handlePdfExport}
+                disabled={isPdfExporting || !previewElement}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-border hover:border-primary hover:bg-primary/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                />
-              </svg>
-              Advanced Options
-            </button>
-
-            {/* Advanced Options */}
-            {showAdvanced && (
-              <div className="space-y-4 pb-4 border-t border-border pt-4">
-                {/* Font Family */}
-                <div>
-                  <label className="block text-sm font-medium text-foreground/80 mb-1">
-                    Font
-                  </label>
-                  <select
-                    value={fontFamily}
-                    onChange={(e) => setFontFamily(e.target.value)}
-                    className="w-full rounded-md border-input shadow-sm focus:border-ring focus:ring-ring sm:text-sm"
-                  >
-                    {FONT_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Font Size */}
-                <div>
-                  <label className="block text-sm font-medium text-foreground/80 mb-1">
-                    Font Size
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {FONT_SIZE_OPTIONS.map((size) => (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => setFontSize(size)}
-                        className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                          fontSize === size
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-foreground/80 hover:bg-accent"
-                        }`}
-                      >
-                        {size}pt
-                      </button>
-                    ))}
+                <FileText className="h-5 w-5 text-red-500" />
+                <div className="text-left">
+                  <div className="font-medium">PDF</div>
+                  <div className="text-sm text-muted-foreground">
+                    Exact match to preview
                   </div>
                 </div>
+              </button>
 
-                {/* Margins */}
-                <div>
-                  <label className="block text-sm font-medium text-foreground/80 mb-1">
-                    Margins
-                  </label>
-                  <select
-                    value={margins}
-                    onChange={(e) => setMargins(parseFloat(e.target.value))}
-                    className="w-full rounded-md border-input shadow-sm focus:border-ring focus:ring-ring sm:text-sm"
-                  >
-                    {MARGIN_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
+              <button
+                type="button"
+                onClick={handleDocxExport}
+                disabled={isDocxPending}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-border hover:border-primary hover:bg-primary/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FileDown className="h-5 w-5 text-blue-500" />
+                <div className="text-left">
+                  <div className="font-medium">
+                    {isDocxPending ? "Exporting..." : "Word (.docx)"}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Editable document
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="bg-muted px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-            <button
-              type="button"
-              onClick={handleExport}
-              disabled={isPending}
-              className="inline-flex w-full justify-center items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto"
-            >
-              {isPending ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Exporting...
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="-ml-0.5 mr-2 h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
-                    />
-                  </svg>
-                  Export {format.toUpperCase()}
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isPending}
-              className="mt-3 inline-flex w-full justify-center rounded-md bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm ring-1 ring-inset ring-input hover:bg-accent disabled:opacity-50 sm:mt-0 sm:w-auto"
-            >
-              Cancel
-            </button>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Hidden preview for client-side PDF capture */}
-      {canUseClientPdf && format === "pdf" && (
-        <div
-          style={{
-            position: "absolute",
-            left: "-9999px",
-            top: 0,
-            width: "816px", // 8.5" at 96 DPI
-            overflow: "hidden",
-          }}
-          aria-hidden="true"
-        >
-          <div ref={previewRef}>
-            <ResumePreviewStandalone blocks={blocks} style={style} />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
