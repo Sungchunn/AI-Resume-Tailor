@@ -5,9 +5,9 @@ import type { BaseBlockPreviewProps } from "../types";
 interface SkillsPreviewProps extends BaseBlockPreviewProps<string[]> {}
 
 /**
- * SkillsPreview - Renders skills as a horizontal list
+ * SkillsPreview - Renders skills as comma-separated inline text
  *
- * Skills displayed with pipe separators for compact, readable layout.
+ * More space-efficient than flexbox layout with pipe separators.
  */
 export function SkillsPreview({ content, style }: SkillsPreviewProps) {
   if (!content || content.length === 0) {
@@ -22,19 +22,9 @@ export function SkillsPreview({ content, style }: SkillsPreviewProps) {
   }
 
   return (
-    <div
-      className="flex flex-wrap gap-x-2 gap-y-1"
-      style={{ fontSize: style.bodyFontSize }}
-    >
-      {filteredSkills.map((skill, idx) => (
-        <span key={idx}>
-          {skill}
-          {idx < filteredSkills.length - 1 && (
-            <span className="text-muted-foreground/60 ml-2">|</span>
-          )}
-        </span>
-      ))}
-    </div>
+    <p style={{ fontSize: style.bodyFontSize }}>
+      {filteredSkills.join(", ")}
+    </p>
   );
 }
 
