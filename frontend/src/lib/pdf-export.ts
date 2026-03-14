@@ -6,6 +6,25 @@
  */
 
 /**
+ * Collect all stylesheets from the current document
+ */
+function collectStyles(): string {
+  const styles: string[] = [];
+
+  // Collect inline <style> tags
+  document.querySelectorAll("style").forEach((style) => {
+    styles.push(style.outerHTML);
+  });
+
+  // Collect <link rel="stylesheet"> tags
+  document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
+    styles.push(link.outerHTML);
+  });
+
+  return styles.join("\n");
+}
+
+/**
  * Print a specific element by opening a new window with just that content
  *
  * @param element - The DOM element to print (resume preview)
@@ -19,8 +38,8 @@ export function printElement(element: HTMLElement, title: string): void {
     return;
   }
 
-  // Get the computed styles we need
-  const computedStyle = window.getComputedStyle(element);
+  // Collect all styles from the current document
+  const allStyles = collectStyles();
 
   // Clone the element
   const clone = element.cloneNode(true) as HTMLElement;
@@ -31,55 +50,32 @@ export function printElement(element: HTMLElement, title: string): void {
     el.removeAttribute("data-hovered");
   });
 
-  // Build the print document
+  // Build the print document with all original styles
   printWindow.document.write(`
     <!DOCTYPE html>
     <html>
       <head>
         <title>${title}</title>
+        ${allStyles}
         <style>
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
-
+          /* Hide browser's default header/footer by removing page margins */
           @page {
             size: letter;
-            margin: 0;
+            margin: 0 !important;
           }
 
-          body {
-            font-family: ${computedStyle.fontFamily};
-            background: white;
-            color: black;
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
-          }
-
-          .preview-page {
-            width: 8.5in;
-            min-height: 11in;
-            background: white;
-            color: black;
-          }
-
-          /* Ensure text is black */
-          h1, h2, h3, h4, h5, h6, p, span, div, li {
-            color: black !important;
           }
 
           /* Remove any hover/selection styling */
           [data-block-id] {
             outline: none !important;
             box-shadow: none !important;
-          }
-
-          @media print {
-            body {
-              margin: 0;
-              padding: 0;
-            }
           }
         </style>
       </head>
@@ -91,13 +87,16 @@ export function printElement(element: HTMLElement, title: string): void {
 
   printWindow.document.close();
 
-  // Wait for content to load, then print
+  // Wait for stylesheets to load, then print
   printWindow.onload = () => {
-    printWindow.focus();
-    printWindow.print();
-    // Close after a short delay to allow print dialog to open
+    // Give stylesheets a moment to apply
     setTimeout(() => {
-      printWindow.close();
-    }, 500);
+      printWindow.focus();
+      printWindow.print();
+      // Close after print dialog
+      setTimeout(() => {
+        printWindow.close();
+      }, 500);
+    }, 100);
   };
 }
