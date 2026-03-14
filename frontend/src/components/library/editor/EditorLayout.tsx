@@ -259,7 +259,6 @@ export function EditorLayout({
       {/* Export Dialog */}
       {showExportDialog && (
         <ExportDialog
-          resumeId={resumeId}
           resumeTitle={title}
           onClose={() => setShowExportDialog(false)}
           previewElement={previewRef.current?.getPageElement()}

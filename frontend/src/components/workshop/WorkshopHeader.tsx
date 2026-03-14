@@ -106,7 +106,6 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
 
       {showExportDialog && state.tailoredResume && (
         <ExportDialog
-          resumeId={state.tailoredResume.resume_id}
           resumeTitle={title}
           onClose={() => setShowExportDialog(false)}
           // PDF disabled in workshop - use library editor for exact preview export
