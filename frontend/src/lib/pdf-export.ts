@@ -6,25 +6,6 @@
  */
 
 /**
- * Collect all stylesheets from the current document
- */
-function collectStyles(): string {
-  const styles: string[] = [];
-
-  // Collect inline <style> tags
-  document.querySelectorAll("style").forEach((style) => {
-    styles.push(style.outerHTML);
-  });
-
-  // Collect <link rel="stylesheet"> tags
-  document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
-    styles.push(link.outerHTML);
-  });
-
-  return styles.join("\n");
-}
-
-/**
  * Print a specific element by opening a new window with just that content
  *
  * @param element - The DOM element to print (resume preview)
@@ -38,27 +19,11 @@ export function printElement(element: HTMLElement, title: string): void {
     return;
   }
 
-  // Collect all styles from the current document
-  const allStyles = collectStyles();
+  // Get the computed styles we need
+  const computedStyle = window.getComputedStyle(element);
 
   // Clone the element
   const clone = element.cloneNode(true) as HTMLElement;
-
-  // Remove the scale transform - we want 1:1 size for print
-  clone.style.transform = "none";
-  clone.style.transformOrigin = "top left";
-
-  // Set page dimensions for print (8.5" x 11" letter size = 816 x 1056 px at 96 DPI)
-  clone.style.width = "816px";
-  clone.style.minHeight = "1056px";
-
-  // Preserve the exact padding from the original element
-  // The fit-to-one-page algorithm optimized for this exact layout
-  const computedStyle = window.getComputedStyle(element);
-  clone.style.paddingTop = computedStyle.paddingTop;
-  clone.style.paddingBottom = computedStyle.paddingBottom;
-  clone.style.paddingLeft = computedStyle.paddingLeft;
-  clone.style.paddingRight = computedStyle.paddingRight;
 
   // Remove any interactive elements or selection highlights
   clone.querySelectorAll("[data-active], [data-hovered]").forEach((el) => {
@@ -66,66 +31,54 @@ export function printElement(element: HTMLElement, title: string): void {
     el.removeAttribute("data-hovered");
   });
 
-  // Remove hover/selection classes from cloned elements
-  clone.querySelectorAll("[data-block-id]").forEach((el) => {
-    el.classList.remove("ring-2", "ring-primary", "ring-primary/50");
-  });
-
-  // Build the print document with all original styles
+  // Build the print document
   printWindow.document.write(`
     <!DOCTYPE html>
     <html>
       <head>
         <title>${title}</title>
-        ${allStyles}
         <style>
-          @page {
-            size: 8.5in 11in;
-            margin: 0mm !important;
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
           }
 
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
+          @page {
+            size: letter;
+            margin: 0;
+          }
+
+          body {
+            font-family: ${computedStyle.fontFamily};
+            background: white;
+            color: black;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
 
-          body {
-            display: block;
+          .preview-page {
+            width: 8.5in;
+            min-height: 11in;
+            background: white;
+            color: black;
+          }
+
+          /* Ensure text is black */
+          h1, h2, h3, h4, h5, h6, p, span, div, li {
+            color: black !important;
           }
 
           /* Remove any hover/selection styling */
           [data-block-id] {
             outline: none !important;
             box-shadow: none !important;
-            cursor: default !important;
-          }
-
-          /* Hide any block controls */
-          .block-controls {
-            display: none !important;
           }
 
           @media print {
-            html, body {
-              margin: 0 !important;
-              padding: 0 !important;
-            }
-
-            /* Hide browser's default header/footer */
-            @page {
+            body {
               margin: 0;
-            }
-
-            /* Ensure no extra spacing */
-            @page :first {
-              margin-top: 0;
-            }
-
-            @page :last {
-              margin-bottom: 0;
+              padding: 0;
             }
           }
         </style>
@@ -138,16 +91,13 @@ export function printElement(element: HTMLElement, title: string): void {
 
   printWindow.document.close();
 
-  // Wait for stylesheets to load, then print
+  // Wait for content to load, then print
   printWindow.onload = () => {
-    // Give stylesheets a moment to apply
+    printWindow.focus();
+    printWindow.print();
+    // Close after a short delay to allow print dialog to open
     setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-      // Close after print dialog
-      setTimeout(() => {
-        printWindow.close();
-      }, 500);
-    }, 100);
+      printWindow.close();
+    }, 500);
   };
 }
