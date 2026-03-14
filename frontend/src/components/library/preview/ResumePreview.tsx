@@ -114,6 +114,7 @@ export const ResumePreview = forwardRef<ResumePreviewHandle, ResumePreviewProps>
         >
           <div
             ref={pageRef}
+            data-testid="resume-page"
             className={`preview-page bg-white ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
             style={{
               width: PAGE_DIMENSIONS.WIDTH,
@@ -141,6 +142,7 @@ export const ResumePreview = forwardRef<ResumePreviewHandle, ResumePreviewProps>
         >
           <div
             ref={pageRef}
+            data-testid="resume-page"
             className={`preview-page bg-white ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
             style={{
               width: PAGE_DIMENSIONS.WIDTH,
@@ -166,6 +168,7 @@ export const ResumePreview = forwardRef<ResumePreviewHandle, ResumePreviewProps>
       >
         <div
           ref={pageRef}
+          data-testid="resume-page"
           className={`preview-page bg-white ${showPageBorder ? "shadow-lg rounded-sm border border-border" : ""}`}
           style={{
             width: PAGE_DIMENSIONS.WIDTH,
