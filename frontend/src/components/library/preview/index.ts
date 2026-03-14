@@ -33,6 +33,16 @@ export { OverflowWarning } from "./OverflowWarning";
 export { MinimumReachedWarning } from "./MinimumReachedWarning";
 export { useOverflowDetection } from "./useOverflowDetection";
 
+// Block measurement infrastructure (for paginated preview)
+export { MeasurementContainer } from "./MeasurementContainer";
+export type { BlockMeasurement } from "./MeasurementContainer";
+export {
+  useBlockMeasurement,
+  calculateContentHeight,
+  getBlockTotalHeight,
+} from "./useBlockMeasurement";
+export type { UseMeasurementResult } from "./useBlockMeasurement";
+
 // Block renderer
 export { BlockRenderer, createBlockRenderer } from "./BlockRenderer";
 export { InteractiveBlockRenderer } from "./InteractiveBlockRenderer";
