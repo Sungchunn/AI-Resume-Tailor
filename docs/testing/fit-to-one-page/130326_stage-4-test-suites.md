@@ -380,10 +380,10 @@ await editor.goto("test-id");
 
 ## Definition of Done
 
-- [ ] 4.1 `measurement.spec.ts` created (4 tests)
-- [ ] 4.2 `convergence.spec.ts` created (2 tests)
-- [ ] 4.3 `persistence.spec.ts` created (3 tests)
-- [ ] 4.4 `integration.spec.ts` created (3 tests)
+- [x] 4.1 `measurement.spec.ts` created (4 tests)
+- [x] 4.2 `convergence.spec.ts` created (2 tests)
+- [x] 4.3 `persistence.spec.ts` created (3 tests)
+- [x] 4.4 `integration.spec.ts` created (3 tests)
 - [ ] All 12 tests passing
 - [ ] Commit created: `test: implement fit-to-page E2E test suites`
 
