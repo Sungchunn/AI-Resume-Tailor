@@ -557,6 +557,10 @@ secrets.yaml
 .idea/
 .vscode/settings.json
 *.code-workspace
+
+# Playwright test artifacts (regenerated on each test run)
+playwright-report/
+test-results/
 ```
 
 ---
