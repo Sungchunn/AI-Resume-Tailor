@@ -46,7 +46,7 @@ export interface UseAutoFitBlocksResult {
 
 // Minimum values to preserve readability
 export const MINIMUMS = {
-  fontSizeBody: 8,
+  fontSizeBody: 7,
   fontSizeHeading: 12,
   fontSizeSubheading: 9,
   lineSpacing: 1.05,
