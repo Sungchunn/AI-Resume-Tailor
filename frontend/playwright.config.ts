@@ -98,6 +98,12 @@ export default defineConfig({
     toHaveScreenshot: {
       maxDiffPixels: 100,
       threshold: 0.1,
+      /* Disable animations globally for visual consistency */
+      animations: "disabled",
     },
   },
+
+  /* Snapshot path template for better organization */
+  snapshotPathTemplate:
+    "{testDir}/__screenshots__/{testFilePath}/{arg}-{projectName}{ext}",
 });
