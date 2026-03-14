@@ -143,14 +143,14 @@ frontend/e2e/
 cd frontend
 
 # Run all fit-to-page tests
-npx playwright test --project=fit-to-page
+bun run test:e2e --project=fit-to-page
 
 # Run visual regression tests
-npx playwright test --project=visual-regression
+bun run test:e2e --project=visual-regression
 
 # Run with UI for debugging
-npx playwright test --project=fit-to-page --ui
+bun run test:e2e:ui --project=fit-to-page
 
 # View test report
-npx playwright show-report
+bun run test:e2e:report
 ```

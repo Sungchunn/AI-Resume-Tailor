@@ -125,10 +125,10 @@ export default defineConfig({
 cd frontend
 
 # Verify config loads without errors
-npx playwright test --list --project=fit-to-page
+bun run test:e2e --list --project=fit-to-page
 # Expected: "No tests found" (not an error)
 
-npx playwright test --list --project=visual-regression
+bun run test:e2e --list --project=visual-regression
 # Expected: "No tests found" (not an error)
 
 # Verify directories exist
@@ -144,7 +144,7 @@ ls -la e2e/visual-regression/
 - [ ] 2.2 `visual-regression` project added to config
 - [ ] 2.3 `e2e/fit-to-page/` directory created
 - [ ] 2.4 `e2e/visual-regression/` directory created
-- [ ] `npx playwright test --list` runs without config errors
+- [ ] `bun run test:e2e --list` runs without config errors
 - [ ] Commit created: `test: configure Playwright projects for fit-to-page tests`
 
 ---

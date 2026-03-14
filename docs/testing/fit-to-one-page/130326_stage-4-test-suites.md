@@ -332,16 +332,16 @@ test.describe("Cross-Page Integration", () => {
 cd frontend
 
 # Run all fit-to-page tests
-npx playwright test --project=fit-to-page
+bun run test:e2e --project=fit-to-page
 
 # Run with UI for debugging
-npx playwright test --project=fit-to-page --ui
+bun run test:e2e:ui --project=fit-to-page
 
 # Run specific file
-npx playwright test e2e/fit-to-page/measurement.spec.ts
+bun run test:e2e e2e/fit-to-page/measurement.spec.ts
 
 # Run with verbose output
-npx playwright test --project=fit-to-page --reporter=list
+bun run test:e2e --project=fit-to-page --reporter=list
 ```
 
 ---
