@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type {
   AnyResumeBlock,
   BlockEditorStyle,
@@ -490,12 +490,28 @@ export function useAutoFitBlocks({
   const isProcessingRef = useRef(false);
   const originalStyleRef = useRef<BlockEditorStyle>(style);
 
+  // Track if we've already determined content can't fit (prevents infinite loop)
+  // This is set when minimum_reached is hit and reset when blocks change
+  const minimumReachedRef = useRef(false);
+
+  // Hash of block IDs to detect when content actually changes
+  const blocksHash = useMemo(
+    () => JSON.stringify(blocks.map((b) => b.id)),
+    [blocks]
+  );
+
   // Store original style when auto-fit is enabled
   useEffect(() => {
     if (enabled && !isProcessingRef.current) {
       originalStyleRef.current = style;
     }
   }, [enabled, style]);
+
+  // Reset minimum_reached flag when blocks change (user edited content)
+  // This allows re-trying the fit algorithm with new content
+  useEffect(() => {
+    minimumReachedRef.current = false;
+  }, [blocksHash]);
 
   // Calculate target height (page minus margins)
   const getTargetHeight = useCallback((s: BlockEditorStyle) => {
@@ -505,9 +521,16 @@ export function useAutoFitBlocks({
   // Run auto-fit algorithm (binary search with DOM or linear with estimation)
   useEffect(() => {
     if (!enabled) {
+      minimumReachedRef.current = false; // Reset when disabled
       setStatus({ state: "idle" });
       setReductions([]);
       setAdjustedStyle(style);
+      return;
+    }
+
+    // Skip if we already know content can't fit (prevents infinite loop)
+    // This flag is reset when blocks change, allowing retry with new content
+    if (minimumReachedRef.current) {
       return;
     }
 
@@ -557,18 +580,25 @@ export function useAutoFitBlocks({
         setAdjustedStyle(result.style);
         setReductions(appliedReductions);
 
-        // Only call onStyleChange if we actually made changes
+        // Only call onStyleChange if style actually changed (prevents re-render loop)
         if (result.level > 0) {
-          onStyleChange(result.style);
+          const currentStyleHash = JSON.stringify(currentStyle);
+          const resultStyleHash = JSON.stringify(result.style);
+
+          if (currentStyleHash !== resultStyleHash) {
+            onStyleChange(result.style);
+          }
         }
 
         if (result.fits) {
+          minimumReachedRef.current = false; // Reset on successful fit
           setStatus({
             state: "fitted",
             reductions: appliedReductions.map((r) => r.label),
             compactnessLevel: result.level,
           });
         } else {
+          minimumReachedRef.current = true; // Set flag to prevent re-runs
           setStatus({
             state: "minimum_reached",
             message: "Content still exceeds one page at minimum settings. Consider removing or condensing content.",
@@ -669,11 +699,13 @@ export function useAutoFitBlocks({
       }
 
       if (height <= targetHeight) {
+        minimumReachedRef.current = false; // Reset on successful fit
         setStatus({
           state: "fitted",
           reductions: appliedReductions.map((r) => r.label),
         });
       } else {
+        minimumReachedRef.current = true; // Set flag to prevent re-runs
         setStatus({
           state: "minimum_reached",
           message: "Content still exceeds one page at minimum settings. Consider removing or condensing content.",
