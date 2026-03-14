@@ -1,10 +1,10 @@
 /**
  * Client-side PDF export utility
  *
- * Uses html2canvas + jsPDF for automatic PDF download without print dialog.
+ * Uses html-to-image + jsPDF for automatic PDF download.
  */
 
-import html2canvas from "html2canvas";
+import { toPng } from "html-to-image";
 import { jsPDF } from "jspdf";
 
 // Letter size dimensions
@@ -23,14 +23,25 @@ export async function exportToPdf(
   element: HTMLElement,
   filename: string
 ): Promise<void> {
-  // Render DOM to canvas at 2x scale for crisp text
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    useCORS: true,
-    logging: false,
+  // Render DOM to PNG at 2x scale for crisp text
+  const dataUrl = await toPng(element, {
+    pixelRatio: 2,
     backgroundColor: "#ffffff",
     width: PAGE_WIDTH_PX,
-    windowWidth: PAGE_WIDTH_PX,
+    height: element.scrollHeight,
+    style: {
+      // Ensure the element renders at full size
+      transform: "scale(1)",
+      transformOrigin: "top left",
+    },
+  });
+
+  // Load the image to get dimensions
+  const img = new Image();
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = reject;
+    img.src = dataUrl;
   });
 
   // Create PDF with letter size
@@ -50,9 +61,9 @@ export async function exportToPdf(
       pdf.addPage();
     }
 
-    // Calculate source coordinates (at 2x scale)
+    // Calculate source coordinates (at 2x scale due to pixelRatio)
     const sourceY = page * PAGE_HEIGHT_PX * 2;
-    const sourceHeight = Math.min(PAGE_HEIGHT_PX * 2, canvas.height - sourceY);
+    const sourceHeight = Math.min(PAGE_HEIGHT_PX * 2, img.height - sourceY);
 
     // Create a temporary canvas for this page
     const pageCanvas = document.createElement("canvas");
@@ -66,12 +77,12 @@ export async function exportToPdf(
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
 
-    // Draw the slice of the main canvas for this page
+    // Draw the slice of the image for this page
     ctx.drawImage(
-      canvas,
+      img,
       0,
       sourceY,
-      canvas.width,
+      img.width,
       sourceHeight,
       0,
       0,
