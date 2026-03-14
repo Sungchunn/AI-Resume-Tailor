@@ -8,26 +8,25 @@ Strict guidelines for all database work in Python (FastAPI/SQLAlchemy) projects.
 
 ### Schema First
 
-- SQL migrations (Flyway) **must exist before** model code
+- Alembic migrations **must exist before** model code
 - Never write model code hoping to auto-generate schema later
 
 ### Immutable Migrations
 
-- **Never edit** existing Flyway migration files once applied
-- Always create new migrations with versioned naming (see below)
+- **Never edit** existing Alembic migration files once applied
+- Always create new migrations for changes
 - Treat migrations as append-only log
 
 ### Migration Versioning
 
-Use major versions for distinct features/releases, sub-versions for incremental changes:
+Alembic uses auto-generated revision IDs with descriptive messages:
 
-| Version | Use Case | Example |
-| --------- | ---------- | --------- |
-| `V1`, `V2`, `V3` | Major schema changes | `V1__initial_tables.sql` |
-| `V1_1`, `V1_2` | Incremental changes within V1 | `V1_1__add_user_preferences.sql` |
-| `V2_1`, `V2_10` | Incremental changes within V2 | `V2_10__add_index.sql` |
+| Type | Command | Example |
+| ----- | ------- | ------- |
+| New migration | `alembic revision -m "description"` | `abc123_create_user_preferences.py` |
+| Auto-generate | `alembic revision --autogenerate -m "desc"` | Detects model changes |
 
-Flyway orders: V1 → V1_1 → V1_2 → V1_10 → V2 → V2_1 → ...
+Alembic tracks migration order via `down_revision` chain in each migration file.
 
 ### Naming Conventions
 
@@ -149,35 +148,65 @@ resume-builder:rate_limit:user:550e8400
 
 ## Quick Reference
 
-**Flyway Migration Template** (`backend/flyway/sql/V#__description.sql`):
+**Alembic Migration Template** (`backend/alembic/versions/<revision>_description.py`):
 
-```sql
--- V4__create_user_preferences.sql (or V3_1__create_user_preferences.sql for incremental)
+```python
+"""create user preferences
 
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) NOT NULL UNIQUE,
-    metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+Revision ID: abc123def456
+Revises: previous_revision
+Create Date: 2026-01-15 10:30:00.000000
+"""
 
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_metadata ON users USING GIN(metadata);
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+
+revision = "abc123def456"
+down_revision = "previous_revision"
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    op.create_table(
+        "users",
+        sa.Column("id", postgresql.UUID(), server_default=sa.text("gen_random_uuid()"), primary_key=True),
+        sa.Column("email", sa.String(255), nullable=False, unique=True),
+        sa.Column("metadata", postgresql.JSONB(), server_default=sa.text("'{}'")),
+        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column("updated_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+    )
+    op.create_index("idx_users_email", "users", ["email"])
+    op.create_index("idx_users_metadata", "users", ["metadata"], postgresql_using="gin")
+
+
+def downgrade() -> None:
+    op.drop_index("idx_users_metadata")
+    op.drop_index("idx_users_email")
+    op.drop_table("users")
 ```
 
 **Running Migrations**:
 
 ```bash
-# Flyway runs automatically via Docker Compose before backend starts
-docker-compose up -d
+# Apply all pending migrations
+poetry run alembic upgrade head
 
-# To run migrations manually:
-docker-compose up flyway
+# Rollback last migration
+poetry run alembic downgrade -1
 
-# Check migration history:
-docker-compose exec postgres psql -U postgres -d resume_tailor \
-  -c "SELECT * FROM flyway_schema_history;"
+# Create a new migration manually
+poetry run alembic revision -m "add_user_preferences"
+
+# Auto-generate migration from model changes
+poetry run alembic revision --autogenerate -m "add_user_preferences"
+
+# View migration history
+poetry run alembic history
+
+# Check current revision
+poetry run alembic current
 ```
 
 **SQLAlchemy Model Template**:
