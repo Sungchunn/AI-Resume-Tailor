@@ -101,6 +101,16 @@ poetry shell                  # Activate virtual environment
 poetry run pytest             # Run tests
 ```
 
+### Database Migrations (from /backend)
+
+```bash
+poetry run alembic upgrade head           # Apply all pending migrations
+poetry run alembic downgrade -1           # Rollback last migration
+poetry run alembic revision -m "message"  # Create new migration
+poetry run alembic history                # View migration history
+poetry run alembic current                # Show current revision
+```
+
 ### Type Sync
 
 ```bash
