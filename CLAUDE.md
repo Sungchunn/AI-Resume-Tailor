@@ -482,9 +482,9 @@ frontend/e2e/
 
 ```bash
 cd frontend
-npx playwright test e2e/<feature>    # Run feature tests
-npx playwright test --ui             # Interactive UI mode
-npx playwright show-report           # View test report
+bun run test:e2e e2e/<feature>       # Run feature tests
+bun run test:e2e:ui                  # Interactive UI mode
+bun run test:e2e:report              # View test report
 ```
 
 ---
@@ -604,9 +604,9 @@ poetry run pytest             # Run tests
 ./scripts/generate-client.sh  # Generate TS types from OpenAPI
 
 # Playwright E2E tests (from /frontend)
-npx playwright test              # Run all E2E tests
-npx playwright test e2e/<feature>  # Run specific feature tests
-npx playwright test --ui         # Interactive UI mode
-npx playwright show-report       # View HTML report
-npx playwright test --update-snapshots  # Update visual baselines
+bun run test:e2e                 # Run all E2E tests
+bun run test:e2e e2e/<feature>   # Run specific feature tests
+bun run test:e2e:ui              # Interactive UI mode
+bun run test:e2e:report          # View HTML report
+bun run test:e2e:update          # Update visual baselines
 ```

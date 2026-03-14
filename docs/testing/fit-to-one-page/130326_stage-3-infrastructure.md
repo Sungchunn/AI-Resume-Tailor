@@ -330,10 +330,10 @@ touch e2e/helpers/autofit.ts
 cd frontend
 
 # Check TypeScript compiles
-npx tsc --noEmit
+bunx tsc --noEmit
 
 # Or if you have a separate e2e tsconfig:
-npx tsc --noEmit -p e2e/tsconfig.json
+bunx tsc --noEmit -p e2e/tsconfig.json
 ```
 
 ---

@@ -118,7 +118,7 @@ await expect(locator).toHaveScreenshot("name.png", {
 cd frontend
 
 # First run creates baseline screenshots
-npx playwright test --project=visual-regression --update-snapshots
+bun run test:e2e:update --project=visual-regression
 
 # Verify baselines were created
 ls -la e2e/visual-regression/fit-to-page-visual.spec.ts-snapshots/
@@ -204,10 +204,10 @@ test("stable screenshot", async ({ page }) => {
 cd frontend
 
 # Run visual regression tests
-npx playwright test --project=visual-regression
+bun run test:e2e --project=visual-regression
 
 # If tests fail, view the diff report
-npx playwright show-report
+bun run test:e2e:report
 ```
 
 ### Interpreting Failures
@@ -218,7 +218,7 @@ When a visual test fails, Playwright generates:
 2. **actual-name.png** - Current screenshot
 3. **diff-name.png** - Highlighted differences
 
-These appear in the HTML report (`npx playwright show-report`).
+These appear in the HTML report (`bun run test:e2e:report`).
 
 ### Common Failure Causes
 
@@ -238,13 +238,13 @@ When the UI intentionally changes:
 
 ```bash
 # 1. Run tests to see failures (expected)
-npx playwright test --project=visual-regression
+bun run test:e2e --project=visual-regression
 
 # 2. Review the diffs in the report
-npx playwright show-report
+bun run test:e2e:report
 
 # 3. If changes are intentional, update baselines
-npx playwright test --project=visual-regression --update-snapshots
+bun run test:e2e:update --project=visual-regression
 
 # 4. Commit new baselines
 git add e2e/visual-regression/*-snapshots/
@@ -259,7 +259,7 @@ git commit -m "test: update visual baselines for fit-to-page UI changes"
 
 ```yaml
 - name: Run visual regression tests
-  run: npx playwright test --project=visual-regression
+  run: bun run test:e2e --project=visual-regression
 
 - name: Upload test artifacts on failure
   if: failure()
@@ -302,14 +302,14 @@ After completing all stages:
 cd frontend
 
 # Run ALL tests (functional + visual)
-npx playwright test --project=fit-to-page
-npx playwright test --project=visual-regression
+bun run test:e2e --project=fit-to-page
+bun run test:e2e --project=visual-regression
 
 # Or run both projects
-npx playwright test --project=fit-to-page --project=visual-regression
+bun run test:e2e --project=fit-to-page --project=visual-regression
 
 # View combined report
-npx playwright show-report
+bun run test:e2e:report
 ```
 
 ### Expected Results

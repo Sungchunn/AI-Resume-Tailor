@@ -269,31 +269,31 @@ experience-section-0        # Indexed elements
 cd frontend
 
 # Run all E2E tests
-npx playwright test
+bun run test:e2e
 
 # Run specific feature tests
-npx playwright test e2e/<feature-name>
+bun run test:e2e e2e/<feature-name>
 
 # Run specific project
-npx playwright test --project=<project-name>
+bun run test:e2e --project=<project-name>
 
 # Run with UI mode (interactive)
-npx playwright test --ui
+bun run test:e2e:ui
 
 # Run with headed browser
-npx playwright test --headed
+bun run test:e2e --headed
 ```
 
 ### View Reports
 
 ```bash
-npx playwright show-report
+bun run test:e2e:report
 ```
 
 ### Update Visual Snapshots
 
 ```bash
-npx playwright test --update-snapshots
+bun run test:e2e:update
 ```
 
 ---
