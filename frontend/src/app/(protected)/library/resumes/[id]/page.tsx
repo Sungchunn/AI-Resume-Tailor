@@ -1,11 +1,12 @@
 "use client";
 
-import { use, useState, useMemo } from "react";
+import { use, useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useResume, useDeleteResume } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import ExportDialog from "@/components/export/ExportDialog";
 import { ResumePreview } from "@/components/library/preview";
+import type { ResumePreviewHandle } from "@/components/library/preview";
 import { parsedContentToBlocks, apiStyleToEditorStyle } from "@/lib/resume/transforms";
 import { DEFAULT_STYLE } from "@/lib/resume/defaults";
 import type { ParsedResumeContent } from "@/lib/resume/types";
@@ -24,6 +25,7 @@ export default function ResumeDetailPage({ params }: PageProps) {
   const [activeTab, setActiveTab] = useState<"preview" | "plain" | "formatted">("preview");
   const [copied, setCopied] = useState(false);
   const [showFullScreen, setShowFullScreen] = useState(false);
+  const previewRef = useRef<ResumePreviewHandle>(null);
 
   // Convert parsed to blocks for preview
   const blocks = useMemo(() => {
@@ -335,6 +337,7 @@ export default function ResumeDetailPage({ params }: PageProps) {
         {activeTab === "preview" && (
           hasPreviewContent ? (
             <ResumePreview
+              ref={previewRef}
               blocks={blocks}
               style={style}
               showPageBorder={true}
@@ -489,8 +492,7 @@ export default function ResumeDetailPage({ params }: PageProps) {
           resumeId={resumeId}
           resumeTitle={resume.title}
           onClose={() => setShowExportDialog(false)}
-          blocks={blocks}
-          style={style}
+          previewElement={previewRef.current?.getPageElement()}
         />
       )}
     </div>

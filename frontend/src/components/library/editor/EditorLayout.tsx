@@ -262,8 +262,7 @@ export function EditorLayout({
           resumeId={resumeId}
           resumeTitle={title}
           onClose={() => setShowExportDialog(false)}
-          blocks={blocks}
-          style={style}
+          previewElement={previewRef.current?.getPageElement()}
         />
       )}
     </div>
