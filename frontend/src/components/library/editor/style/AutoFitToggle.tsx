@@ -45,6 +45,7 @@ export function AutoFitToggle({
           <button
             role="switch"
             aria-checked={enabled}
+            data-testid="fit-to-page-toggle"
             onClick={() => onToggle(!enabled)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
               enabled ? "bg-primary" : "bg-muted"
@@ -63,7 +64,7 @@ export function AutoFitToggle({
       {enabled && status.state === "fitted" && reductions.length > 0 && (
         <div className="text-xs text-muted-foreground bg-green-50 border border-green-100 rounded-md p-2">
           <span className="font-medium text-green-700">Adjustments made:</span>
-          <ul className="mt-1 space-y-0.5 text-green-600">
+          <ul className="mt-1 space-y-0.5 text-green-600" data-testid="fit-adjustments-list">
             {reductions.map((r, idx) => (
               <li key={idx}>
                 {r.label}: {r.from.toFixed(1)} &rarr; {r.to.toFixed(1)}
@@ -75,7 +76,10 @@ export function AutoFitToggle({
 
       {/* Show warning when minimum reached */}
       {enabled && status.state === "minimum_reached" && status.message && (
-        <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2">
+        <div
+          data-testid="fit-minimum-warning"
+          className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2"
+        >
           {status.message}
         </div>
       )}
@@ -90,19 +94,28 @@ function StatusBadge({ status }: { status: AutoFitStatus }) {
   switch (status.state) {
     case "fitting":
       return (
-        <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded animate-pulse">
+        <span
+          data-testid="fit-status-badge"
+          className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded animate-pulse"
+        >
           Fitting...
         </span>
       );
     case "fitted":
       return (
-        <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded">
+        <span
+          data-testid="fit-status-badge"
+          className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded"
+        >
           Fitted
         </span>
       );
     case "minimum_reached":
       return (
-        <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
+        <span
+          data-testid="fit-status-badge"
+          className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded"
+        >
           At minimum
         </span>
       );
