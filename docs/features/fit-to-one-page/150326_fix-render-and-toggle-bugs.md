@@ -60,14 +60,14 @@ fitToOnePage: boolean;
 preAutoFitStyle: ResumeStyle | null;  // NEW
 ```
 
-2. Initialize to `null` in `initialState` (line ~182):
+1. Initialize to `null` in `initialState` (line ~182):
 
 ```typescript
 fitToOnePage: false,
 preAutoFitStyle: null,
 ```
 
-3. Modify `SET_FIT_TO_ONE_PAGE` reducer case (line ~317):
+1. Modify `SET_FIT_TO_ONE_PAGE` reducer case (line ~317):
 
 ```typescript
 case "SET_FIT_TO_ONE_PAGE":
@@ -91,7 +91,7 @@ case "SET_FIT_TO_ONE_PAGE":
   return { ...state, fitToOnePage: action.payload };
 ```
 
-4. Clear `preAutoFitStyle` in `INIT_DATA` and `RESET_CHANGES` cases.
+1. Clear `preAutoFitStyle` in `INIT_DATA` and `RESET_CHANGES` cases.
 
 ### Phase 2: Fix Double-Reduction in ResumePreview
 
