@@ -38,108 +38,106 @@ When clicking the "Fit to One Page" toggle, the feature doesn't appear to work b
    - Algorithm concludes "it fits!" at level 0
    - **No adjustments are made**
 
-## Solution
+## Solution: State-Driven Measurement Readiness
 
-Pass `measurementsReady` status to the auto-fit hook and **don't run the algorithm until measurements are complete**.
+Don't run the auto-fit algorithm until measurements are complete. Use React's natural reactivity via a callback prop instead of polling.
+
+The auto-fit hook already handles `measureFn` being `null` (falls back to estimation mode), so we just need to set it only when ready.
 
 ### Files to Modify
 
 | File | Change |
 | ---- | ------ |
-| `PaginatedResumePreview.tsx` | Expose `isReady` in ref handle |
-| `EditorLayout.tsx` | Track measurement readiness, pass to context |
-| `BlockEditorContext.tsx` | Accept and expose measurement ready state |
-| `useAutoFitBlocks.ts` | Add `measurementsReady` dependency, skip when false |
+| `PaginatedResumePreview.tsx` | Add `onReady` callback prop |
+| `EditorLayout.tsx` | Track measurement readiness state, conditionally set `measureFn` |
 
-### Implementation Steps
+### Why This Approach
 
-**Step 1:** Update `PaginatedResumePreviewHandle` to expose `isReady`:
+| Approach | Pros | Cons |
+| -------- | ---- | ---- |
+| Return `Infinity` | Single effect | Special-case handling in binary search, mixes concerns |
+| `setInterval` polling | Simple | Not idiomatic React, wastes cycles |
+| **State-driven** | Clean separation, testable, no polling | Requires callback prop |
+
+### Implementation
+
+**Step 1:** Add `onReady` callback prop to `PaginatedResumePreview`:
 
 ```typescript
 // PaginatedResumePreview.tsx
-export interface PaginatedResumePreviewHandle {
-  getPageElements: () => HTMLDivElement[];
-  getScale: () => number;
-  getPageCount: () => number;
-  isReady: () => boolean;  // Add this
+export interface PaginatedResumePreviewProps extends ResumePreviewProps {
+  pageGap?: number;
+  onReady?: () => void;  // Add this
 }
 
-useImperativeHandle(ref, () => ({
-  // ...existing
-  isReady: () => isReady,  // Add this
-}));
-```
-
-**Step 2:** In `EditorLayout.tsx`, poll/track readiness:
-
-```typescript
-// Option A: Check readiness in measureFn
-const measureFn = () => {
-  if (!previewRef.current?.isReady()) {
-    return Infinity;  // Signal "not ready yet" - algorithm will retry
-  }
-  const currentPageCount = previewRef.current.getPageCount();
-  return currentPageCount * PAGE_DIMENSIONS.HEIGHT;
-};
-```
-
-**Step 3:** In `useAutoFitBlocks.ts`, handle "not ready" case:
-
-```typescript
-// In binary search, if measureFn returns Infinity, wait and retry
-const measureHeight = async (testStyle: BlockEditorStyle): Promise<number> => {
-  onStyleChange(testStyle);
-  const height = await measureWithRAF(measure);
-
-  // If not ready, wait a bit and retry (up to N attempts)
-  if (height === Infinity) {
-    // Poll until ready or timeout
-  }
-
-  return height;
-};
-```
-
-## Alternative (Simpler) Approach
-
-Instead of complex polling, simply **don't enable auto-fit until ready**:
-
-In `EditorLayout.tsx`:
-
-```typescript
+// Inside component, after isReady becomes true:
 useEffect(() => {
-  const checkReadyAndSetMeasure = () => {
-    if (previewRef.current?.isReady()) {
-      const measureFn = () => {
-        return previewRef.current!.getPageCount() * PAGE_DIMENSIONS.HEIGHT;
-      };
-      setAutoFitMeasureFn(measureFn);
-    } else {
-      // Not ready - clear function to prevent auto-fit from running
-      setAutoFitMeasureFn(null);
-    }
-  };
-
-  // Check immediately and on interval until ready
-  checkReadyAndSetMeasure();
-  const interval = setInterval(checkReadyAndSetMeasure, 100);
-
-  return () => clearInterval(interval);
-}, [setAutoFitMeasureFn]);
+  if (isReady) {
+    onReady?.();
+  }
+}, [isReady, onReady]);
 ```
 
-In `useAutoFitBlocks.ts` (line 544):
+**Step 2:** Track readiness in `EditorLayout.tsx`:
 
 ```typescript
+// EditorLayout.tsx
+const [isMeasurementReady, setIsMeasurementReady] = useState(false);
+
+// Callback for when measurements complete
+const handleMeasurementsReady = useCallback(() => {
+  setIsMeasurementReady(true);
+}, []);
+
+// Reset when blocks/style change (measurements will re-run)
+useEffect(() => {
+  setIsMeasurementReady(false);
+}, [blocks, style]);
+
+// Only provide measureFn when ready
+useEffect(() => {
+  if (!isMeasurementReady) {
+    setAutoFitMeasureFn(null);
+    return;
+  }
+
+  const measureFn = () => {
+    return previewRef.current!.getPageCount() * PAGE_DIMENSIONS.HEIGHT;
+  };
+  setAutoFitMeasureFn(measureFn);
+}, [isMeasurementReady, setAutoFitMeasureFn]);
+```
+
+**Step 3:** Pass callback to preview:
+
+```tsx
+<PaginatedResumePreview
+  ref={previewRef}
+  blocks={blocks}
+  style={style}
+  onReady={handleMeasurementsReady}  // Add this
+  // ...other props
+/>
+```
+
+**Step 4:** In `useAutoFitBlocks.ts`, handle null gracefully (already does):
+
+```typescript
+// Line 544 - existing code handles this correctly
 if (measureFn) {
-  // Has measureFn means measurements are ready
   runBinarySearchAutoFit(measureFn, targetHeight, style);
 } else {
-  // No measureFn - either not provided or not ready yet
-  // Set status to "fitting" to show user we're waiting
-  setStatus({ state: "fitting" });
+  // Falls back to estimation-based algorithm
+  runLinearAutoFit(targetHeight, style);
 }
 ```
+
+### Key Benefits
+
+1. **No polling** - Uses React's effect system naturally
+2. **Clean separation** - EditorLayout controls when measurement is available
+3. **Testable** - Can mock callback timing in tests
+4. **No magic values** - No `Infinity` or other sentinel values
 
 ## Verification
 
