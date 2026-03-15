@@ -27,6 +27,13 @@
 export { ResumePreview, ResumePreviewStandalone } from "./ResumePreview";
 export type { ResumePreviewHandle } from "./ResumePreview";
 
+// Paginated preview (renders multiple distinct page containers)
+export { PaginatedResumePreview } from "./PaginatedResumePreview";
+export type {
+  PaginatedResumePreviewHandle,
+  PaginatedResumePreviewProps,
+} from "./PaginatedResumePreview";
+
 // Page break rulers and overflow detection
 export { PageBreakRuler } from "./PageBreakRuler";
 export { OverflowWarning } from "./OverflowWarning";
