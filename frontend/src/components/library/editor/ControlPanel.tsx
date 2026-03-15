@@ -37,6 +37,8 @@ export function ControlPanel({ jobId, jobListingId }: ControlPanelProps) {
           onClick={() => setActiveTab("ai")}
           icon={<MessageSquare className="w-4 h-4" />}
           label="AI"
+          disabled={true}
+          disabledReason="Coming soon"
         />
         <TabButton
           active={activeTab === "ats"}
@@ -44,6 +46,7 @@ export function ControlPanel({ jobId, jobListingId }: ControlPanelProps) {
           icon={<Target className="w-4 h-4" />}
           label="ATS"
           disabled={!hasJobContext}
+          disabledReason="Select a job to enable ATS evaluation"
         />
         <TabButton
           active={activeTab === "formatting"}
@@ -81,12 +84,14 @@ function TabButton({
   icon,
   label,
   disabled = false,
+  disabledReason,
 }: {
   active: boolean;
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
   disabled?: boolean;
+  disabledReason?: string;
 }) {
   return (
     <button
@@ -99,7 +104,7 @@ function TabButton({
             ? "border-transparent text-muted-foreground/50 cursor-not-allowed"
             : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
       }`}
-      title={disabled ? "Select a job to enable ATS evaluation" : undefined}
+      title={disabled ? disabledReason : undefined}
     >
       {icon}
       <span className="hidden sm:inline">{label}</span>
