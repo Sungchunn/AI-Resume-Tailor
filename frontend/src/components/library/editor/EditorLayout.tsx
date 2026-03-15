@@ -216,9 +216,9 @@ export function EditorLayout({
         <Group orientation="horizontal" className="h-full">
           {/* Left Panel: Preview */}
           <Panel defaultSize={isPreviewFullscreen ? "100%" : "55%"} minSize="25%">
-            <div className="h-full overflow-auto bg-muted p-4">
+            <div className="h-full overflow-auto bg-muted p-4 flex flex-col items-center">
               {isPreviewFullscreen && (
-                <div className="mb-4 flex justify-end">
+                <div className="mb-4 w-full flex justify-end">
                   <button
                     onClick={() => setIsPreviewFullscreen(false)}
                     className="px-3 py-1.5 text-sm bg-card border border-border rounded-md shadow-sm hover:bg-accent transition-colors"
