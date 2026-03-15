@@ -219,7 +219,7 @@ export function EditorLayout({
       <div className="flex-1 overflow-hidden">
         <Group orientation="horizontal" className="h-full">
           {/* Left Panel - Style/Sections */}
-          <Panel defaultSize={20} minSize={15} maxSize={30}>
+          <Panel defaultSize={13} minSize={10} maxSize={25}>
             <div className="h-full flex flex-col bg-muted border-r border-border">
               {/* Tab Switcher */}
               <div className="flex border-b border-border">
@@ -267,7 +267,7 @@ export function EditorLayout({
           <Separator className="w-1 bg-muted hover:bg-primary/30 transition-colors cursor-col-resize" />
 
           {/* Center Panel - Content Editor */}
-          <Panel defaultSize={55} minSize={40}>
+          <Panel defaultSize={73} minSize={50}>
             <div className="h-full bg-card">
               <ContentEditor
                 content={content}
@@ -282,7 +282,7 @@ export function EditorLayout({
           <Separator className="w-1 bg-muted hover:bg-primary/30 transition-colors cursor-col-resize" />
 
           {/* Right Panel - Suggestions/ATS Keywords */}
-          <Panel defaultSize={25} minSize={20} maxSize={35}>
+          <Panel defaultSize={14} minSize={10} maxSize={25}>
             <div className="h-full flex flex-col bg-muted border-l border-border">
               {/* Tab Switcher */}
               <div className="shrink-0 flex border-b border-border">
