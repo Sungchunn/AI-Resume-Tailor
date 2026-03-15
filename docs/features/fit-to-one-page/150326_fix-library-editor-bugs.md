@@ -15,6 +15,7 @@ Two bugs in the fit-to-one-page feature in the **tailor editor** (`/tailor/edito
 **The previous fix modified the WRONG files!**
 
 The tailor editor uses:
+
 ```typescript
 import { BlockEditorProvider, EditorLayout } from "@/components/library/editor";
 ```
@@ -36,17 +37,20 @@ It does NOT use the workshop components (`WorkshopContext`, `workshop/ResumePrev
 ### Issue 1: Content doesn't render at minimum settings
 
 Looking at `useAutoFitBlocks.ts`:
+
 - Lines 593-605: When binary search completes, `result.style` IS applied via `setAdjustedStyle()` and `onStyleChange()`
 - When `result.fits === false`, status is set to `minimum_reached`
 - **The minimum style (level 100) SHOULD be applied**
 
 **Potential causes:**
+
 1. Timing bug documented in `150326_fit-to-one-page-not-loading-fix.md` - measurements may not be ready when algorithm runs
 2. The measurement function may return incorrect values initially
 
 ### Issue 2: Toggle OFF shows nothing
 
 The reducer (`blockEditorReducer.ts:173-177`) has a simple implementation:
+
 ```typescript
 case "SET_FIT_TO_ONE_PAGE":
   return {
@@ -56,6 +60,7 @@ case "SET_FIT_TO_ONE_PAGE":
 ```
 
 **Problem:** When toggling OFF:
+
 1. `fitToOnePage` changes to `false`
 2. But `state.style` is still the REDUCED style from auto-fit
 3. `useAutoFitBlocks` returns `style` prop as `adjustedStyle` when disabled (line 743)
@@ -72,6 +77,7 @@ case "SET_FIT_TO_ONE_PAGE":
 **File:** `frontend/src/lib/resume/types.ts`
 
 Add to `BlockEditorState` interface:
+
 ```typescript
 preAutoFitStyle: BlockEditorStyle | null;
 ```
@@ -79,6 +85,7 @@ preAutoFitStyle: BlockEditorStyle | null;
 **File:** `frontend/src/lib/resume/defaults.ts`
 
 Add to `createEmptyState()`:
+
 ```typescript
 preAutoFitStyle: null,
 ```
@@ -114,6 +121,7 @@ case "SET_FIT_TO_ONE_PAGE": {
 ```
 
 Also clear `preAutoFitStyle` in `RESET` case:
+
 ```typescript
 case "RESET":
   return {
@@ -133,6 +141,7 @@ The existing code at lines 593-621 should already apply minimum styles. However,
 3. `onStyleChange(result.style)` is being called
 
 If needed, add explicit logging:
+
 ```typescript
 if (!result.fits) {
   console.log('[Auto-fit] Minimum reached at level', result.level, 'with style:', result.style);
@@ -142,10 +151,12 @@ if (!result.fits) {
 ### Step 4: (Optional) Revert Workshop Changes
 
 The previous fix modified workshop files that may still be needed for `/tailor/verify/[id]`. Either:
+
 - **Keep them:** The changes are valid for the workshop system
 - **Revert them:** If they cause issues in the verify page
 
 Check git history:
+
 - `WorkshopContext.tsx` - Added `preAutoFitStyle` pattern (keep if workshop uses fit-to-page)
 - `workshop/ResumePreview/ResumePreview.tsx` - Simplified `adjustedStyles` (verify this doesn't break verify page)
 
