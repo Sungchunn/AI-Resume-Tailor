@@ -67,6 +67,7 @@ export interface WorkshopState {
   isLoading: boolean;
   error: string | null;
   fitToOnePage: boolean;
+  preAutoFitStyle: ResumeStyle | null;
 
   // ATS analysis (keyword-based)
   atsAnalysis: ATSKeywordDetailedResponse | null;
@@ -180,6 +181,7 @@ export const initialState: WorkshopState = {
   isLoading: true,
   error: null,
   fitToOnePage: false,
+  preAutoFitStyle: null,
   atsAnalysis: null,
   // ATS Progressive Analysis
   atsCompositeScore: null,
@@ -249,6 +251,8 @@ export function workshopReducer(
         suggestions: [],
         isLoading: false,
         hasChanges: false,
+        fitToOnePage: false,
+        preAutoFitStyle: null,
         matchScore: action.payload.match_score ?? 0,
         previousMatchScore: null,
         scoreLastUpdated: null,
@@ -315,6 +319,23 @@ export function workshopReducer(
       return { ...state, activeTab: action.payload };
 
     case "SET_FIT_TO_ONE_PAGE":
+      if (action.payload && !state.fitToOnePage) {
+        // Enabling: capture current style BEFORE any adjustments
+        return {
+          ...state,
+          fitToOnePage: true,
+          preAutoFitStyle: { ...state.styleSettings },
+        };
+      } else if (!action.payload && state.fitToOnePage) {
+        // Disabling: restore original style
+        return {
+          ...state,
+          fitToOnePage: false,
+          styleSettings: state.preAutoFitStyle ?? state.styleSettings,
+          preAutoFitStyle: null,
+          hasChanges: true,
+        };
+      }
       return { ...state, fitToOnePage: action.payload };
 
     case "SET_ATS_ANALYSIS":
@@ -342,6 +363,8 @@ export function workshopReducer(
         sectionOrder:
           state.tailoredResume?.section_order ?? DEFAULT_SECTION_ORDER,
         hasChanges: false,
+        fitToOnePage: false,
+        preAutoFitStyle: null,
       };
 
     case "SET_MATCH_SCORE":
