@@ -216,7 +216,7 @@ function PageNumberIndicator({ pageNumber }: { pageNumber: number }) {
   return (
     <div
       data-print-hidden="true"
-      className="absolute top-2 right-2 text-xs text-muted-foreground bg-background/80 px-1.5 py-0.5 rounded"
+      className="absolute top-2 right-2 text-xs text-zinc-100 bg-zinc-700 border border-zinc-600 px-2 py-1 rounded-md shadow-sm"
     >
       Page {pageNumber}
     </div>
