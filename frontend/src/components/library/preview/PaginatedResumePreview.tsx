@@ -54,6 +54,8 @@ export interface PaginatedResumePreviewHandle {
   getScale: () => number;
   /** Get total page count */
   getPageCount: () => number;
+  /** Check if measurements are ready and pagination is complete */
+  isReady: () => boolean;
 }
 
 export interface PaginatedResumePreviewProps extends ResumePreviewProps {
@@ -169,6 +171,7 @@ export const PaginatedResumePreview = forwardRef<
     },
     getScale: () => scale,
     getPageCount: () => totalPages,
+    isReady: () => isReady,
   }));
 
   // Movement constraint callbacks for PreviewPage

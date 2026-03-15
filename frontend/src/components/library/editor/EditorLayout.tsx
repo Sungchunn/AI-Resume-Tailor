@@ -78,16 +78,47 @@ export function EditorLayout({
   // Set up DOM measurement function for auto-fit
   // With paginated preview, total height = pageCount * PAGE_HEIGHT
   // See /docs/features/fit-to-one-page/130326_tradeoff-5-synchronous-measurement.md
+  //
+  // IMPORTANT: Only set measureFn when measurements are ready.
+  // Otherwise, the auto-fit algorithm gets incorrect page counts (0 → fallback 1)
+  // and concludes the content already fits, making no adjustments.
+  // See /docs/features/fit-to-one-page/150326_fit-to-one-page-timing-bug.md
   useEffect(() => {
-    const measureFn = () => {
-      const currentPageCount = previewRef.current?.getPageCount() ?? 1;
-      return currentPageCount * PAGE_DIMENSIONS.HEIGHT;
+    const checkReadyAndSetMeasure = () => {
+      if (previewRef.current?.isReady()) {
+        const measureFn = () => {
+          // Safety check: if measurements became invalid (e.g., during re-render),
+          // return Infinity to signal "not ready" to the auto-fit algorithm
+          if (!previewRef.current?.isReady()) {
+            return Infinity;
+          }
+          return previewRef.current.getPageCount() * PAGE_DIMENSIONS.HEIGHT;
+        };
+        setAutoFitMeasureFn(measureFn);
+        return true; // Ready, stop polling
+      } else {
+        // Not ready - clear function to prevent auto-fit from running with stale data
+        setAutoFitMeasureFn(null);
+        return false; // Keep polling
+      }
     };
 
-    setAutoFitMeasureFn(measureFn);
+    // Check immediately
+    const isReady = checkReadyAndSetMeasure();
 
-    // Cleanup: remove measurement function on unmount
+    // Poll until ready (100ms interval)
+    let interval: ReturnType<typeof setInterval> | null = null;
+    if (!isReady) {
+      interval = setInterval(() => {
+        if (checkReadyAndSetMeasure()) {
+          clearInterval(interval!);
+        }
+      }, 100);
+    }
+
+    // Cleanup: remove measurement function and stop polling on unmount
     return () => {
+      if (interval) clearInterval(interval);
       setAutoFitMeasureFn(null);
     };
   }, [setAutoFitMeasureFn]);
