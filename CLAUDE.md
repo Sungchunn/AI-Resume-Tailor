@@ -123,13 +123,19 @@ The resume editor is a complex, multi-phase feature area. To maintain organizati
 /docs/features/resume-editor/
 ├── 250226_resume-workshop/               # Original editor foundation
 ├── 060326_editor-panel-consolidation/    # Panel architecture refactor
+├── 070326_ats-panel-integration/         # ATS scoring as 4th editor tab
 ├── 070326_fit-to-page/                   # Backend page fitting
+├── 070326_inline-suggestions/            # AI suggestions in TipTap editor
 ├── 090326_dynamic-sections/              # Dynamic section support
+├── 090326_tailor-data-loss-fix/          # Editor save flow data handling
+├── 100326_phase-3-verify-sections/       # Section editing in ContentEditor
 ├── 110326_pagination-unification/        # Unified pagination logic
 ├── 110326_preview-edit-unification/      # Preview/edit sync
 ├── 110326_weasyprint-pdf-migration/      # PDF rendering migration
 ├── 130326_fit-to-one-page/               # Auto-fit feature
 ├── 130326_optimistic-concurrency-control/ # Conflict resolution
+├── 140326_client-side-pdf-export/        # Client-side PDF generation
+├── 150326_fit-to-one-page-bugfixes/      # Fit-to-one-page bug fixes
 └── 150326_paginated-preview/             # Multi-page preview
 ```
 
