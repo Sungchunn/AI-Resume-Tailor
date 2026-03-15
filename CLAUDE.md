@@ -101,16 +101,53 @@ Create a subdirectory when:
 │   ├── 030326_phase2-ats-structure-analysis.md
 │   └── ats-scoring-proposal.md
 │
-├── /resume-workshop/                         # Multi-doc feature
-│   ├── 250226_resume-workshop-master-plan.md     # Entry point
-│   ├── 250226_phase-a-pdf-preview.md
-│   ├── 250226_phase-b-workshop-layout.md
+├── /resume-editor/                           # Parent feature (see below)
+│   ├── 250226_resume-workshop/                   # Sub-feature with date prefix
+│   ├── 060326_editor-panel-consolidation/
 │   └── ...
 │
 └── 190226_n8n-linkedin-scraper-integration.md  # Single-doc (no subdir)
 ```
 
 **Single-document features** remain directly in `/docs/features/` with proper date prefix.
+
+#### Resume Editor Documentation
+
+**All resume editor features MUST be placed under `/docs/features/resume-editor/`.**
+
+The resume editor is a complex, multi-phase feature area. To maintain organization, all sub-features related to the editor page are consolidated under a single parent directory with date-prefixed subdirectories.
+
+**Directory naming format:** `DDMMYY_feature-name/`
+
+```text
+/docs/features/resume-editor/
+├── 250226_resume-workshop/               # Original editor foundation
+├── 060326_editor-panel-consolidation/    # Panel architecture refactor
+├── 070326_fit-to-page/                   # Backend page fitting
+├── 090326_dynamic-sections/              # Dynamic section support
+├── 110326_pagination-unification/        # Unified pagination logic
+├── 110326_preview-edit-unification/      # Preview/edit sync
+├── 110326_weasyprint-pdf-migration/      # PDF rendering migration
+├── 130326_fit-to-one-page/               # Auto-fit feature
+├── 130326_optimistic-concurrency-control/ # Conflict resolution
+└── 150326_paginated-preview/             # Multi-page preview
+```
+
+**Rules for resume-editor features:**
+
+1. **Always use date prefix on subdirectories** - Format: `DDMMYY_feature-name/`
+2. **Place ALL editor-related features here** - Any feature affecting the `/library/[id]/edit` page belongs under `resume-editor/`
+3. **Chronological ordering** - Date prefix enables natural sorting by implementation date
+4. **Each sub-feature follows standard conventions** - Must contain a `master-plan.md` entry point and phase docs as needed
+
+**When to add a feature under resume-editor:**
+
+- PDF preview/rendering changes
+- Editor panel UI/UX modifications
+- Style controls and formatting
+- Pagination and page fitting
+- Save/sync/conflict handling
+- Section editing functionality
 
 #### File Naming Convention
 
