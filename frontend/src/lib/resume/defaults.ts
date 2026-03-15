@@ -458,6 +458,7 @@ export function createEmptyState(): BlockEditorState {
     isLoading: false,
     error: null,
     fitToOnePage: true,
+    preAutoFitStyle: null,
   };
 }
 
@@ -475,6 +476,7 @@ export function createInitialState(): BlockEditorState {
     isLoading: false,
     error: null,
     fitToOnePage: true,
+    preAutoFitStyle: null,
   };
 }
 
