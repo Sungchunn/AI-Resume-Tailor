@@ -244,7 +244,7 @@ export function EditorLayout({
         <ExportDialog
           resumeTitle={title}
           onClose={() => setShowExportDialog(false)}
-          previewElement={previewRef.current?.getPageElements()?.[0]}
+          pageElements={previewRef.current?.getPageElements()}
         />
       )}
     </div>
