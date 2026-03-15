@@ -7,7 +7,7 @@
  * It measures rendered block heights to enable accurate page distribution.
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { AnyResumeBlock, BlockEditorStyle } from "@/lib/resume/types";
 import type { BlockMeasurement } from "./MeasurementContainer";
 
@@ -26,9 +26,6 @@ export interface UseMeasurementResult {
   onMeasurementsReady: (measurements: Map<string, BlockMeasurement>) => void;
 }
 
-/** Debounce delay for re-measurements (ms) */
-const DEBOUNCE_MS = 100;
-
 /**
  * Hook that manages block height measurements for pagination.
  *
@@ -38,9 +35,13 @@ const DEBOUNCE_MS = 100;
  *
  * Implementation details:
  * 1. Stores measurements in a Map<blockId, BlockMeasurement>
- * 2. Sets isReady: true when all measurements complete
- * 3. Re-measures when blocks or style change (debounced 100ms)
+ * 2. Sets isReady: true when measurements complete via onMeasurementsReady callback
+ * 3. MeasurementContainer re-measures via useLayoutEffect when blocks/style change
  * 4. Handles edge cases: empty blocks, hidden blocks
+ *
+ * Note: No manual reset of isReady is needed because MeasurementContainer's
+ * useLayoutEffect runs synchronously on block changes and immediately provides
+ * updated measurements via onMeasurementsReady.
  *
  * Usage:
  * ```tsx
@@ -60,21 +61,15 @@ const DEBOUNCE_MS = 100;
  */
 export function useBlockMeasurement(
   blocks: AnyResumeBlock[],
-  style: BlockEditorStyle
+  _style: BlockEditorStyle
 ): UseMeasurementResult {
   const [measurements, setMeasurements] = useState<Map<string, BlockMeasurement>>(
     new Map()
   );
   const [isReady, setIsReady] = useState(false);
 
-  // Debounce timer ref
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Track previous blocks/style to detect changes
-  const prevBlocksRef = useRef<AnyResumeBlock[]>(blocks);
-  const prevStyleRef = useRef<BlockEditorStyle>(style);
-
   // Callback to receive measurements from MeasurementContainer
+  // MeasurementContainer's useLayoutEffect calls this synchronously when blocks change
   const onMeasurementsReady = useCallback(
     (newMeasurements: Map<string, BlockMeasurement>) => {
       setMeasurements(newMeasurements);
@@ -82,32 +77,6 @@ export function useBlockMeasurement(
     },
     []
   );
-
-  // Reset ready state when blocks or style change (debounced)
-  useEffect(() => {
-    const blocksChanged = prevBlocksRef.current !== blocks;
-    const styleChanged = prevStyleRef.current !== style;
-
-    if (blocksChanged || styleChanged) {
-      // Clear any pending debounce timer
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-
-      // Debounce the reset to avoid excessive re-measurements
-      debounceTimerRef.current = setTimeout(() => {
-        setIsReady(false);
-        prevBlocksRef.current = blocks;
-        prevStyleRef.current = style;
-      }, DEBOUNCE_MS);
-    }
-
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, [blocks, style]);
 
   // Handle empty blocks array - immediately ready with empty map
   useEffect(() => {
