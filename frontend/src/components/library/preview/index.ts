@@ -34,8 +34,7 @@ export type {
   PaginatedResumePreviewProps,
 } from "./PaginatedResumePreview";
 
-// Page break rulers and overflow detection
-export { PageBreakRuler } from "./PageBreakRuler";
+// Overflow detection and warnings
 export { OverflowWarning } from "./OverflowWarning";
 export { MinimumReachedWarning } from "./MinimumReachedWarning";
 export { useOverflowDetection } from "./useOverflowDetection";
