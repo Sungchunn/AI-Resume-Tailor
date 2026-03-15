@@ -22,7 +22,7 @@ export function OverflowWarning({
   const pageText = estimatedPageCount === 2 ? "2 pages" : `${estimatedPageCount} pages`;
 
   return (
-    <div className="mb-3 flex items-start gap-3 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-amber-800">
+    <div className="mb-3 w-full flex items-start gap-3 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-amber-800">
       <AlertTriangle className="h-5 w-5 mt-0.5 text-amber-500 shrink-0" />
       <div className="flex-1 text-sm">
         <p className="font-medium">

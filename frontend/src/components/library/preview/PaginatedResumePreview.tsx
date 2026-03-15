@@ -195,7 +195,7 @@ export const PaginatedResumePreview = forwardRef<
   return (
     <div
       ref={containerRef}
-      className={`paginated-preview-container flex flex-col items-center ${className ?? ""}`}
+      className={`paginated-preview-container flex flex-col items-center w-full ${className ?? ""}`}
       style={{ minHeight: totalHeight }}
     >
       {/* Hidden measurement container */}

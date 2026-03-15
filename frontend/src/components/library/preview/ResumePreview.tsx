@@ -100,17 +100,16 @@ export const ResumePreview = forwardRef<ResumePreviewHandle, ResumePreviewProps>
       return () => resizeObserver.disconnect();
     }, [externalScale]);
 
-    // Calculate padding - add extra left padding for interactive controls
-    const leftPadding = interactive
-      ? `calc(${computedStyles.paddingLeft} + 32px)`
-      : computedStyles.paddingLeft;
+    // Use standard left padding - interactive controls are absolutely positioned
+    // and don't require extra padding space
+    const leftPadding = computedStyles.paddingLeft;
 
     // Empty state - no blocks at all
     if (blocks.length === 0) {
       return (
         <div
           ref={containerRef}
-          className={`resume-preview-container flex flex-col items-center ${className ?? ""}`}
+          className={`resume-preview-container flex flex-col items-center w-full ${className ?? ""}`}
         >
           <div
             ref={pageRef}
@@ -138,7 +137,7 @@ export const ResumePreview = forwardRef<ResumePreviewHandle, ResumePreviewProps>
       return (
         <div
           ref={containerRef}
-          className={`resume-preview-container flex flex-col items-center ${className ?? ""}`}
+          className={`resume-preview-container flex flex-col items-center w-full ${className ?? ""}`}
         >
           <div
             ref={pageRef}
@@ -164,7 +163,7 @@ export const ResumePreview = forwardRef<ResumePreviewHandle, ResumePreviewProps>
     return (
       <div
         ref={containerRef}
-        className={`resume-preview-container flex flex-col items-center ${className ?? ""}`}
+        className={`resume-preview-container flex flex-col items-center w-full ${className ?? ""}`}
       >
         <div
           ref={pageRef}

@@ -64,7 +64,7 @@ export function ResumePreview({
   return (
     <div
       ref={containerRef}
-      className={`resume-preview-container flex flex-col items-center ${className ?? ""}`}
+      className={`resume-preview-container flex flex-col items-center w-full ${className ?? ""}`}
     >
       <PreviewPage
         pageNumber={currentPage}

@@ -79,10 +79,9 @@ export const PreviewPage = forwardRef<HTMLDivElement, PreviewPageProps>(
     },
     ref
   ) {
-    // Calculate padding - add extra left padding for interactive controls
-    const leftPadding = interactive
-      ? `calc(${computedStyles.paddingLeft} + 32px)`
-      : computedStyles.paddingLeft;
+    // Use standard left padding - interactive controls are absolutely positioned
+    // and don't require extra padding space
+    const leftPadding = computedStyles.paddingLeft;
 
     // Page container styles
     const pageStyles = useMemo(
