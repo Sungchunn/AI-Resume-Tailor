@@ -57,7 +57,7 @@ export default function ProfilePage() {
       {/* Minimalist portfolio layout */}
       <div className="max-w-4xl mx-auto py-12 px-8">
         {/* Two-column header: Name/Title on left, About on right */}
-        <div className="grid grid-cols-[280px_1fr] gap-16 mb-16">
+        <div className="grid grid-cols-[180px_1fr] gap-16 mb-16">
           {/* Left: Identity */}
           <div>
             <h1 className="text-xl font-semibold text-foreground">
@@ -78,7 +78,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Experience Section */}
-        <div className="grid grid-cols-[280px_1fr] gap-16 mb-12">
+        <div className="grid grid-cols-[180px_1fr] gap-16 mb-12">
           <div>
             <h2 className="text-sm font-medium text-foreground">Experience</h2>
           </div>
@@ -191,7 +191,7 @@ function EditableHeadline({ value, placeholder, onSave, isSaving }: EditableHead
 function ProfileSkeleton() {
   return (
     <div className="max-w-4xl mx-auto py-12 px-8">
-      <div className="grid grid-cols-[280px_1fr] gap-16 mb-16">
+      <div className="grid grid-cols-[180px_1fr] gap-16 mb-16">
         <div>
           <div className="h-6 w-32 bg-muted rounded animate-pulse" />
           <div className="h-4 w-24 bg-muted rounded animate-pulse mt-2" />
@@ -201,7 +201,7 @@ function ProfileSkeleton() {
           <div className="h-4 w-3/4 bg-muted rounded animate-pulse mt-2" />
         </div>
       </div>
-      <div className="grid grid-cols-[280px_1fr] gap-16">
+      <div className="grid grid-cols-[180px_1fr] gap-16">
         <div>
           <div className="h-4 w-28 bg-muted rounded animate-pulse" />
         </div>
