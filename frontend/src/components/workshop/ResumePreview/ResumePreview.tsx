@@ -7,7 +7,7 @@ import { PreviewPage } from "./PreviewPage";
 import { PreviewSection } from "./PreviewSection";
 import { PreviewPagination } from "./PreviewPagination";
 import { usePageBreaks } from "./usePageBreaks";
-import { computePreviewStyles, calculateFitToPageStyles } from "./previewStyles";
+import { computePreviewStyles } from "./previewStyles";
 
 // Default to LETTER dimensions
 const PAGE = PAGE_DIMENSIONS.LETTER;
@@ -27,12 +27,11 @@ export function ResumePreview({
   const [currentPage, setCurrentPage] = useState(1);
 
   // Calculate pagination
-  const { pages, totalPages, exceedsOnePage, currentContentHeight } =
-    usePageBreaks({
-      content,
-      style,
-      sectionOrder,
-    });
+  const { pages, totalPages } = usePageBreaks({
+    content,
+    style,
+    sectionOrder,
+  });
 
   // Compute CSS styles from ResumeStyle
   const computedStyles = useMemo(() => computePreviewStyles(style), [style]);
@@ -55,11 +54,9 @@ export function ResumePreview({
     return () => resizeObserver.disconnect();
   }, []);
 
-  // Fit-to-one-page logic: reduce font sizes proportionally
-  const adjustedStyles =
-    fitToOnePage && exceedsOnePage
-      ? calculateFitToPageStyles(style, currentContentHeight)
-      : computedStyles;
+  // When fitToOnePage is enabled, useAutoFit has already adjusted the style.
+  // We only need to compute CSS values, NOT reduce further.
+  const adjustedStyles = computedStyles;
 
   // Get sections for current page
   const currentPageSections = pages[currentPage - 1]?.sections ?? [];
