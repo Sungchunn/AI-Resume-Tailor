@@ -545,8 +545,12 @@ export function useAutoFitBlocks({
       // DOM-based binary search algorithm (O(log n))
       runBinarySearchAutoFit(measureFn, targetHeight, style);
     } else {
-      // Estimation-based linear algorithm (O(n)) - legacy fallback
-      runLinearAutoFit(targetHeight, style);
+      // No measureFn - measurements not ready yet
+      // Set status to "fitting" to show user we're waiting
+      // Don't run estimation algorithm, as DOM-based measurement will be used once ready
+      // See /docs/features/fit-to-one-page/150326_fit-to-one-page-timing-bug.md
+      setStatus({ state: "fitting" });
+      isProcessingRef.current = false; // Allow re-run when measureFn becomes available
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, blocks, style, getTargetHeight, measureFn]);
@@ -567,6 +571,16 @@ export function useAutoFitBlocks({
           // Wait for double RAF to ensure DOM has settled
           return measureWithRAF(measure);
         };
+
+        // Pre-check: verify measurements are ready before running binary search
+        // If measureFn returns Infinity, measurements aren't ready yet
+        const preCheck = await measureWithRAF(measure);
+        if (preCheck === Infinity) {
+          // Measurements not ready - keep "fitting" status and wait for re-run
+          // The effect will re-run when measureFn becomes valid
+          isProcessingRef.current = false;
+          return;
+        }
 
         const result = await findOptimalCompactness(
           measureHeight,
