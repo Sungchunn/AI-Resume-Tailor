@@ -62,10 +62,10 @@ export function Sidebar() {
   return (
     <>
       {/* Spacer to push content - fixed sidebar width */}
-      <div className="shrink-0 w-60" />
+      <div className="shrink-0 w-72" />
 
       {/* Fixed sidebar - L-frame style */}
-      <aside className="fixed top-0 left-0 bottom-0 w-60 bg-sidebar flex flex-col z-40">
+      <aside className="fixed top-0 left-0 bottom-0 w-72 bg-sidebar flex flex-col z-40">
         {/* Logo section */}
         <div className="pt-8 pb-4 px-4">
           <Link href="/jobs" className="flex items-center gap-3">
@@ -90,7 +90,7 @@ export function Sidebar() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-sm font-medium transition-all duration-150 ${
+                  className={`flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-base font-medium transition-all duration-150 ${
                     isActive
                       ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
                       : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -113,7 +113,7 @@ export function Sidebar() {
           <div className="py-2 px-3 space-y-0.5">
             <Link
               href="/admin/ai-usage"
-              className={`flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-sm font-medium transition-all duration-150 ${
+              className={`flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-base font-medium transition-all duration-150 ${
                 pathname === "/admin/ai-usage"
                   ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
                   : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -140,7 +140,7 @@ export function Sidebar() {
             </Link>
             <Link
               href="/admin/scraper"
-              className={`flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-sm font-medium transition-all duration-150 ${
+              className={`flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-base font-medium transition-all duration-150 ${
                 pathname === "/admin/scraper"
                   ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
                   : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -163,7 +163,7 @@ export function Sidebar() {
         <div className="py-2 px-3">
           <button
             onClick={toggleTheme}
-            className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-150"
+            className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-base font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-150"
           >
             {resolvedTheme === "dark" ? (
               <svg
@@ -205,7 +205,7 @@ export function Sidebar() {
           <div className="relative">
             <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-150"
+              className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-base font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-150"
             >
               <div className="h-7 w-7 shrink-0 rounded-full bg-linear-to-b from-muted to-muted/80 flex items-center justify-center">
                 <span className="text-muted-foreground font-medium text-xs">
