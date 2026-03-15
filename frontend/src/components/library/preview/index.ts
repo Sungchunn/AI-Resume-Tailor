@@ -51,6 +51,10 @@ export {
 } from "./useBlockPagination";
 export type { PageAssignment, PaginationResult } from "./useBlockPagination";
 
+// Page container component (for paginated preview)
+export { PreviewPage } from "./PreviewPage";
+export type { PreviewPageProps } from "./PreviewPage";
+
 // Block renderer
 export { BlockRenderer, createBlockRenderer } from "./BlockRenderer";
 export { InteractiveBlockRenderer } from "./InteractiveBlockRenderer";
