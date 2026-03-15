@@ -109,7 +109,7 @@ export function WorkshopHeader({ compact = false }: WorkshopHeaderProps) {
           resumeTitle={title}
           onClose={() => setShowExportDialog(false)}
           // PDF disabled in workshop - use library editor for exact preview export
-          previewElement={null}
+          pageElements={[]}
         />
       )}
     </header>

@@ -86,7 +86,10 @@ export function InteractiveBlockRenderer({
     >
       {/* Move controls - appear on left edge when hovered */}
       {showHoverControls && (
-        <div className="absolute -left-8 top-1/2 -translate-y-1/2 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+        <div
+          data-print-hidden="true"
+          className="absolute -left-8 top-1/2 -translate-y-1/2 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+        >
           <button
             onClick={handleMoveUp}
             disabled={!canMoveUp}
