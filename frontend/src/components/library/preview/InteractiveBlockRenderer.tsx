@@ -93,18 +93,18 @@ export function InteractiveBlockRenderer({
           <button
             onClick={handleMoveUp}
             disabled={!canMoveUp}
-            className="p-1 rounded bg-card border border-border shadow-sm hover:bg-accent hover:border-primary/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-card"
+            className="p-1.5 rounded-md bg-zinc-700 border border-zinc-600 shadow-md hover:bg-zinc-600 hover:border-zinc-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-zinc-700"
             title="Move section up"
           >
-            <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" />
+            <ChevronUp className="w-4 h-4 text-zinc-100" />
           </button>
           <button
             onClick={handleMoveDown}
             disabled={!canMoveDown}
-            className="p-1 rounded bg-card border border-border shadow-sm hover:bg-accent hover:border-primary/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-card"
+            className="p-1.5 rounded-md bg-zinc-700 border border-zinc-600 shadow-md hover:bg-zinc-600 hover:border-zinc-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-zinc-700"
             title="Move section down"
           >
-            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+            <ChevronDown className="w-4 h-4 text-zinc-100" />
           </button>
         </div>
       )}
