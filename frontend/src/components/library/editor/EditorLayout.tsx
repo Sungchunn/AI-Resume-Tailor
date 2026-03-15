@@ -6,13 +6,12 @@ import { useBlockEditor } from "./BlockEditorContext";
 import { EditorHeader } from "./EditorHeader";
 import { ControlPanel } from "./ControlPanel";
 import {
-  ResumePreview,
-  PageBreakRuler,
+  PaginatedResumePreview,
   OverflowWarning,
   MinimumReachedWarning,
-  useOverflowDetection,
+  PAGE_DIMENSIONS,
 } from "../preview";
-import type { ResumePreviewHandle } from "../preview/ResumePreview";
+import type { PaginatedResumePreviewHandle } from "../preview/PaginatedResumePreview";
 import ExportDialog from "@/components/export/ExportDialog";
 
 interface EditorLayoutProps {
@@ -69,22 +68,20 @@ export function EditorLayout({
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
 
-  // Preview ref for overflow detection
-  const previewRef = useRef<ResumePreviewHandle>(null);
-  const pageContainerRef = useRef<HTMLDivElement | null>(null);
+  // Preview ref for paginated preview
+  const previewRef = useRef<PaginatedResumePreviewHandle>(null);
 
-  // Update page container ref when preview ref changes
-  useEffect(() => {
-    pageContainerRef.current = previewRef.current?.getPageElement() ?? null;
-  });
+  // Page count from paginated preview (used for overflow warning)
+  const pageCount = previewRef.current?.getPageCount() ?? 1;
+  const overflows = pageCount > 1;
 
   // Set up DOM measurement function for auto-fit
-  // This enables accurate binary search (O(log n)) instead of estimation (O(n))
+  // With paginated preview, total height = pageCount * PAGE_HEIGHT
   // See /docs/features/fit-to-one-page/130326_tradeoff-5-synchronous-measurement.md
   useEffect(() => {
     const measureFn = () => {
-      const pageElement = previewRef.current?.getPageElement();
-      return pageElement?.scrollHeight ?? 0;
+      const currentPageCount = previewRef.current?.getPageCount() ?? 1;
+      return currentPageCount * PAGE_DIMENSIONS.HEIGHT;
     };
 
     setAutoFitMeasureFn(measureFn);
@@ -94,15 +91,6 @@ export function EditorLayout({
       setAutoFitMeasureFn(null);
     };
   }, [setAutoFitMeasureFn]);
-
-  // Overflow detection for multi-page warning
-  const { overflows, estimatedPageCount, contentHeight } = useOverflowDetection({
-    containerRef: pageContainerRef,
-    debounceMs: 500,
-  });
-
-  // Get current scale from preview
-  const currentScale = previewRef.current?.getScale() ?? 1;
 
   // Handle block click in preview
   const handlePreviewBlockClick = useCallback(
@@ -216,29 +204,24 @@ export function EditorLayout({
 
               {/* Overflow warning - only when auto-fit is disabled */}
               {!fitToOnePage && overflows && (
-                <OverflowWarning estimatedPageCount={estimatedPageCount} />
+                <OverflowWarning estimatedPageCount={pageCount} />
               )}
 
-              {/* Preview with page break rulers */}
-              <div className="relative flex flex-col items-center">
-                <ResumePreview
-                  ref={previewRef}
-                  blocks={blocks}
-                  style={style}
-                  activeBlockId={activeBlockId}
-                  hoveredBlockId={hoveredBlockId}
-                  onBlockClick={handlePreviewBlockClick}
-                  onBlockHover={handlePreviewBlockHover}
-                  onMoveBlockUp={handleMoveBlockUp}
-                  onMoveBlockDown={handleMoveBlockDown}
-                  interactive={true}
-                  showPageBorder={true}
-                />
-                <PageBreakRuler
-                  contentHeight={contentHeight}
-                  scale={currentScale}
-                />
-              </div>
+              {/* Paginated preview */}
+              <PaginatedResumePreview
+                ref={previewRef}
+                blocks={blocks}
+                style={style}
+                activeBlockId={activeBlockId}
+                hoveredBlockId={hoveredBlockId}
+                onBlockClick={handlePreviewBlockClick}
+                onBlockHover={handlePreviewBlockHover}
+                onMoveBlockUp={handleMoveBlockUp}
+                onMoveBlockDown={handleMoveBlockDown}
+                interactive={true}
+                showPageBorder={true}
+                pageGap={24}
+              />
             </div>
           </Panel>
 
@@ -261,7 +244,7 @@ export function EditorLayout({
         <ExportDialog
           resumeTitle={title}
           onClose={() => setShowExportDialog(false)}
-          previewElement={previewRef.current?.getPageElement()}
+          previewElement={previewRef.current?.getPageElements()?.[0]}
         />
       )}
     </div>
