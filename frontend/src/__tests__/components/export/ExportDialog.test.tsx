@@ -5,32 +5,33 @@
  * - Rendering and initial state
  * - PDF export triggering
  * - Close/cancel functionality
- * - Disabled state when preview is unavailable
+ * - Disabled state when page elements are unavailable
+ * - Export progress UI
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ExportDialog from "@/components/export/ExportDialog";
 
 // Mock the pdf-export module
-const mockExportToPdf = vi.fn().mockResolvedValue(undefined);
+const mockExportToPdfFromPages = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/pdf-export", () => ({
-  exportToPdf: (...args: unknown[]) => mockExportToPdf(...args),
+  exportToPdfFromPages: (...args: unknown[]) => mockExportToPdfFromPages(...args),
 }));
 
 describe("ExportDialog", () => {
   const mockOnClose = vi.fn();
-  let mockPreviewElement: HTMLDivElement;
+  let mockPageElements: HTMLDivElement[];
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPreviewElement = document.createElement("div");
+    mockPageElements = [document.createElement("div")];
   });
 
   const getDefaultProps = () => ({
     resumeTitle: "Test Resume",
     onClose: mockOnClose,
-    previewElement: mockPreviewElement,
+    pageElements: mockPageElements,
   });
 
   afterEach(() => {
@@ -66,16 +67,21 @@ describe("ExportDialog", () => {
   });
 
   describe("PDF Export", () => {
-    it("calls exportToPdf when export clicked", async () => {
+    it("calls exportToPdfFromPages when export clicked", async () => {
       render(<ExportDialog {...getDefaultProps()} />);
 
       const exportButton = screen.getByText("Download PDF");
       fireEvent.click(exportButton);
 
-      await vi.waitFor(() => {
-        expect(mockExportToPdf).toHaveBeenCalledWith(
-          mockPreviewElement,
-          "Test Resume"
+      await waitFor(() => {
+        expect(mockExportToPdfFromPages).toHaveBeenCalledWith(
+          mockPageElements,
+          "Test Resume",
+          expect.objectContaining({
+            pixelRatio: 2,
+            format: "letter",
+            onProgress: expect.any(Function),
+          })
         );
       });
     });
@@ -91,11 +97,12 @@ describe("ExportDialog", () => {
       const exportButton = screen.getByText("Download PDF");
       fireEvent.click(exportButton);
 
-      await vi.waitFor(() => {
+      await waitFor(() => {
         // Special characters should be replaced with underscores
-        expect(mockExportToPdf).toHaveBeenCalledWith(
-          mockPreviewElement,
-          "Resume _Test_ _ _Special_"
+        expect(mockExportToPdfFromPages).toHaveBeenCalledWith(
+          mockPageElements,
+          "Resume _Test_ _ _Special_",
+          expect.any(Object)
         );
       });
     });
@@ -106,36 +113,85 @@ describe("ExportDialog", () => {
       const exportButton = screen.getByText("Download PDF");
       fireEvent.click(exportButton);
 
-      await vi.waitFor(() => {
+      await waitFor(() => {
         expect(mockOnClose).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("exports multiple pages correctly", async () => {
+      const multiPageElements = [
+        document.createElement("div"),
+        document.createElement("div"),
+        document.createElement("div"),
+      ];
+
+      render(
+        <ExportDialog
+          {...getDefaultProps()}
+          pageElements={multiPageElements}
+        />
+      );
+
+      const exportButton = screen.getByText("Download PDF");
+      fireEvent.click(exportButton);
+
+      await waitFor(() => {
+        expect(mockExportToPdfFromPages).toHaveBeenCalledWith(
+          multiPageElements,
+          "Test Resume",
+          expect.any(Object)
+        );
       });
     });
   });
 
   describe("Disabled State", () => {
-    it("disables export button when previewElement is null", () => {
-      render(<ExportDialog {...getDefaultProps()} previewElement={null} />);
+    it("disables export button when pageElements is empty array", () => {
+      render(<ExportDialog {...getDefaultProps()} pageElements={[]} />);
 
       const exportButton = screen.getByText("Download PDF").closest("button");
       expect(exportButton).toBeDisabled();
     });
 
-    it("disables export button when previewElement is undefined", () => {
-      render(<ExportDialog {...getDefaultProps()} previewElement={undefined} />);
+    it("disables export button when pageElements is undefined", () => {
+      render(<ExportDialog {...getDefaultProps()} pageElements={undefined} />);
 
       const exportButton = screen.getByText("Download PDF").closest("button");
       expect(exportButton).toBeDisabled();
     });
 
-    it("shows alert when trying to export without preview", () => {
+    it("shows alert when trying to export without pages", () => {
       const alertMock = vi.spyOn(window, "alert").mockImplementation(() => {});
 
-      render(<ExportDialog {...getDefaultProps()} previewElement={null} />);
+      render(<ExportDialog {...getDefaultProps()} pageElements={[]} />);
 
-      // The button is disabled, but let's verify it won't call printElement
-      expect(mockExportToPdf).not.toHaveBeenCalled();
+      // The button is disabled, but let's verify it won't call export
+      expect(mockExportToPdfFromPages).not.toHaveBeenCalled();
 
       alertMock.mockRestore();
+    });
+  });
+
+  describe("Export Progress", () => {
+    it("shows progress during export", async () => {
+      // Make export take some time and call onProgress
+      mockExportToPdfFromPages.mockImplementation(
+        async (_pages, _filename, options) => {
+          options?.onProgress?.(1, 2);
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          options?.onProgress?.(2, 2);
+        }
+      );
+
+      render(<ExportDialog {...getDefaultProps()} />);
+
+      const exportButton = screen.getByText("Download PDF");
+      fireEvent.click(exportButton);
+
+      // Should show "Exporting..." text
+      await waitFor(() => {
+        expect(screen.getByText("Exporting...")).toBeInTheDocument();
+      });
     });
   });
 
@@ -186,11 +242,11 @@ describe("ExportDialog", () => {
 
 describe("ExportDialog with different props", () => {
   const mockOnClose = vi.fn();
-  let mockPreviewElement: HTMLDivElement;
+  let mockPageElements: HTMLDivElement[];
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPreviewElement = document.createElement("div");
+    mockPageElements = [document.createElement("div")];
   });
 
   it("handles long resume titles", () => {
@@ -201,7 +257,7 @@ describe("ExportDialog with different props", () => {
       <ExportDialog
         resumeTitle={longTitle}
         onClose={mockOnClose}
-        previewElement={mockPreviewElement}
+        pageElements={mockPageElements}
       />
     );
 
@@ -216,7 +272,7 @@ describe("ExportDialog with different props", () => {
       <ExportDialog
         resumeTitle={specialTitle}
         onClose={mockOnClose}
-        previewElement={mockPreviewElement}
+        pageElements={mockPageElements}
       />
     );
 
