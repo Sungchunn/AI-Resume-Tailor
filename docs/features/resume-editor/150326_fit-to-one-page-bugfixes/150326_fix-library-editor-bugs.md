@@ -1,7 +1,7 @@
 # Fix Fit-to-One-Page Bugs - Library Editor
 
 **Created:** 2026-03-15
-**Status:** Plan
+**Status:** Implemented
 
 ## Summary
 

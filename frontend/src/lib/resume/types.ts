@@ -286,6 +286,8 @@ export interface BlockEditorState {
   isLoading: boolean;
   error: string | null;
   fitToOnePage: boolean;
+  /** Captured style before auto-fit adjustments, restored when toggling off */
+  preAutoFitStyle: BlockEditorStyle | null;
 }
 
 // Block editor actions

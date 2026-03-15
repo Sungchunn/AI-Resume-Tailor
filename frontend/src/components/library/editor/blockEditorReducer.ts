@@ -170,11 +170,27 @@ export function blockEditorReducer(
         isDirty: true,
       };
 
-    case "SET_FIT_TO_ONE_PAGE":
-      return {
-        ...state,
-        fitToOnePage: action.payload,
-      };
+    case "SET_FIT_TO_ONE_PAGE": {
+      const enabled = action.payload;
+      if (enabled && !state.fitToOnePage) {
+        // Enabling: capture current style BEFORE any adjustments
+        return {
+          ...state,
+          fitToOnePage: true,
+          preAutoFitStyle: { ...state.style },
+        };
+      } else if (!enabled && state.fitToOnePage) {
+        // Disabling: restore original style
+        return {
+          ...state,
+          fitToOnePage: false,
+          style: state.preAutoFitStyle ?? state.style,
+          preAutoFitStyle: null,
+          isDirty: true,
+        };
+      }
+      return { ...state, fitToOnePage: enabled };
+    }
 
     case "SET_DIRTY":
       return {
@@ -196,7 +212,10 @@ export function blockEditorReducer(
       };
 
     case "RESET":
-      return action.payload;
+      return {
+        ...action.payload,
+        preAutoFitStyle: null,
+      };
 
     default:
       return state;
