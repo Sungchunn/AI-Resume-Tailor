@@ -1,39 +1,56 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, X } from "lucide-react";
-import { exportToPdf } from "@/lib/pdf-export";
+import { FileText, Loader2, X } from "lucide-react";
+import { exportToPdfFromPages } from "@/lib/pdf-export";
 
 interface ExportDialogProps {
   resumeTitle: string;
   onClose: () => void;
-  /** Reference to the preview element for PDF export */
-  previewElement?: HTMLElement | null;
+  /** Array of page elements for PDF export */
+  pageElements?: HTMLElement[];
+}
+
+interface ExportProgress {
+  current: number;
+  total: number;
 }
 
 export default function ExportDialog({
   resumeTitle,
   onClose,
-  previewElement,
+  pageElements,
 }: ExportDialogProps) {
   const [isPdfExporting, setIsPdfExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<ExportProgress | null>(
+    null
+  );
 
   const handlePdfExport = async () => {
-    if (!previewElement) {
-      alert("Preview not available");
+    if (!pageElements || pageElements.length === 0) {
+      alert("No pages available to export");
       return;
     }
 
     setIsPdfExporting(true);
+    setExportProgress({ current: 0, total: pageElements.length });
+
     try {
       const safeTitle = resumeTitle.replace(/[^a-zA-Z0-9-_ ]/g, "_");
-      await exportToPdf(previewElement, safeTitle);
+      await exportToPdfFromPages(pageElements, safeTitle, {
+        pixelRatio: 2,
+        format: "letter",
+        onProgress: (current, total) => {
+          setExportProgress({ current, total });
+        },
+      });
       onClose();
     } catch (error) {
       console.error("PDF export failed:", error);
       alert("Failed to export PDF. Please try again.");
     } finally {
       setIsPdfExporting(false);
+      setExportProgress(null);
     }
   };
 
@@ -68,7 +85,7 @@ export default function ExportDialog({
               <button
                 type="button"
                 onClick={handlePdfExport}
-                disabled={isPdfExporting || !previewElement}
+                disabled={isPdfExporting || !pageElements?.length}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-border hover:border-primary hover:bg-primary/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FileText className="h-5 w-5 text-red-500" />
@@ -81,6 +98,17 @@ export default function ExportDialog({
                   </div>
                 </div>
               </button>
+
+              {/* Export Progress */}
+              {isPdfExporting && exportProgress && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>
+                    Exporting page {exportProgress.current} of{" "}
+                    {exportProgress.total}...
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
