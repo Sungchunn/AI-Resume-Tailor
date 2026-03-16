@@ -274,6 +274,15 @@ export function BlockEditorProvider({
     dispatch(blockEditorActions.moveBlockDown(id));
   }, []);
 
+  // Granular element interactions (sub-block level)
+  const setActiveElement = useCallback((elementId: string | null) => {
+    dispatch(blockEditorActions.setActiveElement(elementId));
+  }, []);
+
+  const setHoveredElement = useCallback((elementId: string | null) => {
+    dispatch(blockEditorActions.setHoveredElement(elementId));
+  }, []);
+
   // Style operations
   const updateStyle = useCallback((style: Partial<BlockEditorStyle>) => {
     dispatch(blockEditorActions.setStyle(style));
@@ -469,6 +478,8 @@ export function BlockEditorProvider({
       setHoveredBlock,
       moveBlockUp,
       moveBlockDown,
+      setActiveElement,
+      setHoveredElement,
       updateStyle,
       setFitToOnePage,
       setMinFontSize,
@@ -500,6 +511,8 @@ export function BlockEditorProvider({
       setHoveredBlock,
       moveBlockUp,
       moveBlockDown,
+      setActiveElement,
+      setHoveredElement,
       updateStyle,
       setFitToOnePage,
       setMinFontSize,

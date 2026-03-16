@@ -20,6 +20,7 @@ import {
   updateBlockContent,
 } from "@/lib/resume/transforms";
 import { createDefaultBlock } from "@/lib/resume/defaults";
+import { getBlockId } from "@/lib/resume/elementPath";
 
 /**
  * Block editor reducer
@@ -100,6 +101,28 @@ export function blockEditorReducer(
         ...state,
         hoveredBlockId: action.payload,
       };
+
+    case "SET_ACTIVE_ELEMENT": {
+      const elementId = action.payload;
+      // Keep block-level state in sync with element-level state
+      const blockId = elementId ? getBlockId(elementId) : null;
+      return {
+        ...state,
+        activeElementId: elementId,
+        activeBlockId: blockId,
+      };
+    }
+
+    case "SET_HOVERED_ELEMENT": {
+      const elementId = action.payload;
+      // Keep block-level state in sync with element-level state
+      const blockId = elementId ? getBlockId(elementId) : null;
+      return {
+        ...state,
+        hoveredElementId: elementId,
+        hoveredBlockId: blockId,
+      };
+    }
 
     case "MOVE_BLOCK_UP": {
       const blockId = action.payload;
@@ -268,6 +291,16 @@ export const blockEditorActions = {
 
   setHoveredBlock: (id: string | null): BlockEditorAction => ({
     type: "SET_HOVERED_BLOCK",
+    payload: id,
+  }),
+
+  setActiveElement: (id: string | null): BlockEditorAction => ({
+    type: "SET_ACTIVE_ELEMENT",
+    payload: id,
+  }),
+
+  setHoveredElement: (id: string | null): BlockEditorAction => ({
+    type: "SET_HOVERED_ELEMENT",
     payload: id,
   }),
 

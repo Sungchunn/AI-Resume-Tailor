@@ -281,6 +281,10 @@ export interface BlockEditorState {
   blocks: AnyResumeBlock[];
   activeBlockId: string | null;
   hoveredBlockId: string | null;
+  /** Granular element ID for sub-block selection (format: "blockId:entryId:field:index") */
+  activeElementId: string | null;
+  /** Granular element ID for sub-block hover (format: "blockId:entryId:field:index") */
+  hoveredElementId: string | null;
   style: BlockEditorStyle;
   isDirty: boolean;
   isLoading: boolean;
@@ -301,6 +305,8 @@ export type BlockEditorAction =
   | { type: "UPDATE_BLOCK"; payload: { id: string; content: BlockContent } }
   | { type: "SET_ACTIVE_BLOCK"; payload: string | null }
   | { type: "SET_HOVERED_BLOCK"; payload: string | null }
+  | { type: "SET_ACTIVE_ELEMENT"; payload: string | null }
+  | { type: "SET_HOVERED_ELEMENT"; payload: string | null }
   | { type: "MOVE_BLOCK_UP"; payload: string }
   | { type: "MOVE_BLOCK_DOWN"; payload: string }
   | { type: "TOGGLE_COLLAPSE"; payload: { id: string } }

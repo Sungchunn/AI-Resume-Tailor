@@ -36,6 +36,10 @@ export interface BlockEditorContextValue {
   moveBlockUp: (id: string) => void;
   moveBlockDown: (id: string) => void;
 
+  // Granular element interactions (sub-block level)
+  setActiveElement: (elementId: string | null) => void;
+  setHoveredElement: (elementId: string | null) => void;
+
   // Style operations
   updateStyle: (style: Partial<BlockEditorStyle>) => void;
 
