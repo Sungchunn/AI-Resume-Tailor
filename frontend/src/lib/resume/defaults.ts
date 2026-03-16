@@ -488,9 +488,77 @@ export const FONT_FAMILIES = [
   { value: "Roboto", label: "Roboto" },
   { value: "Open Sans", label: "Open Sans" },
   { value: "Lato", label: "Lato" },
+  { value: "Arial", label: "Arial" },
   { value: "Georgia", label: "Georgia" },
   { value: "Times New Roman", label: "Times New Roman" },
 ] as const;
+
+/**
+ * Font-specific compression profiles for fit-to-page algorithm.
+ *
+ * Different fonts have different metrics (x-height, character widths, rendering density),
+ * so they require different minimum sizes to maintain readability:
+ * - Serif fonts (Times New Roman, Georgia) need slightly larger minimums
+ * - Sans-serif fonts (Inter, Roboto, Arial) can go smaller
+ * - Wide fonts (Open Sans, Georgia) have lower compression efficiency
+ *
+ * compressionFactor: How efficiently the font compresses (1.0 = baseline).
+ * Higher values = font is already compact, compresses efficiently.
+ * Lower values = font is wide, needs more space reduction per pt.
+ */
+export const FONT_PROFILES = {
+  Inter: {
+    minBodySize: 8,
+    minHeadingSize: 12,
+    minSubheadingSize: 9,
+    compressionFactor: 1.0, // Baseline
+  },
+  "Open Sans": {
+    minBodySize: 8,
+    minHeadingSize: 13,
+    minSubheadingSize: 10,
+    compressionFactor: 0.95, // Slightly wider than Inter
+  },
+  "Times New Roman": {
+    minBodySize: 9,
+    minHeadingSize: 13,
+    minSubheadingSize: 10,
+    compressionFactor: 1.1, // More compact serif
+  },
+  Arial: {
+    minBodySize: 8,
+    minHeadingSize: 12,
+    minSubheadingSize: 9,
+    compressionFactor: 0.95, // Similar to Open Sans
+  },
+  Georgia: {
+    minBodySize: 9,
+    minHeadingSize: 14,
+    minSubheadingSize: 11,
+    compressionFactor: 0.9, // Larger rendering
+  },
+  Roboto: {
+    minBodySize: 8,
+    minHeadingSize: 12,
+    minSubheadingSize: 9,
+    compressionFactor: 1.0, // Similar to Inter
+  },
+  Lato: {
+    minBodySize: 8,
+    minHeadingSize: 12,
+    minSubheadingSize: 9,
+    compressionFactor: 1.05, // Slightly condensed
+  },
+} as const;
+
+export type FontProfileKey = keyof typeof FONT_PROFILES;
+
+/**
+ * Get font profile with fallback to Inter for unknown fonts
+ */
+export function getFontProfile(fontFamily: string) {
+  return FONT_PROFILES[fontFamily as FontProfileKey] ?? FONT_PROFILES.Inter;
+}
 
 /**
  * Style presets (templates)

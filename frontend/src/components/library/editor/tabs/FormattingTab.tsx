@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Palette, Type, Settings2 } from "lucide-react";
 import { useBlockEditor } from "../BlockEditorContext";
-import { STYLE_PRESETS, type StylePresetName } from "@/lib/resume/defaults";
+import { FONT_FAMILIES, STYLE_PRESETS, type StylePresetName } from "@/lib/resume/defaults";
 import { AutoFitToggle, type AutoFitStatus, type AutoFitReduction } from "../style";
 import type { BlockEditorStyle } from "@/lib/resume/types";
 
@@ -213,16 +213,6 @@ function FontSection({
   onUpdate: (style: Partial<BlockEditorStyle>) => void;
   disabled?: boolean;
 }) {
-  const fontFamilies = [
-    { value: "Inter", label: "Inter" },
-    { value: "Open Sans", label: "Open Sans" },
-    { value: "Times New Roman", label: "Times New Roman" },
-    { value: "Arial", label: "Arial" },
-    { value: "Georgia", label: "Georgia" },
-    { value: "Roboto", label: "Roboto" },
-    { value: "Lato", label: "Lato" },
-  ];
-
   const inputClass = `w-full px-3 py-2 text-sm border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-transparent bg-background ${
     disabled ? "bg-muted opacity-60 cursor-not-allowed" : ""
   }`;
@@ -246,7 +236,7 @@ function FontSection({
           disabled={disabled}
           className={inputClass}
         >
-          {fontFamilies.map((font) => (
+          {FONT_FAMILIES.map((font) => (
             <option key={font.value} value={font.value}>
               {font.label}
             </option>

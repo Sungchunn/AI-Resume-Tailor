@@ -9,6 +9,7 @@ import type {
   ProjectEntry,
   VolunteerEntry,
 } from "@/lib/resume/types";
+import { getFontProfile } from "@/lib/resume/defaults";
 
 /**
  * Auto-fit status states
@@ -44,26 +45,48 @@ export interface UseAutoFitBlocksResult {
   reductions: AutoFitReduction[];
 }
 
-// Minimum values to preserve readability
-export const MINIMUMS = {
-  fontSizeBody: 7,
-  fontSizeHeading: 12,
-  fontSizeSubheading: 9,
+// Default minimum values (fallback for spacing properties that don't vary by font)
+export const SPACING_MINIMUMS = {
   lineSpacing: 1.05,
   sectionSpacing: 6,
   entrySpacing: 4,
 } as const;
 
+/**
+ * Get font-specific minimum values for the auto-fit algorithm.
+ * Font metrics vary significantly, so minimum readable sizes differ per font.
+ */
+export function getMinimums(fontFamily: string) {
+  const profile = getFontProfile(fontFamily);
+  return {
+    fontSizeBody: profile.minBodySize,
+    fontSizeHeading: profile.minHeadingSize,
+    fontSizeSubheading: profile.minSubheadingSize,
+    lineSpacing: SPACING_MINIMUMS.lineSpacing,
+    sectionSpacing: SPACING_MINIMUMS.sectionSpacing,
+    entrySpacing: SPACING_MINIMUMS.entrySpacing,
+  };
+}
+
+// Legacy constant for backwards compatibility (uses Inter defaults)
+export const MINIMUMS = getMinimums("Inter");
+
 // Page height in pixels (11 inches at 96 DPI)
 export const PAGE_HEIGHT = 11 * 96; // 1056px
 
-// Progressive reduction phases (order matters - least impactful first)
-const REDUCTION_PHASES = [
-  { property: "sectionSpacing", label: "Section spacing", min: MINIMUMS.sectionSpacing },
-  { property: "entrySpacing", label: "Entry spacing", min: MINIMUMS.entrySpacing },
-  { property: "lineSpacing", label: "Line height", min: MINIMUMS.lineSpacing },
-  { property: "fontSizeBody", label: "Body font", min: MINIMUMS.fontSizeBody },
-] as const;
+/**
+ * Get progressive reduction phases for a specific font.
+ * Order matters - least impactful first (spacing before fonts).
+ */
+function getReductionPhases(fontFamily: string) {
+  const minimums = getMinimums(fontFamily);
+  return [
+    { property: "sectionSpacing", label: "Section spacing", min: minimums.sectionSpacing },
+    { property: "entrySpacing", label: "Entry spacing", min: minimums.entrySpacing },
+    { property: "lineSpacing", label: "Line height", min: minimums.lineSpacing },
+    { property: "fontSizeBody", label: "Body font", min: minimums.fontSizeBody },
+  ] as const;
+}
 
 // ============================================================================
 // COMPACTNESS SCALE UTILITIES
@@ -78,6 +101,8 @@ const REDUCTION_PHASES = [
  * - Levels 25-50:  entrySpacing reduced (max → min)
  * - Levels 50-75:  lineSpacing reduced (max → min)
  * - Levels 75-100: fontSizeBody reduced (max → min) + proportional heading/subheading
+ *
+ * Minimums are font-specific to ensure readability across different typefaces.
  */
 export function compactnessToStyle(
   level: number,
@@ -85,40 +110,43 @@ export function compactnessToStyle(
 ): BlockEditorStyle {
   const style = { ...originalStyle };
 
+  // Get font-specific minimums
+  const minimums = getMinimums(originalStyle.fontFamily);
+
   // Clamp level to valid range
   const clampedLevel = Math.max(0, Math.min(100, level));
 
   // Phase 1: sectionSpacing (levels 0-25)
   if (clampedLevel > 0) {
     const phaseProgress = Math.min(clampedLevel / 25, 1);
-    const range = originalStyle.sectionSpacing - MINIMUMS.sectionSpacing;
+    const range = originalStyle.sectionSpacing - minimums.sectionSpacing;
     style.sectionSpacing = originalStyle.sectionSpacing - range * phaseProgress;
   }
 
   // Phase 2: entrySpacing (levels 25-50)
   if (clampedLevel > 25) {
     const phaseProgress = Math.min((clampedLevel - 25) / 25, 1);
-    const range = originalStyle.entrySpacing - MINIMUMS.entrySpacing;
+    const range = originalStyle.entrySpacing - minimums.entrySpacing;
     style.entrySpacing = originalStyle.entrySpacing - range * phaseProgress;
   }
 
   // Phase 3: lineSpacing (levels 50-75)
   if (clampedLevel > 50) {
     const phaseProgress = Math.min((clampedLevel - 50) / 25, 1);
-    const range = originalStyle.lineSpacing - MINIMUMS.lineSpacing;
+    const range = originalStyle.lineSpacing - minimums.lineSpacing;
     style.lineSpacing = originalStyle.lineSpacing - range * phaseProgress;
   }
 
   // Phase 4: fontSizeBody (levels 75-100) + proportional heading/subheading
   if (clampedLevel > 75) {
     const phaseProgress = Math.min((clampedLevel - 75) / 25, 1);
-    const bodyRange = originalStyle.fontSizeBody - MINIMUMS.fontSizeBody;
+    const bodyRange = originalStyle.fontSizeBody - minimums.fontSizeBody;
     const newBody = originalStyle.fontSizeBody - bodyRange * phaseProgress;
     const ratio = newBody / originalStyle.fontSizeBody;
 
     style.fontSizeBody = newBody;
-    style.fontSizeHeading = Math.max(MINIMUMS.fontSizeHeading, originalStyle.fontSizeHeading * ratio);
-    style.fontSizeSubheading = Math.max(MINIMUMS.fontSizeSubheading, originalStyle.fontSizeSubheading * ratio);
+    style.fontSizeHeading = Math.max(minimums.fontSizeHeading, originalStyle.fontSizeHeading * ratio);
+    style.fontSizeSubheading = Math.max(minimums.fontSizeSubheading, originalStyle.fontSizeSubheading * ratio);
   }
 
   return style;
@@ -644,6 +672,10 @@ export function useAutoFitBlocks({
 
       setStatus({ state: "fitting" });
 
+      // Get font-specific reduction phases and minimums
+      const reductionPhases = getReductionPhases(currentStyle.fontFamily);
+      const minimums = getMinimums(currentStyle.fontFamily);
+
       // Working copy of style
       const workingStyle = { ...currentStyle };
       const appliedReductions: AutoFitReduction[] = [];
@@ -654,7 +686,7 @@ export function useAutoFitBlocks({
       while (height > targetHeight && iterations < MAX_ITERATIONS) {
         iterations++;
 
-        const currentPhase = REDUCTION_PHASES[phaseIndex];
+        const currentPhase = reductionPhases[phaseIndex];
         if (!currentPhase) break;
 
         const propKey = currentPhase.property as keyof BlockEditorStyle;
@@ -687,11 +719,11 @@ export function useAutoFitBlocks({
           if (currentPhase.property === "fontSizeBody") {
             const ratio = newValue / currentValue;
             workingStyle.fontSizeHeading = Math.max(
-              MINIMUMS.fontSizeHeading,
+              minimums.fontSizeHeading,
               Math.round(workingStyle.fontSizeHeading * ratio)
             );
             workingStyle.fontSizeSubheading = Math.max(
-              MINIMUMS.fontSizeSubheading,
+              minimums.fontSizeSubheading,
               Math.round(workingStyle.fontSizeSubheading * ratio)
             );
           }
