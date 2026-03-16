@@ -43,6 +43,10 @@ export const ResumePreview = forwardRef<ResumePreviewHandle, ResumePreviewProps>
       onMoveBlockUp,
       onMoveBlockDown,
       interactive = false,
+      activeElementId,
+      hoveredElementId,
+      onElementClick,
+      onElementHover,
     },
     ref
   ) {
@@ -200,6 +204,10 @@ export const ResumePreview = forwardRef<ResumePreviewHandle, ResumePreviewProps>
                   onHover={(isHovered) => onBlockHover?.(isHovered ? block.id : null)}
                   onMoveUp={onMoveBlockUp ? () => onMoveBlockUp(block.id) : undefined}
                   onMoveDown={onMoveBlockDown ? () => onMoveBlockDown(block.id) : undefined}
+                  activeElementId={activeElementId}
+                  hoveredElementId={hoveredElementId}
+                  onElementClick={onElementClick}
+                  onElementHover={onElementHover}
                 />
               );
             }
@@ -211,6 +219,11 @@ export const ResumePreview = forwardRef<ResumePreviewHandle, ResumePreviewProps>
                 style={computedStyles}
                 isActive={activeBlockId === block.id}
                 onClick={onBlockClick ? () => onBlockClick(block.id) : undefined}
+                blockId={block.id}
+                activeElementId={activeElementId}
+                hoveredElementId={hoveredElementId}
+                onElementClick={onElementClick}
+                onElementHover={onElementHover}
               />
             );
           })}

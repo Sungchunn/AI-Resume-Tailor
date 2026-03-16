@@ -53,6 +53,8 @@ export function EditorLayout({
     state,
     setActiveBlock,
     setHoveredBlock,
+    setActiveElement,
+    setHoveredElement,
     moveBlockUp,
     moveBlockDown,
     save,
@@ -63,7 +65,15 @@ export function EditorLayout({
     setAutoFitMeasureFn,
     autoFitStatus,
   } = useBlockEditor();
-  const { blocks, activeBlockId, hoveredBlockId, style, fitToOnePage } = state;
+  const {
+    blocks,
+    activeBlockId,
+    hoveredBlockId,
+    activeElementId,
+    hoveredElementId,
+    style,
+    fitToOnePage,
+  } = state;
 
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
@@ -153,6 +163,22 @@ export function EditorLayout({
       moveBlockDown(blockId);
     },
     [moveBlockDown]
+  );
+
+  // Handle element click in preview (granular highlighting)
+  const handlePreviewElementClick = useCallback(
+    (elementId: string) => {
+      setActiveElement(elementId);
+    },
+    [setActiveElement]
+  );
+
+  // Handle element hover in preview (granular highlighting)
+  const handlePreviewElementHover = useCallback(
+    (elementId: string | null) => {
+      setHoveredElement(elementId);
+    },
+    [setHoveredElement]
   );
 
   // Keyboard shortcuts
@@ -253,6 +279,10 @@ export function EditorLayout({
                 onBlockHover={handlePreviewBlockHover}
                 onMoveBlockUp={handleMoveBlockUp}
                 onMoveBlockDown={handleMoveBlockDown}
+                activeElementId={activeElementId}
+                hoveredElementId={hoveredElementId}
+                onElementClick={handlePreviewElementClick}
+                onElementHover={handlePreviewElementHover}
                 interactive={true}
                 showPageBorder={true}
                 pageGap={24}

@@ -16,6 +16,11 @@ interface InteractiveBlockRendererProps {
   onHover?: (isHovered: boolean) => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  // Granular element interaction props
+  activeElementId?: string | null;
+  hoveredElementId?: string | null;
+  onElementClick?: (elementId: string) => void;
+  onElementHover?: (elementId: string | null) => void;
 }
 
 /**
@@ -24,6 +29,7 @@ interface InteractiveBlockRendererProps {
  * Features:
  * - Dashed selection box on hover
  * - Click to select (syncs with Section Dragger tab)
+ * - Granular element highlighting for sub-block elements
  */
 export function InteractiveBlockRenderer({
   block,
@@ -32,6 +38,10 @@ export function InteractiveBlockRenderer({
   isHovered = false,
   onSelect,
   onHover,
+  activeElementId,
+  hoveredElementId,
+  onElementClick,
+  onElementHover,
 }: InteractiveBlockRendererProps) {
   // Local hover state for immediate visual feedback
   const [localHover, setLocalHover] = useState(false);
@@ -66,6 +76,11 @@ export function InteractiveBlockRenderer({
         block={block}
         style={style}
         isActive={isActive}
+        blockId={block.id}
+        activeElementId={activeElementId}
+        hoveredElementId={hoveredElementId}
+        onElementClick={onElementClick}
+        onElementHover={onElementHover}
       />
     </div>
   );

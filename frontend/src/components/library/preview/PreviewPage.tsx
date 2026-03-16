@@ -47,6 +47,16 @@ export interface PreviewPageProps {
   /** Enable interactive mode with hover controls */
   interactive?: boolean;
 
+  // Granular element props
+  /** Currently active (selected) element ID for sub-block highlighting */
+  activeElementId?: string | null;
+  /** Currently hovered element ID for sub-block highlighting */
+  hoveredElementId?: string | null;
+  /** Callback when element is clicked (sub-block selection) */
+  onElementClick?: (elementId: string) => void;
+  /** Callback when element hover state changes */
+  onElementHover?: (elementId: string | null) => void;
+
   // Movement constraints (across all pages)
   /** Check if a block can be moved up (considers global order) */
   canMoveUp: (blockId: string) => boolean;
@@ -74,6 +84,10 @@ export const PreviewPage = forwardRef<HTMLDivElement, PreviewPageProps>(
       onMoveBlockUp,
       onMoveBlockDown,
       interactive = false,
+      activeElementId,
+      hoveredElementId,
+      onElementClick,
+      onElementHover,
       canMoveUp,
       canMoveDown,
     },
@@ -180,6 +194,10 @@ export const PreviewPage = forwardRef<HTMLDivElement, PreviewPageProps>(
                   onMoveDown={
                     onMoveBlockDown ? () => onMoveBlockDown(block.id) : undefined
                   }
+                  activeElementId={activeElementId}
+                  hoveredElementId={hoveredElementId}
+                  onElementClick={onElementClick}
+                  onElementHover={onElementHover}
                 />
               );
             }
@@ -193,6 +211,11 @@ export const PreviewPage = forwardRef<HTMLDivElement, PreviewPageProps>(
                 onClick={
                   onBlockClick ? () => onBlockClick(block.id) : undefined
                 }
+                blockId={block.id}
+                activeElementId={activeElementId}
+                hoveredElementId={hoveredElementId}
+                onElementClick={onElementClick}
+                onElementHover={onElementHover}
               />
             );
           })}

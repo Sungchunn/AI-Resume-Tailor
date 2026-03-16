@@ -1,7 +1,7 @@
 "use client";
 
 import type { AnyResumeBlock } from "@/lib/resume/types";
-import type { BlockRendererProps, ComputedPreviewStyle } from "./types";
+import type { BlockRendererProps, ComputedPreviewStyle, GranularInteractionProps } from "./types";
 import { getSectionTitle } from "./previewStyles";
 
 // Import all block preview components
@@ -45,17 +45,32 @@ import {
  *
  * This component renders a single block in preview mode with section header.
  * It handles active state styling and click events for block selection.
+ * Supports granular highlighting for sub-block elements when granular props are provided.
  */
 export function BlockRenderer({
   block,
   style,
   isActive = false,
   onClick,
+  blockId,
+  activeElementId,
+  hoveredElementId,
+  onElementClick,
+  onElementHover,
 }: BlockRendererProps) {
   // Check if block has content worth rendering
   if (!hasBlockContent(block)) {
     return null;
   }
+
+  // Granular props to pass down to preview components
+  const granularProps: Partial<GranularInteractionProps> = {
+    blockId: blockId ?? block.id,
+    activeElementId,
+    hoveredElementId,
+    onElementClick,
+    onElementHover,
+  };
 
   // Contact block is special - no section header, centered layout
   if (block.type === "contact") {
@@ -65,7 +80,7 @@ export function BlockRenderer({
         onClick={onClick}
         style={{ marginBottom: style.sectionGap }}
       >
-        <ContactPreview content={block.content} style={style} />
+        <ContactPreview content={block.content} style={style} {...granularProps} />
       </div>
     );
   }
@@ -86,7 +101,7 @@ export function BlockRenderer({
       </h2>
 
       {/* Block content */}
-      {renderBlockContent(block, style)}
+      {renderBlockContent(block, style, granularProps)}
     </div>
   );
 }
@@ -154,41 +169,42 @@ function hasBlockContent(block: AnyResumeBlock): boolean {
  */
 function renderBlockContent(
   block: AnyResumeBlock,
-  style: ComputedPreviewStyle
+  style: ComputedPreviewStyle,
+  granularProps: Partial<GranularInteractionProps>
 ): React.ReactNode {
   switch (block.type) {
     case "contact":
-      return <ContactPreview content={block.content} style={style} />;
+      return <ContactPreview content={block.content} style={style} {...granularProps} />;
     case "summary":
-      return <SummaryPreview content={block.content} style={style} />;
+      return <SummaryPreview content={block.content} style={style} {...granularProps} />;
     case "experience":
-      return <ExperiencePreview content={block.content} style={style} />;
+      return <ExperiencePreview content={block.content} style={style} {...granularProps} />;
     case "education":
-      return <EducationPreview content={block.content} style={style} />;
+      return <EducationPreview content={block.content} style={style} {...granularProps} />;
     case "skills":
-      return <SkillsPreview content={block.content} style={style} />;
+      return <SkillsPreview content={block.content} style={style} {...granularProps} />;
     case "certifications":
-      return <CertificationsPreview content={block.content} style={style} />;
+      return <CertificationsPreview content={block.content} style={style} {...granularProps} />;
     case "projects":
-      return <ProjectsPreview content={block.content} style={style} />;
+      return <ProjectsPreview content={block.content} style={style} {...granularProps} />;
     case "languages":
-      return <LanguagesPreview content={block.content} style={style} />;
+      return <LanguagesPreview content={block.content} style={style} {...granularProps} />;
     case "volunteer":
-      return <VolunteerPreview content={block.content} style={style} />;
+      return <VolunteerPreview content={block.content} style={style} {...granularProps} />;
     case "publications":
-      return <PublicationsPreview content={block.content} style={style} />;
+      return <PublicationsPreview content={block.content} style={style} {...granularProps} />;
     case "awards":
-      return <AwardsPreview content={block.content} style={style} />;
+      return <AwardsPreview content={block.content} style={style} {...granularProps} />;
     case "interests":
-      return <InterestsPreview content={block.content} style={style} />;
+      return <InterestsPreview content={block.content} style={style} {...granularProps} />;
     case "references":
-      return <ReferencesPreview content={block.content} style={style} />;
+      return <ReferencesPreview content={block.content} style={style} {...granularProps} />;
     case "courses":
-      return <CoursesPreview content={block.content} style={style} />;
+      return <CoursesPreview content={block.content} style={style} {...granularProps} />;
     case "memberships":
-      return <MembershipsPreview content={block.content} style={style} />;
+      return <MembershipsPreview content={block.content} style={style} {...granularProps} />;
     case "leadership":
-      return <LeadershipPreview content={block.content} style={style} />;
+      return <LeadershipPreview content={block.content} style={style} {...granularProps} />;
     default: {
       // Type-safe exhaustive check
       const _exhaustiveCheck: never = block;

@@ -84,6 +84,10 @@ export const PaginatedResumePreview = forwardRef<
     onMoveBlockUp,
     onMoveBlockDown,
     interactive = false,
+    activeElementId,
+    hoveredElementId,
+    onElementClick,
+    onElementHover,
     pageGap = 24,
   },
   ref
@@ -251,6 +255,10 @@ export const PaginatedResumePreview = forwardRef<
               onMoveBlockUp={onMoveBlockUp}
               onMoveBlockDown={onMoveBlockDown}
               interactive={interactive}
+              activeElementId={activeElementId}
+              hoveredElementId={hoveredElementId}
+              onElementClick={onElementClick}
+              onElementHover={onElementHover}
               canMoveUp={canMoveUp}
               canMoveDown={canMoveDown}
             />
