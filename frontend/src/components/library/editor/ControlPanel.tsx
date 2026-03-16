@@ -37,8 +37,6 @@ export function ControlPanel({ jobId, jobListingId }: ControlPanelProps) {
           onClick={() => setActiveTab("ai")}
           icon={<MessageSquare className="w-4 h-4" />}
           label="AI"
-          disabled={true}
-          disabledReason="Coming soon"
         />
         <TabButton
           active={activeTab === "ats"}
@@ -64,7 +62,7 @@ export function ControlPanel({ jobId, jobListingId }: ControlPanelProps) {
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === "ai" && <AIChatTab />}
+        {activeTab === "ai" && <AIChatTab jobId={jobId} jobListingId={jobListingId} />}
         {activeTab === "ats" && (
           <ATSEvaluationTab jobId={jobId} jobListingId={jobListingId} />
         )}
