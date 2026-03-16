@@ -13,9 +13,11 @@ import {
   Target,
   Pencil,
   ListChecks,
+  Briefcase,
 } from "lucide-react";
 import { useBlockEditor } from "../BlockEditorContext";
 import { aiApi } from "@/lib/api/client";
+import { useJobListing } from "@/lib/api";
 import { BLOCK_TYPE_INFO } from "@/lib/resume/defaults";
 import type { AnyResumeBlock } from "@/lib/resume/types";
 import type { ChatMessage, AISectionType, AIChatResponse } from "@/lib/api/types";
@@ -34,6 +36,13 @@ interface QuickAction {
   label: string;
   instruction: string;
   icon: React.ReactNode;
+}
+
+interface AIChatTabProps {
+  /** User-created job ID for context - null means no job context */
+  jobId: number | null;
+  /** Scraped job listing ID for context - null means no job context */
+  jobListingId: number | null;
 }
 
 const QUICK_ACTIONS: QuickAction[] = [
@@ -71,10 +80,17 @@ const QUICK_ACTIONS: QuickAction[] = [
  * - Quick action buttons for common operations
  * - Section-based editing (target specific sections)
  * - Apply/reject suggested improvements
+ * - Job context integration for targeted suggestions
  */
-export function AIChatTab() {
+export function AIChatTab({ jobId, jobListingId }: AIChatTabProps) {
   const { state, updateBlock, getBlockById, setActiveBlock } = useBlockEditor();
   const { blocks, activeBlockId } = state;
+
+  // Fetch job listing data when available (for job context)
+  const { data: jobListing } = useJobListing(jobListingId ?? 0);
+
+  // Has job context if either job ID is provided
+  const hasJobContext = jobId !== null || jobListingId !== null;
 
   // Chat state
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
@@ -144,12 +160,17 @@ export function AIChatTab() {
         const sectionType = selectedBlock?.type as AISectionType | undefined;
         const sectionContent = selectedBlock ? getBlockContentString(selectedBlock) : undefined;
 
+        // Build job context from fetched job listing data
+        const jobContext = jobListing
+          ? `Job Title: ${jobListing.job_title}\nCompany: ${jobListing.company_name}\n${jobListing.job_description ? `Description: ${jobListing.job_description}` : ""}`
+          : null;
+
         const response: AIChatResponse = await aiApi.chat({
           message: userMessage,
           section_type: sectionType || null,
           section_content: sectionContent || null,
           chat_history: getChatHistory(),
-          job_context: null, // TODO: Add job context support when jobId is available
+          job_context: jobContext,
         });
 
         // Create assistant message
@@ -175,7 +196,7 @@ export function AIChatTab() {
         setIsLoading(false);
       }
     },
-    [isLoading, selectedBlock, getBlockContentString, getChatHistory]
+    [isLoading, selectedBlock, getBlockContentString, getChatHistory, jobListing]
   );
 
   // Handle form submit
@@ -254,6 +275,15 @@ export function AIChatTab() {
         <p className="text-xs text-muted-foreground mt-1">
           Get AI-powered suggestions for your resume
         </p>
+        {/* Job Context Indicator */}
+        {hasJobContext && jobListing && (
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-primary bg-primary/10 px-2 py-1 rounded-md">
+            <Briefcase className="w-3 h-3" />
+            <span className="truncate">
+              Tailored for: {jobListing.job_title} at {jobListing.company_name}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Section Selector */}
