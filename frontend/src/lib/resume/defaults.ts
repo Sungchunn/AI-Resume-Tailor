@@ -445,6 +445,11 @@ export function createStarterBlocks(): AnyResumeBlock[] {
 }
 
 /**
+ * Default minimum font size for fit-to-page algorithm (in pt)
+ */
+export const DEFAULT_MIN_FONT_SIZE = 8;
+
+/**
  * Create an empty block editor state
  * New resumes default to fitToOnePage: true for auto-fit behavior
  */
@@ -458,6 +463,7 @@ export function createEmptyState(): BlockEditorState {
     isLoading: false,
     error: null,
     fitToOnePage: true,
+    minFontSize: DEFAULT_MIN_FONT_SIZE,
     preAutoFitStyle: null,
   };
 }
@@ -476,6 +482,7 @@ export function createInitialState(): BlockEditorState {
     isLoading: false,
     error: null,
     fitToOnePage: true,
+    minFontSize: DEFAULT_MIN_FONT_SIZE,
     preAutoFitStyle: null,
   };
 }

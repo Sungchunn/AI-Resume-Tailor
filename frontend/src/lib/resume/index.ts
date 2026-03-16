@@ -72,4 +72,10 @@ export {
   createEmptyState,
   createInitialState,
   FONT_FAMILIES,
+  FONT_PROFILES,
+  getFontProfile,
+  DEFAULT_MIN_FONT_SIZE,
+  STYLE_PRESETS,
 } from "./defaults";
+
+export type { StylePresetName } from "./defaults";

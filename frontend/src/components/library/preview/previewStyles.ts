@@ -9,13 +9,35 @@ import type { ComputedPreviewStyle } from "./types";
 import { PAGE_DIMENSIONS } from "./types";
 
 /**
+ * Map font names to CSS font-family strings.
+ * Web fonts use CSS variables loaded via next/font/google.
+ * System fonts use standard fallback stacks.
+ */
+const FONT_FAMILY_MAP: Record<string, string> = {
+  Inter: "var(--font-inter), ui-sans-serif, system-ui, sans-serif",
+  Roboto: "var(--font-roboto), ui-sans-serif, system-ui, sans-serif",
+  "Open Sans": "var(--font-open-sans), ui-sans-serif, system-ui, sans-serif",
+  Lato: "var(--font-lato), ui-sans-serif, system-ui, sans-serif",
+  Georgia: "Georgia, 'Times New Roman', ui-serif, serif",
+  "Times New Roman": "'Times New Roman', Times, ui-serif, serif",
+  Arial: "Arial, Helvetica, ui-sans-serif, sans-serif",
+};
+
+/**
+ * Get CSS font-family string for a font name
+ */
+function getFontFamilyCSS(fontName: string): string {
+  return FONT_FAMILY_MAP[fontName] ?? FONT_FAMILY_MAP.Inter;
+}
+
+/**
  * Convert BlockEditorStyle to CSS-ready computed styles
  */
 export function computePreviewStyles(
   style: BlockEditorStyle
 ): ComputedPreviewStyle {
   return {
-    fontFamily: style.fontFamily,
+    fontFamily: getFontFamilyCSS(style.fontFamily),
     bodyFontSize: `${style.fontSizeBody}pt`,
     headingFontSize: `${style.fontSizeHeading}pt`,
     subheadingFontSize: `${style.fontSizeSubheading}pt`,

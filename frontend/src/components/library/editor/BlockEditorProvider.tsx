@@ -20,7 +20,7 @@ import type {
   ParsedResumeContent,
   ResumeBlockType,
 } from "@/lib/resume/types";
-import { createEmptyState } from "@/lib/resume/defaults";
+import { createEmptyState, STYLE_PRESETS, DEFAULT_MIN_FONT_SIZE, type StylePresetName } from "@/lib/resume/defaults";
 import {
   parsedContentToBlocks,
   blocksToParsedContent,
@@ -284,6 +284,16 @@ export function BlockEditorProvider({
     dispatch(blockEditorActions.setFitToOnePage(enabled));
   }, []);
 
+  const setMinFontSize = useCallback((size: number) => {
+    dispatch(blockEditorActions.setMinFontSize(size));
+  }, []);
+
+  // Style presets
+  const applyStylePreset = useCallback((preset: StylePresetName) => {
+    const presetStyle = STYLE_PRESETS[preset];
+    dispatch(blockEditorActions.setStyle(presetStyle));
+  }, []);
+
   // DOM measurement function for accurate auto-fit
   // Set by EditorLayout once the preview ref is available
   const [autoFitMeasureFn, setAutoFitMeasureFnState] = useState<(() => number) | null>(null);
@@ -299,6 +309,7 @@ export function BlockEditorProvider({
     enabled: state.fitToOnePage,
     onStyleChange: updateStyle,
     measureFn: autoFitMeasureFn ?? undefined,
+    minFontSize: state.minFontSize,
   });
 
   // BroadcastChannel for cross-tab sync
@@ -460,6 +471,8 @@ export function BlockEditorProvider({
       moveBlockDown,
       updateStyle,
       setFitToOnePage,
+      setMinFontSize,
+      applyStylePreset,
       autoFitStatus,
       autoFitReductions,
       setAutoFitMeasureFn,
@@ -489,6 +502,8 @@ export function BlockEditorProvider({
       moveBlockDown,
       updateStyle,
       setFitToOnePage,
+      setMinFontSize,
+      applyStylePreset,
       autoFitStatus,
       autoFitReductions,
       setAutoFitMeasureFn,

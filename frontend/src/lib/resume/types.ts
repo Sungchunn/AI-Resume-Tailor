@@ -286,6 +286,8 @@ export interface BlockEditorState {
   isLoading: boolean;
   error: string | null;
   fitToOnePage: boolean;
+  /** User-defined minimum body font size for fit-to-page algorithm (7-10pt) */
+  minFontSize: number;
   /** Captured style before auto-fit adjustments, restored when toggling off */
   preAutoFitStyle: BlockEditorStyle | null;
 }
@@ -305,6 +307,7 @@ export type BlockEditorAction =
   | { type: "TOGGLE_VISIBILITY"; payload: { id: string } }
   | { type: "SET_STYLE"; payload: Partial<BlockEditorStyle> }
   | { type: "SET_FIT_TO_ONE_PAGE"; payload: boolean }
+  | { type: "SET_MIN_FONT_SIZE"; payload: number }
   | { type: "SET_DIRTY"; payload: boolean }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null }

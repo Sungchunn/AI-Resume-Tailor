@@ -192,6 +192,13 @@ export function blockEditorReducer(
       return { ...state, fitToOnePage: enabled };
     }
 
+    case "SET_MIN_FONT_SIZE":
+      return {
+        ...state,
+        minFontSize: action.payload,
+        isDirty: true,
+      };
+
     case "SET_DIRTY":
       return {
         ...state,
@@ -292,6 +299,11 @@ export const blockEditorActions = {
   setFitToOnePage: (enabled: boolean): BlockEditorAction => ({
     type: "SET_FIT_TO_ONE_PAGE",
     payload: enabled,
+  }),
+
+  setMinFontSize: (size: number): BlockEditorAction => ({
+    type: "SET_MIN_FONT_SIZE",
+    payload: size,
   }),
 
   setDirty: (isDirty: boolean): BlockEditorAction => ({

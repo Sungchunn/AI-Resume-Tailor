@@ -9,6 +9,7 @@ import type {
   BlockEditorStyle,
   ResumeBlockType,
 } from "@/lib/resume/types";
+import type { StylePresetName } from "@/lib/resume/defaults";
 import type { AutoFitStatus, AutoFitReduction } from "./style/useAutoFitBlocks";
 
 /**
@@ -49,6 +50,12 @@ export interface BlockEditorContextValue {
    * instead of estimation-based linear search (O(n)).
    */
   setAutoFitMeasureFn: (fn: (() => number) | null) => void;
+  /** Set user-defined minimum font size for fit-to-page (7-10pt) */
+  setMinFontSize: (size: number) => void;
+
+  // Style presets
+  /** Apply a preset style template */
+  applyStylePreset: (preset: StylePresetName) => void;
 
   // Persistence
   save: () => Promise<void>;

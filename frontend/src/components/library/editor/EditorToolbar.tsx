@@ -2,7 +2,7 @@
 
 import { Maximize2, Minimize2 } from "lucide-react";
 import { useBlockEditor } from "./BlockEditorContext";
-import { FONT_FAMILIES } from "@/lib/resume/defaults";
+import { STYLE_PRESETS, type StylePresetName } from "@/lib/resume/defaults";
 import { AutoFitToggle } from "./style";
 
 interface EditorToolbarProps {
@@ -13,30 +13,45 @@ interface EditorToolbarProps {
 }
 
 /**
- * EditorToolbar - Unified style controls panel for the block editor
+ * Style preset descriptions for UI display
+ */
+const PRESET_INFO: Record<
+  StylePresetName,
+  { label: string; font: string }
+> = {
+  modern: { label: "Modern", font: "Inter" },
+  classic: { label: "Classic", font: "Times New Roman" },
+  minimal: { label: "Minimal", font: "Open Sans" },
+  executive: { label: "Executive", font: "Georgia" },
+};
+
+/**
+ * EditorToolbar - Simplified style controls panel for the block editor
  *
  * Features:
  * - Auto-fit to one page toggle
- * - Font family and size controls
- * - Margin and spacing controls
+ * - Style presets (Classic/Modern/Minimal/Executive)
+ * - Minimum font size slider
  * - Fullscreen preview toggle
  */
 export function EditorToolbar({
   isPreviewFullscreen,
   onTogglePreviewFullscreen,
 }: EditorToolbarProps) {
-  const { state, updateStyle, setFitToOnePage, autoFitStatus, autoFitReductions } = useBlockEditor();
-  const { style, fitToOnePage } = state;
+  const {
+    state,
+    applyStylePreset,
+    setFitToOnePage,
+    setMinFontSize,
+    autoFitStatus,
+    autoFitReductions,
+  } = useBlockEditor();
+  const { style, fitToOnePage, minFontSize } = state;
 
-  const disabled = fitToOnePage;
-
-  const inputClass = `w-full px-3 py-2 text-sm border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-transparent ${
-    disabled ? "bg-muted opacity-60 cursor-not-allowed" : ""
-  }`;
-
-  const inputClassSm = `w-full px-2 py-1.5 text-sm border border-input rounded focus:ring-2 focus:ring-ring focus:border-transparent ${
-    disabled ? "bg-muted opacity-60 cursor-not-allowed" : ""
-  }`;
+  // Determine which preset is currently active (if any)
+  const activePreset = (Object.keys(STYLE_PRESETS) as StylePresetName[]).find(
+    (key) => STYLE_PRESETS[key].fontFamily === style.fontFamily
+  );
 
   return (
     <div className="bg-card border-b border-border">
@@ -70,198 +85,81 @@ export function EditorToolbar({
           />
         </div>
 
-        {disabled && (
-          <p className="text-xs text-muted-foreground/60 italic">
-            Style settings are managed by auto-fit when enabled
-          </p>
+        {/* Minimum Font Size (only when fit-to-page is enabled) */}
+        {fitToOnePage && (
+          <div className="pb-4 border-b border-border">
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Minimum Font Size
+            </label>
+            <p className="text-xs text-muted-foreground mb-3">
+              The smallest font the algorithm can use.
+            </p>
+            <div className="flex items-center gap-3">
+              <input
+                type="range"
+                min={7}
+                max={10}
+                step={1}
+                value={minFontSize}
+                onChange={(e) => setMinFontSize(Number(e.target.value))}
+                className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+              />
+              <span className="text-sm font-medium text-foreground w-12 text-right">
+                {minFontSize}pt
+              </span>
+            </div>
+            <div className="flex justify-between text-[10px] text-muted-foreground mt-1 px-1">
+              <span>Compact</span>
+              <span>Readable</span>
+            </div>
+          </div>
         )}
 
-        {/* Font Settings */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-semibold text-foreground/70 uppercase tracking-wide">
-            Font
-          </h3>
-
-          {/* Font Family */}
-          <div>
-            <label className="block text-xs font-medium text-foreground/80 mb-1.5">
-              Family
-            </label>
-            <select
-              value={style.fontFamily}
-              onChange={(e) => updateStyle({ fontFamily: e.target.value })}
-              disabled={disabled}
-              className={inputClass}
-            >
-              {FONT_FAMILIES.map((font) => (
-                <option key={font.value} value={font.value}>
-                  {font.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Font Sizes */}
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <label className="block text-xs font-medium text-foreground/80 mb-1.5">
-                Body
-              </label>
-              <input
-                type="number"
-                min={8}
-                max={14}
-                value={style.fontSizeBody}
-                onChange={(e) => updateStyle({ fontSizeBody: Number(e.target.value) })}
-                disabled={disabled}
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-foreground/80 mb-1.5">
-                Heading
-              </label>
-              <input
-                type="number"
-                min={12}
-                max={24}
-                value={style.fontSizeHeading}
-                onChange={(e) => updateStyle({ fontSizeHeading: Number(e.target.value) })}
-                disabled={disabled}
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-foreground/80 mb-1.5">
-                Subheading
-              </label>
-              <input
-                type="number"
-                min={10}
-                max={18}
-                value={style.fontSizeSubheading}
-                onChange={(e) => updateStyle({ fontSizeSubheading: Number(e.target.value) })}
-                disabled={disabled}
-                className={inputClass}
-              />
-            </div>
+        {/* Style Presets */}
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-3">
+            Style
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {(Object.keys(PRESET_INFO) as StylePresetName[]).map((preset) => {
+              const info = PRESET_INFO[preset];
+              const isActive = activePreset === preset;
+              return (
+                <button
+                  key={preset}
+                  onClick={() => applyStylePreset(preset)}
+                  className={`p-3 rounded-lg border text-left transition-all ${
+                    isActive
+                      ? "border-primary bg-primary/5 ring-1 ring-primary"
+                      : "border-border bg-card hover:border-primary/50 hover:bg-accent/50"
+                  }`}
+                >
+                  <div className="text-sm font-medium text-foreground">
+                    {info.label}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {info.font}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Spacing Settings */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-semibold text-foreground/70 uppercase tracking-wide">
-            Spacing
-          </h3>
-
-          {/* Line and Section Spacing */}
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <label className="block text-xs font-medium text-foreground/80 mb-1.5">
-                Line Height
-              </label>
-              <input
-                type="number"
-                min={1}
-                max={2}
-                step={0.05}
-                value={style.lineSpacing}
-                onChange={(e) => updateStyle({ lineSpacing: Number(e.target.value) })}
-                disabled={disabled}
-                className={inputClass}
-              />
+        {/* Current Style Summary */}
+        <div className="pt-2">
+          <div className="text-xs text-muted-foreground space-y-1">
+            <div className="flex justify-between">
+              <span>Font</span>
+              <span className="text-foreground">{style.fontFamily}</span>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-foreground/80 mb-1.5">
-                Section Gap
-              </label>
-              <input
-                type="number"
-                min={4}
-                max={40}
-                step={2}
-                value={style.sectionSpacing}
-                onChange={(e) => updateStyle({ sectionSpacing: Number(e.target.value) })}
-                disabled={disabled}
-                className={inputClass}
-              />
+            <div className="flex justify-between">
+              <span>Body Size</span>
+              <span className="text-foreground">{style.fontSizeBody}pt</span>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-foreground/80 mb-1.5">
-                Entry Gap
-              </label>
-              <input
-                type="number"
-                min={2}
-                max={24}
-                step={2}
-                value={style.entrySpacing}
-                onChange={(e) => updateStyle({ entrySpacing: Number(e.target.value) })}
-                disabled={disabled}
-                className={inputClass}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Margin Settings */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-semibold text-foreground/70 uppercase tracking-wide">
-            Margins (inches)
-          </h3>
-
-          <div className="grid grid-cols-4 gap-2">
-            <div>
-              <label className="block text-[10px] text-muted-foreground mb-1">Top</label>
-              <input
-                type="number"
-                min={0.25}
-                max={1.5}
-                step={0.05}
-                value={style.marginTop}
-                onChange={(e) => updateStyle({ marginTop: Number(e.target.value) })}
-                disabled={disabled}
-                className={inputClassSm}
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] text-muted-foreground mb-1">Bottom</label>
-              <input
-                type="number"
-                min={0.25}
-                max={1.5}
-                step={0.05}
-                value={style.marginBottom}
-                onChange={(e) => updateStyle({ marginBottom: Number(e.target.value) })}
-                disabled={disabled}
-                className={inputClassSm}
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] text-muted-foreground mb-1">Left</label>
-              <input
-                type="number"
-                min={0.25}
-                max={1.5}
-                step={0.05}
-                value={style.marginLeft}
-                onChange={(e) => updateStyle({ marginLeft: Number(e.target.value) })}
-                disabled={disabled}
-                className={inputClassSm}
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] text-muted-foreground mb-1">Right</label>
-              <input
-                type="number"
-                min={0.25}
-                max={1.5}
-                step={0.05}
-                value={style.marginRight}
-                onChange={(e) => updateStyle({ marginRight: Number(e.target.value) })}
-                disabled={disabled}
-                className={inputClassSm}
-              />
+            <div className="flex justify-between">
+              <span>Line Height</span>
+              <span className="text-foreground">{style.lineSpacing.toFixed(2)}</span>
             </div>
           </div>
         </div>
