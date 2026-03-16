@@ -14,6 +14,9 @@ import {
  * - Times New Roman: 9pt body, 13pt heading, 10pt subheading
  * - Georgia: 9pt body, 14pt heading, 11pt subheading
  * - Arial: 8pt body, 12pt heading, 9pt subheading
+ *
+ * Note: Style values are verified via API save interception since the
+ * FormattingTab no longer has editable input fields for font sizes.
  */
 test.describe("Font Minimums", () => {
   test("Inter enforces 8pt body minimum", async ({ page }) => {
@@ -55,15 +58,18 @@ test.describe("Font Minimums", () => {
     // Should hit minimum with severe overflow
     expect(await editor.getStatus()).toBe("minimum_reached");
 
-    // Wait for save and check the saved body font size
+    // Wait for debounced save
     await page.waitForTimeout(2500);
 
-    // The input value should be at least 8pt for Inter
-    const bodySize = await editor.fontSizeBody.inputValue();
-    expect(Number(bodySize)).toBeGreaterThanOrEqual(8);
+    // The saved body font size should be at least 8pt for Inter
+    expect(savedStyle).toBeTruthy();
+    const bodySize = (savedStyle as Record<string, number>)?.fontSizeBody;
+    expect(bodySize).toBeGreaterThanOrEqual(8);
   });
 
   test("Times New Roman enforces 9pt body minimum", async ({ page }) => {
+    let savedStyle: Record<string, unknown> | null = null;
+
     await page.route("**/api/resumes/*", async (route) => {
       if (route.request().method() === "GET") {
         await route.fulfill({
@@ -81,6 +87,10 @@ test.describe("Font Minimums", () => {
     });
 
     await page.route("**/api/resumes/*/partial", async (route) => {
+      const body = route.request().postDataJSON();
+      if (body?.style) {
+        savedStyle = body.style;
+      }
       await route.fulfill({ status: 200, json: { success: true } });
     });
 
@@ -97,12 +107,18 @@ test.describe("Font Minimums", () => {
     // Should hit minimum
     expect(await editor.getStatus()).toBe("minimum_reached");
 
+    // Wait for debounced save
+    await page.waitForTimeout(2500);
+
     // Body size should be at least 9pt for Times New Roman
-    const bodySize = await editor.fontSizeBody.inputValue();
-    expect(Number(bodySize)).toBeGreaterThanOrEqual(9);
+    expect(savedStyle).toBeTruthy();
+    const bodySize = (savedStyle as Record<string, number>)?.fontSizeBody;
+    expect(bodySize).toBeGreaterThanOrEqual(9);
   });
 
   test("Georgia enforces 9pt body minimum", async ({ page }) => {
+    let savedStyle: Record<string, unknown> | null = null;
+
     await page.route("**/api/resumes/*", async (route) => {
       if (route.request().method() === "GET") {
         await route.fulfill({
@@ -120,6 +136,10 @@ test.describe("Font Minimums", () => {
     });
 
     await page.route("**/api/resumes/*/partial", async (route) => {
+      const body = route.request().postDataJSON();
+      if (body?.style) {
+        savedStyle = body.style;
+      }
       await route.fulfill({ status: 200, json: { success: true } });
     });
 
@@ -136,12 +156,19 @@ test.describe("Font Minimums", () => {
     // Should hit minimum
     expect(await editor.getStatus()).toBe("minimum_reached");
 
+    // Wait for debounced save
+    await page.waitForTimeout(2500);
+
     // Body size should be at least 9pt for Georgia
-    const bodySize = await editor.fontSizeBody.inputValue();
-    expect(Number(bodySize)).toBeGreaterThanOrEqual(9);
+    expect(savedStyle).toBeTruthy();
+    const bodySize = (savedStyle as Record<string, number>)?.fontSizeBody;
+    expect(bodySize).toBeGreaterThanOrEqual(9);
   });
 
   test("heading sizes scale proportionally", async ({ page }) => {
+    let initialStyle: Record<string, unknown> | null = null;
+    let finalStyle: Record<string, unknown> | null = null;
+
     await page.route("**/api/resumes/*", async (route) => {
       if (route.request().method() === "GET") {
         await route.fulfill({
@@ -150,6 +177,12 @@ test.describe("Font Minimums", () => {
             id: "scale-id",
             ...generateResumeContent(RESUME_PRESETS.moderateOverflow),
             fit_to_page: false,
+            style: {
+              fontFamily: "Inter",
+              fontSizeBody: 11,
+              fontSizeHeading: 16,
+              fontSizeSubheading: 13,
+            },
           },
         });
       } else {
@@ -158,31 +191,36 @@ test.describe("Font Minimums", () => {
     });
 
     await page.route("**/api/resumes/*/partial", async (route) => {
+      const body = route.request().postDataJSON();
+      if (body?.style) {
+        if (!initialStyle) {
+          initialStyle = body.style;
+        }
+        finalStyle = body.style;
+      }
       await route.fulfill({ status: 200, json: { success: true } });
     });
 
     const editor = new ResumeEditorPage(page);
     await editor.goto("scale-id");
 
-    // Get initial sizes
-    const initialBody = Number(await editor.fontSizeBody.inputValue());
-    const initialHeading = Number(await editor.fontSizeHeading.inputValue());
-    const initialSubheading = Number(
-      await editor.fontSizeSubheading.inputValue()
-    );
-
     await editor.enableFitToPage();
     await editor.waitForFitComplete();
 
-    // Get final sizes
-    const finalBody = Number(await editor.fontSizeBody.inputValue());
-    const finalHeading = Number(await editor.fontSizeHeading.inputValue());
-    const finalSubheading = Number(await editor.fontSizeSubheading.inputValue());
+    // Wait for debounced save
+    await page.waitForTimeout(2500);
 
-    // If any reduction occurred, heading should still be >= body
-    if (finalBody < initialBody) {
-      expect(finalHeading).toBeGreaterThanOrEqual(finalBody);
-      expect(finalSubheading).toBeGreaterThanOrEqual(finalBody);
+    // If style was saved, check proportional scaling
+    if (finalStyle) {
+      const bodySize = (finalStyle as Record<string, number>).fontSizeBody;
+      const headingSize = (finalStyle as Record<string, number>).fontSizeHeading;
+      const subheadingSize = (finalStyle as Record<string, number>).fontSizeSubheading;
+
+      // If any reduction occurred, heading should still be >= body
+      if (bodySize < 11) {
+        expect(headingSize).toBeGreaterThanOrEqual(bodySize);
+        expect(subheadingSize).toBeGreaterThanOrEqual(bodySize);
+      }
     }
   });
 
@@ -214,10 +252,10 @@ test.describe("Font Minimums", () => {
     const initialStatus = await editor.getStatus();
     expect(["fitted", "minimum_reached"]).toContain(initialStatus);
 
-    // Note: When fit-to-page is enabled, font selector is disabled
+    // Note: When fit-to-page is enabled, typography controls are locked
     // This test verifies the expected behavior that controls are locked
-    const isDisabled = await editor.isControlDisabled(editor.fontFamilySelect);
-    expect(isDisabled).toBe(true);
+    const isLocked = await editor.isTypographyLocked();
+    expect(isLocked).toBe(true);
   });
 
   test("warning shows font-specific minimum message", async ({ page }) => {
