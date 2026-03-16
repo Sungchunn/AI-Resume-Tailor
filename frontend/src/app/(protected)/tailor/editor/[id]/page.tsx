@@ -118,7 +118,7 @@ export default function TailoredEditorPage({ params }: PageProps) {
   const editorTitle = tailored.formatted_name || "Tailored Resume";
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-full flex flex-col">
       {/* Back button */}
       <div className="shrink-0 bg-card px-4 pt-3">
         <Link
@@ -208,7 +208,7 @@ export default function TailoredEditorPage({ params }: PageProps) {
 
 function LoadingState() {
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-full flex flex-col">
       {/* Header Skeleton */}
       <div className="shrink-0 bg-card border-b border-border px-4 py-2">
         <div className="flex items-center justify-between">
@@ -264,7 +264,7 @@ function LoadingState() {
 
 function ErrorState({ id }: { id: string }) {
   return (
-    <div className="h-screen flex items-center justify-center bg-muted">
+    <div className="h-full flex items-center justify-center bg-muted">
       <div className="text-center max-w-md">
         <svg
           className="mx-auto h-12 w-12 text-destructive"

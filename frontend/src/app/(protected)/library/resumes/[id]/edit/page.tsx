@@ -80,7 +80,7 @@ export default function ResumeEditPage({ params }: PageProps) {
   // Loading state
   if (isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-background">
+      <div className="h-full flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Loading resume editor...</p>
@@ -92,7 +92,7 @@ export default function ResumeEditPage({ params }: PageProps) {
   // Auto-parsing loading state (shows while AI is parsing the resume)
   if (autoParseTaskId && parseStatus?.status === "pending") {
     return (
-      <div className="h-screen flex items-center justify-center bg-background">
+      <div className="h-full flex items-center justify-center bg-background">
         <div className="text-center max-w-md">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Sparkles className="w-6 h-6 text-primary animate-pulse" />
@@ -113,7 +113,7 @@ export default function ResumeEditPage({ params }: PageProps) {
   // Error state
   if (error || !resume) {
     return (
-      <div className="h-screen flex items-center justify-center bg-background">
+      <div className="h-full flex items-center justify-center bg-background">
         <div className="card max-w-md bg-destructive/10 border-destructive/20">
           <h2 className="text-lg font-semibold text-destructive mb-2">
             Failed to load resume

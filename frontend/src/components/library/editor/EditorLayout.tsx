@@ -200,7 +200,7 @@ export function EditorLayout({
   }, [state.isDirty]);
 
   return (
-    <div className="h-screen flex flex-col bg-muted">
+    <div className="h-full flex flex-col bg-muted">
       {/* Header */}
       <EditorHeader
         resumeId={resumeId}
