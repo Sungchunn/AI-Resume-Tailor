@@ -54,12 +54,20 @@ export interface ResumePreviewProps {
   onMoveBlockDown?: (blockId: string) => void;
   /** Enable interactive mode with hover controls for reordering */
   interactive?: boolean;
+  /** Currently active (selected) element ID for sub-block highlighting */
+  activeElementId?: string | null;
+  /** Currently hovered element ID for sub-block highlighting */
+  hoveredElementId?: string | null;
+  /** Callback when element is clicked (sub-block selection) */
+  onElementClick?: (elementId: string) => void;
+  /** Callback when element hover state changes */
+  onElementHover?: (elementId: string | null) => void;
 }
 
 /**
  * BlockRenderer component props
  */
-export interface BlockRendererProps {
+export interface BlockRendererProps extends Partial<GranularInteractionProps> {
   block: AnyResumeBlock;
   style: ComputedPreviewStyle;
   isActive?: boolean;
@@ -67,9 +75,25 @@ export interface BlockRendererProps {
 }
 
 /**
+ * Granular interaction props for sub-block element highlighting
+ */
+export interface GranularInteractionProps {
+  /** Parent block ID for constructing element paths */
+  blockId: string;
+  /** Currently active (selected) element ID */
+  activeElementId?: string | null;
+  /** Currently hovered element ID */
+  hoveredElementId?: string | null;
+  /** Handler for element click (selection) */
+  onElementClick?: (elementId: string) => void;
+  /** Handler for element hover state changes */
+  onElementHover?: (elementId: string | null) => void;
+}
+
+/**
  * Individual block preview props (base interface)
  */
-export interface BaseBlockPreviewProps<T> {
+export interface BaseBlockPreviewProps<T> extends Partial<GranularInteractionProps> {
   content: T;
   style: ComputedPreviewStyle;
 }
