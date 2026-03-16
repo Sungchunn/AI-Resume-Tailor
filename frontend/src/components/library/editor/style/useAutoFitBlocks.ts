@@ -229,6 +229,13 @@ export function calculateReductions(
 export const STABILITY_THRESHOLD_PX = 2;
 
 /**
+ * Tolerance for "fits" check (in pixels).
+ * Browser rendering can cause slight variations in scrollHeight.
+ * If content is within this tolerance of target height, consider it as fitting.
+ */
+export const FITS_TOLERANCE_PX = 10;
+
+/**
  * Warning threshold for timing anomalies (ms).
  * If double RAF takes longer than this, it may indicate concurrent mode interference.
  */
@@ -308,9 +315,9 @@ export async function findOptimalCompactness(
   originalStyle: BlockEditorStyle,
   userMinFontSize?: number
 ): Promise<BinarySearchResult> {
-  // First check: does original style fit?
+  // First check: does original style fit? (with tolerance for rendering variance)
   const originalHeight = await measureHeight(originalStyle);
-  if (originalHeight <= targetHeight) {
+  if (originalHeight <= targetHeight + FITS_TOLERANCE_PX) {
     return { level: 0, style: originalStyle, fits: true };
   }
 
@@ -345,10 +352,10 @@ export async function findOptimalCompactness(
     }
   }
 
-  // Check if result actually fits
+  // Check if result actually fits (with tolerance for browser rendering variance)
   const finalStyle = compactnessToStyle(result, originalStyle, userMinFontSize);
   const finalHeight = await measureHeight(finalStyle);
-  const fits = finalHeight <= targetHeight;
+  const fits = finalHeight <= targetHeight + FITS_TOLERANCE_PX;
 
   // Log iteration count in development for monitoring
   if (process.env.NODE_ENV === "development") {

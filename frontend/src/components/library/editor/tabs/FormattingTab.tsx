@@ -9,28 +9,15 @@ import { AutoFitToggle } from "../style";
  */
 const PRESET_INFO: Record<
   StylePresetName,
-  { label: string; description: string; font: string }
+  { label: string; font: string }
 > = {
-  modern: {
-    label: "Modern",
-    description: "Clean and contemporary",
-    font: "Inter",
-  },
-  classic: {
-    label: "Classic",
-    description: "Traditional and professional",
-    font: "Times New Roman",
-  },
-  minimal: {
-    label: "Minimal",
-    description: "Space-efficient and sleek",
-    font: "Open Sans",
-  },
-  executive: {
-    label: "Executive",
-    description: "Bold and distinguished",
-    font: "Georgia",
-  },
+  inter: { label: "Inter", font: "Modern sans-serif" },
+  roboto: { label: "Roboto", font: "Clean geometric" },
+  openSans: { label: "Open Sans", font: "Friendly humanist" },
+  lato: { label: "Lato", font: "Warm semi-rounded" },
+  arial: { label: "Arial", font: "Universal classic" },
+  georgia: { label: "Georgia", font: "Elegant serif" },
+  timesNewRoman: { label: "Times New Roman", font: "Traditional serif" },
 };
 
 /**
@@ -102,10 +89,17 @@ export function FormattingTab() {
 
         {/* Style Presets */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-3">
-            Style
-          </label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-sm font-medium text-foreground">
+              Font Style
+            </label>
+            {fitToOnePage && (
+              <span className="text-xs text-muted-foreground">
+                Disable fit-to-page to change
+              </span>
+            )}
+          </div>
+          <div className={`grid grid-cols-1 gap-1.5 ${fitToOnePage ? "opacity-50" : ""}`}>
             {(Object.keys(PRESET_INFO) as StylePresetName[]).map((preset) => {
               const info = PRESET_INFO[preset];
               const isActive = activePreset === preset;
@@ -113,18 +107,19 @@ export function FormattingTab() {
                 <button
                   key={preset}
                   onClick={() => applyStylePreset(preset)}
-                  className={`p-3 rounded-lg border text-left transition-all ${
+                  disabled={fitToOnePage}
+                  className={`px-3 py-2 rounded-md border text-left transition-all flex items-center justify-between ${
                     isActive
                       ? "border-primary bg-primary/5 ring-1 ring-primary"
                       : "border-border bg-card hover:border-primary/50 hover:bg-accent/50"
-                  }`}
+                  } ${fitToOnePage ? "cursor-not-allowed" : ""}`}
                 >
-                  <div className="text-sm font-medium text-foreground">
+                  <span className="text-sm font-medium text-foreground">
                     {info.label}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
+                  </span>
+                  <span className="text-xs text-muted-foreground">
                     {info.font}
-                  </div>
+                  </span>
                 </button>
               );
             })}

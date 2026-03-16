@@ -568,24 +568,11 @@ export function getFontProfile(fontFamily: string) {
 }
 
 /**
- * Style presets (templates)
+ * Style presets - one for each supported font
+ * Each preset has settings optimized for that font's characteristics
  */
 export const STYLE_PRESETS = {
-  classic: {
-    fontFamily: "Times New Roman",
-    fontSizeBody: 11,
-    fontSizeHeading: 14,
-    fontSizeSubheading: 12,
-    marginTop: 0.75,
-    marginBottom: 0.75,
-    marginLeft: 0.75,
-    marginRight: 0.75,
-    lineSpacing: 1.15,
-    sectionSpacing: 14,
-    entrySpacing: 10,
-  } as BlockEditorStyle,
-
-  modern: {
+  inter: {
     fontFamily: "Inter",
     fontSizeBody: 10,
     fontSizeHeading: 14,
@@ -599,7 +586,21 @@ export const STYLE_PRESETS = {
     entrySpacing: 8,
   } as BlockEditorStyle,
 
-  minimal: {
+  roboto: {
+    fontFamily: "Roboto",
+    fontSizeBody: 10,
+    fontSizeHeading: 14,
+    fontSizeSubheading: 11,
+    marginTop: 0.5,
+    marginBottom: 0.5,
+    marginLeft: 0.5,
+    marginRight: 0.5,
+    lineSpacing: 1.15,
+    sectionSpacing: 12,
+    entrySpacing: 8,
+  } as BlockEditorStyle,
+
+  openSans: {
     fontFamily: "Open Sans",
     fontSizeBody: 10,
     fontSizeHeading: 12,
@@ -613,7 +614,35 @@ export const STYLE_PRESETS = {
     entrySpacing: 6,
   } as BlockEditorStyle,
 
-  executive: {
+  lato: {
+    fontFamily: "Lato",
+    fontSizeBody: 10,
+    fontSizeHeading: 13,
+    fontSizeSubheading: 11,
+    marginTop: 0.5,
+    marginBottom: 0.5,
+    marginLeft: 0.5,
+    marginRight: 0.5,
+    lineSpacing: 1.15,
+    sectionSpacing: 11,
+    entrySpacing: 7,
+  } as BlockEditorStyle,
+
+  arial: {
+    fontFamily: "Arial",
+    fontSizeBody: 10,
+    fontSizeHeading: 13,
+    fontSizeSubheading: 11,
+    marginTop: 0.5,
+    marginBottom: 0.5,
+    marginLeft: 0.5,
+    marginRight: 0.5,
+    lineSpacing: 1.15,
+    sectionSpacing: 12,
+    entrySpacing: 8,
+  } as BlockEditorStyle,
+
+  georgia: {
     fontFamily: "Georgia",
     fontSizeBody: 11,
     fontSizeHeading: 16,
@@ -624,6 +653,20 @@ export const STYLE_PRESETS = {
     marginRight: 0.75,
     lineSpacing: 1.3,
     sectionSpacing: 16,
+    entrySpacing: 10,
+  } as BlockEditorStyle,
+
+  timesNewRoman: {
+    fontFamily: "Times New Roman",
+    fontSizeBody: 11,
+    fontSizeHeading: 14,
+    fontSizeSubheading: 12,
+    marginTop: 0.75,
+    marginBottom: 0.75,
+    marginLeft: 0.75,
+    marginRight: 0.75,
+    lineSpacing: 1.15,
+    sectionSpacing: 14,
     entrySpacing: 10,
   } as BlockEditorStyle,
 } as const;

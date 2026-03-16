@@ -491,7 +491,7 @@ export default function ResumeDetailPage({ params }: PageProps) {
         <ExportDialog
           resumeTitle={resume.title}
           onClose={() => setShowExportDialog(false)}
-          pageElements={previewRef.current?.getPageElements()}
+          pageElements={previewRef.current?.getPageElement() ? [previewRef.current.getPageElement()!] : undefined}
         />
       )}
     </div>
