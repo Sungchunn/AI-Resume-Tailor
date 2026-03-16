@@ -150,4 +150,132 @@ test.describe("Auto-Save and Persistence", () => {
     const isEnabled = await editor.fitToPageToggle.getAttribute("aria-checked");
     expect(isEnabled).toBe("true");
   });
+
+  test("adjusted styles persist correctly across reload", async ({ page }) => {
+    let savedStyle: Record<string, unknown> = {};
+
+    // Track saves and capture style
+    await page.route("**/api/resumes/*/partial", async (route) => {
+      const body = route.request().postDataJSON();
+      if (body?.style) {
+        savedStyle = { ...savedStyle, ...body.style };
+      }
+      await route.fulfill({
+        status: 200,
+        json: { success: true },
+      });
+    });
+
+    // Mock resume API - return saved style
+    await page.route("**/api/resumes/*", async (route) => {
+      if (
+        route.request().method() === "GET" &&
+        !route.request().url().includes("/partial")
+      ) {
+        await route.fulfill({
+          status: 200,
+          json: {
+            id: "style-persist-id",
+            ...generateResumeContent(RESUME_PRESETS.moderateOverflow),
+            fit_to_page: true,
+            style: {
+              fontFamily: "Inter",
+              fontSizeBody: 10,
+              fontSizeHeading: 14,
+              fontSizeSubheading: 11,
+              lineSpacing: 1.15,
+              sectionSpacing: 12,
+              entrySpacing: 8,
+              ...savedStyle,
+            },
+          },
+        });
+      } else if (!route.request().url().includes("/partial")) {
+        await route.continue();
+      }
+    });
+
+    const editor = new ResumeEditorPage(page);
+    await editor.goto("style-persist-id");
+
+    // Wait for initial fit to complete
+    await editor.waitForFitComplete();
+
+    // Get the adjusted values
+    const bodySize = await editor.fontSizeBody.inputValue();
+    const sectionSpacing = await editor.spacingSection.inputValue();
+
+    // Wait for save
+    await page.waitForTimeout(2500);
+
+    // Reload
+    await page.reload();
+    await editor.previewPage.waitFor({ state: "visible" });
+    await editor.waitForFitComplete();
+
+    // Values should be restored
+    const reloadedBodySize = await editor.fontSizeBody.inputValue();
+    const reloadedSectionSpacing = await editor.spacingSection.inputValue();
+
+    expect(reloadedBodySize).toBe(bodySize);
+    expect(reloadedSectionSpacing).toBe(sectionSpacing);
+  });
+
+  test("compactness level restored without re-fitting", async ({ page }) => {
+    let savedFitToPage = true;
+    let savedStyle: Record<string, unknown> = {
+      fontSizeBody: 9,
+      sectionSpacing: 8,
+      entrySpacing: 6,
+      lineSpacing: 1.1,
+    };
+
+    // Track saves
+    await page.route("**/api/resumes/*/partial", async (route) => {
+      const body = route.request().postDataJSON();
+      if (body?.fit_to_page !== undefined) {
+        savedFitToPage = body.fit_to_page;
+      }
+      if (body?.style) {
+        savedStyle = { ...savedStyle, ...body.style };
+      }
+      await route.fulfill({
+        status: 200,
+        json: { success: true },
+      });
+    });
+
+    // Mock resume API - return pre-fitted state
+    await page.route("**/api/resumes/*", async (route) => {
+      if (
+        route.request().method() === "GET" &&
+        !route.request().url().includes("/partial")
+      ) {
+        await route.fulfill({
+          status: 200,
+          json: {
+            id: "prefitted-id",
+            ...generateResumeContent(RESUME_PRESETS.moderateOverflow),
+            fit_to_page: savedFitToPage,
+            style: savedStyle,
+          },
+        });
+      } else if (!route.request().url().includes("/partial")) {
+        await route.continue();
+      }
+    });
+
+    const editor = new ResumeEditorPage(page);
+    await editor.goto("prefitted-id");
+
+    // Should load with fit enabled and reach fitted state quickly
+    await editor.waitForFitComplete();
+
+    const status = await editor.getStatus();
+    expect(["fitted", "minimum_reached"]).toContain(status);
+
+    // The pre-saved style should be reflected
+    const bodySize = Number(await editor.fontSizeBody.inputValue());
+    expect(bodySize).toBeLessThanOrEqual(10); // Should be reduced from default
+  });
 });

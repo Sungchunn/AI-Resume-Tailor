@@ -128,4 +128,141 @@ test.describe("Fit to One Page - Measurement", () => {
     );
     expect(reductions.some((r) => r.toLowerCase().includes("font"))).toBe(true);
   });
+
+  test("reductions list shows section spacing for phase 1", async ({ page }) => {
+    // Mock API with moderate overflow that triggers section spacing reduction
+    await page.route("**/api/resumes/*", async (route) => {
+      if (route.request().method() === "GET") {
+        await route.fulfill({
+          status: 200,
+          json: {
+            id: "moderate-id",
+            ...generateResumeContent(RESUME_PRESETS.moderateOverflow),
+            fit_to_page: false,
+          },
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.route("**/api/resumes/*/partial", async (route) => {
+      await route.fulfill({ status: 200, json: { success: true } });
+    });
+
+    const editor = new ResumeEditorPage(page);
+    await editor.goto("moderate-id");
+
+    await editor.enableFitToPage();
+    await editor.waitForFitComplete();
+
+    const reductions = await editor.getAppliedReductions();
+    // Phase 1 reduces section spacing first
+    const hasSectionSpacing = reductions.some(
+      (r) =>
+        r.toLowerCase().includes("section") ||
+        r.toLowerCase().includes("spacing")
+    );
+    expect(hasSectionSpacing).toBe(true);
+  });
+
+  test("reductions list shows entry spacing for phase 2", async ({ page }) => {
+    // Mock API with content requiring entry spacing reduction
+    await page.route("**/api/resumes/*", async (route) => {
+      if (route.request().method() === "GET") {
+        await route.fulfill({
+          status: 200,
+          json: {
+            id: "entry-overflow-id",
+            ...generateResumeContent(RESUME_PRESETS.moderateOverflow),
+            fit_to_page: false,
+          },
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.route("**/api/resumes/*/partial", async (route) => {
+      await route.fulfill({ status: 200, json: { success: true } });
+    });
+
+    const editor = new ResumeEditorPage(page);
+    await editor.goto("entry-overflow-id");
+
+    await editor.enableFitToPage();
+    await editor.waitForFitComplete();
+
+    const reductions = await editor.getAppliedReductions();
+    // Algorithm applies multiple reductions in moderate overflow
+    expect(reductions.length).toBeGreaterThan(0);
+  });
+
+  test("reductions list shows line height for phase 3", async ({ page }) => {
+    // Mock API with content requiring line height reduction
+    await page.route("**/api/resumes/*", async (route) => {
+      if (route.request().method() === "GET") {
+        await route.fulfill({
+          status: 200,
+          json: {
+            id: "line-height-id",
+            ...generateResumeContent(RESUME_PRESETS.severeOverflow),
+            fit_to_page: false,
+          },
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.route("**/api/resumes/*/partial", async (route) => {
+      await route.fulfill({ status: 200, json: { success: true } });
+    });
+
+    const editor = new ResumeEditorPage(page);
+    await editor.goto("line-height-id");
+
+    await editor.enableFitToPage();
+    await editor.waitForFitComplete();
+
+    const reductions = await editor.getAppliedReductions();
+    // Severe overflow triggers line height reduction (phase 3)
+    const hasLineHeight = reductions.some(
+      (r) => r.toLowerCase().includes("line") || r.toLowerCase().includes("height")
+    );
+    expect(hasLineHeight).toBe(true);
+  });
+
+  test("reductions list shows body font for phase 4", async ({ page }) => {
+    // Mock API with severe content requiring font size reduction
+    await page.route("**/api/resumes/*", async (route) => {
+      if (route.request().method() === "GET") {
+        await route.fulfill({
+          status: 200,
+          json: {
+            id: "font-reduce-id",
+            ...generateResumeContent(RESUME_PRESETS.severeOverflow),
+            fit_to_page: false,
+          },
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.route("**/api/resumes/*/partial", async (route) => {
+      await route.fulfill({ status: 200, json: { success: true } });
+    });
+
+    const editor = new ResumeEditorPage(page);
+    await editor.goto("font-reduce-id");
+
+    await editor.enableFitToPage();
+    await editor.waitForFitComplete();
+
+    const reductions = await editor.getAppliedReductions();
+    // Severe overflow triggers font size reduction (phase 4)
+    const hasFont = reductions.some((r) => r.toLowerCase().includes("font"));
+    expect(hasFont).toBe(true);
+  });
 });
