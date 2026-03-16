@@ -208,7 +208,11 @@ export function EditorLayout({
         hasRawContent={hasRawContent}
         hasParsedContent={hasParsedContent}
         onParseComplete={onParseComplete}
-        onExport={() => setShowExportDialog(true)}
+        onExport={() => {
+          // Clear active block selection so highlight rings don't appear in PDF export
+          setActiveBlock(null);
+          setShowExportDialog(true);
+        }}
       />
 
       {/* Main Content */}
