@@ -352,6 +352,11 @@ export function BlockEditorProvider({
    * Core save execution logic.
    * Used by both manual save and auto-save.
    * Returns true on success, false on failure.
+   *
+   * When `onSave` callback is provided (e.g., for tailored resumes),
+   * it is used as the primary save mechanism instead of the default
+   * resume API. This allows the provider to be used for different
+   * resume types that have their own save endpoints.
    */
   const performSave = useCallback(async (): Promise<boolean> => {
     if (isSavingRef.current || hasConflict) return false;
@@ -366,7 +371,17 @@ export function BlockEditorProvider({
       // Include fitToOnePage setting in the persisted style
       const apiStyle = editorStyleToApiStyle(state.style, state.fitToOnePage);
 
-      // Call executeSave which handles OCC
+      // If custom onSave is provided, use it as the primary save mechanism.
+      // This is used for tailored resumes which have their own API endpoint.
+      if (onSave) {
+        await onSave({ parsedContent, style: apiStyle, version: currentVersion });
+        dispatch(blockEditorActions.setError(null));
+        dispatch(blockEditorActions.setDirty(false));
+        broadcast("SAVE_COMPLETED", currentVersion);
+        return true;
+      }
+
+      // Default: use executeSave which handles OCC for regular resumes
       const newVersion = await executeSave({
         version: currentVersion,
         parsed_content: parsedContent as Record<string, unknown>,
@@ -375,10 +390,6 @@ export function BlockEditorProvider({
 
       if (newVersion) {
         dispatch(blockEditorActions.setError(null));
-        // Call optional onSave callback for custom behavior
-        if (onSave) {
-          await onSave({ parsedContent, style: apiStyle, version: newVersion });
-        }
         return true;
       }
       return false;
