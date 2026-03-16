@@ -9,13 +9,9 @@ export class ResumeEditorPage {
   readonly statusBadge: Locator;
   readonly adjustmentsList: Locator;
   readonly minimumWarning: Locator;
-  readonly fontFamilySelect: Locator;
-  readonly fontSizeBody: Locator;
-  readonly fontSizeHeading: Locator;
-  readonly fontSizeSubheading: Locator;
-  readonly spacingLine: Locator;
-  readonly spacingSection: Locator;
-  readonly spacingEntry: Locator;
+  readonly fontPresetGrid: Locator;
+  readonly fontPresets: Locator;
+  readonly currentFontDisplay: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -24,13 +20,9 @@ export class ResumeEditorPage {
     this.statusBadge = page.locator('[data-testid="fit-status-badge"]');
     this.adjustmentsList = page.locator('[data-testid="fit-adjustments-list"]');
     this.minimumWarning = page.locator('[data-testid="fit-minimum-warning"]');
-    this.fontFamilySelect = page.locator('[data-testid="font-family-select"]');
-    this.fontSizeBody = page.locator('[data-testid="font-size-body"]');
-    this.fontSizeHeading = page.locator('[data-testid="font-size-heading"]');
-    this.fontSizeSubheading = page.locator('[data-testid="font-size-subheading"]');
-    this.spacingLine = page.locator('[data-testid="spacing-line"]');
-    this.spacingSection = page.locator('[data-testid="spacing-section"]');
-    this.spacingEntry = page.locator('[data-testid="spacing-entry"]');
+    this.fontPresetGrid = page.locator('[data-testid="font-preset-grid"]');
+    this.fontPresets = page.locator('[data-testid^="font-preset-"]');
+    this.currentFontDisplay = page.locator('[data-testid="current-font-display"]');
   }
 
   async goto(resumeId: string) {
@@ -64,7 +56,7 @@ export class ResumeEditorPage {
 
   async waitForFitComplete(options: { timeout?: number } = {}) {
     const timeout = options.timeout ?? 10000;
-    await expect(this.statusBadge).toHaveText(/(Fitted|At minimum)/, { timeout });
+    await expect(this.statusBadge).toHaveText(/(Fitted|Limit)/, { timeout });
   }
 
   async getPreviewHeight(): Promise<number> {
@@ -86,7 +78,7 @@ export class ResumeEditorPage {
       const text = await this.statusBadge.textContent({ timeout: 1000 });
       if (text?.includes("Fitting")) return "fitting";
       if (text?.includes("Fitted")) return "fitted";
-      if (text?.includes("At minimum")) return "minimum_reached";
+      if (text?.includes("Limit")) return "minimum_reached";
     } catch {
       // Badge not visible = idle
     }
@@ -103,17 +95,31 @@ export class ResumeEditorPage {
   }
 
   /**
-   * Select a font family from the dropdown
+   * Select a font by clicking the corresponding preset button.
+   * Accepts either the display label (e.g., "Inter", "Times New Roman")
+   * or the preset key (e.g., "inter", "timesNewRoman").
    */
   async selectFont(fontFamily: string) {
-    await this.fontFamilySelect.selectOption(fontFamily);
+    // Map display names to preset keys
+    const displayToPreset: Record<string, string> = {
+      "Inter": "inter",
+      "Roboto": "roboto",
+      "Open Sans": "openSans",
+      "Lato": "lato",
+      "Arial": "arial",
+      "Georgia": "georgia",
+      "Times New Roman": "timesNewRoman",
+    };
+    const presetKey = displayToPreset[fontFamily] || fontFamily.toLowerCase();
+    await this.page.locator(`[data-testid="font-preset-${presetKey}"]`).click();
   }
 
   /**
-   * Get the current font family value
+   * Get the current font family from the display element
    */
   async getSelectedFont(): Promise<string> {
-    return await this.fontFamilySelect.inputValue();
+    const text = await this.currentFontDisplay.locator("span").first().textContent();
+    return text?.trim() || "";
   }
 
   /**
@@ -127,10 +133,19 @@ export class ResumeEditorPage {
   }
 
   /**
-   * Check if a control is disabled
+   * Check if typography controls are locked (font grid disabled)
    */
-  async isControlDisabled(locator: Locator): Promise<boolean> {
-    return await locator.isDisabled();
+  async isTypographyLocked(): Promise<boolean> {
+    const classes = await this.fontPresetGrid.getAttribute("class");
+    return classes?.includes("pointer-events-none") ?? false;
+  }
+
+  /**
+   * Check if a font preset button is disabled
+   */
+  async isFontPresetDisabled(presetKey: string): Promise<boolean> {
+    const button = this.page.locator(`[data-testid="font-preset-${presetKey}"]`);
+    return await button.isDisabled();
   }
 
   /**
