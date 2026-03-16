@@ -42,6 +42,42 @@ export const RESUME_PRESETS = {
     educationCount: 4,
     skillCount: 30,
   },
+
+  /** Empty resume - no content at all */
+  empty: {
+    experienceCount: 0,
+    bulletsPerEntry: 0,
+    bulletLength: 0,
+    educationCount: 0,
+    skillCount: 0,
+  },
+
+  /** Single section - minimal content */
+  singleSection: {
+    experienceCount: 1,
+    bulletsPerEntry: 2,
+    bulletLength: 50,
+    educationCount: 0,
+    skillCount: 0,
+  },
+
+  /** Long bullets - text wrapping stress test (500+ char bullets) */
+  longBullets: {
+    experienceCount: 2,
+    bulletsPerEntry: 3,
+    bulletLength: 500,
+    educationCount: 1,
+    skillCount: 5,
+  },
+
+  /** Many skills - tag rendering stress test (100+ skills) */
+  manySkills: {
+    experienceCount: 2,
+    bulletsPerEntry: 3,
+    bulletLength: 80,
+    educationCount: 1,
+    skillCount: 100,
+  },
 } as const;
 
 export function generateBullet(targetLength: number): string {
