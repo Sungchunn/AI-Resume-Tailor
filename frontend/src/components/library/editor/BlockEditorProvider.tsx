@@ -20,11 +20,7 @@ import type {
   ParsedResumeContent,
   ResumeBlockType,
 } from "@/lib/resume/types";
-import {
-  createEmptyState,
-  STYLE_PRESETS,
-  type StylePresetName,
-} from "@/lib/resume/defaults";
+import { createEmptyState } from "@/lib/resume/defaults";
 import {
   parsedContentToBlocks,
   blocksToParsedContent,
@@ -283,11 +279,6 @@ export function BlockEditorProvider({
     dispatch(blockEditorActions.setStyle(style));
   }, []);
 
-  const applyStylePreset = useCallback((presetName: StylePresetName) => {
-    const preset = STYLE_PRESETS[presetName];
-    dispatch(blockEditorActions.setStyle(preset));
-  }, []);
-
   // Auto-fit operations
   const setFitToOnePage = useCallback((enabled: boolean) => {
     dispatch(blockEditorActions.setFitToOnePage(enabled));
@@ -468,7 +459,6 @@ export function BlockEditorProvider({
       moveBlockUp,
       moveBlockDown,
       updateStyle,
-      applyStylePreset,
       setFitToOnePage,
       autoFitStatus,
       autoFitReductions,
@@ -498,7 +488,6 @@ export function BlockEditorProvider({
       moveBlockUp,
       moveBlockDown,
       updateStyle,
-      applyStylePreset,
       setFitToOnePage,
       autoFitStatus,
       autoFitReductions,

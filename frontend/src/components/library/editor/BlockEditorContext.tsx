@@ -37,7 +37,6 @@ export interface BlockEditorContextValue {
 
   // Style operations
   updateStyle: (style: Partial<BlockEditorStyle>) => void;
-  applyStylePreset: (presetName: "classic" | "modern" | "minimal" | "executive") => void;
 
   // Auto-fit operations
   setFitToOnePage: (enabled: boolean) => void;
