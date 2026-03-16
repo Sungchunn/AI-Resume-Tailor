@@ -148,7 +148,10 @@ export function FormattingTab() {
           </div>
 
           {/* Current Font Display */}
-          <div className="flex items-center justify-between px-3 py-2 mb-3 rounded-md bg-muted/50 border border-border">
+          <div
+            data-testid="current-font-display"
+            className="flex items-center justify-between px-3 py-2 mb-3 rounded-md bg-muted/50 border border-border"
+          >
             <span className="text-sm text-foreground font-medium">
               {style.fontFamily}
             </span>
@@ -159,6 +162,7 @@ export function FormattingTab() {
 
           {/* Font Grid - 2 columns */}
           <div
+            data-testid="font-preset-grid"
             className={`grid grid-cols-2 gap-1.5 ${
               fitToOnePage ? "opacity-40 pointer-events-none" : ""
             }`}
@@ -168,6 +172,7 @@ export function FormattingTab() {
               return (
                 <button
                   key={preset}
+                  data-testid={`font-preset-${preset}`}
                   onClick={() => applyStylePreset(preset)}
                   disabled={fitToOnePage}
                   className={`relative px-2.5 py-2 rounded-md border text-left transition-all ${
