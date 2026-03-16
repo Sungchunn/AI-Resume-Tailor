@@ -566,9 +566,13 @@ export function useAutoFitBlocks({
     minimumReachedRef.current = false;
   }, [blocksHash]);
 
-  // Calculate target height (page minus margins)
-  const getTargetHeight = useCallback((s: BlockEditorStyle) => {
-    return PAGE_HEIGHT - (s.marginTop + s.marginBottom) * 96;
+  // Calculate target height for auto-fit
+  // When using DOM measurement with paginated preview, the measurement returns
+  // pageCount * PAGE_HEIGHT, where pageCount=1 means content fits within margins.
+  // So the target should be the full page height, not page minus margins.
+  // (The paginated preview handles margin bounds internally when calculating page count)
+  const getTargetHeight = useCallback(() => {
+    return PAGE_HEIGHT;
   }, []);
 
   // Run auto-fit algorithm (binary search with DOM or linear with estimation)
@@ -591,7 +595,7 @@ export function useAutoFitBlocks({
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
 
-    const targetHeight = getTargetHeight(style);
+    const targetHeight = getTargetHeight();
 
     // Choose algorithm based on whether measureFn is provided
     if (measureFn) {

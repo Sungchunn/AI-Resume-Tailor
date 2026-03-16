@@ -78,6 +78,34 @@ export function EditorToolbar({
 
       {/* Content */}
       <div className="p-4 space-y-6 max-h-[calc(100vh-200px)] overflow-auto">
+        {/* Minimum Font Size - shown before auto-fit so users can set preference first */}
+        <div className="pb-4 border-b border-border">
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Minimum Font Size
+          </label>
+          <p className="text-xs text-muted-foreground mb-3">
+            The smallest font size allowed when fitting to one page.
+          </p>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={7}
+              max={10}
+              step={1}
+              value={minFontSize}
+              onChange={(e) => setMinFontSize(Number(e.target.value))}
+              className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+            />
+            <span className="text-sm font-medium text-foreground w-12 text-right">
+              {minFontSize}pt
+            </span>
+          </div>
+          <div className="flex justify-between text-[10px] text-muted-foreground mt-1 px-1">
+            <span>Compact</span>
+            <span>Readable</span>
+          </div>
+        </div>
+
         {/* Auto-fit Toggle */}
         <div className="pb-4 border-b border-border">
           <AutoFitToggle
@@ -87,36 +115,6 @@ export function EditorToolbar({
             reductions={autoFitReductions}
           />
         </div>
-
-        {/* Minimum Font Size (only when fit-to-page is enabled) */}
-        {fitToOnePage && (
-          <div className="pb-4 border-b border-border">
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Minimum Font Size
-            </label>
-            <p className="text-xs text-muted-foreground mb-3">
-              The smallest font the algorithm can use.
-            </p>
-            <div className="flex items-center gap-3">
-              <input
-                type="range"
-                min={7}
-                max={10}
-                step={1}
-                value={minFontSize}
-                onChange={(e) => setMinFontSize(Number(e.target.value))}
-                className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-              />
-              <span className="text-sm font-medium text-foreground w-12 text-right">
-                {minFontSize}pt
-              </span>
-            </div>
-            <div className="flex justify-between text-[10px] text-muted-foreground mt-1 px-1">
-              <span>Compact</span>
-              <span>Readable</span>
-            </div>
-          </div>
-        )}
 
         {/* Style Presets */}
         <div>
