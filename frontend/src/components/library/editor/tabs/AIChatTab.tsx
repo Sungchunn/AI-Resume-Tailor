@@ -370,7 +370,7 @@ export function AIChatTab({ jobId, jobListingId }: AIChatTabProps) {
             <p className="text-sm text-muted-foreground mb-2">
               Start a conversation
             </p>
-            <p className="text-xs text-muted-foreground/70 max-w-[200px]">
+            <p className="text-xs text-muted-foreground/70 max-w-50">
               Select a section above and ask for improvements, or use the quick actions
             </p>
           </div>
