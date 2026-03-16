@@ -8,8 +8,7 @@
  * - Job context card
  * - Selected resume summary
  * - ATS Progressive Analysis with SSE streaming
- * - Interactive keyword selection UI (gated behind ATS completion)
- * - CTA to generate tailored resume
+ * - CTA to navigate to library editor with job context
  */
 
 "use client";
@@ -21,7 +20,6 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowRight,
-  Loader2,
   AlertCircle,
   CheckCircle2,
   Info,
@@ -31,12 +29,10 @@ import { ChevronLeftIcon } from "@/components/icons";
 import {
   useResume,
   useJobListing,
-  useTailorResume,
 } from "@/lib/api";
 import {
   TailorFlowStepper,
   ATSProgressStepper,
-  KeywordSelectionPanel,
   SelectedResumeCard,
 } from "@/components/tailoring";
 import { useATSProgressStream } from "@/hooks/useATSProgressStream";
@@ -70,16 +66,8 @@ function AnalyzePageContent() {
     error: jobListingError,
   } = useJobListing(jobListingIdNum ?? 0);
 
-  // Tailor mutation
-  const tailorResume = useTailorResume();
-
-  // Skill data state (populated from ATS analysis)
-  const [skillMatches, setSkillMatches] = useState<string[]>([]);
-  const [skillGaps, setSkillGaps] = useState<string[]>([]);
+  // Track ATS analysis completion
   const [atsComplete, setAtsComplete] = useState(false);
-
-  // Keyword selection state
-  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
 
   // ATS completion callback - extract skill data from composite score
   const handleATSComplete = useCallback((compositeScore: ATSCompositeScore) => {
@@ -144,32 +132,21 @@ function AnalyzePageContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeId, jobListingIdNum]);
 
-  // Handle generate tailored resume
-  const handleGenerateTailored = async () => {
+  // Navigate to library editor with job context
+  const handleEditResume = () => {
     if (!resumeId) return;
-    if (!jobListingIdNum && !jobIdNum) return;
 
-    try {
-      const request = jobListingIdNum
-        ? {
-            resume_id: resumeId,
-            job_listing_id: jobListingIdNum,
-            focus_keywords:
-              selectedKeywords.length > 0 ? selectedKeywords : undefined,
-          }
-        : {
-            resume_id: resumeId,
-            job_id: jobIdNum!,
-            focus_keywords:
-              selectedKeywords.length > 0 ? selectedKeywords : undefined,
-          };
-
-      const result = await tailorResume.mutateAsync(request);
-      // Navigate directly to editor (Step 3: Review & Edit)
-      router.push(`/tailor/editor/${result.id}`);
-    } catch {
-      // Error is handled by mutation state
+    // Build query params for job context
+    const params = new URLSearchParams();
+    if (jobListingIdNum) {
+      params.set("jobListingId", String(jobListingIdNum));
+    } else if (jobIdNum) {
+      params.set("jobId", String(jobIdNum));
     }
+
+    // Navigate to library editor with job context
+    const queryString = params.toString();
+    router.push(`/library/resumes/${resumeId}/edit${queryString ? `?${queryString}` : ""}`);
   };
 
   // Loading state
@@ -342,59 +319,12 @@ function AnalyzePageContent() {
               </h3>
               <p className="text-sm text-muted-foreground">
                 ATS analysis is only available for scraped job listings.
-                You can still generate a tailored resume with general optimization.
+                You can still edit your resume with AI assistance.
               </p>
             </div>
           </div>
         </div>
       )}
-
-      {/* Keyword Selection - Show after ATS analysis completes (or immediately for manual jobs) */}
-      <AnimatePresence>
-        {(atsComplete || atsStream.isComplete || (!jobListingIdNum && jobIdNum)) && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="card"
-          >
-            <h2 className="text-lg font-semibold text-foreground mb-4">
-              Customize Your Tailored Resume
-            </h2>
-            <KeywordSelectionPanel
-              skillMatches={skillMatches}
-              skillGaps={skillGaps}
-              selectedSkills={selectedKeywords}
-              onSelectionChange={setSelectedKeywords}
-              disabled={tailorResume.isPending}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Error Display */}
-      <AnimatePresence>
-        {tailorResume.error && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="rounded-lg bg-destructive/10 border border-destructive/20 p-4"
-          >
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-destructive">
-                  Failed to Generate
-                </p>
-                <p className="text-sm text-destructive/80 mt-0.5">
-                  {tailorResume.error.message || "An error occurred"}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* ATS Analysis Error */}
       <AnimatePresence>
@@ -412,8 +342,8 @@ function AnalyzePageContent() {
                   Analysis Incomplete
                 </p>
                 <p className="text-sm text-amber-600 dark:text-amber-400 mt-0.5">
-                  Could not complete ATS analysis. You can still proceed with
-                  general optimization.
+                  Could not complete ATS analysis. You can still proceed to
+                  edit your resume with AI assistance.
                 </p>
               </div>
             </div>
@@ -449,43 +379,26 @@ function AnalyzePageContent() {
       <div className="flex items-center justify-between pt-4 border-t border-border">
         <div className="text-sm text-muted-foreground">
           {resume && !resume.parsed_verified ? (
-            <span>Resume verification required before tailoring</span>
+            <span>Resume verification required before editing</span>
           ) : (atsComplete || atsStream.isComplete || (!jobListingIdNum && jobIdNum)) ? (
-            selectedKeywords.length > 0 ? (
-              <span>
-                {selectedKeywords.length} skill
-                {selectedKeywords.length === 1 ? "" : "s"} will be emphasized
-              </span>
-            ) : (
-              <span>
-                No specific skills selected — using general optimization
-              </span>
-            )
+            <span>
+              Open editor with ATS analysis and AI assistance
+            </span>
           ) : (
             <span>Analyzing your resume...</span>
           )}
         </div>
 
         <button
-          onClick={handleGenerateTailored}
+          onClick={handleEditResume}
           disabled={
             (resume && !resume.parsed_verified) ||
-            !(atsComplete || atsStream.isComplete || (!jobListingIdNum && jobIdNum)) ||
-            tailorResume.isPending
+            !(atsComplete || atsStream.isComplete || (!jobListingIdNum && jobIdNum))
           }
           className="btn-primary flex items-center gap-2"
         >
-          {tailorResume.isPending ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Generating... (this may take a minute)
-            </>
-          ) : (
-            <>
-              Generate Tailored Resume
-              <ArrowRight className="h-4 w-4" />
-            </>
-          )}
+          Edit Resume
+          <ArrowRight className="h-4 w-4" />
         </button>
       </div>
     </div>
