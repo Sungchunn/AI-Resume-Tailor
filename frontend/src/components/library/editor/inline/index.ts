@@ -44,3 +44,6 @@ export type { EditableTextProps } from "./EditableText";
 
 export { EditableRichText } from "./EditableRichText";
 export type { EditableRichTextProps } from "./EditableRichText";
+
+export { EditableBullet } from "./EditableBullet";
+export type { EditableBulletProps } from "./EditableBullet";

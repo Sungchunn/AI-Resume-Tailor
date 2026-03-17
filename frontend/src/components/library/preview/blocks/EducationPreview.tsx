@@ -1,14 +1,20 @@
 "use client";
 
+import { useCallback } from "react";
 import type { EducationEntry } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
-import { GranularElement } from "../GranularElement";
-import { createFieldElementId } from "@/lib/resume/elementPath";
+import { EditableText, EditableBullet } from "../../editor/inline";
+import {
+  createFieldElementId,
+  createIndexedElementId,
+} from "@/lib/resume/elementPath";
+import { useBlockEditor } from "../../editor/BlockEditorContext";
+import { insertAfter, removeAt } from "@/lib/resume/arrayHelpers";
 
 interface EducationPreviewProps extends BaseBlockPreviewProps<EducationEntry[]> {}
 
 /**
- * EducationPreview - Renders education entries
+ * EducationPreview - Renders education entries with inline editing
  *
  * Each entry displays:
  * - Degree and graduation date
@@ -16,17 +22,79 @@ interface EducationPreviewProps extends BaseBlockPreviewProps<EducationEntry[]> 
  * - GPA and honors (if provided)
  * - Relevant courses (if provided)
  *
- * Supports granular highlighting for degree, dates, institution, and GPA.
+ * All text fields are inline-editable via EditableText components.
+ * Relevant courses support Enter to add new and Backspace to remove empty.
  */
 export function EducationPreview({
   content,
   style,
   blockId,
-  activeElementId,
-  hoveredElementId,
-  onElementClick,
-  onElementHover,
 }: EducationPreviewProps) {
+  const { updateContentByPath, state, dispatch } = useBlockEditor();
+
+  // Update a specific course in an entry
+  const updateCourse = useCallback(
+    (entryId: string, courseIndex: number, value: string) => {
+      if (!blockId) return;
+      const elementId = createIndexedElementId(blockId, entryId, "relevantCourses", courseIndex);
+      updateContentByPath(elementId, value);
+    },
+    [blockId, updateContentByPath]
+  );
+
+  // Add a new course after the specified index
+  const addCourse = useCallback(
+    (entryIndex: number, afterIndex: number) => {
+      if (!blockId) return;
+
+      const block = state.blocks.find((b) => b.id === blockId);
+      if (!block || block.type !== "education") return;
+
+      const entries = block.content as EducationEntry[];
+      const entry = entries[entryIndex];
+      if (!entry) return;
+
+      const courses = entry.relevantCourses || [];
+      const newCourses = insertAfter(courses, afterIndex, "");
+
+      const newEntries = entries.map((e, i) =>
+        i === entryIndex ? { ...e, relevantCourses: newCourses } : e
+      );
+
+      dispatch({
+        type: "UPDATE_BLOCK",
+        payload: { id: blockId, content: newEntries },
+      });
+    },
+    [blockId, state.blocks, dispatch]
+  );
+
+  // Remove a course at the specified index
+  const removeCourse = useCallback(
+    (entryIndex: number, courseIndex: number) => {
+      if (!blockId) return;
+
+      const block = state.blocks.find((b) => b.id === blockId);
+      if (!block || block.type !== "education") return;
+
+      const entries = block.content as EducationEntry[];
+      const entry = entries[entryIndex];
+      if (!entry || !entry.relevantCourses || entry.relevantCourses.length <= 1) return;
+
+      const newCourses = removeAt(entry.relevantCourses, courseIndex);
+
+      const newEntries = entries.map((e, i) =>
+        i === entryIndex ? { ...e, relevantCourses: newCourses } : e
+      );
+
+      dispatch({
+        type: "UPDATE_BLOCK",
+        payload: { id: blockId, content: newEntries },
+      });
+    },
+    [blockId, state.blocks, dispatch]
+  );
+
   if (!content || content.length === 0) {
     return null;
   }
@@ -40,10 +108,9 @@ export function EducationPreview({
           entryIndex={entryIndex}
           style={style}
           blockId={blockId}
-          activeElementId={activeElementId}
-          hoveredElementId={hoveredElementId}
-          onElementClick={onElementClick}
-          onElementHover={onElementHover}
+          updateCourse={updateCourse}
+          addCourse={addCourse}
+          removeCourse={removeCourse}
         />
       ))}
     </div>
@@ -55,10 +122,9 @@ interface EducationEntryPreviewProps {
   entryIndex: number;
   style: BaseBlockPreviewProps<unknown>["style"];
   blockId?: string;
-  activeElementId?: string | null;
-  hoveredElementId?: string | null;
-  onElementClick?: (elementId: string) => void;
-  onElementHover?: (elementId: string | null) => void;
+  updateCourse: (entryId: string, courseIndex: number, value: string) => void;
+  addCourse: (entryIndex: number, afterIndex: number) => void;
+  removeCourse: (entryIndex: number, courseIndex: number) => void;
 }
 
 function EducationEntryPreview({
@@ -66,137 +132,47 @@ function EducationEntryPreview({
   entryIndex,
   style,
   blockId,
-  activeElementId,
-  hoveredElementId,
-  onElementClick,
-  onElementHover,
+  updateCourse,
+  addCourse,
+  removeCourse,
 }: EducationEntryPreviewProps) {
-  // Check if granular interaction is enabled
-  const hasGranularInteraction = blockId && (onElementClick || onElementHover);
+  const { updateContentByPath } = useBlockEditor();
 
-  // Create element IDs for this entry
-  const entryId = `entry-${entryIndex}`;
-  const degreeElementId = hasGranularInteraction
-    ? createFieldElementId(blockId!, entryId, "degree")
-    : "";
-  const dateElementId = hasGranularInteraction
-    ? createFieldElementId(blockId!, entryId, "date")
-    : "";
-  const institutionElementId = hasGranularInteraction
-    ? createFieldElementId(blockId!, entryId, "institution")
-    : "";
-  const gpaElementId = hasGranularInteraction
-    ? createFieldElementId(blockId!, entryId, "gpa")
-    : "";
+  // Create handler for text fields
+  const handleFieldChange = useCallback(
+    (field: string) => (value: string) => {
+      if (!blockId) return;
+      const elementId = createFieldElementId(blockId, entry.id, field);
+      updateContentByPath(elementId, value);
+    },
+    [blockId, entry.id, updateContentByPath]
+  );
 
-  // Shared granular props
-  const granularProps = {
-    activeElementId,
-    hoveredElementId,
-    onElementClick,
-    onElementHover,
-  };
-
-  return (
-    <div>
-      {/* Degree and date row */}
-      <div className="flex justify-between items-baseline">
-        {hasGranularInteraction ? (
-          <GranularElement
-            elementId={degreeElementId}
-            variant="inline"
-            {...granularProps}
-          >
-            <span
-              className="font-semibold"
-              style={{ fontSize: style.bodyFontSize }}
-            >
-              {entry.degree}
-            </span>
-          </GranularElement>
-        ) : (
-          <span
-            className="font-semibold"
-            style={{ fontSize: style.bodyFontSize }}
-          >
+  // If no blockId, render without inline editing capabilities
+  if (!blockId) {
+    return (
+      <div>
+        <div className="flex justify-between items-baseline">
+          <span className="font-semibold" style={{ fontSize: style.bodyFontSize }}>
             {entry.degree}
           </span>
-        )}
-        {entry.graduationDate && (
-          hasGranularInteraction ? (
-            <GranularElement
-              elementId={dateElementId}
-              variant="inline"
-              {...granularProps}
-            >
-              <span
-                className="text-muted-foreground flex-shrink-0 ml-4"
-                style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
-              >
-                {entry.graduationDate}
-              </span>
-            </GranularElement>
-          ) : (
+          {entry.graduationDate && (
             <span
               className="text-muted-foreground flex-shrink-0 ml-4"
               style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
             >
               {entry.graduationDate}
             </span>
-          )
-        )}
-      </div>
-
-      {/* Institution and location row */}
-      {(entry.institution || entry.location) && (
-        hasGranularInteraction ? (
-          <GranularElement
-            elementId={institutionElementId}
-            variant="inline"
-            as="div"
-            {...granularProps}
-          >
-            <span
-              className="text-foreground/80"
-              style={{ fontSize: style.bodyFontSize }}
-            >
-              {entry.institution}
-              {entry.institution && entry.location && " | "}
-              {entry.location}
-            </span>
-          </GranularElement>
-        ) : (
-          <div
-            className="text-foreground/80"
-            style={{ fontSize: style.bodyFontSize }}
-          >
+          )}
+        </div>
+        {(entry.institution || entry.location) && (
+          <div className="text-foreground/80" style={{ fontSize: style.bodyFontSize }}>
             {entry.institution}
             {entry.institution && entry.location && " | "}
             {entry.location}
           </div>
-        )
-      )}
-
-      {/* GPA and honors */}
-      {(entry.gpa || entry.honors) && (
-        hasGranularInteraction ? (
-          <GranularElement
-            elementId={gpaElementId}
-            variant="inline"
-            as="div"
-            className="mt-0.5"
-            {...granularProps}
-          >
-            <span
-              className="text-muted-foreground"
-              style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
-            >
-              {entry.gpa && <span>GPA: {entry.gpa}</span>}
-              {entry.gpa && entry.honors && " | "}
-              {entry.honors && <span>{entry.honors}</span>}
-            </span>
-          </GranularElement>
-        ) : (
+        )}
+        {(entry.gpa || entry.honors) && (
           <div
             className="text-muted-foreground mt-0.5"
             style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
@@ -205,17 +181,113 @@ function EducationEntryPreview({
             {entry.gpa && entry.honors && " | "}
             {entry.honors && <span>{entry.honors}</span>}
           </div>
-        )
-      )}
+        )}
+        {entry.relevantCourses && entry.relevantCourses.length > 0 && (
+          <div
+            className="text-muted-foreground mt-1"
+            style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
+          >
+            <span className="font-medium">Relevant Courses: </span>
+            {entry.relevantCourses.join(", ")}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Degree and date row */}
+      <div className="flex justify-between items-baseline">
+        <EditableText
+          elementId={createFieldElementId(blockId, entry.id, "degree")}
+          value={entry.degree}
+          className="font-semibold"
+          placeholder="Degree"
+          onCommit={handleFieldChange("degree")}
+        />
+        <span
+          className="flex-shrink-0 ml-4"
+          style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
+        >
+          <EditableText
+            elementId={createFieldElementId(blockId, entry.id, "graduationDate")}
+            value={entry.graduationDate || ""}
+            className="text-muted-foreground"
+            placeholder="Expected 2026"
+            onCommit={handleFieldChange("graduationDate")}
+          />
+        </span>
+      </div>
+
+      {/* Institution and location row */}
+      <div
+        className="flex justify-between text-foreground/80"
+        style={{ fontSize: style.bodyFontSize }}
+      >
+        <EditableText
+          elementId={createFieldElementId(blockId, entry.id, "institution")}
+          value={entry.institution}
+          placeholder="University Name"
+          onCommit={handleFieldChange("institution")}
+        />
+        <EditableText
+          elementId={createFieldElementId(blockId, entry.id, "location")}
+          value={entry.location || ""}
+          className="flex-shrink-0 ml-4 text-muted-foreground"
+          placeholder="City, State"
+          onCommit={handleFieldChange("location")}
+        />
+      </div>
+
+      {/* GPA and honors row */}
+      <div
+        className="flex flex-wrap gap-x-2 mt-0.5"
+        style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
+      >
+        <span className="flex items-center gap-1 text-muted-foreground">
+          <span>GPA:</span>
+          <EditableText
+            elementId={createFieldElementId(blockId, entry.id, "gpa")}
+            value={entry.gpa || ""}
+            className="text-muted-foreground"
+            placeholder="3.9"
+            onCommit={handleFieldChange("gpa")}
+          />
+        </span>
+        {(entry.gpa || entry.honors) && (
+          <span className="text-muted-foreground">|</span>
+        )}
+        <EditableText
+          elementId={createFieldElementId(blockId, entry.id, "honors")}
+          value={entry.honors || ""}
+          className="text-muted-foreground"
+          placeholder="Honors (e.g., Magna Cum Laude)"
+          onCommit={handleFieldChange("honors")}
+        />
+      </div>
 
       {/* Relevant courses */}
       {entry.relevantCourses && entry.relevantCourses.length > 0 && (
         <div
-          className="text-muted-foreground mt-1"
+          className="mt-1"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
-          <span className="font-medium">Relevant Courses: </span>
-          {entry.relevantCourses.join(", ")}
+          <span className="font-medium text-muted-foreground">Relevant Courses: </span>
+          <ul className="list-disc ml-4 mt-0.5 space-y-0.5">
+            {entry.relevantCourses.map((course, courseIndex) => (
+              <li key={courseIndex} className="text-muted-foreground">
+                <EditableBullet
+                  elementId={createIndexedElementId(blockId, entry.id, "relevantCourses", courseIndex)}
+                  value={course}
+                  placeholder="Course name..."
+                  onCommit={(value) => updateCourse(entry.id, courseIndex, value)}
+                  onEnter={() => addCourse(entryIndex, courseIndex)}
+                  onBackspaceEmpty={() => removeCourse(entryIndex, courseIndex)}
+                />
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
