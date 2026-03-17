@@ -7,12 +7,34 @@ import {
   useCallback,
   useMemo,
   useRef,
-  useEffect,
   type ReactNode,
 } from "react";
 import { useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
+
+/**
+ * Memoized TipTap extensions configuration.
+ * Defined outside the component to ensure stable reference across renders.
+ * This prevents TipTap from re-resolving extensions and avoids
+ * "Duplicate extension names found" warnings during React StrictMode double-renders.
+ */
+const INLINE_EDIT_EXTENSIONS = [
+  StarterKit.configure({
+    heading: {
+      levels: [1, 2, 3],
+    },
+    bulletList: {
+      keepMarks: true,
+      keepAttributes: false,
+    },
+    orderedList: {
+      keepMarks: true,
+      keepAttributes: false,
+    },
+  }),
+  Underline,
+];
 
 /**
  * Inline Edit Context Value
@@ -78,23 +100,9 @@ export function InlineEditProvider({
   const commitHandlersRef = useRef<Map<string, (value: string) => void>>(new Map());
 
   // Create a single TipTap editor instance
+  // Uses stable INLINE_EDIT_EXTENSIONS constant to prevent duplicate extension warnings
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3],
-        },
-        bulletList: {
-          keepMarks: true,
-          keepAttributes: false,
-        },
-        orderedList: {
-          keepMarks: true,
-          keepAttributes: false,
-        },
-      }),
-      Underline,
-    ],
+    extensions: INLINE_EDIT_EXTENSIONS,
     content: "",
     immediatelyRender: false,
     editorProps: {
