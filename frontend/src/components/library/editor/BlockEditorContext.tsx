@@ -40,6 +40,9 @@ export interface BlockEditorContextValue {
   setActiveElement: (elementId: string | null) => void;
   setHoveredElement: (elementId: string | null) => void;
 
+  // Inline editing: update content by element path
+  updateContentByPath: (elementId: string, value: string) => void;
+
   // Style operations
   updateStyle: (style: Partial<BlockEditorStyle>) => void;
 

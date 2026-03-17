@@ -28,6 +28,7 @@ import {
   editorStyleToApiStyle,
   extractFitToOnePage,
 } from "@/lib/resume/transforms";
+import { setContentByElementPath } from "@/lib/resume/elementPath";
 import { useUndoRedo } from "@/components/workshop/hooks/useUndoRedo";
 import { useAutoFitBlocks, type AutoFitStatus, type AutoFitReduction } from "./style/useAutoFitBlocks";
 import { useSaveCoordinator } from "@/hooks/useSaveCoordinator";
@@ -283,6 +284,15 @@ export function BlockEditorProvider({
     dispatch(blockEditorActions.setHoveredElement(elementId));
   }, []);
 
+  // Inline editing: update content by element path
+  const updateContentByPath = useCallback(
+    (elementId: string, value: string) => {
+      const newBlocks = setContentByElementPath(state.blocks, elementId, value);
+      dispatch(blockEditorActions.setBlocks(newBlocks));
+    },
+    [state.blocks]
+  );
+
   // Style operations
   const updateStyle = useCallback((style: Partial<BlockEditorStyle>) => {
     dispatch(blockEditorActions.setStyle(style));
@@ -480,6 +490,7 @@ export function BlockEditorProvider({
       moveBlockDown,
       setActiveElement,
       setHoveredElement,
+      updateContentByPath,
       updateStyle,
       setFitToOnePage,
       setMinFontSize,
@@ -513,6 +524,7 @@ export function BlockEditorProvider({
       moveBlockDown,
       setActiveElement,
       setHoveredElement,
+      updateContentByPath,
       updateStyle,
       setFitToOnePage,
       setMinFontSize,
