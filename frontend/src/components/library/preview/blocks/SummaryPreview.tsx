@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import type { BaseBlockPreviewProps } from "../types";
-import { EditableRichText } from "../../editor/inline";
+import { InlineRichText } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
@@ -11,7 +11,7 @@ interface SummaryPreviewProps extends BaseBlockPreviewProps<string> {}
 /**
  * SummaryPreview - Renders professional summary with inline editing
  *
- * Displays rich text content using EditableRichText component.
+ * Displays rich text content using InlineRichText component.
  * Supports formatting via floating toolbar on text selection.
  * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
@@ -39,7 +39,7 @@ export function SummaryPreview({ content, style, blockId }: SummaryPreviewProps)
         lineHeight: style.lineHeight,
       }}
     >
-      <EditableRichText
+      <InlineRichText
         elementId={blockId ? createFieldElementId(blockId, undefined, "content") : ""}
         value={content || ""}
         className="summary-content"
