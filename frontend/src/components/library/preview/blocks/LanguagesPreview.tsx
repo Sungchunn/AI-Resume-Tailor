@@ -6,7 +6,7 @@ import type { BaseBlockPreviewProps } from "../types";
 import { PROFICIENCY_LABELS } from "../previewStyles";
 import { EditableText } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
-import { useBlockEditor } from "../../editor/BlockEditorContext";
+import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
 interface LanguagesPreviewProps extends BaseBlockPreviewProps<LanguageEntry[]> {}
 
@@ -15,22 +15,23 @@ interface LanguagesPreviewProps extends BaseBlockPreviewProps<LanguageEntry[]> {
  *
  * Displays languages with their proficiency levels in a compact format.
  * All fields are inline-editable via EditableText components.
+ * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function LanguagesPreview({
   content,
   style,
   blockId,
 }: LanguagesPreviewProps) {
-  const { updateContentByPath } = useBlockEditor();
+  const editorContext = useBlockEditorOptional();
 
   // Create handler for field changes
   const handleFieldChange = useCallback(
     (entryId: string, field: string) => (value: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       const elementId = createFieldElementId(blockId, entryId, field);
-      updateContentByPath(elementId, value);
+      editorContext.updateContentByPath(elementId, value);
     },
-    [blockId, updateContentByPath]
+    [blockId, editorContext]
   );
 
   if (!content || content.length === 0) {

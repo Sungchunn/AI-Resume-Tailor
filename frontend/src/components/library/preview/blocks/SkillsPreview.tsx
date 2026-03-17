@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import type { BaseBlockPreviewProps } from "../types";
 import { EditableText } from "../../editor/inline";
 import { createIndexedElementId } from "@/lib/resume/elementPath";
-import { useBlockEditor } from "../../editor/BlockEditorContext";
+import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
 interface SkillsPreviewProps extends BaseBlockPreviewProps<string[]> {}
 
@@ -14,22 +14,23 @@ interface SkillsPreviewProps extends BaseBlockPreviewProps<string[]> {}
  * Uses semantic <ul>/<li> with display:inline for compactness while
  * maintaining proper HTML structure.
  * All skills are inline-editable via EditableText components.
+ * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function SkillsPreview({
   content,
   style,
   blockId,
 }: SkillsPreviewProps) {
-  const { updateContentByPath } = useBlockEditor();
+  const editorContext = useBlockEditorOptional();
 
   // Update a skill at the given index
   const updateSkill = useCallback(
     (index: number, value: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       const elementId = createIndexedElementId(blockId, undefined, "skills", index);
-      updateContentByPath(elementId, value);
+      editorContext.updateContentByPath(elementId, value);
     },
-    [blockId, updateContentByPath]
+    [blockId, editorContext]
   );
 
   if (!content || content.length === 0) {

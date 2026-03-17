@@ -6,7 +6,7 @@ import type { BaseBlockPreviewProps } from "../types";
 import { Mail, Phone, MapPin, Linkedin, Globe, Github } from "lucide-react";
 import { EditableText } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
-import { useBlockEditor } from "../../editor/BlockEditorContext";
+import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
 interface ContactPreviewProps extends BaseBlockPreviewProps<ContactContent> {}
 
@@ -14,20 +14,25 @@ interface ContactPreviewProps extends BaseBlockPreviewProps<ContactContent> {}
  * ContactPreview - Renders contact information header with inline editing
  *
  * Displays name prominently with contact details below.
- * All text fields are inline-editable via EditableText components.
+ * All text fields are inline-editable via EditableText components when in editor context.
+ * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function ContactPreview({ content, style, blockId }: ContactPreviewProps) {
-  const { updateContentByPath } = useBlockEditor();
+  const editorContext = useBlockEditorOptional();
+  const isEditable = !!editorContext;
 
-  // Create handler for each field
+  // Create handler for each field (only used in editable mode)
   const handleFieldChange = useCallback(
     (field: keyof ContactContent) => (value: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       const elementId = createFieldElementId(blockId, undefined, field);
-      updateContentByPath(elementId, value);
+      editorContext.updateContentByPath(elementId, value);
     },
-    [blockId, updateContentByPath]
+    [blockId, editorContext]
   );
+
+  // No-op handler for read-only mode
+  const noopHandler = useCallback(() => {}, []);
 
   const iconSize = 12;
   const iconClass = "text-muted-foreground/60 flex-shrink-0";
@@ -37,7 +42,7 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
 
   return (
     <div className="text-center pb-3 border-b border-input">
-      {/* Name - Primary heading (always editable) */}
+      {/* Name - Primary heading */}
       <h1
         className="font-bold tracking-tight"
         style={{ fontSize: style.headingFontSize }}
@@ -46,7 +51,7 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
           elementId={blockId ? createFieldElementId(blockId, undefined, "fullName") : ""}
           value={content.fullName || ""}
           placeholder="Your Name"
-          onCommit={handleFieldChange("fullName")}
+          onCommit={isEditable ? handleFieldChange("fullName") : noopHandler}
         />
       </h1>
 
@@ -62,7 +67,7 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
             elementId={blockId ? createFieldElementId(blockId, undefined, "email") : ""}
             value={content.email || ""}
             placeholder="email@example.com"
-            onCommit={handleFieldChange("email")}
+            onCommit={isEditable ? handleFieldChange("email") : noopHandler}
           />
         </span>
 
@@ -74,7 +79,7 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
               elementId={blockId ? createFieldElementId(blockId, undefined, "phone") : ""}
               value={content.phone || ""}
               placeholder="(555) 123-4567"
-              onCommit={handleFieldChange("phone")}
+              onCommit={isEditable ? handleFieldChange("phone") : noopHandler}
             />
           </span>
         )}
@@ -87,7 +92,7 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
               elementId={blockId ? createFieldElementId(blockId, undefined, "location") : ""}
               value={content.location || ""}
               placeholder="City, State"
-              onCommit={handleFieldChange("location")}
+              onCommit={isEditable ? handleFieldChange("location") : noopHandler}
             />
           </span>
         )}
@@ -100,7 +105,7 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
               elementId={blockId ? createFieldElementId(blockId, undefined, "linkedin") : ""}
               value={content.linkedin || ""}
               placeholder="linkedin.com/in/username"
-              onCommit={handleFieldChange("linkedin")}
+              onCommit={isEditable ? handleFieldChange("linkedin") : noopHandler}
             />
           </span>
         )}
@@ -113,7 +118,7 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
               elementId={blockId ? createFieldElementId(blockId, undefined, "website") : ""}
               value={content.website || ""}
               placeholder="yourwebsite.com"
-              onCommit={handleFieldChange("website")}
+              onCommit={isEditable ? handleFieldChange("website") : noopHandler}
             />
           </span>
         )}
@@ -126,7 +131,7 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
               elementId={blockId ? createFieldElementId(blockId, undefined, "github") : ""}
               value={content.github || ""}
               placeholder="github.com/username"
-              onCommit={handleFieldChange("github")}
+              onCommit={isEditable ? handleFieldChange("github") : noopHandler}
             />
           </span>
         )}

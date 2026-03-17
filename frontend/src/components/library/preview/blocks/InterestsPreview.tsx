@@ -5,7 +5,7 @@ import type { BaseBlockPreviewProps } from "../types";
 import { sanitizeHtml } from "@/lib/utils/sanitize";
 import { EditableRichText } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
-import { useBlockEditor } from "../../editor/BlockEditorContext";
+import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
 interface InterestsPreviewProps extends BaseBlockPreviewProps<string> {}
 
@@ -14,22 +14,23 @@ interface InterestsPreviewProps extends BaseBlockPreviewProps<string> {}
  *
  * Displays freeform text content for personal interests.
  * Content is inline-editable via EditableRichText component.
+ * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function InterestsPreview({
   content,
   style,
   blockId,
 }: InterestsPreviewProps) {
-  const { updateContentByPath } = useBlockEditor();
+  const editorContext = useBlockEditorOptional();
 
   // Create handler for content changes
   const handleContentChange = useCallback(
     (value: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       const elementId = createFieldElementId(blockId, undefined, "content");
-      updateContentByPath(elementId, value);
+      editorContext.updateContentByPath(elementId, value);
     },
-    [blockId, updateContentByPath]
+    [blockId, editorContext]
   );
 
   // If no blockId, render without inline editing capabilities

@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import type { BaseBlockPreviewProps } from "../types";
 import { EditableRichText } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
-import { useBlockEditor } from "../../editor/BlockEditorContext";
+import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
 interface SummaryPreviewProps extends BaseBlockPreviewProps<string> {}
 
@@ -13,19 +13,24 @@ interface SummaryPreviewProps extends BaseBlockPreviewProps<string> {}
  *
  * Displays rich text content using EditableRichText component.
  * Supports formatting via floating toolbar on text selection.
+ * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function SummaryPreview({ content, style, blockId }: SummaryPreviewProps) {
-  const { updateContentByPath } = useBlockEditor();
+  const editorContext = useBlockEditorOptional();
+  const isEditable = !!editorContext;
 
   // Handle content change
   const handleContentChange = useCallback(
     (newValue: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       const elementId = createFieldElementId(blockId, undefined, "content");
-      updateContentByPath(elementId, newValue);
+      editorContext.updateContentByPath(elementId, newValue);
     },
-    [blockId, updateContentByPath]
+    [blockId, editorContext]
   );
+
+  // No-op handler for read-only mode
+  const noopHandler = useCallback(() => {}, []);
 
   return (
     <div
@@ -39,7 +44,7 @@ export function SummaryPreview({ content, style, blockId }: SummaryPreviewProps)
         value={content || ""}
         className="summary-content"
         placeholder="Write a brief professional summary..."
-        onCommit={handleContentChange}
+        onCommit={isEditable ? handleContentChange : noopHandler}
         showToolbar={true}
       />
     </div>
