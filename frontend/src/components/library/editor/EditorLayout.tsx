@@ -64,6 +64,7 @@ export function EditorLayout({
     canRedo,
     setAutoFitMeasureFn,
     autoFitStatus,
+    updateContentByPath,
   } = useBlockEditor();
   const {
     blocks,
@@ -181,6 +182,14 @@ export function EditorLayout({
     [setHoveredElement]
   );
 
+  // Handle inline edit commit - update content via element path
+  const handleInlineEditCommit = useCallback(
+    (elementId: string, value: string) => {
+      updateContentByPath(elementId, value);
+    },
+    [updateContentByPath]
+  );
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -286,6 +295,8 @@ export function EditorLayout({
                 interactive={true}
                 showPageBorder={true}
                 pageGap={24}
+                enableInlineEdit={true}
+                onInlineEditCommit={handleInlineEditCommit}
               />
             </div>
           </Panel>

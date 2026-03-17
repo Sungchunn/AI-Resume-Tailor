@@ -34,7 +34,7 @@ import {
   useEffect,
   forwardRef,
   useImperativeHandle,
-  Fragment,
+  useCallback,
 } from "react";
 import type { ResumePreviewProps } from "./types";
 import { PAGE_DIMENSIONS } from "./types";
@@ -43,6 +43,10 @@ import { useBlockMeasurement } from "./useBlockMeasurement";
 import { useBlockPagination } from "./useBlockPagination";
 import { MeasurementContainer } from "./MeasurementContainer";
 import { PreviewPage } from "./PreviewPage";
+import {
+  InlineEditProvider,
+  InlineEditManager,
+} from "../editor/inline";
 
 /**
  * Ref handle exposed by PaginatedResumePreview for external access
@@ -61,6 +65,10 @@ export interface PaginatedResumePreviewHandle {
 export interface PaginatedResumePreviewProps extends ResumePreviewProps {
   /** Gap between pages in pixels (default: 24) */
   pageGap?: number;
+  /** Callback when inline edit is committed (elementId, newValue) */
+  onInlineEditCommit?: (elementId: string, value: string) => void;
+  /** Whether inline editing is enabled */
+  enableInlineEdit?: boolean;
 }
 
 /**
@@ -89,10 +97,13 @@ export const PaginatedResumePreview = forwardRef<
     onElementClick,
     onElementHover,
     pageGap = 24,
+    onInlineEditCommit,
+    enableInlineEdit = false,
   },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const pagesWrapperRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const [autoScale, setAutoScale] = useState(1);
 
@@ -196,7 +207,16 @@ export const PaginatedResumePreview = forwardRef<
     ? scaledPageHeight * totalPages + scaledGap * Math.max(0, totalPages - 1)
     : scaledPageHeight; // Single skeleton page height when loading
 
-  return (
+  // Handle inline edit commit
+  const handleInlineEditCommit = useCallback(
+    (elementId: string, value: string) => {
+      onInlineEditCommit?.(elementId, value);
+    },
+    [onInlineEditCommit]
+  );
+
+  // Render content with or without inline editing provider
+  const renderContent = () => (
     <div
       ref={containerRef}
       className={`paginated-preview-container flex flex-col items-center w-full ${className ?? ""}`}
@@ -224,6 +244,7 @@ export const PaginatedResumePreview = forwardRef<
       {/* Render pages with gaps */}
       {isReady && (
         <div
+          ref={pagesWrapperRef}
           className="pages-wrapper flex flex-col items-center"
           style={{
             transform: `scale(${scale})`,
@@ -265,8 +286,22 @@ export const PaginatedResumePreview = forwardRef<
           ))}
         </div>
       )}
+
+      {/* Inline edit manager (floating editor) */}
+      {enableInlineEdit && <InlineEditManager containerRef={pagesWrapperRef} />}
     </div>
   );
+
+  // Wrap with InlineEditProvider if inline editing is enabled
+  if (enableInlineEdit) {
+    return (
+      <InlineEditProvider onCommit={handleInlineEditCommit}>
+        {renderContent()}
+      </InlineEditProvider>
+    );
+  }
+
+  return renderContent();
 });
 
 /**
