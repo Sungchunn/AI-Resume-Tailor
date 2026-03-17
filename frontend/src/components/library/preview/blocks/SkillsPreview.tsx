@@ -1,19 +1,15 @@
 "use client";
 
-import { useCallback } from "react";
 import type { BaseBlockPreviewProps } from "../types";
-import { EditableText } from "../../editor/inline";
-import { createIndexedElementId } from "@/lib/resume/elementPath";
+import { InlineSkillsList } from "../../editor/inline";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
 interface SkillsPreviewProps extends BaseBlockPreviewProps<string[]> {}
 
 /**
- * SkillsPreview - Renders skills as inline list items with inline editing
+ * SkillsPreview - Renders skills as a single inline-editable comma-separated list
  *
- * Uses semantic <ul>/<li> with display:inline for compactness while
- * maintaining proper HTML structure.
- * All skills are inline-editable via EditableText components.
+ * Uses InlineSkillsList for editing all skills as a single field.
  * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function SkillsPreview({
@@ -22,16 +18,6 @@ export function SkillsPreview({
   blockId,
 }: SkillsPreviewProps) {
   const editorContext = useBlockEditorOptional();
-
-  // Update a skill at the given index
-  const updateSkill = useCallback(
-    (index: number, value: string) => {
-      if (!blockId || !editorContext) return;
-      const elementId = createIndexedElementId(blockId, undefined, "skills", index);
-      editorContext.updateContentByPath(elementId, value);
-    },
-    [blockId, editorContext]
-  );
 
   if (!content || content.length === 0) {
     return null;
@@ -51,15 +37,9 @@ export function SkillsPreview({
         className="list-none p-0 m-0"
         style={{ fontSize: style.bodyFontSize }}
       >
-        {filteredSkills.map((skill, idx) => {
-          const isLast = idx === filteredSkills.length - 1;
-          return (
-            <li key={idx} className="inline">
-              {skill}
-              {!isLast && ", "}
-            </li>
-          );
-        })}
+        <li className="inline">
+          {filteredSkills.join(", ")}
+        </li>
       </ul>
     );
   }
@@ -69,22 +49,18 @@ export function SkillsPreview({
       className="list-none p-0 m-0"
       style={{ fontSize: style.bodyFontSize }}
     >
-      {filteredSkills.map((skill, idx) => {
-        const isLast = idx === filteredSkills.length - 1;
-        const elementId = createIndexedElementId(blockId, undefined, "skills", idx);
-
-        return (
-          <li key={idx} className="inline">
-            <EditableText
-              elementId={elementId}
-              value={skill}
-              placeholder="Skill"
-              onCommit={(value) => updateSkill(idx, value)}
-            />
-            {!isLast && ", "}
-          </li>
-        );
-      })}
+      <li className="inline">
+        <InlineSkillsList
+          skills={content}
+          blockId={blockId}
+          onCommit={(newSkills) => {
+            editorContext?.dispatch({
+              type: "UPDATE_BLOCK",
+              payload: { id: blockId, content: newSkills },
+            });
+          }}
+        />
+      </li>
     </ul>
   );
 }
