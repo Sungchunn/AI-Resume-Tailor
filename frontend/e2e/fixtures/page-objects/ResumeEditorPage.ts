@@ -16,7 +16,7 @@ export class ResumeEditorPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.previewPage = page.locator('[data-testid="resume-page"]');
+    this.previewPage = page.locator('[data-testid^="resume-page-"]').first();
     this.fitToPageToggle = page.locator('[data-testid="fit-to-page-toggle"]');
     this.statusBadge = page.locator('[data-testid="fit-status-badge"]');
     this.adjustmentsList = page.locator('[data-testid="fit-adjustments-list"]');
