@@ -12,6 +12,23 @@
  * - Array field (no entry): "skills-1::skills:4"
  */
 
+import type {
+  AnyResumeBlock,
+  ContactContent,
+  ExperienceEntry,
+  EducationEntry,
+  CertificationEntry,
+  ProjectEntry,
+  LanguageEntry,
+  VolunteerEntry,
+  PublicationEntry,
+  AwardEntry,
+  ReferenceEntry,
+  CourseEntry,
+  MembershipEntry,
+  LeadershipEntry,
+} from "./types";
+
 /**
  * Parsed element path structure
  */
@@ -185,4 +202,550 @@ export function createIndexedElementId(
   index: number
 ): string {
   return encodeElementPath({ blockId, entryId, field, index });
+}
+
+/**
+ * Get content value from blocks by element path
+ *
+ * @example
+ * getContentByElementPath(blocks, "exp-1:entry-0:title") // "Software Engineer"
+ * getContentByElementPath(blocks, "summary-1::content") // "<p>Summary text...</p>"
+ * getContentByElementPath(blocks, "contact-1::fullName") // "John Doe"
+ */
+export function getContentByElementPath(
+  blocks: AnyResumeBlock[],
+  elementId: string
+): string | undefined {
+  const path = decodeElementPath(elementId);
+  const block = blocks.find((b) => b.id === path.blockId);
+
+  if (!block) return undefined;
+
+  // Handle different block types
+  switch (block.type) {
+    case "contact": {
+      const content = block.content as ContactContent;
+      if (path.field && path.field in content) {
+        return (content as unknown as Record<string, string | undefined>)[path.field] ?? "";
+      }
+      return undefined;
+    }
+
+    case "summary":
+    case "interests": {
+      // Rich text content
+      if (path.field === "content" || !path.field) {
+        return block.content as string;
+      }
+      return undefined;
+    }
+
+    case "skills": {
+      const skills = block.content as string[];
+      if (path.field === "skills" && path.index !== undefined) {
+        return skills[path.index];
+      }
+      return undefined;
+    }
+
+    case "experience": {
+      const entries = block.content as ExperienceEntry[];
+      if (path.entryId) {
+        const entry = entries.find((e) => e.id === path.entryId);
+        if (!entry) return undefined;
+
+        if (path.field === "bullets" && path.index !== undefined) {
+          return entry.bullets[path.index];
+        }
+
+        if (path.field && path.field in entry) {
+          const value = (entry as unknown as Record<string, unknown>)[path.field];
+          return typeof value === "string" ? value : undefined;
+        }
+      }
+      return undefined;
+    }
+
+    case "education": {
+      const entries = block.content as EducationEntry[];
+      if (path.entryId) {
+        const entry = entries.find((e) => e.id === path.entryId);
+        if (!entry) return undefined;
+
+        if (path.field === "relevantCourses" && path.index !== undefined) {
+          return entry.relevantCourses?.[path.index];
+        }
+
+        if (path.field && path.field in entry) {
+          const value = (entry as unknown as Record<string, unknown>)[path.field];
+          return typeof value === "string" ? value : undefined;
+        }
+      }
+      return undefined;
+    }
+
+    case "projects": {
+      const entries = block.content as ProjectEntry[];
+      if (path.entryId) {
+        const entry = entries.find((e) => e.id === path.entryId);
+        if (!entry) return undefined;
+
+        if (path.field === "bullets" && path.index !== undefined) {
+          return entry.bullets?.[path.index];
+        }
+
+        if (path.field === "technologies" && path.index !== undefined) {
+          return entry.technologies?.[path.index];
+        }
+
+        if (path.field && path.field in entry) {
+          const value = (entry as unknown as Record<string, unknown>)[path.field];
+          return typeof value === "string" ? value : undefined;
+        }
+      }
+      return undefined;
+    }
+
+    case "certifications": {
+      const entries = block.content as CertificationEntry[];
+      if (path.entryId) {
+        const entry = entries.find((e) => e.id === path.entryId);
+        if (!entry) return undefined;
+
+        if (path.field && path.field in entry) {
+          const value = (entry as unknown as Record<string, unknown>)[path.field];
+          return typeof value === "string" ? value : undefined;
+        }
+      }
+      return undefined;
+    }
+
+    case "languages": {
+      const entries = block.content as LanguageEntry[];
+      if (path.entryId) {
+        const entry = entries.find((e) => e.id === path.entryId);
+        if (!entry) return undefined;
+
+        if (path.field && path.field in entry) {
+          const value = (entry as unknown as Record<string, unknown>)[path.field];
+          return typeof value === "string" ? value : undefined;
+        }
+      }
+      return undefined;
+    }
+
+    case "volunteer": {
+      const entries = block.content as VolunteerEntry[];
+      if (path.entryId) {
+        const entry = entries.find((e) => e.id === path.entryId);
+        if (!entry) return undefined;
+
+        if (path.field === "bullets" && path.index !== undefined) {
+          return entry.bullets?.[path.index];
+        }
+
+        if (path.field && path.field in entry) {
+          const value = (entry as unknown as Record<string, unknown>)[path.field];
+          return typeof value === "string" ? value : undefined;
+        }
+      }
+      return undefined;
+    }
+
+    case "publications": {
+      const entries = block.content as PublicationEntry[];
+      if (path.entryId) {
+        const entry = entries.find((e) => e.id === path.entryId);
+        if (!entry) return undefined;
+
+        if (path.field && path.field in entry) {
+          const value = (entry as unknown as Record<string, unknown>)[path.field];
+          return typeof value === "string" ? value : undefined;
+        }
+      }
+      return undefined;
+    }
+
+    case "awards": {
+      const entries = block.content as AwardEntry[];
+      if (path.entryId) {
+        const entry = entries.find((e) => e.id === path.entryId);
+        if (!entry) return undefined;
+
+        if (path.field && path.field in entry) {
+          const value = (entry as unknown as Record<string, unknown>)[path.field];
+          return typeof value === "string" ? value : undefined;
+        }
+      }
+      return undefined;
+    }
+
+    case "references": {
+      const entries = block.content as ReferenceEntry[];
+      if (path.entryId) {
+        const entry = entries.find((e) => e.id === path.entryId);
+        if (!entry) return undefined;
+
+        if (path.field && path.field in entry) {
+          const value = (entry as unknown as Record<string, unknown>)[path.field];
+          return typeof value === "string" ? value : undefined;
+        }
+      }
+      return undefined;
+    }
+
+    case "courses": {
+      const entries = block.content as CourseEntry[];
+      if (path.entryId) {
+        const entry = entries.find((e) => e.id === path.entryId);
+        if (!entry) return undefined;
+
+        if (path.field && path.field in entry) {
+          const value = (entry as unknown as Record<string, unknown>)[path.field];
+          return typeof value === "string" ? value : undefined;
+        }
+      }
+      return undefined;
+    }
+
+    case "memberships": {
+      const entries = block.content as MembershipEntry[];
+      if (path.entryId) {
+        const entry = entries.find((e) => e.id === path.entryId);
+        if (!entry) return undefined;
+
+        if (path.field && path.field in entry) {
+          const value = (entry as unknown as Record<string, unknown>)[path.field];
+          return typeof value === "string" ? value : undefined;
+        }
+      }
+      return undefined;
+    }
+
+    case "leadership": {
+      const entries = block.content as LeadershipEntry[];
+      if (path.entryId) {
+        const entry = entries.find((e) => e.id === path.entryId);
+        if (!entry) return undefined;
+
+        if (path.field === "bullets" && path.index !== undefined) {
+          return entry.bullets?.[path.index];
+        }
+
+        if (path.field && path.field in entry) {
+          const value = (entry as unknown as Record<string, unknown>)[path.field];
+          return typeof value === "string" ? value : undefined;
+        }
+      }
+      return undefined;
+    }
+
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Set content value in blocks by element path
+ * Returns new blocks array (immutable update)
+ *
+ * @example
+ * setContentByElementPath(blocks, "exp-1:entry-0:title", "Senior Engineer")
+ * setContentByElementPath(blocks, "summary-1::content", "<p>New summary</p>")
+ */
+export function setContentByElementPath(
+  blocks: AnyResumeBlock[],
+  elementId: string,
+  value: string
+): AnyResumeBlock[] {
+  const path = decodeElementPath(elementId);
+
+  return blocks.map((block) => {
+    if (block.id !== path.blockId) return block;
+
+    // Handle different block types
+    switch (block.type) {
+      case "contact": {
+        const content = block.content as ContactContent;
+        if (path.field && path.field in content) {
+          return {
+            ...block,
+            content: {
+              ...content,
+              [path.field]: value,
+            },
+          };
+        }
+        return block;
+      }
+
+      case "summary":
+      case "interests": {
+        // Rich text content
+        if (path.field === "content" || !path.field) {
+          return {
+            ...block,
+            content: value,
+          };
+        }
+        return block;
+      }
+
+      case "skills": {
+        const skills = block.content as string[];
+        if (path.field === "skills" && path.index !== undefined) {
+          const newSkills = [...skills];
+          newSkills[path.index] = value;
+          return {
+            ...block,
+            content: newSkills,
+          };
+        }
+        return block;
+      }
+
+      case "experience": {
+        const entries = block.content as ExperienceEntry[];
+        if (path.entryId) {
+          const newEntries = entries.map((entry) => {
+            if (entry.id !== path.entryId) return entry;
+
+            if (path.field === "bullets" && path.index !== undefined) {
+              const newBullets = [...entry.bullets];
+              newBullets[path.index] = value;
+              return { ...entry, bullets: newBullets };
+            }
+
+            if (path.field && path.field in entry) {
+              return { ...entry, [path.field]: value };
+            }
+
+            return entry;
+          });
+          return { ...block, content: newEntries };
+        }
+        return block;
+      }
+
+      case "education": {
+        const entries = block.content as EducationEntry[];
+        if (path.entryId) {
+          const newEntries = entries.map((entry) => {
+            if (entry.id !== path.entryId) return entry;
+
+            if (path.field === "relevantCourses" && path.index !== undefined) {
+              const newCourses = [...(entry.relevantCourses || [])];
+              newCourses[path.index] = value;
+              return { ...entry, relevantCourses: newCourses };
+            }
+
+            if (path.field && path.field in entry) {
+              return { ...entry, [path.field]: value };
+            }
+
+            return entry;
+          });
+          return { ...block, content: newEntries };
+        }
+        return block;
+      }
+
+      case "projects": {
+        const entries = block.content as ProjectEntry[];
+        if (path.entryId) {
+          const newEntries = entries.map((entry) => {
+            if (entry.id !== path.entryId) return entry;
+
+            if (path.field === "bullets" && path.index !== undefined) {
+              const newBullets = [...(entry.bullets || [])];
+              newBullets[path.index] = value;
+              return { ...entry, bullets: newBullets };
+            }
+
+            if (path.field === "technologies" && path.index !== undefined) {
+              const newTech = [...(entry.technologies || [])];
+              newTech[path.index] = value;
+              return { ...entry, technologies: newTech };
+            }
+
+            if (path.field && path.field in entry) {
+              return { ...entry, [path.field]: value };
+            }
+
+            return entry;
+          });
+          return { ...block, content: newEntries };
+        }
+        return block;
+      }
+
+      case "certifications": {
+        const entries = block.content as CertificationEntry[];
+        if (path.entryId) {
+          const newEntries = entries.map((entry) => {
+            if (entry.id !== path.entryId) return entry;
+
+            if (path.field && path.field in entry) {
+              return { ...entry, [path.field]: value };
+            }
+
+            return entry;
+          });
+          return { ...block, content: newEntries };
+        }
+        return block;
+      }
+
+      case "languages": {
+        const entries = block.content as LanguageEntry[];
+        if (path.entryId) {
+          const newEntries = entries.map((entry) => {
+            if (entry.id !== path.entryId) return entry;
+
+            if (path.field && path.field in entry) {
+              return { ...entry, [path.field]: value };
+            }
+
+            return entry;
+          });
+          return { ...block, content: newEntries };
+        }
+        return block;
+      }
+
+      case "volunteer": {
+        const entries = block.content as VolunteerEntry[];
+        if (path.entryId) {
+          const newEntries = entries.map((entry) => {
+            if (entry.id !== path.entryId) return entry;
+
+            if (path.field === "bullets" && path.index !== undefined) {
+              const newBullets = [...(entry.bullets || [])];
+              newBullets[path.index] = value;
+              return { ...entry, bullets: newBullets };
+            }
+
+            if (path.field && path.field in entry) {
+              return { ...entry, [path.field]: value };
+            }
+
+            return entry;
+          });
+          return { ...block, content: newEntries };
+        }
+        return block;
+      }
+
+      case "publications": {
+        const entries = block.content as PublicationEntry[];
+        if (path.entryId) {
+          const newEntries = entries.map((entry) => {
+            if (entry.id !== path.entryId) return entry;
+
+            if (path.field && path.field in entry) {
+              return { ...entry, [path.field]: value };
+            }
+
+            return entry;
+          });
+          return { ...block, content: newEntries };
+        }
+        return block;
+      }
+
+      case "awards": {
+        const entries = block.content as AwardEntry[];
+        if (path.entryId) {
+          const newEntries = entries.map((entry) => {
+            if (entry.id !== path.entryId) return entry;
+
+            if (path.field && path.field in entry) {
+              return { ...entry, [path.field]: value };
+            }
+
+            return entry;
+          });
+          return { ...block, content: newEntries };
+        }
+        return block;
+      }
+
+      case "references": {
+        const entries = block.content as ReferenceEntry[];
+        if (path.entryId) {
+          const newEntries = entries.map((entry) => {
+            if (entry.id !== path.entryId) return entry;
+
+            if (path.field && path.field in entry) {
+              return { ...entry, [path.field]: value };
+            }
+
+            return entry;
+          });
+          return { ...block, content: newEntries };
+        }
+        return block;
+      }
+
+      case "courses": {
+        const entries = block.content as CourseEntry[];
+        if (path.entryId) {
+          const newEntries = entries.map((entry) => {
+            if (entry.id !== path.entryId) return entry;
+
+            if (path.field && path.field in entry) {
+              return { ...entry, [path.field]: value };
+            }
+
+            return entry;
+          });
+          return { ...block, content: newEntries };
+        }
+        return block;
+      }
+
+      case "memberships": {
+        const entries = block.content as MembershipEntry[];
+        if (path.entryId) {
+          const newEntries = entries.map((entry) => {
+            if (entry.id !== path.entryId) return entry;
+
+            if (path.field && path.field in entry) {
+              return { ...entry, [path.field]: value };
+            }
+
+            return entry;
+          });
+          return { ...block, content: newEntries };
+        }
+        return block;
+      }
+
+      case "leadership": {
+        const entries = block.content as LeadershipEntry[];
+        if (path.entryId) {
+          const newEntries = entries.map((entry) => {
+            if (entry.id !== path.entryId) return entry;
+
+            if (path.field === "bullets" && path.index !== undefined) {
+              const newBullets = [...(entry.bullets || [])];
+              newBullets[path.index] = value;
+              return { ...entry, bullets: newBullets };
+            }
+
+            if (path.field && path.field in entry) {
+              return { ...entry, [path.field]: value };
+            }
+
+            return entry;
+          });
+          return { ...block, content: newEntries };
+        }
+        return block;
+      }
+
+      default:
+        return block;
+    }
+  });
 }
