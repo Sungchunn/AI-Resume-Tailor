@@ -207,15 +207,22 @@ export class ResumeEditorPage {
   }
 
   /**
-   * Check if an element is currently being edited
+   * Check if an element is currently being edited (has focus or contains focused editor)
    */
   async isElementEditing(elementId: string): Promise<boolean> {
     const element = this.getEditableElement(elementId);
-    const isInvisible = await element.evaluate((el) => {
-      return window.getComputedStyle(el).visibility === "hidden";
+    // New inline editing: elements are editable in-place, check for focus
+    return await element.evaluate((el) => {
+      // Check if element itself is focused (for contentEditable spans)
+      if (document.activeElement === el) return true;
+      // Check if a TipTap/ProseMirror editor inside is focused
+      const prosemirror = el.closest(".ProseMirror") || el.querySelector(".ProseMirror");
+      if (prosemirror && document.activeElement === prosemirror) return true;
+      // Check if parent EditorContent contains focus
+      const editorContent = el.closest(".tiptap");
+      if (editorContent?.contains(document.activeElement)) return true;
+      return false;
     });
-    // When editing, the element becomes invisible (editor overlay shows)
-    return isInvisible;
   }
 
   /**
@@ -325,21 +332,24 @@ export class ResumeEditorPage {
   async getFocusedElementId(): Promise<string | null> {
     return await this.page.evaluate(() => {
       const activeEl = document.activeElement;
-      if (activeEl) {
-        // Check if it's an editable element
-        const editableParent = activeEl.closest("[data-element-id]");
-        if (editableParent) {
-          return editableParent.getAttribute("data-element-id");
-        }
-        // Check if it's the ProseMirror editor
-        if (activeEl.classList.contains("ProseMirror")) {
-          // Find which element is being edited (invisible)
-          const invisibleEl = document.querySelector(
-            '[data-element-id][style*="visibility: hidden"], [data-element-id].invisible'
-          );
-          return invisibleEl?.getAttribute("data-element-id") || null;
-        }
+      if (!activeEl) return null;
+
+      // Check if it's directly an editable element (contentEditable span)
+      const directId = activeEl.getAttribute?.("data-element-id");
+      if (directId) return directId;
+
+      // Check if it's a child of an editable element
+      const editableParent = activeEl.closest("[data-element-id]");
+      if (editableParent) {
+        return editableParent.getAttribute("data-element-id");
       }
+
+      // Check if it's a ProseMirror editor with data-element-id attribute
+      if (activeEl.classList.contains("ProseMirror")) {
+        const id = activeEl.getAttribute("data-element-id");
+        if (id) return id;
+      }
+
       return null;
     });
   }
