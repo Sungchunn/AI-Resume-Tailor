@@ -102,36 +102,60 @@ export function generateInlineEditingResume(
 }
 
 /**
- * Convert fixture data to API response format
+ * Convert fixture data to API response format (matches ResumeResponse interface)
  */
 export function toApiResponse(data: InlineEditingResumeData) {
   return {
+    // Required ResumeResponse fields
     id: data.id,
-    contact: {
-      full_name: data.contact.fullName,
-      email: data.contact.email,
-      phone: data.contact.phone,
-      location: data.contact.location,
-      linkedin: data.contact.linkedIn,
+    user_id: 1,
+    title: "Test Resume",
+    raw_content: "Raw resume content for testing",
+    is_master: false,
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+    parsed_verified: true,
+    parsed_verified_at: "2024-01-01T00:00:00Z",
+    version: 1,
+
+    // Parsed content (the actual resume data)
+    parsed: {
+      contact: {
+        name: data.contact.fullName,
+        email: data.contact.email,
+        phone: data.contact.phone,
+        location: data.contact.location,
+        linkedin: data.contact.linkedIn,
+      },
+      summary: data.summary,
+      experience: data.experience.map((exp) => ({
+        title: exp.title,
+        company: exp.company,
+        location: exp.location,
+        start_date: exp.startDate,
+        end_date: exp.endDate,
+        bullets: exp.bullets,
+      })),
+      education: data.education.map((edu) => ({
+        degree: edu.degree,
+        institution: edu.institution,
+        graduation_date: edu.graduationDate,
+        gpa: edu.gpa,
+      })),
+      skills: data.skills,
     },
-    summary: data.summary,
-    experience: data.experience.map((exp) => ({
-      id: exp.id,
-      title: exp.title,
-      company: exp.company,
-      location: exp.location,
-      start_date: exp.startDate,
-      end_date: exp.endDate,
-      bullets: exp.bullets,
-    })),
-    education: data.education.map((edu) => ({
-      id: edu.id,
-      degree: edu.degree,
-      institution: edu.institution,
-      graduation_date: edu.graduationDate,
-      gpa: edu.gpa,
-    })),
-    skills: data.skills,
+
+    // Style settings (use defaults)
+    style: {
+      fontFamily: "inter",
+      fontSize: 10,
+      lineHeight: 1.4,
+      pageMargins: 0.5,
+      sectionSpacing: 16,
+      fit_to_one_page: false,
+    },
+
+    // Fit-to-page flag
     fit_to_page: false,
   };
 }
