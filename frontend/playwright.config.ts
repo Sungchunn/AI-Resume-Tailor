@@ -76,6 +76,16 @@ export default defineConfig({
         },
       },
     },
+
+    /* Inline editing tests - requires consistent viewport for editor interactions */
+    {
+      name: "inline-editing",
+      testDir: "./e2e/inline-editing",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1280, height: 900 },
+      },
+    },
   ],
 
   /* Run local dev server before starting the tests */
