@@ -1,27 +1,37 @@
 "use client";
 
+import { useCallback } from "react";
 import type { BaseBlockPreviewProps } from "../types";
-import { GranularElement } from "../GranularElement";
+import { EditableText } from "../../editor/inline";
 import { createIndexedElementId } from "@/lib/resume/elementPath";
+import { useBlockEditor } from "../../editor/BlockEditorContext";
 
 interface SkillsPreviewProps extends BaseBlockPreviewProps<string[]> {}
 
 /**
- * SkillsPreview - Renders skills as inline list items
+ * SkillsPreview - Renders skills as inline list items with inline editing
  *
  * Uses semantic <ul>/<li> with display:inline for compactness while
- * maintaining proper HTML structure and future extensibility.
- * Supports granular highlighting for individual skills.
+ * maintaining proper HTML structure.
+ * All skills are inline-editable via EditableText components.
  */
 export function SkillsPreview({
   content,
   style,
   blockId,
-  activeElementId,
-  hoveredElementId,
-  onElementClick,
-  onElementHover,
 }: SkillsPreviewProps) {
+  const { updateContentByPath } = useBlockEditor();
+
+  // Update a skill at the given index
+  const updateSkill = useCallback(
+    (index: number, value: string) => {
+      if (!blockId) return;
+      const elementId = createIndexedElementId(blockId, undefined, "skills", index);
+      updateContentByPath(elementId, value);
+    },
+    [blockId, updateContentByPath]
+  );
+
   if (!content || content.length === 0) {
     return null;
   }
@@ -33,8 +43,25 @@ export function SkillsPreview({
     return null;
   }
 
-  // Check if granular interaction is enabled
-  const hasGranularInteraction = blockId && (onElementClick || onElementHover);
+  // If no blockId, render without inline editing capabilities
+  if (!blockId) {
+    return (
+      <ul
+        className="list-none p-0 m-0"
+        style={{ fontSize: style.bodyFontSize }}
+      >
+        {filteredSkills.map((skill, idx) => {
+          const isLast = idx === filteredSkills.length - 1;
+          return (
+            <li key={idx} className="inline">
+              {skill}
+              {!isLast && ", "}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
 
   return (
     <ul
@@ -43,29 +70,16 @@ export function SkillsPreview({
     >
       {filteredSkills.map((skill, idx) => {
         const isLast = idx === filteredSkills.length - 1;
-
-        if (hasGranularInteraction) {
-          const elementId = createIndexedElementId(blockId!, undefined, "skills", idx);
-          return (
-            <li key={idx} className="inline">
-              <GranularElement
-                elementId={elementId}
-                variant="inline"
-                activeElementId={activeElementId}
-                hoveredElementId={hoveredElementId}
-                onElementClick={onElementClick}
-                onElementHover={onElementHover}
-              >
-                {skill}
-              </GranularElement>
-              {!isLast && ", "}
-            </li>
-          );
-        }
+        const elementId = createIndexedElementId(blockId, undefined, "skills", idx);
 
         return (
           <li key={idx} className="inline">
-            {skill}
+            <EditableText
+              elementId={elementId}
+              value={skill}
+              placeholder="Skill"
+              onCommit={(value) => updateSkill(idx, value)}
+            />
             {!isLast && ", "}
           </li>
         );

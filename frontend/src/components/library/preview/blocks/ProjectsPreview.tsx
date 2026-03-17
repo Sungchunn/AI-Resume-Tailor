@@ -1,18 +1,21 @@
 "use client";
 
+import { useCallback } from "react";
 import type { ProjectEntry } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
 import { formatDateRange } from "../previewStyles";
-import { GranularElement } from "../GranularElement";
+import { EditableText, EditableBullet } from "../../editor/inline";
 import {
   createFieldElementId,
   createIndexedElementId,
 } from "@/lib/resume/elementPath";
+import { useBlockEditor } from "../../editor/BlockEditorContext";
+import { insertAfter, removeAt } from "@/lib/resume/arrayHelpers";
 
 interface ProjectsPreviewProps extends BaseBlockPreviewProps<ProjectEntry[]> {}
 
 /**
- * ProjectsPreview - Renders project entries
+ * ProjectsPreview - Renders project entries with inline editing
  *
  * Each entry displays:
  * - Project name and date range
@@ -20,17 +23,79 @@ interface ProjectsPreviewProps extends BaseBlockPreviewProps<ProjectEntry[]> {}
  * - Technologies used
  * - Bullet points (if provided)
  *
- * Supports granular highlighting for name, dates, description, and bullets.
+ * All text fields are inline-editable via EditableText components.
+ * Bullets support Enter to add new and Backspace to remove empty.
  */
 export function ProjectsPreview({
   content,
   style,
   blockId,
-  activeElementId,
-  hoveredElementId,
-  onElementClick,
-  onElementHover,
 }: ProjectsPreviewProps) {
+  const { updateContentByPath, state, dispatch } = useBlockEditor();
+
+  // Update a specific bullet in an entry
+  const updateBullet = useCallback(
+    (entryId: string, bulletIndex: number, value: string) => {
+      if (!blockId) return;
+      const elementId = createIndexedElementId(blockId, entryId, "bullets", bulletIndex);
+      updateContentByPath(elementId, value);
+    },
+    [blockId, updateContentByPath]
+  );
+
+  // Add a new bullet after the specified index
+  const addBullet = useCallback(
+    (entryIndex: number, afterIndex: number) => {
+      if (!blockId) return;
+
+      const block = state.blocks.find((b) => b.id === blockId);
+      if (!block || block.type !== "projects") return;
+
+      const entries = block.content as ProjectEntry[];
+      const entry = entries[entryIndex];
+      if (!entry) return;
+
+      const bullets = entry.bullets || [];
+      const newBullets = insertAfter(bullets, afterIndex, "");
+
+      const newEntries = entries.map((e, i) =>
+        i === entryIndex ? { ...e, bullets: newBullets } : e
+      );
+
+      dispatch({
+        type: "UPDATE_BLOCK",
+        payload: { id: blockId, content: newEntries },
+      });
+    },
+    [blockId, state.blocks, dispatch]
+  );
+
+  // Remove a bullet at the specified index
+  const removeBullet = useCallback(
+    (entryIndex: number, bulletIndex: number) => {
+      if (!blockId) return;
+
+      const block = state.blocks.find((b) => b.id === blockId);
+      if (!block || block.type !== "projects") return;
+
+      const entries = block.content as ProjectEntry[];
+      const entry = entries[entryIndex];
+      if (!entry || !entry.bullets || entry.bullets.length <= 1) return;
+
+      const newBullets = removeAt(entry.bullets, bulletIndex);
+
+      const newEntries = entries.map((e, i) =>
+        i === entryIndex ? { ...e, bullets: newBullets } : e
+      );
+
+      dispatch({
+        type: "UPDATE_BLOCK",
+        payload: { id: blockId, content: newEntries },
+      });
+    },
+    [blockId, state.blocks, dispatch]
+  );
+
   if (!content || content.length === 0) {
     return null;
   }
@@ -44,10 +109,9 @@ export function ProjectsPreview({
           entryIndex={entryIndex}
           style={style}
           blockId={blockId}
-          activeElementId={activeElementId}
-          hoveredElementId={hoveredElementId}
-          onElementClick={onElementClick}
-          onElementHover={onElementHover}
+          updateBullet={updateBullet}
+          addBullet={addBullet}
+          removeBullet={removeBullet}
         />
       ))}
     </div>
@@ -59,10 +123,9 @@ interface ProjectEntryPreviewProps {
   entryIndex: number;
   style: BaseBlockPreviewProps<unknown>["style"];
   blockId?: string;
-  activeElementId?: string | null;
-  hoveredElementId?: string | null;
-  onElementClick?: (elementId: string) => void;
-  onElementHover?: (elementId: string | null) => void;
+  updateBullet: (entryId: string, bulletIndex: number, value: string) => void;
+  addBullet: (entryIndex: number, afterIndex: number) => void;
+  removeBullet: (entryIndex: number, bulletIndex: number) => void;
 }
 
 function ProjectEntryPreview({
@@ -70,62 +133,38 @@ function ProjectEntryPreview({
   entryIndex,
   style,
   blockId,
-  activeElementId,
-  hoveredElementId,
-  onElementClick,
-  onElementHover,
+  updateBullet,
+  addBullet,
+  removeBullet,
 }: ProjectEntryPreviewProps) {
+  const { updateContentByPath, state, dispatch } = useBlockEditor();
   const dateRange = formatDateRange(entry.startDate, entry.endDate);
 
-  // Check if granular interaction is enabled
-  const hasGranularInteraction = blockId && (onElementClick || onElementHover);
+  // Create handler for text fields
+  const handleFieldChange = useCallback(
+    (field: string) => (value: string) => {
+      if (!blockId) return;
+      const elementId = createFieldElementId(blockId, entry.id, field);
+      updateContentByPath(elementId, value);
+    },
+    [blockId, entry.id, updateContentByPath]
+  );
 
-  // Create element IDs for this entry
-  const entryId = `entry-${entryIndex}`;
-  const nameElementId = hasGranularInteraction
-    ? createFieldElementId(blockId!, entryId, "name")
-    : "";
-  const datesElementId = hasGranularInteraction
-    ? createFieldElementId(blockId!, entryId, "dates")
-    : "";
-  const descriptionElementId = hasGranularInteraction
-    ? createFieldElementId(blockId!, entryId, "description")
-    : "";
-  const techElementId = hasGranularInteraction
-    ? createFieldElementId(blockId!, entryId, "technologies")
-    : "";
+  // Handler for date range changes
+  const handleDateRangeChange = useCallback(
+    (value: string) => {
+      if (!blockId) return;
+      const elementId = createFieldElementId(blockId, entry.id, "startDate");
+      updateContentByPath(elementId, value);
+    },
+    [blockId, entry.id, updateContentByPath]
+  );
 
-  // Shared granular props
-  const granularProps = {
-    activeElementId,
-    hoveredElementId,
-    onElementClick,
-    onElementHover,
-  };
-
-  return (
-    <div>
-      {/* Name and date row */}
-      <div className="flex justify-between items-baseline">
-        {hasGranularInteraction ? (
-          <GranularElement
-            elementId={nameElementId}
-            variant="inline"
-            {...granularProps}
-          >
-            <span
-              className="font-semibold"
-              style={{ fontSize: style.bodyFontSize }}
-            >
-              {entry.name}
-              {entry.url && (
-                <span className="text-muted-foreground font-normal ml-2">
-                  ({entry.url})
-                </span>
-              )}
-            </span>
-          </GranularElement>
-        ) : (
+  // If no blockId, render without inline editing capabilities
+  if (!blockId) {
+    return (
+      <div>
+        <div className="flex justify-between items-baseline">
           <span
             className="font-semibold"
             style={{ fontSize: style.bodyFontSize }}
@@ -137,53 +176,16 @@ function ProjectEntryPreview({
               </span>
             )}
           </span>
-        )}
-        {dateRange && (
-          hasGranularInteraction ? (
-            <GranularElement
-              elementId={datesElementId}
-              variant="inline"
-              {...granularProps}
-            >
-              <span
-                className="text-muted-foreground flex-shrink-0 ml-4"
-                style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
-              >
-                {dateRange}
-              </span>
-            </GranularElement>
-          ) : (
+          {dateRange && (
             <span
               className="text-muted-foreground flex-shrink-0 ml-4"
               style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
             >
               {dateRange}
             </span>
-          )
-        )}
-      </div>
-
-      {/* Description */}
-      {entry.description && (
-        hasGranularInteraction ? (
-          <GranularElement
-            elementId={descriptionElementId}
-            variant="inline"
-            as="div"
-            className="mt-0.5"
-            {...granularProps}
-          >
-            <span
-              className="text-foreground/80"
-              style={{
-                fontSize: style.bodyFontSize,
-                lineHeight: style.lineHeight,
-              }}
-            >
-              {entry.description}
-            </span>
-          </GranularElement>
-        ) : (
+          )}
+        </div>
+        {entry.description && (
           <div
             className="text-foreground/80 mt-0.5"
             style={{
@@ -193,28 +195,8 @@ function ProjectEntryPreview({
           >
             {entry.description}
           </div>
-        )
-      )}
-
-      {/* Technologies */}
-      {entry.technologies && entry.technologies.length > 0 && (
-        hasGranularInteraction ? (
-          <GranularElement
-            elementId={techElementId}
-            variant="inline"
-            as="div"
-            className="mt-1"
-            {...granularProps}
-          >
-            <span
-              className="text-muted-foreground"
-              style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
-            >
-              <span className="font-medium">Technologies: </span>
-              {entry.technologies.join(", ")}
-            </span>
-          </GranularElement>
-        ) : (
+        )}
+        {entry.technologies && entry.technologies.length > 0 && (
           <div
             className="text-muted-foreground mt-1"
             style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
@@ -222,54 +204,136 @@ function ProjectEntryPreview({
             <span className="font-medium">Technologies: </span>
             {entry.technologies.join(", ")}
           </div>
-        )
-      )}
+        )}
+        {entry.bullets && entry.bullets.length > 0 && (
+          <ul className="list-disc ml-4 mt-1 space-y-0.5">
+            {entry.bullets.map((bullet, idx) => {
+              if (!bullet.trim()) return null;
+              return (
+                <li
+                  key={idx}
+                  style={{
+                    fontSize: style.bodyFontSize,
+                    lineHeight: style.lineHeight,
+                  }}
+                >
+                  {bullet}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Name and date row */}
+      <div className="flex justify-between items-baseline">
+        <span className="font-semibold" style={{ fontSize: style.bodyFontSize }}>
+          <EditableText
+            elementId={createFieldElementId(blockId, entry.id, "name")}
+            value={entry.name}
+            placeholder="Project Name"
+            onCommit={handleFieldChange("name")}
+          />
+          {entry.url && (
+            <span className="text-muted-foreground font-normal ml-2">
+              (
+              <EditableText
+                elementId={createFieldElementId(blockId, entry.id, "url")}
+                value={entry.url}
+                placeholder="project-url.com"
+                onCommit={handleFieldChange("url")}
+              />
+              )
+            </span>
+          )}
+        </span>
+        <span
+          className="flex-shrink-0 ml-4"
+          style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
+        >
+          <EditableText
+            elementId={createFieldElementId(blockId, entry.id, "dateRange")}
+            value={dateRange || ""}
+            className="text-muted-foreground"
+            placeholder="Jan 2024 - Present"
+            onCommit={handleDateRangeChange}
+          />
+        </span>
+      </div>
+
+      {/* Description */}
+      <div
+        className="text-foreground/80 mt-0.5"
+        style={{
+          fontSize: style.bodyFontSize,
+          lineHeight: style.lineHeight,
+        }}
+      >
+        <EditableText
+          elementId={createFieldElementId(blockId, entry.id, "description")}
+          value={entry.description || ""}
+          placeholder="Project description..."
+          onCommit={handleFieldChange("description")}
+        />
+      </div>
+
+      {/* Technologies */}
+      <div
+        className="text-muted-foreground mt-1"
+        style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
+      >
+        <span className="font-medium">Technologies: </span>
+        <EditableText
+          elementId={createFieldElementId(blockId, entry.id, "technologies")}
+          value={entry.technologies?.join(", ") || ""}
+          placeholder="React, TypeScript, ..."
+          onCommit={(value) => {
+            // Split by comma and trim each technology
+            const technologies = value
+              .split(",")
+              .map((t) => t.trim())
+              .filter((t) => t.length > 0);
+            if (!blockId) return;
+            // Update the technologies array
+            const block = state?.blocks?.find((b) => b.id === blockId);
+            if (!block || block.type !== "projects") return;
+            const entries = block.content as ProjectEntry[];
+            const newEntries = entries.map((e) =>
+              e.id === entry.id ? { ...e, technologies } : e
+            );
+            dispatch?.({
+              type: "UPDATE_BLOCK",
+              payload: { id: blockId, content: newEntries },
+            });
+          }}
+        />
+      </div>
 
       {/* Bullets */}
       {entry.bullets && entry.bullets.length > 0 && (
         <ul className="list-disc ml-4 mt-1 space-y-0.5">
-          {entry.bullets.map((bullet, idx) => {
-            if (!bullet.trim()) return null;
-
-            if (hasGranularInteraction) {
-              const bulletElementId = createIndexedElementId(
-                blockId!,
-                entryId,
-                "bullets",
-                idx
-              );
-              return (
-                <GranularElement
-                  key={idx}
-                  elementId={bulletElementId}
-                  variant="item"
-                  as="li"
-                  {...granularProps}
-                >
-                  <span
-                    style={{
-                      fontSize: style.bodyFontSize,
-                      lineHeight: style.lineHeight,
-                    }}
-                  >
-                    {bullet}
-                  </span>
-                </GranularElement>
-              );
-            }
-
-            return (
-              <li
-                key={idx}
-                style={{
-                  fontSize: style.bodyFontSize,
-                  lineHeight: style.lineHeight,
-                }}
-              >
-                {bullet}
-              </li>
-            );
-          })}
+          {entry.bullets.map((bullet, bulletIndex) => (
+            <li
+              key={bulletIndex}
+              style={{
+                fontSize: style.bodyFontSize,
+                lineHeight: style.lineHeight,
+              }}
+            >
+              <EditableBullet
+                elementId={createIndexedElementId(blockId, entry.id, "bullets", bulletIndex)}
+                value={bullet}
+                placeholder="Add accomplishment..."
+                onCommit={(value) => updateBullet(entry.id, bulletIndex, value)}
+                onEnter={() => addBullet(entryIndex, bulletIndex)}
+                onBackspaceEmpty={() => removeBullet(entryIndex, bulletIndex)}
+              />
+            </li>
+          ))}
         </ul>
       )}
     </div>
