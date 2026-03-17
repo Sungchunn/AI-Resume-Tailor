@@ -43,10 +43,7 @@ import { useBlockMeasurement } from "./useBlockMeasurement";
 import { useBlockPagination } from "./useBlockPagination";
 import { MeasurementContainer } from "./MeasurementContainer";
 import { PreviewPage } from "./PreviewPage";
-import {
-  InlineEditProvider,
-  InlineEditManager,
-} from "../editor/inline";
+import { InlineEditProvider } from "../editor/inline";
 
 /**
  * Ref handle exposed by PaginatedResumePreview for external access
@@ -287,8 +284,6 @@ export const PaginatedResumePreview = forwardRef<
         </div>
       )}
 
-      {/* Inline edit manager (floating editor) */}
-      {enableInlineEdit && <InlineEditManager containerRef={pagesWrapperRef} />}
     </div>
   );
 
