@@ -115,6 +115,7 @@ export function InlineRichText({
   const editor = useEditor({
     extensions: EXTENSIONS,
     content: normalizeContent(value),
+    immediatelyRender: false,
     editorProps: {
       attributes: {
         class: cn(
