@@ -15,7 +15,7 @@ Add real-time inline editing to both resume editor pages (`/library/resumes/[id]
 
 ## Architecture Approach
 
-**Strategy: Single Floating Editor**
+### Strategy: Single Floating Editor
 
 Instead of creating 50+ TipTap instances (one per editable field), use a **single TipTap editor** that "attaches" to the clicked element:
 
