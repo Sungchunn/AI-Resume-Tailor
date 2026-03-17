@@ -1,45 +1,48 @@
 "use client";
 
+import { useCallback } from "react";
 import type { BaseBlockPreviewProps } from "../types";
-import { sanitizeHtml } from "@/lib/utils/sanitize";
+import { EditableRichText } from "../../editor/inline";
+import { createFieldElementId } from "@/lib/resume/elementPath";
+import { useBlockEditor } from "../../editor/BlockEditorContext";
 
 interface SummaryPreviewProps extends BaseBlockPreviewProps<string> {}
 
 /**
- * SummaryPreview - Renders professional summary text
+ * SummaryPreview - Renders professional summary with inline editing
  *
- * Displays rich text content (may contain HTML from TipTap editor).
+ * Displays rich text content using EditableRichText component.
+ * Supports formatting via floating toolbar on text selection.
  */
-export function SummaryPreview({ content, style }: SummaryPreviewProps) {
-  if (!content || content.trim() === "") {
-    return null;
-  }
+export function SummaryPreview({ content, style, blockId }: SummaryPreviewProps) {
+  const { updateContentByPath } = useBlockEditor();
 
-  // Check if content contains HTML tags
-  const isHtml = /<[^>]+>/.test(content);
-
-  if (isHtml) {
-    return (
-      <div
-        className="summary-content prose prose-sm max-w-none"
-        style={{
-          fontSize: style.bodyFontSize,
-          lineHeight: style.lineHeight,
-        }}
-        dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
-      />
-    );
-  }
+  // Handle content change
+  const handleContentChange = useCallback(
+    (newValue: string) => {
+      if (!blockId) return;
+      const elementId = createFieldElementId(blockId, undefined, "content");
+      updateContentByPath(elementId, newValue);
+    },
+    [blockId, updateContentByPath]
+  );
 
   return (
-    <p
+    <div
       style={{
         fontSize: style.bodyFontSize,
         lineHeight: style.lineHeight,
       }}
     >
-      {content}
-    </p>
+      <EditableRichText
+        elementId={blockId ? createFieldElementId(blockId, undefined, "content") : ""}
+        value={content || ""}
+        className="summary-content"
+        placeholder="Write a brief professional summary..."
+        onCommit={handleContentChange}
+        showToolbar={true}
+      />
+    </div>
   );
 }
 
