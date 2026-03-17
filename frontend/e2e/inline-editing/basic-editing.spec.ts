@@ -4,6 +4,7 @@ import {
   generateInlineEditingResume,
   toApiResponse,
 } from "../fixtures/test-data/inline-editing.fixture";
+import { setupAuth } from "../helpers/auth";
 
 /**
  * Basic inline editing tests - click, edit, save flow
@@ -13,6 +14,9 @@ test.describe("Inline Editing - Basic Editing", () => {
   const resumeData = generateInlineEditingResume();
 
   test.beforeEach(async ({ page }) => {
+    // Set up authentication first
+    await setupAuth(page);
+
     // Mock API routes
     await page.route("**/api/resumes/*", async (route) => {
       if (route.request().method() === "GET") {

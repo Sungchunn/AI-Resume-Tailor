@@ -4,6 +4,7 @@ import {
   generateInlineEditingResume,
   toApiResponse,
 } from "../fixtures/test-data/inline-editing.fixture";
+import { setupAuth, MOCK_USER } from "../helpers/auth";
 
 /**
  * Concurrent/multi-tab editing tests
@@ -15,8 +16,17 @@ test.describe("Inline Editing - Concurrent Edits", () => {
 
   /**
    * Setup API routes for a page with version tracking
+   * Also sets up authentication for the page
    */
-  async function setupApiRoutes(page: Page, currentVersion: number) {
+  async function setupApiRoutesWithAuth(page: Page, currentVersion: number) {
+    // Mock auth/me endpoint
+    await page.route("**/api/auth/me", async (route) => {
+      await route.fulfill({
+        status: 200,
+        json: MOCK_USER,
+      });
+    });
+
     await page.route("**/api/resumes/*", async (route) => {
       if (route.request().method() === "GET") {
         await route.fulfill({
@@ -54,6 +64,13 @@ test.describe("Inline Editing - Concurrent Edits", () => {
         });
       }
     });
+
+    // Set localStorage tokens
+    await page.goto("/");
+    await page.evaluate(() => {
+      localStorage.setItem("access_token", "mock-access-token-for-testing");
+      localStorage.setItem("refresh_token", "mock-refresh-token-for-testing");
+    });
   }
 
   test.beforeEach(() => {
@@ -63,7 +80,7 @@ test.describe("Inline Editing - Concurrent Edits", () => {
 
   test.describe("Single Tab Scenarios", () => {
     test("rapid edits maintain version consistency", async ({ page }) => {
-      await setupApiRoutes(page, version);
+      await setupApiRoutesWithAuth(page, version);
 
       const editor = new ResumeEditorPage(page);
       await editor.goto("test-resume-id");
@@ -88,6 +105,11 @@ test.describe("Inline Editing - Concurrent Edits", () => {
     test("edit debouncing prevents excessive API calls", async ({ page }) => {
       let apiCallCount = 0;
 
+      // Mock auth/me endpoint
+      await page.route("**/api/auth/me", async (route) => {
+        await route.fulfill({ status: 200, json: MOCK_USER });
+      });
+
       await page.route("**/api/resumes/*", async (route) => {
         if (route.request().method() === "GET") {
           await route.fulfill({
@@ -102,6 +124,13 @@ test.describe("Inline Editing - Concurrent Edits", () => {
       await page.route("**/api/resumes/*/partial", async (route) => {
         apiCallCount++;
         await route.fulfill({ status: 200, json: { success: true } });
+      });
+
+      // Set localStorage tokens
+      await page.goto("/");
+      await page.evaluate(() => {
+        localStorage.setItem("access_token", "mock-access-token-for-testing");
+        localStorage.setItem("refresh_token", "mock-refresh-token-for-testing");
       });
 
       const editor = new ResumeEditorPage(page);
@@ -134,8 +163,8 @@ test.describe("Inline Editing - Concurrent Edits", () => {
 
       try {
         // Setup routes for both pages
-        await setupApiRoutes(page1, 1);
-        await setupApiRoutes(page2, 1);
+        await setupApiRoutesWithAuth(page1, 1);
+        await setupApiRoutesWithAuth(page2, 1);
 
         const editor1 = new ResumeEditorPage(page1);
         const editor2 = new ResumeEditorPage(page2);
@@ -178,6 +207,11 @@ test.describe("Inline Editing - Concurrent Edits", () => {
     test("shows conflict warning when version mismatch", async ({ page }) => {
       let shouldConflict = false;
 
+      // Mock auth/me endpoint
+      await page.route("**/api/auth/me", async (route) => {
+        await route.fulfill({ status: 200, json: MOCK_USER });
+      });
+
       await page.route("**/api/resumes/*", async (route) => {
         if (route.request().method() === "GET") {
           await route.fulfill({
@@ -206,6 +240,13 @@ test.describe("Inline Editing - Concurrent Edits", () => {
         } else {
           await route.fulfill({ status: 200, json: { success: true } });
         }
+      });
+
+      // Set localStorage tokens
+      await page.goto("/");
+      await page.evaluate(() => {
+        localStorage.setItem("access_token", "mock-access-token-for-testing");
+        localStorage.setItem("refresh_token", "mock-refresh-token-for-testing");
       });
 
       const editor = new ResumeEditorPage(page);
@@ -238,6 +279,11 @@ test.describe("Inline Editing - Concurrent Edits", () => {
     test("can force save on conflict", async ({ page }) => {
       let conflictHandled = false;
 
+      // Mock auth/me endpoint
+      await page.route("**/api/auth/me", async (route) => {
+        await route.fulfill({ status: 200, json: MOCK_USER });
+      });
+
       await page.route("**/api/resumes/*", async (route) => {
         if (route.request().method() === "GET") {
           await route.fulfill({
@@ -266,6 +312,13 @@ test.describe("Inline Editing - Concurrent Edits", () => {
         }
       });
 
+      // Set localStorage tokens
+      await page.goto("/");
+      await page.evaluate(() => {
+        localStorage.setItem("access_token", "mock-access-token-for-testing");
+        localStorage.setItem("refresh_token", "mock-refresh-token-for-testing");
+      });
+
       const editor = new ResumeEditorPage(page);
       await editor.goto("test-resume-id");
 
@@ -274,6 +327,11 @@ test.describe("Inline Editing - Concurrent Edits", () => {
     });
 
     test("can reload on conflict", async ({ page }) => {
+      // Mock auth/me endpoint
+      await page.route("**/api/auth/me", async (route) => {
+        await route.fulfill({ status: 200, json: MOCK_USER });
+      });
+
       await page.route("**/api/resumes/*", async (route) => {
         if (route.request().method() === "GET") {
           await route.fulfill({
@@ -295,6 +353,13 @@ test.describe("Inline Editing - Concurrent Edits", () => {
         });
       });
 
+      // Set localStorage tokens
+      await page.goto("/");
+      await page.evaluate(() => {
+        localStorage.setItem("access_token", "mock-access-token-for-testing");
+        localStorage.setItem("refresh_token", "mock-refresh-token-for-testing");
+      });
+
       const editor = new ResumeEditorPage(page);
       await editor.goto("test-resume-id");
 
@@ -305,6 +370,11 @@ test.describe("Inline Editing - Concurrent Edits", () => {
 
   test.describe("Network Error Handling", () => {
     test("handles network error during save gracefully", async ({ page }) => {
+      // Mock auth/me endpoint
+      await page.route("**/api/auth/me", async (route) => {
+        await route.fulfill({ status: 200, json: MOCK_USER });
+      });
+
       await page.route("**/api/resumes/*", async (route) => {
         if (route.request().method() === "GET") {
           await route.fulfill({
@@ -318,6 +388,13 @@ test.describe("Inline Editing - Concurrent Edits", () => {
 
       await page.route("**/api/resumes/*/partial", async (route) => {
         await route.abort("failed");
+      });
+
+      // Set localStorage tokens
+      await page.goto("/");
+      await page.evaluate(() => {
+        localStorage.setItem("access_token", "mock-access-token-for-testing");
+        localStorage.setItem("refresh_token", "mock-refresh-token-for-testing");
       });
 
       const editor = new ResumeEditorPage(page);
@@ -342,6 +419,11 @@ test.describe("Inline Editing - Concurrent Edits", () => {
       let failCount = 0;
       const maxFails = 2;
 
+      // Mock auth/me endpoint
+      await page.route("**/api/auth/me", async (route) => {
+        await route.fulfill({ status: 200, json: MOCK_USER });
+      });
+
       await page.route("**/api/resumes/*", async (route) => {
         if (route.request().method() === "GET") {
           await route.fulfill({
@@ -360,6 +442,13 @@ test.describe("Inline Editing - Concurrent Edits", () => {
         } else {
           await route.fulfill({ status: 200, json: { success: true } });
         }
+      });
+
+      // Set localStorage tokens
+      await page.goto("/");
+      await page.evaluate(() => {
+        localStorage.setItem("access_token", "mock-access-token-for-testing");
+        localStorage.setItem("refresh_token", "mock-refresh-token-for-testing");
       });
 
       const editor = new ResumeEditorPage(page);
@@ -383,6 +472,11 @@ test.describe("Inline Editing - Concurrent Edits", () => {
   test.describe("Stale Data Prevention", () => {
     test("edit reflects latest data from server", async ({ page }) => {
       let serverContent = "Original content";
+
+      // Mock auth/me endpoint
+      await page.route("**/api/auth/me", async (route) => {
+        await route.fulfill({ status: 200, json: MOCK_USER });
+      });
 
       await page.route("**/api/resumes/*", async (route) => {
         if (route.request().method() === "GET") {
@@ -409,6 +503,13 @@ test.describe("Inline Editing - Concurrent Edits", () => {
           serverContent = body.contact.full_name;
         }
         await route.fulfill({ status: 200, json: { success: true } });
+      });
+
+      // Set localStorage tokens
+      await page.goto("/");
+      await page.evaluate(() => {
+        localStorage.setItem("access_token", "mock-access-token-for-testing");
+        localStorage.setItem("refresh_token", "mock-refresh-token-for-testing");
       });
 
       const editor = new ResumeEditorPage(page);
