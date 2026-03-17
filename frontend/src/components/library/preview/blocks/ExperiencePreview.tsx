@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import type { ExperienceEntry } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
 import { formatDateRange } from "../previewStyles";
-import { EditableText, EditableBullet } from "../../editor/inline";
+import { InlinePlainText, InlineRichText } from "../../editor/inline";
 import {
   createFieldElementId,
   createIndexedElementId,
@@ -22,7 +22,7 @@ interface ExperiencePreviewProps extends BaseBlockPreviewProps<ExperienceEntry[]
  * - Company and location
  * - Bullet points for achievements
  *
- * All text fields are inline-editable via EditableText components.
+ * All text fields are inline-editable via InlinePlainText and InlineRichText components.
  * Bullets support Enter to add new and Backspace to remove empty.
  */
 export function ExperiencePreview({
@@ -225,7 +225,7 @@ function ExperienceEntryPreview({
     <div>
       {/* Title and dates row */}
       <div className="flex justify-between items-baseline">
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "title")}
           value={entry.title}
           className="font-semibold"
@@ -237,7 +237,7 @@ function ExperienceEntryPreview({
             className="flex-shrink-0 ml-4"
             style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
           >
-            <EditableText
+            <InlinePlainText
               elementId={createFieldElementId(blockId, entry.id, "dateRange")}
               value={dateRange || ""}
               className="text-muted-foreground"
@@ -253,13 +253,13 @@ function ExperienceEntryPreview({
         className="flex justify-between text-foreground/80"
         style={{ fontSize: style.bodyFontSize }}
       >
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "company")}
           value={entry.company}
           placeholder="Company Name"
           onCommit={handleFieldChange("company")}
         />
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "location")}
           value={entry.location || ""}
           className="flex-shrink-0 ml-4 text-muted-foreground"
@@ -279,13 +279,14 @@ function ExperienceEntryPreview({
                 lineHeight: style.lineHeight,
               }}
             >
-              <EditableBullet
+              <InlineRichText
                 elementId={createIndexedElementId(blockId, entry.id, "bullets", bulletIndex)}
                 value={bullet}
                 placeholder="Add accomplishment..."
                 onCommit={(value) => updateBullet(entry.id, bulletIndex, value)}
                 onEnter={() => addBullet(entryIndex, bulletIndex)}
                 onBackspaceEmpty={() => removeBullet(entryIndex, bulletIndex)}
+                showToolbar={false}
               />
             </li>
           ))}
