@@ -7,7 +7,10 @@ import {
 import { setupAuth } from "../helpers/auth";
 
 /**
- * Skills editing tests
+ * Skills editing tests - Updated for comma-separated list editing
+ *
+ * The new InlineSkillsList component edits skills as a single comma-separated
+ * text field using native contentEditable. No per-skill popups.
  */
 test.describe("Inline Editing - Skills", () => {
   let editor: ResumeEditorPage;
@@ -38,324 +41,267 @@ test.describe("Inline Editing - Skills", () => {
   });
 
   /**
-   * Helper to find skill elements
+   * Helper to find the skills list element
    */
-  async function findSkillElements(): Promise<string[]> {
+  async function findSkillsElement(): Promise<string | null> {
     const allElements = await editor.getAllEditableElements();
-    // Skill IDs typically contain "skill"
-    return allElements.filter((id) => id.includes("skill"));
+    // Skills element ID ends with "::skills"
+    return allElements.find((id) => id.endsWith("::skills")) || null;
   }
 
-  test.describe("Basic Skill Editing", () => {
-    test("can edit individual skill", async ({ page }) => {
-      const skillElements = await findSkillElements();
+  test.describe("Comma-Separated List Editing", () => {
+    test("skills display as comma-separated text", async ({ page }) => {
+      const skillsId = await findSkillsElement();
 
-      if (skillElements.length === 0) {
+      if (!skillsId) {
         test.skip();
         return;
       }
 
-      const skillId = skillElements[0];
+      const skillsText = await editor.getEditableFieldText(skillsId);
+      // Should contain commas separating skills
+      expect(skillsText).toContain(",");
+    });
+
+    test("clicking skills field starts editing entire list", async ({
+      page,
+    }) => {
+      const skillsId = await findSkillsElement();
+
+      if (!skillsId) {
+        test.skip();
+        return;
+      }
+
+      // Click to edit
+      await editor.clickEditableField(skillsId);
+
+      // Element should have focus (native contentEditable)
+      const element = editor.getEditableElement(skillsId);
+      const isFocused = await element.evaluate(
+        (el) => document.activeElement === el
+      );
+      expect(isFocused).toBeTruthy();
+    });
+
+    test("can edit the entire skills list", async ({ page }) => {
+      const skillsId = await findSkillsElement();
+
+      if (!skillsId) {
+        test.skip();
+        return;
+      }
 
       // Start editing
-      await editor.clickEditableField(skillId);
+      await editor.clickEditableField(skillsId);
 
-      // Clear and type new skill
-      await editor.clearAndType("React.js");
+      // Clear and type new skills
+      await page.keyboard.press("Meta+a");
+      await page.keyboard.type("React, TypeScript, Node.js");
+
+      // Commit by clicking outside
+      await editor.commitEditByClickingOutside();
+      await page.waitForTimeout(300);
+
+      // Verify content
+      const skillsText = await editor.getEditableFieldText(skillsId);
+      expect(skillsText).toContain("React");
+      expect(skillsText).toContain("TypeScript");
+      expect(skillsText).toContain("Node.js");
+    });
+
+    test("adding comma adds new skill to list", async ({ page }) => {
+      const skillsId = await findSkillsElement();
+
+      if (!skillsId) {
+        test.skip();
+        return;
+      }
+
+      // Start editing
+      await editor.clickEditableField(skillsId);
+
+      // Go to end and add new skill
+      await page.keyboard.press("End");
+      await page.keyboard.type(", NewSkill");
 
       // Commit
       await editor.commitEditByClickingOutside();
-      await editor.waitForEditComplete(skillId);
+      await page.waitForTimeout(300);
 
-      // Verify content
-      const skillText = await editor.getEditableFieldText(skillId);
-      expect(skillText).toContain("React.js");
+      // Verify new skill is in the list
+      const skillsText = await editor.getEditableFieldText(skillsId);
+      expect(skillsText).toContain("NewSkill");
     });
 
-    test("skill retains formatting as plain text", async ({ page }) => {
-      const skillElements = await findSkillElements();
+    test("removing text removes skill from list", async ({ page }) => {
+      const skillsId = await findSkillsElement();
 
-      if (skillElements.length === 0) {
+      if (!skillsId) {
         test.skip();
         return;
       }
 
-      const skillId = skillElements[0];
+      // Get original skills count
+      const originalText = await editor.getEditableFieldText(skillsId);
+      const originalCount = originalText.split(",").length;
 
-      // Check if skills are plain text (not rich text)
-      const isRichText = await editor.isRichTextElement(skillId);
+      // Start editing and replace with fewer skills
+      await editor.clickEditableField(skillsId);
+      await page.keyboard.press("Meta+a");
+      await page.keyboard.type("SingleSkill");
 
-      // Skills are typically plain text
-      // This test verifies the expected behavior
-    });
-  });
+      // Commit
+      await editor.commitEditByClickingOutside();
+      await page.waitForTimeout(300);
 
-  test.describe("Comma Behavior", () => {
-    test("typing comma creates new skill", async ({ page }) => {
-      const skillElements = await findSkillElements();
-
-      if (skillElements.length === 0) {
-        test.skip();
-        return;
-      }
-
-      const firstSkillId = skillElements[0];
-      const initialSkillCount = skillElements.length;
-
-      // Start editing
-      await editor.clickEditableField(firstSkillId);
-
-      // Type skill name followed by comma
-      await editor.clearAndType("TypeScript,");
-
-      // Wait for new skill creation
-      await page.waitForTimeout(500);
-
-      // Check for new skill element
-      const newSkillElements = await findSkillElements();
-      // Implementation may vary - comma might create new skill or be handled differently
-    });
-
-    test("comma at end of skill creates new skill and focuses it", async ({
-      page,
-    }) => {
-      const skillElements = await findSkillElements();
-
-      if (skillElements.length === 0) {
-        test.skip();
-        return;
-      }
-
-      const skillId = skillElements[0];
-
-      // Start editing
-      await editor.clickEditableField(skillId);
-
-      // Type and add comma
-      await editor.clearAndType("Vue.js,");
-
-      // Wait for transition
-      await page.waitForTimeout(500);
-
-      // Check if we can type in new skill
-      await page.keyboard.type("Angular");
-
-      // Verify new skill content
-      const prosemirror = page.locator(".ProseMirror");
-      const isVisible = await prosemirror.isVisible();
-      if (isVisible) {
-        await expect(prosemirror).toContainText("Angular");
-      }
+      // Verify only one skill
+      const newText = await editor.getEditableFieldText(skillsId);
+      const newCount = newText.split(",").filter((s) => s.trim()).length;
+      expect(newCount).toBe(1);
+      expect(newText).toContain("SingleSkill");
     });
   });
 
   test.describe("Enter Key Behavior", () => {
-    test("Enter creates new skill", async ({ page }) => {
-      const skillElements = await findSkillElements();
+    test("Enter commits the edit (no newlines)", async ({ page }) => {
+      const skillsId = await findSkillsElement();
 
-      if (skillElements.length === 0) {
+      if (!skillsId) {
         test.skip();
         return;
       }
 
-      const skillId = skillElements[0];
-
       // Start editing
-      await editor.clickEditableField(skillId);
+      await editor.clickEditableField(skillsId);
+      await page.keyboard.press("Meta+a");
+      await page.keyboard.type("Skill1, Skill2");
 
-      // Type and press Enter
-      await editor.clearAndType("Python");
+      // Press Enter
       await page.keyboard.press("Enter");
-
-      // Wait for new skill
-      await page.waitForTimeout(500);
-
-      // Verify behavior (implementation dependent)
-    });
-  });
-
-  test.describe("Backspace Behavior", () => {
-    test("Backspace on empty skill removes it", async ({ page }) => {
-      const skillElements = await findSkillElements();
-
-      if (skillElements.length <= 1) {
-        test.skip();
-        return;
-      }
-
-      const lastSkillId = skillElements[skillElements.length - 1];
-
-      // Start editing last skill
-      await editor.clickEditableField(lastSkillId);
-
-      // Clear content
-      await editor.selectAllText();
-      await page.keyboard.press("Backspace");
-
-      // Press Backspace again to delete empty skill
-      await page.keyboard.press("Backspace");
-
-      // Wait for deletion
-      await page.waitForTimeout(500);
-
-      // Check if skill was removed (implementation dependent)
-    });
-
-    test("Backspace with content deletes character", async ({ page }) => {
-      const skillElements = await findSkillElements();
-
-      if (skillElements.length === 0) {
-        test.skip();
-        return;
-      }
-
-      const skillId = skillElements[0];
-
-      // Start editing
-      await editor.clickEditableField(skillId);
-
-      // Type content
-      await editor.clearAndType("Kotlin");
-
-      // Press Backspace
-      await page.keyboard.press("Backspace");
-
-      // Verify character deleted
-      const prosemirror = page.locator(".ProseMirror");
-      await expect(prosemirror).toContainText("Kotli");
-    });
-  });
-
-  test.describe("Skill Tag Display", () => {
-    test("skills are displayed as tags/chips", async ({ page }) => {
-      // Skills are typically rendered as tags/chips in the UI
-      // This test verifies the visual representation
-
-      const skillElements = await findSkillElements();
-
-      if (skillElements.length === 0) {
-        test.skip();
-        return;
-      }
-
-      // Check for skill elements having tag-like styling
-      const skillId = skillElements[0];
-      const element = editor.getEditableElement(skillId);
-
-      // Skills might be in a container with tag styling
-      const isTag = await element.evaluate((el) => {
-        const parent = el.closest('[data-testid="skills-container"]') || el.parentElement;
-        // Check for common tag/chip classes
-        return (
-          el.classList.contains("tag") ||
-          el.classList.contains("chip") ||
-          el.classList.contains("badge") ||
-          parent?.classList.contains("flex-wrap")
-        );
-      });
-    });
-  });
-
-  test.describe("Multiple Skill Operations", () => {
-    test("can edit multiple skills sequentially", async ({ page }) => {
-      const skillElements = await findSkillElements();
-
-      if (skillElements.length < 2) {
-        test.skip();
-        return;
-      }
-
-      // Edit first skill
-      await editor.clickEditableField(skillElements[0]);
-      await editor.clearAndType("Rust");
-      await editor.commitEditByClickingOutside();
-      await editor.waitForEditComplete(skillElements[0]);
-
-      // Edit second skill
-      await editor.clickEditableField(skillElements[1]);
-      await editor.clearAndType("Go");
-      await editor.commitEditByClickingOutside();
-      await editor.waitForEditComplete(skillElements[1]);
-
-      // Verify both
-      const firstText = await editor.getEditableFieldText(skillElements[0]);
-      const secondText = await editor.getEditableFieldText(skillElements[1]);
-
-      expect(firstText).toContain("Rust");
-      expect(secondText).toContain("Go");
-    });
-
-    test("Tab moves between skills", async ({ page }) => {
-      const skillElements = await findSkillElements();
-
-      if (skillElements.length < 2) {
-        test.skip();
-        return;
-      }
-
-      // Start editing first skill
-      await editor.clickEditableField(skillElements[0]);
-      await editor.clearAndType("Java");
-
-      // Tab to next
-      await page.keyboard.press("Tab");
       await page.waitForTimeout(300);
 
-      // First skill should be committed
-      const firstText = await editor.getEditableFieldText(skillElements[0]);
-      expect(firstText).toContain("Java");
+      // Verify commit happened (element no longer focused)
+      const element = editor.getEditableElement(skillsId);
+      const isFocused = await element.evaluate(
+        (el) => document.activeElement === el
+      );
+      expect(isFocused).toBeFalsy();
+
+      // Verify content
+      const skillsText = await editor.getEditableFieldText(skillsId);
+      expect(skillsText).toContain("Skill1");
+      expect(skillsText).toContain("Skill2");
     });
   });
 
-  test.describe("Skill Validation", () => {
-    test("empty skill is handled gracefully", async ({ page }) => {
-      const skillElements = await findSkillElements();
+  test.describe("No Per-Skill Popups", () => {
+    test("editing does not create overlay popups", async ({ page }) => {
+      const skillsId = await findSkillsElement();
 
-      if (skillElements.length === 0) {
+      if (!skillsId) {
         test.skip();
         return;
       }
 
-      const skillId = skillElements[0];
+      // Start editing
+      await editor.clickEditableField(skillsId);
+
+      // Should NOT have any fixed overlay (old pattern)
+      const fixedOverlay = page.locator(".fixed.z-50");
+      await expect(fixedOverlay).toHaveCount(0);
+    });
+
+    test("skills use native contentEditable (not ProseMirror)", async ({
+      page,
+    }) => {
+      const skillsId = await findSkillsElement();
+
+      if (!skillsId) {
+        test.skip();
+        return;
+      }
 
       // Start editing
-      await editor.clickEditableField(skillId);
+      await editor.clickEditableField(skillsId);
 
-      // Clear content
-      await editor.selectAllText();
+      // Skills element itself should be contentEditable
+      const element = editor.getEditableElement(skillsId);
+      const isContentEditable = await element.getAttribute("contenteditable");
+      expect(isContentEditable).toBe("true");
+
+      // Should NOT have ProseMirror inside (skills use native contentEditable)
+      const prosemirror = element.locator(".ProseMirror");
+      await expect(prosemirror).toHaveCount(0);
+    });
+  });
+
+  test.describe("Edge Cases", () => {
+    test("empty skills list shows placeholder", async ({ page }) => {
+      const skillsId = await findSkillsElement();
+
+      if (!skillsId) {
+        test.skip();
+        return;
+      }
+
+      // Clear all skills
+      await editor.clickEditableField(skillsId);
+      await page.keyboard.press("Meta+a");
       await page.keyboard.press("Backspace");
-
-      // Commit empty
       await editor.commitEditByClickingOutside();
       await page.waitForTimeout(300);
 
-      // Verify graceful handling (might show placeholder or maintain previous value)
+      // Element should show placeholder text
+      const element = editor.getEditableElement(skillsId);
+      const text = await element.textContent();
+      // Placeholder is "Add skills..." when empty
+      expect(text?.toLowerCase()).toContain("add skills");
     });
 
-    test("very long skill name is handled", async ({ page }) => {
-      const skillElements = await findSkillElements();
+    test("trailing commas are handled gracefully", async ({ page }) => {
+      const skillsId = await findSkillsElement();
 
-      if (skillElements.length === 0) {
+      if (!skillsId) {
         test.skip();
         return;
       }
 
-      const skillId = skillElements[0];
-
-      // Start editing
-      await editor.clickEditableField(skillId);
-
-      // Type very long skill name
-      const longSkillName = "A".repeat(100);
-      await editor.clearAndType(longSkillName);
+      // Type skills with trailing comma
+      await editor.clickEditableField(skillsId);
+      await page.keyboard.press("Meta+a");
+      await page.keyboard.type("Skill1, Skill2,");
 
       // Commit
       await editor.commitEditByClickingOutside();
-      await editor.waitForEditComplete(skillId);
+      await page.waitForTimeout(300);
 
-      // Verify it's handled (might be truncated or wrapped)
-      const skillText = await editor.getEditableFieldText(skillId);
-      expect(skillText.length).toBeGreaterThan(0);
+      // Verify no empty skill was added
+      const skillsText = await editor.getEditableFieldText(skillsId);
+      const skills = skillsText.split(",").filter((s) => s.trim());
+      expect(skills.length).toBe(2);
+    });
+
+    test("whitespace-only skills are filtered out", async ({ page }) => {
+      const skillsId = await findSkillsElement();
+
+      if (!skillsId) {
+        test.skip();
+        return;
+      }
+
+      // Type skills with empty entries
+      await editor.clickEditableField(skillsId);
+      await page.keyboard.press("Meta+a");
+      await page.keyboard.type("Skill1,   , Skill2");
+
+      // Commit
+      await editor.commitEditByClickingOutside();
+      await page.waitForTimeout(300);
+
+      // Verify empty entry was filtered
+      const skillsText = await editor.getEditableFieldText(skillsId);
+      expect(skillsText).not.toContain(",  ,");
     });
   });
 });
