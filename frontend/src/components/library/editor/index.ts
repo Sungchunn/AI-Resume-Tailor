@@ -8,6 +8,7 @@
 export {
   BlockEditorContext,
   useBlockEditor,
+  useBlockEditorOptional,
   useBlocks,
   useActiveBlock,
   useBlockEditorStyle,

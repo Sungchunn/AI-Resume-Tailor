@@ -106,6 +106,14 @@ export function useBlockEditor(): BlockEditorContextValue {
 }
 
 /**
+ * Hook to optionally access the block editor context
+ * Returns null if used outside of BlockEditorProvider (e.g., in read-only preview)
+ */
+export function useBlockEditorOptional(): BlockEditorContextValue | null {
+  return useContext(BlockEditorContext);
+}
+
+/**
  * Hook to access just the blocks array
  * Useful for components that only need to read blocks
  */
