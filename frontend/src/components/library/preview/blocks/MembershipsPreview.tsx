@@ -6,7 +6,7 @@ import type { BaseBlockPreviewProps } from "../types";
 import { formatDateRange } from "../previewStyles";
 import { EditableText } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
-import { useBlockEditor } from "../../editor/BlockEditorContext";
+import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
 interface MembershipsPreviewProps extends BaseBlockPreviewProps<MembershipEntry[]> {}
 
@@ -18,12 +18,16 @@ interface MembershipsPreviewProps extends BaseBlockPreviewProps<MembershipEntry[
  * - Role (if provided)
  *
  * All text fields are inline-editable via EditableText components.
+ * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function MembershipsPreview({
   content,
   style,
   blockId,
 }: MembershipsPreviewProps) {
+  const editorContext = useBlockEditorOptional();
+  const isEditable = !!editorContext;
+
   if (!content || content.length === 0) {
     return null;
   }
@@ -36,6 +40,7 @@ export function MembershipsPreview({
           entry={entry}
           style={style}
           blockId={blockId}
+          isEditable={isEditable}
         />
       ))}
     </div>
@@ -46,38 +51,40 @@ interface MembershipEntryPreviewProps {
   entry: MembershipEntry;
   style: BaseBlockPreviewProps<unknown>["style"];
   blockId?: string;
+  isEditable: boolean;
 }
 
 function MembershipEntryPreview({
   entry,
   style,
   blockId,
+  isEditable,
 }: MembershipEntryPreviewProps) {
-  const { updateContentByPath } = useBlockEditor();
+  const editorContext = useBlockEditorOptional();
   const dateRange = formatDateRange(entry.startDate, entry.endDate, entry.current);
 
   // Create handler for text fields
   const handleFieldChange = useCallback(
     (field: string) => (value: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       const elementId = createFieldElementId(blockId, entry.id, field);
-      updateContentByPath(elementId, value);
+      editorContext.updateContentByPath(elementId, value);
     },
-    [blockId, entry.id, updateContentByPath]
+    [blockId, entry.id, editorContext]
   );
 
   // Handler for date range changes
   const handleDateRangeChange = useCallback(
     (value: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       const elementId = createFieldElementId(blockId, entry.id, "startDate");
-      updateContentByPath(elementId, value);
+      editorContext.updateContentByPath(elementId, value);
     },
-    [blockId, entry.id, updateContentByPath]
+    [blockId, entry.id, editorContext]
   );
 
-  // If no blockId, render without inline editing capabilities
-  if (!blockId) {
+  // If not editable, render without inline editing capabilities
+  if (!isEditable || !blockId) {
     return (
       <div>
         <div className="flex justify-between items-baseline">

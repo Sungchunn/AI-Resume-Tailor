@@ -5,7 +5,7 @@ import type { ReferenceEntry } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
 import { EditableText } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
-import { useBlockEditor } from "../../editor/BlockEditorContext";
+import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
 interface ReferencesPreviewProps extends BaseBlockPreviewProps<ReferenceEntry[]> {}
 
@@ -19,12 +19,16 @@ interface ReferencesPreviewProps extends BaseBlockPreviewProps<ReferenceEntry[]>
  * - Relationship (if provided)
  *
  * All text fields are inline-editable via EditableText components.
+ * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function ReferencesPreview({
   content,
   style,
   blockId,
 }: ReferencesPreviewProps) {
+  const editorContext = useBlockEditorOptional();
+  const isEditable = !!editorContext;
+
   if (!content || content.length === 0) {
     return null;
   }
@@ -37,6 +41,7 @@ export function ReferencesPreview({
           entry={entry}
           style={style}
           blockId={blockId}
+          isEditable={isEditable}
         />
       ))}
     </div>
@@ -47,28 +52,30 @@ interface ReferenceEntryPreviewProps {
   entry: ReferenceEntry;
   style: BaseBlockPreviewProps<unknown>["style"];
   blockId?: string;
+  isEditable: boolean;
 }
 
 function ReferenceEntryPreview({
   entry,
   style,
   blockId,
+  isEditable,
 }: ReferenceEntryPreviewProps) {
-  const { updateContentByPath } = useBlockEditor();
+  const editorContext = useBlockEditorOptional();
   const contactInfo = [entry.email, entry.phone].filter(Boolean).join(" | ");
 
   // Create handler for text fields
   const handleFieldChange = useCallback(
     (field: string) => (value: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       const elementId = createFieldElementId(blockId, entry.id, field);
-      updateContentByPath(elementId, value);
+      editorContext.updateContentByPath(elementId, value);
     },
-    [blockId, entry.id, updateContentByPath]
+    [blockId, entry.id, editorContext]
   );
 
-  // If no blockId, render without inline editing capabilities
-  if (!blockId) {
+  // If not editable, render without inline editing capabilities
+  if (!isEditable || !blockId) {
     return (
       <div>
         <div className="flex justify-between items-baseline">

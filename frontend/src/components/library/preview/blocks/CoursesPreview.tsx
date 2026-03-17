@@ -5,7 +5,7 @@ import type { CourseEntry } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
 import { EditableText } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
-import { useBlockEditor } from "../../editor/BlockEditorContext";
+import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
 interface CoursesPreviewProps extends BaseBlockPreviewProps<CourseEntry[]> {}
 
@@ -18,12 +18,16 @@ interface CoursesPreviewProps extends BaseBlockPreviewProps<CourseEntry[]> {}
  * - Description (if provided)
  *
  * All text fields are inline-editable via EditableText components.
+ * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function CoursesPreview({
   content,
   style,
   blockId,
 }: CoursesPreviewProps) {
+  const editorContext = useBlockEditorOptional();
+  const isEditable = !!editorContext;
+
   if (!content || content.length === 0) {
     return null;
   }
@@ -36,6 +40,7 @@ export function CoursesPreview({
           entry={entry}
           style={style}
           blockId={blockId}
+          isEditable={isEditable}
         />
       ))}
     </div>
@@ -46,27 +51,29 @@ interface CourseEntryPreviewProps {
   entry: CourseEntry;
   style: BaseBlockPreviewProps<unknown>["style"];
   blockId?: string;
+  isEditable: boolean;
 }
 
 function CourseEntryPreview({
   entry,
   style,
   blockId,
+  isEditable,
 }: CourseEntryPreviewProps) {
-  const { updateContentByPath } = useBlockEditor();
+  const editorContext = useBlockEditorOptional();
 
   // Create handler for text fields
   const handleFieldChange = useCallback(
     (field: string) => (value: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       const elementId = createFieldElementId(blockId, entry.id, field);
-      updateContentByPath(elementId, value);
+      editorContext.updateContentByPath(elementId, value);
     },
-    [blockId, entry.id, updateContentByPath]
+    [blockId, entry.id, editorContext]
   );
 
-  // If no blockId, render without inline editing capabilities
-  if (!blockId) {
+  // If not editable, render without inline editing capabilities
+  if (!isEditable || !blockId) {
     return (
       <div>
         <div className="flex justify-between items-baseline">
