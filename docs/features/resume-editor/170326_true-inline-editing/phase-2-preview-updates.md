@@ -63,7 +63,7 @@ Replace usage of old `EditableText`/`EditableRichText`/`EditableBullet` with new
 
 **File**: `/frontend/src/components/library/preview/blocks/ExperiencePreview.tsx`
 
-### Changes
+### First Changes
 
 Replace imports:
 
