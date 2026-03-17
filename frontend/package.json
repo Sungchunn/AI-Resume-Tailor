@@ -13,7 +13,9 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
-    "test:e2e:update": "playwright test --update-snapshots"
+    "test:e2e:update": "playwright test --update-snapshots",
+    "test:e2e:clean": "rm -rf playwright-report test-results",
+    "test:e2e:fresh": "rm -rf playwright-report test-results && playwright test"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

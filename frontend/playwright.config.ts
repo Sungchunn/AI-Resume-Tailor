@@ -5,6 +5,24 @@ import { defineConfig, devices } from "@playwright/test";
  *
  * @see https://playwright.dev/docs/test-configuration
  */
+
+// Environment flags for conditional configuration
+const isCI = !!process.env.CI;
+const runAllBrowsers = process.env.PLAYWRIGHT_BROWSERS === "all";
+const generateHtmlReport = !!process.env.PLAYWRIGHT_HTML_REPORT;
+
+// Default: Chromium only locally, all browsers in CI
+const includeBrowsers = runAllBrowsers || isCI
+  ? ["chromium", "firefox", "webkit"]
+  : ["chromium"];
+
+// Specialized test directories to exclude from generic browser projects
+const specializedTestDirs = [
+  "**/fit-to-page/**",
+  "**/visual-regression/**",
+  "**/inline-editing/**",
+];
+
 export default defineConfig({
   testDir: "./e2e",
   /* Run tests in files in parallel */
@@ -17,8 +35,14 @@ export default defineConfig({
   workers: process.env.CI ? 1 : "50%",
   /* Reporter to use */
   reporter: [
-    ["html", { outputFolder: "playwright-report" }],
+    // List reporter for immediate terminal feedback locally
+    ...(!isCI ? [["list"] as const] : []),
+    // JSON always - for Claude Code to parse test failures
     ["json", { outputFile: "test-results/results.json" }],
+    // HTML only in CI or on explicit request
+    ...(isCI || generateHtmlReport
+      ? [["html", { outputFolder: "playwright-report" }] as const]
+      : []),
   ],
   /* Shared settings for all the projects below */
   use: {
@@ -37,20 +61,36 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
-    {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
-    },
+    // Browser projects - filtered by includeBrowsers, exclude specialized test dirs
+    ...(includeBrowsers.includes("chromium")
+      ? [
+          {
+            name: "chromium",
+            use: { ...devices["Desktop Chrome"] },
+            testIgnore: specializedTestDirs,
+          },
+        ]
+      : []),
 
-    {
-      name: "firefox",
-      use: { ...devices["Desktop Firefox"] },
-    },
+    ...(includeBrowsers.includes("firefox")
+      ? [
+          {
+            name: "firefox",
+            use: { ...devices["Desktop Firefox"] },
+            testIgnore: specializedTestDirs,
+          },
+        ]
+      : []),
 
-    {
-      name: "webkit",
-      use: { ...devices["Desktop Safari"] },
-    },
+    ...(includeBrowsers.includes("webkit")
+      ? [
+          {
+            name: "webkit",
+            use: { ...devices["Desktop Safari"] },
+            testIgnore: specializedTestDirs,
+          },
+        ]
+      : []),
 
     /* Fit-to-page tests - requires consistent viewport for PDF/page measurements */
     {
