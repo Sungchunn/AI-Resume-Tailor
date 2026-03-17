@@ -215,38 +215,38 @@ test.describe("Inline Editing - Basic Editing", () => {
   });
 
   test.describe("Visual Feedback", () => {
-    test("editing element shows visual indicator", async ({ page }) => {
+    test("editing element shows focus ring when active", async ({ page }) => {
       const editableElements = await editor.getAllEditableElements();
       const firstElementId = editableElements[0];
 
       // Start editing
       await editor.clickEditableField(firstElementId);
 
-      // Should have editing class or border indicator
+      // Should have focus ring indicator (new inline editing uses focus:ring-2)
       const element = editor.getEditableElement(firstElementId);
-      const hasEditingIndicator = await element.evaluate((el) => {
-        return (
-          el.classList.contains("inline-editing") ||
-          getComputedStyle(el).visibility === "hidden"
-        );
+      const hasFocusIndicator = await element.evaluate((el) => {
+        // Check if element or its ProseMirror editor has focus
+        const activeEl = document.activeElement;
+        const isFocused = el === activeEl || el.contains(activeEl);
+        return isFocused;
       });
-      expect(hasEditingIndicator).toBeTruthy();
+      expect(hasFocusIndicator).toBeTruthy();
     });
 
-    test("editor overlay appears over editing element", async ({ page }) => {
+    test("editor renders in-place (no overlay)", async ({ page }) => {
       const editableElements = await editor.getAllEditableElements();
       const firstElementId = editableElements[0];
 
       // Start editing
       await editor.clickEditableField(firstElementId);
 
-      // Should have ProseMirror overlay
-      const prosemirror = page.locator(".ProseMirror");
-      await expect(prosemirror).toBeVisible();
+      // Element should still be visible (no overlay hiding it)
+      const element = editor.getEditableElement(firstElementId);
+      await expect(element).toBeVisible();
 
-      // Editor should be positioned
-      const editorWrapper = page.locator(".fixed.z-50");
-      await expect(editorWrapper).toBeVisible();
+      // Should NOT have fixed overlay wrapper (old pattern removed)
+      const fixedOverlay = page.locator(".fixed.z-50");
+      await expect(fixedOverlay).toHaveCount(0);
     });
   });
 
