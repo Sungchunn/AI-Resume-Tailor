@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import type { EducationEntry } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
-import { EditableText, EditableBullet } from "../../editor/inline";
+import { InlinePlainText, InlineRichText } from "../../editor/inline";
 import {
   createFieldElementId,
   createIndexedElementId,
@@ -22,7 +22,7 @@ interface EducationPreviewProps extends BaseBlockPreviewProps<EducationEntry[]> 
  * - GPA and honors (if provided)
  * - Relevant courses (if provided)
  *
- * All text fields are inline-editable via EditableText components.
+ * All text fields are inline-editable via InlinePlainText and InlineRichText components.
  * Relevant courses support Enter to add new and Backspace to remove empty.
  * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
@@ -204,7 +204,7 @@ function EducationEntryPreview({
     <div>
       {/* Degree and date row */}
       <div className="flex justify-between items-baseline">
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "degree")}
           value={entry.degree}
           className="font-semibold"
@@ -215,7 +215,7 @@ function EducationEntryPreview({
           className="flex-shrink-0 ml-4"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
-          <EditableText
+          <InlinePlainText
             elementId={createFieldElementId(blockId, entry.id, "graduationDate")}
             value={entry.graduationDate || ""}
             className="text-muted-foreground"
@@ -230,13 +230,13 @@ function EducationEntryPreview({
         className="flex justify-between text-foreground/80"
         style={{ fontSize: style.bodyFontSize }}
       >
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "institution")}
           value={entry.institution}
           placeholder="University Name"
           onCommit={handleFieldChange("institution")}
         />
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "location")}
           value={entry.location || ""}
           className="flex-shrink-0 ml-4 text-muted-foreground"
@@ -252,7 +252,7 @@ function EducationEntryPreview({
       >
         <span className="flex items-center gap-1 text-muted-foreground">
           <span>GPA:</span>
-          <EditableText
+          <InlinePlainText
             elementId={createFieldElementId(blockId, entry.id, "gpa")}
             value={entry.gpa || ""}
             className="text-muted-foreground"
@@ -263,7 +263,7 @@ function EducationEntryPreview({
         {(entry.gpa || entry.honors) && (
           <span className="text-muted-foreground">|</span>
         )}
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "honors")}
           value={entry.honors || ""}
           className="text-muted-foreground"
@@ -282,13 +282,14 @@ function EducationEntryPreview({
           <ul className="list-disc ml-4 mt-0.5 space-y-0.5">
             {entry.relevantCourses.map((course, courseIndex) => (
               <li key={courseIndex} className="text-muted-foreground">
-                <EditableBullet
+                <InlineRichText
                   elementId={createIndexedElementId(blockId, entry.id, "relevantCourses", courseIndex)}
                   value={course}
                   placeholder="Course name..."
                   onCommit={(value) => updateCourse(entry.id, courseIndex, value)}
                   onEnter={() => addCourse(entryIndex, courseIndex)}
                   onBackspaceEmpty={() => removeCourse(entryIndex, courseIndex)}
+                  showToolbar={false}
                 />
               </li>
             ))}
