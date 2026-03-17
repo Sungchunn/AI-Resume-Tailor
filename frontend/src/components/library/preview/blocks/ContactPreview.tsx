@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import type { ContactContent } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
 import { Mail, Phone, MapPin, Linkedin, Globe, Github } from "lucide-react";
-import { EditableText } from "../../editor/inline";
+import { InlinePlainText } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
@@ -14,7 +14,7 @@ interface ContactPreviewProps extends BaseBlockPreviewProps<ContactContent> {}
  * ContactPreview - Renders contact information header with inline editing
  *
  * Displays name prominently with contact details below.
- * All text fields are inline-editable via EditableText components when in editor context.
+ * All text fields are inline-editable via InlinePlainText components when in editor context.
  * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function ContactPreview({ content, style, blockId }: ContactPreviewProps) {
@@ -47,7 +47,7 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
         className="font-bold tracking-tight"
         style={{ fontSize: style.headingFontSize }}
       >
-        <EditableText
+        <InlinePlainText
           elementId={blockId ? createFieldElementId(blockId, undefined, "fullName") : ""}
           value={content.fullName || ""}
           placeholder="Your Name"
@@ -63,7 +63,7 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
         {/* Email (required field, always shown) */}
         <span className="flex items-center gap-1">
           <Mail size={iconSize} className={iconClass} />
-          <EditableText
+          <InlinePlainText
             elementId={blockId ? createFieldElementId(blockId, undefined, "email") : ""}
             value={content.email || ""}
             placeholder="email@example.com"
@@ -75,7 +75,7 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
         {shouldShowField(content.phone) && (
           <span className="flex items-center gap-1">
             <Phone size={iconSize} className={iconClass} />
-            <EditableText
+            <InlinePlainText
               elementId={blockId ? createFieldElementId(blockId, undefined, "phone") : ""}
               value={content.phone || ""}
               placeholder="(555) 123-4567"
@@ -88,7 +88,7 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
         {shouldShowField(content.location) && (
           <span className="flex items-center gap-1">
             <MapPin size={iconSize} className={iconClass} />
-            <EditableText
+            <InlinePlainText
               elementId={blockId ? createFieldElementId(blockId, undefined, "location") : ""}
               value={content.location || ""}
               placeholder="City, State"
@@ -101,7 +101,7 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
         {shouldShowField(content.linkedin) && (
           <span className="flex items-center gap-1">
             <Linkedin size={iconSize} className={iconClass} />
-            <EditableText
+            <InlinePlainText
               elementId={blockId ? createFieldElementId(blockId, undefined, "linkedin") : ""}
               value={content.linkedin || ""}
               placeholder="linkedin.com/in/username"
@@ -114,7 +114,7 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
         {shouldShowField(content.website) && (
           <span className="flex items-center gap-1">
             <Globe size={iconSize} className={iconClass} />
-            <EditableText
+            <InlinePlainText
               elementId={blockId ? createFieldElementId(blockId, undefined, "website") : ""}
               value={content.website || ""}
               placeholder="yourwebsite.com"
@@ -127,7 +127,7 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
         {shouldShowField(content.github) && (
           <span className="flex items-center gap-1">
             <Github size={iconSize} className={iconClass} />
-            <EditableText
+            <InlinePlainText
               elementId={blockId ? createFieldElementId(blockId, undefined, "github") : ""}
               value={content.github || ""}
               placeholder="github.com/username"

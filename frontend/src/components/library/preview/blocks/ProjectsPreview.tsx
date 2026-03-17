@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import type { ProjectEntry } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
 import { formatDateRange } from "../previewStyles";
-import { EditableText, EditableBullet } from "../../editor/inline";
+import { InlinePlainText, InlineRichText } from "../../editor/inline";
 import {
   createFieldElementId,
   createIndexedElementId,
@@ -23,7 +23,7 @@ interface ProjectsPreviewProps extends BaseBlockPreviewProps<ProjectEntry[]> {}
  * - Technologies used
  * - Bullet points (if provided)
  *
- * All text fields are inline-editable via EditableText components.
+ * All text fields are inline-editable via InlinePlainText and InlineRichText components.
  * Bullets support Enter to add new and Backspace to remove empty.
  * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
@@ -237,7 +237,7 @@ function ProjectEntryPreview({
       {/* Name and date row */}
       <div className="flex justify-between items-baseline">
         <span className="font-semibold" style={{ fontSize: style.bodyFontSize }}>
-          <EditableText
+          <InlinePlainText
             elementId={createFieldElementId(blockId, entry.id, "name")}
             value={entry.name}
             placeholder="Project Name"
@@ -246,7 +246,7 @@ function ProjectEntryPreview({
           {entry.url && (
             <span className="text-muted-foreground font-normal ml-2">
               (
-              <EditableText
+              <InlinePlainText
                 elementId={createFieldElementId(blockId, entry.id, "url")}
                 value={entry.url}
                 placeholder="project-url.com"
@@ -260,7 +260,7 @@ function ProjectEntryPreview({
           className="flex-shrink-0 ml-4"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
-          <EditableText
+          <InlinePlainText
             elementId={createFieldElementId(blockId, entry.id, "dateRange")}
             value={dateRange || ""}
             className="text-muted-foreground"
@@ -278,7 +278,7 @@ function ProjectEntryPreview({
           lineHeight: style.lineHeight,
         }}
       >
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "description")}
           value={entry.description || ""}
           placeholder="Project description..."
@@ -292,7 +292,7 @@ function ProjectEntryPreview({
         style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
       >
         <span className="font-medium">Technologies: </span>
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "technologies")}
           value={entry.technologies?.join(", ") || ""}
           placeholder="React, TypeScript, ..."
@@ -329,13 +329,14 @@ function ProjectEntryPreview({
                 lineHeight: style.lineHeight,
               }}
             >
-              <EditableBullet
+              <InlineRichText
                 elementId={createIndexedElementId(blockId, entry.id, "bullets", bulletIndex)}
                 value={bullet}
                 placeholder="Add accomplishment..."
                 onCommit={(value) => updateBullet(entry.id, bulletIndex, value)}
                 onEnter={() => addBullet(entryIndex, bulletIndex)}
                 onBackspaceEmpty={() => removeBullet(entryIndex, bulletIndex)}
+                showToolbar={false}
               />
             </li>
           ))}

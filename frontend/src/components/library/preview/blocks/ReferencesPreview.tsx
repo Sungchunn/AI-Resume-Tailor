@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import type { ReferenceEntry } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
-import { EditableText } from "../../editor/inline";
+import { InlinePlainText } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
@@ -18,7 +18,7 @@ interface ReferencesPreviewProps extends BaseBlockPreviewProps<ReferenceEntry[]>
  * - Contact information (email/phone)
  * - Relationship (if provided)
  *
- * All text fields are inline-editable via EditableText components.
+ * All text fields are inline-editable via InlinePlainText components.
  * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function ReferencesPreview({
@@ -120,7 +120,7 @@ function ReferenceEntryPreview({
     <div>
       {/* Name and relationship row */}
       <div className="flex justify-between items-baseline">
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "name")}
           value={entry.name}
           className="font-semibold"
@@ -131,7 +131,7 @@ function ReferenceEntryPreview({
           className="flex-shrink-0 ml-4"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
-          <EditableText
+          <InlinePlainText
             elementId={createFieldElementId(blockId, entry.id, "relationship")}
             value={entry.relationship || ""}
             className="text-muted-foreground"
@@ -146,14 +146,14 @@ function ReferenceEntryPreview({
         className="text-foreground/80"
         style={{ fontSize: style.bodyFontSize }}
       >
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "title")}
           value={entry.title}
           placeholder="Title"
           onCommit={handleFieldChange("title")}
         />
         <span>, </span>
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "company")}
           value={entry.company}
           placeholder="Company"
@@ -166,14 +166,14 @@ function ReferenceEntryPreview({
         className="text-muted-foreground"
         style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
       >
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "email")}
           value={entry.email || ""}
           placeholder="email@example.com"
           onCommit={handleFieldChange("email")}
         />
         <span> | </span>
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "phone")}
           value={entry.phone || ""}
           placeholder="(555) 123-4567"

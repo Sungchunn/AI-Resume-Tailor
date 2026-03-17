@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import type { CertificationEntry } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
 import { formatDateRange } from "../previewStyles";
-import { EditableText } from "../../editor/inline";
+import { InlinePlainText } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
@@ -18,7 +18,7 @@ interface CertificationsPreviewProps extends BaseBlockPreviewProps<Certification
  * - Issuer
  * - Credential ID (if provided)
  *
- * All text fields are inline-editable via EditableText components.
+ * All text fields are inline-editable via InlinePlainText components.
  * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function CertificationsPreview({
@@ -128,7 +128,7 @@ function CertificationEntryPreview({
     <div>
       {/* Name and date row */}
       <div className="flex justify-between items-baseline">
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "name")}
           value={entry.name}
           className="font-semibold"
@@ -139,7 +139,7 @@ function CertificationEntryPreview({
           className="flex-shrink-0 ml-4"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
-          <EditableText
+          <InlinePlainText
             elementId={createFieldElementId(blockId, entry.id, "dateRange")}
             value={dateInfo || ""}
             className="text-muted-foreground"
@@ -154,7 +154,7 @@ function CertificationEntryPreview({
         className="text-foreground/80"
         style={{ fontSize: style.bodyFontSize }}
       >
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "issuer")}
           value={entry.issuer}
           placeholder="Issuing Organization"
@@ -168,7 +168,7 @@ function CertificationEntryPreview({
         style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
       >
         <span>Credential ID: </span>
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "credentialId")}
           value={entry.credentialId || ""}
           placeholder="ABC123..."

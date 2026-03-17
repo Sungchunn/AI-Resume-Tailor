@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import type { PublicationEntry } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
 import { PUBLICATION_TYPE_LABELS } from "../previewStyles";
-import { EditableText } from "../../editor/inline";
+import { InlinePlainText } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
@@ -19,7 +19,7 @@ interface PublicationsPreviewProps extends BaseBlockPreviewProps<PublicationEntr
  * - Authors (if provided)
  * - Description (if provided)
  *
- * All text fields are inline-editable via EditableText components.
+ * All text fields are inline-editable via InlinePlainText components.
  * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function PublicationsPreview({
@@ -133,7 +133,7 @@ function PublicationEntryPreview({
     <div>
       {/* Title and date row */}
       <div className="flex justify-between items-baseline">
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "title")}
           value={entry.title}
           className="font-semibold"
@@ -144,7 +144,7 @@ function PublicationEntryPreview({
           className="flex-shrink-0 ml-4"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
-          <EditableText
+          <InlinePlainText
             elementId={createFieldElementId(blockId, entry.id, "date")}
             value={entry.date || ""}
             className="text-muted-foreground"
@@ -159,14 +159,14 @@ function PublicationEntryPreview({
         className="text-foreground/80"
         style={{ fontSize: style.bodyFontSize }}
       >
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "publicationType")}
           value={typeLabel}
           placeholder="Type"
           onCommit={handleFieldChange("publicationType")}
         />
         <span> | </span>
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "publisher")}
           value={entry.publisher || ""}
           placeholder="Publisher"
@@ -179,7 +179,7 @@ function PublicationEntryPreview({
         className="text-muted-foreground"
         style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
       >
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "authors")}
           value={entry.authors || ""}
           placeholder="Co-authors..."
@@ -195,7 +195,7 @@ function PublicationEntryPreview({
           lineHeight: style.lineHeight,
         }}
       >
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "description")}
           value={entry.description || ""}
           placeholder="Description..."

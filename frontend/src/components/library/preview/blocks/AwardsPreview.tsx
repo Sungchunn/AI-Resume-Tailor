@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import type { AwardEntry } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
-import { EditableText } from "../../editor/inline";
+import { InlinePlainText } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
@@ -17,7 +17,7 @@ interface AwardsPreviewProps extends BaseBlockPreviewProps<AwardEntry[]> {}
  * - Issuer
  * - Description (if provided)
  *
- * All text fields are inline-editable via EditableText components.
+ * All text fields are inline-editable via InlinePlainText components.
  * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function AwardsPreview({
@@ -114,7 +114,7 @@ function AwardEntryPreview({ entry, style, blockId, isEditable }: AwardEntryPrev
     <div>
       {/* Title and date row */}
       <div className="flex justify-between items-baseline">
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "title")}
           value={entry.title}
           className="font-semibold"
@@ -125,7 +125,7 @@ function AwardEntryPreview({ entry, style, blockId, isEditable }: AwardEntryPrev
           className="flex-shrink-0 ml-4"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
-          <EditableText
+          <InlinePlainText
             elementId={createFieldElementId(blockId, entry.id, "date")}
             value={entry.date || ""}
             className="text-muted-foreground"
@@ -140,7 +140,7 @@ function AwardEntryPreview({ entry, style, blockId, isEditable }: AwardEntryPrev
         className="text-foreground/80"
         style={{ fontSize: style.bodyFontSize }}
       >
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "issuer")}
           value={entry.issuer}
           placeholder="Issuing Organization"
@@ -156,7 +156,7 @@ function AwardEntryPreview({ entry, style, blockId, isEditable }: AwardEntryPrev
           lineHeight: style.lineHeight,
         }}
       >
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "description")}
           value={entry.description || ""}
           placeholder="Description..."

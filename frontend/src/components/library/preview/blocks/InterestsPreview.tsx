@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import type { BaseBlockPreviewProps } from "../types";
 import { sanitizeHtml } from "@/lib/utils/sanitize";
-import { EditableRichText } from "../../editor/inline";
+import { InlineRichText } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
@@ -13,7 +13,7 @@ interface InterestsPreviewProps extends BaseBlockPreviewProps<string> {}
  * InterestsPreview - Renders interests/hobbies text with inline editing
  *
  * Displays freeform text content for personal interests.
- * Content is inline-editable via EditableRichText component.
+ * Content is inline-editable via InlineRichText component.
  * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function InterestsPreview({
@@ -74,7 +74,7 @@ export function InterestsPreview({
         lineHeight: style.lineHeight,
       }}
     >
-      <EditableRichText
+      <InlineRichText
         elementId={createFieldElementId(blockId, undefined, "content")}
         value={content || ""}
         placeholder="Add your interests and hobbies..."

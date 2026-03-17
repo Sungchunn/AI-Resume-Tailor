@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import type { CourseEntry } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
-import { EditableText } from "../../editor/inline";
+import { InlinePlainText } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 
@@ -17,7 +17,7 @@ interface CoursesPreviewProps extends BaseBlockPreviewProps<CourseEntry[]> {}
  * - Provider
  * - Description (if provided)
  *
- * All text fields are inline-editable via EditableText components.
+ * All text fields are inline-editable via InlinePlainText components.
  * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function CoursesPreview({
@@ -119,7 +119,7 @@ function CourseEntryPreview({
     <div>
       {/* Name and date row */}
       <div className="flex justify-between items-baseline">
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "name")}
           value={entry.name}
           className="font-semibold"
@@ -130,7 +130,7 @@ function CourseEntryPreview({
           className="flex-shrink-0 ml-4"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
-          <EditableText
+          <InlinePlainText
             elementId={createFieldElementId(blockId, entry.id, "date")}
             value={entry.date || ""}
             className="text-muted-foreground"
@@ -145,7 +145,7 @@ function CourseEntryPreview({
         className="text-foreground/80"
         style={{ fontSize: style.bodyFontSize }}
       >
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "provider")}
           value={entry.provider}
           placeholder="Provider (e.g., Coursera, Udemy)"
@@ -161,7 +161,7 @@ function CourseEntryPreview({
           lineHeight: style.lineHeight,
         }}
       >
-        <EditableText
+        <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "description")}
           value={entry.description || ""}
           placeholder="Description..."
