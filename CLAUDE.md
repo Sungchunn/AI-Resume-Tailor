@@ -530,6 +530,49 @@ bun run test:e2e:ui                  # Interactive UI mode
 bun run test:e2e:report              # View test report
 ```
 
+#### Lean Artifact Management
+
+**Keep test artifacts minimal to prevent repository bloat.**
+
+| Setting | Value | Rationale |
+| ------- | ----- | --------- |
+| `trace` | `"on-first-retry"` | Only capture traces for flaky/failing tests |
+| `screenshot` | `"only-on-failure"` | Avoid generating data for passing tests |
+| `video` | `"retain-on-failure"` | Keep videos only for debugging failures |
+| `workers` | `"50%"` (local) | Keep machine responsive during test runs |
+
+**Gitignored artifacts (NEVER commit):**
+
+- `playwright-report/` - HTML report output
+- `test-results/` - Test artifacts and traces
+- `blob-report/` - CI sharded run merge artifacts
+- `**/pw-results.json` - JSON reporter output
+
+**Cleanup protocol:** Before major test suite runs or if `test-results/` exceeds 500MB:
+
+```bash
+cd frontend
+rm -rf test-results/ playwright-report/ blob-report/
+```
+
+#### CI Configuration (GitHub Actions)
+
+Playwright config is designed for GitHub Actions compatibility:
+
+- Single worker on CI (`workers: 1`) for deterministic results
+- Blob reports for sharded runs via `["blob", { outputDir: "blob-report" }]`
+- Use `actions/upload-artifact` to persist reports between jobs
+
+```yaml
+# Example: Upload blob report for merge
+- uses: actions/upload-artifact@v4
+  if: always()
+  with:
+    name: blob-report-${{ matrix.shard }}
+    path: frontend/blob-report/
+    retention-days: 1
+```
+
 ---
 
 ## Development Workflow

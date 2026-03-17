@@ -13,8 +13,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI */
-  workers: process.env.CI ? 1 : undefined,
+  /* Use 50% of CPU cores locally to keep machine responsive; single worker on CI */
+  workers: process.env.CI ? 1 : "50%",
   /* Reporter to use */
   reporter: [
     ["html", { outputFolder: "playwright-report" }],

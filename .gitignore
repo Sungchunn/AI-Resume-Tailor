@@ -96,6 +96,9 @@ coverage/
 .nyc_output/
 playwright-report/
 test-results/
+blob-report/
+**/pw-results.json
+**/test-results.json/
 
 # Build outputs
 *.local
