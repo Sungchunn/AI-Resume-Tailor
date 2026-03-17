@@ -9,7 +9,7 @@ import {
   createFieldElementId,
   createIndexedElementId,
 } from "@/lib/resume/elementPath";
-import { useBlockEditor } from "../../editor/BlockEditorContext";
+import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 import { insertAfter, removeAt } from "@/lib/resume/arrayHelpers";
 
 interface LeadershipPreviewProps extends BaseBlockPreviewProps<LeadershipEntry[]> {}
@@ -25,30 +25,32 @@ interface LeadershipPreviewProps extends BaseBlockPreviewProps<LeadershipEntry[]
  *
  * All text fields are inline-editable via EditableText components.
  * Bullets support Enter to add new and Backspace to remove empty.
+ * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function LeadershipPreview({
   content,
   style,
   blockId,
 }: LeadershipPreviewProps) {
-  const { updateContentByPath, state, dispatch } = useBlockEditor();
+  const editorContext = useBlockEditorOptional();
+  const isEditable = !!editorContext;
 
   // Update a specific bullet in an entry
   const updateBullet = useCallback(
     (entryId: string, bulletIndex: number, value: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       const elementId = createIndexedElementId(blockId, entryId, "bullets", bulletIndex);
-      updateContentByPath(elementId, value);
+      editorContext.updateContentByPath(elementId, value);
     },
-    [blockId, updateContentByPath]
+    [blockId, editorContext]
   );
 
   // Add a new bullet after the specified index
   const addBullet = useCallback(
     (entryIndex: number, afterIndex: number) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
 
-      const block = state.blocks.find((b) => b.id === blockId);
+      const block = editorContext.state.blocks.find((b) => b.id === blockId);
       if (!block || block.type !== "leadership") return;
 
       const entries = block.content as LeadershipEntry[];
@@ -62,20 +64,20 @@ export function LeadershipPreview({
         i === entryIndex ? { ...e, bullets: newBullets } : e
       );
 
-      dispatch({
+      editorContext.dispatch({
         type: "UPDATE_BLOCK",
         payload: { id: blockId, content: newEntries },
       });
     },
-    [blockId, state.blocks, dispatch]
+    [blockId, editorContext]
   );
 
   // Remove a bullet at the specified index
   const removeBullet = useCallback(
     (entryIndex: number, bulletIndex: number) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
 
-      const block = state.blocks.find((b) => b.id === blockId);
+      const block = editorContext.state.blocks.find((b) => b.id === blockId);
       if (!block || block.type !== "leadership") return;
 
       const entries = block.content as LeadershipEntry[];
@@ -88,12 +90,12 @@ export function LeadershipPreview({
         i === entryIndex ? { ...e, bullets: newBullets } : e
       );
 
-      dispatch({
+      editorContext.dispatch({
         type: "UPDATE_BLOCK",
         payload: { id: blockId, content: newEntries },
       });
     },
-    [blockId, state.blocks, dispatch]
+    [blockId, editorContext]
   );
 
   if (!content || content.length === 0) {
@@ -109,6 +111,7 @@ export function LeadershipPreview({
           entryIndex={entryIndex}
           style={style}
           blockId={blockId}
+          isEditable={isEditable}
           updateBullet={updateBullet}
           addBullet={addBullet}
           removeBullet={removeBullet}
@@ -123,6 +126,7 @@ interface LeadershipEntryPreviewProps {
   entryIndex: number;
   style: BaseBlockPreviewProps<unknown>["style"];
   blockId?: string;
+  isEditable: boolean;
   updateBullet: (entryId: string, bulletIndex: number, value: string) => void;
   addBullet: (entryIndex: number, afterIndex: number) => void;
   removeBullet: (entryIndex: number, bulletIndex: number) => void;
@@ -133,35 +137,36 @@ function LeadershipEntryPreview({
   entryIndex,
   style,
   blockId,
+  isEditable,
   updateBullet,
   addBullet,
   removeBullet,
 }: LeadershipEntryPreviewProps) {
-  const { updateContentByPath } = useBlockEditor();
+  const editorContext = useBlockEditorOptional();
   const dateRange = formatDateRange(entry.startDate, entry.endDate, entry.current);
 
   // Create handler for text fields
   const handleFieldChange = useCallback(
     (field: string) => (value: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       const elementId = createFieldElementId(blockId, entry.id, field);
-      updateContentByPath(elementId, value);
+      editorContext.updateContentByPath(elementId, value);
     },
-    [blockId, entry.id, updateContentByPath]
+    [blockId, entry.id, editorContext]
   );
 
   // Handler for date range changes
   const handleDateRangeChange = useCallback(
     (value: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       const elementId = createFieldElementId(blockId, entry.id, "startDate");
-      updateContentByPath(elementId, value);
+      editorContext.updateContentByPath(elementId, value);
     },
-    [blockId, entry.id, updateContentByPath]
+    [blockId, entry.id, editorContext]
   );
 
-  // If no blockId, render without inline editing capabilities
-  if (!blockId) {
+  // If not editable, render without inline editing capabilities
+  if (!isEditable || !blockId) {
     return (
       <div>
         <div className="flex justify-between items-baseline">

@@ -9,7 +9,7 @@ import {
   createFieldElementId,
   createIndexedElementId,
 } from "@/lib/resume/elementPath";
-import { useBlockEditor } from "../../editor/BlockEditorContext";
+import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 import { insertAfter, removeAt } from "@/lib/resume/arrayHelpers";
 
 interface ExperiencePreviewProps extends BaseBlockPreviewProps<ExperienceEntry[]> {}
@@ -30,25 +30,26 @@ export function ExperiencePreview({
   style,
   blockId,
 }: ExperiencePreviewProps) {
-  const { updateContentByPath, state, dispatch } = useBlockEditor();
+  const editorContext = useBlockEditorOptional();
+  const isEditable = !!editorContext;
 
   // Update a specific bullet in an entry
   const updateBullet = useCallback(
     (entryId: string, bulletIndex: number, value: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       const elementId = createIndexedElementId(blockId, entryId, "bullets", bulletIndex);
-      updateContentByPath(elementId, value);
+      editorContext.updateContentByPath(elementId, value);
     },
-    [blockId, updateContentByPath]
+    [blockId, editorContext]
   );
 
   // Add a new bullet after the specified index
   const addBullet = useCallback(
     (entryIndex: number, afterIndex: number) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
 
       // Find the block and update its content
-      const block = state.blocks.find((b) => b.id === blockId);
+      const block = editorContext.state.blocks.find((b) => b.id === blockId);
       if (!block || block.type !== "experience") return;
 
       const entries = block.content as ExperienceEntry[];
@@ -64,21 +65,21 @@ export function ExperiencePreview({
       );
 
       // Dispatch the update via reducer
-      dispatch({
+      editorContext.dispatch({
         type: "UPDATE_BLOCK",
         payload: { id: blockId, content: newEntries },
       });
     },
-    [blockId, state.blocks, dispatch]
+    [blockId, editorContext]
   );
 
   // Remove a bullet at the specified index
   const removeBullet = useCallback(
     (entryIndex: number, bulletIndex: number) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
 
       // Find the block and update its content
-      const block = state.blocks.find((b) => b.id === blockId);
+      const block = editorContext.state.blocks.find((b) => b.id === blockId);
       if (!block || block.type !== "experience") return;
 
       const entries = block.content as ExperienceEntry[];
@@ -94,12 +95,12 @@ export function ExperiencePreview({
       );
 
       // Dispatch the update via reducer
-      dispatch({
+      editorContext.dispatch({
         type: "UPDATE_BLOCK",
         payload: { id: blockId, content: newEntries },
       });
     },
-    [blockId, state.blocks, dispatch]
+    [blockId, editorContext]
   );
 
   if (!content || content.length === 0) {
@@ -115,6 +116,7 @@ export function ExperiencePreview({
           entryIndex={entryIndex}
           style={style}
           blockId={blockId}
+          isEditable={isEditable}
           updateBullet={updateBullet}
           addBullet={addBullet}
           removeBullet={removeBullet}
@@ -129,6 +131,7 @@ interface ExperienceEntryPreviewProps {
   entryIndex: number;
   style: BaseBlockPreviewProps<unknown>["style"];
   blockId?: string;
+  isEditable: boolean;
   updateBullet: (entryId: string, bulletIndex: number, value: string) => void;
   addBullet: (entryIndex: number, afterIndex: number) => void;
   removeBullet: (entryIndex: number, bulletIndex: number) => void;
@@ -139,40 +142,41 @@ function ExperienceEntryPreview({
   entryIndex,
   style,
   blockId,
+  isEditable,
   updateBullet,
   addBullet,
   removeBullet,
 }: ExperienceEntryPreviewProps) {
-  const { updateContentByPath } = useBlockEditor();
+  const editorContext = useBlockEditorOptional();
   const dateRange = formatDateRange(entry.startDate, entry.endDate, entry.current);
 
   // Create handler for text fields (title, company, location, dates)
   const handleFieldChange = useCallback(
     (field: string) => (value: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       const elementId = createFieldElementId(blockId, entry.id, field);
-      updateContentByPath(elementId, value);
+      editorContext.updateContentByPath(elementId, value);
     },
-    [blockId, entry.id, updateContentByPath]
+    [blockId, entry.id, editorContext]
   );
 
   // Handler for date changes - we need to handle both startDate and endDate
   const handleDateRangeChange = useCallback(
     (value: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       // For simplicity, we store the formatted date range in a combined field
       // The user edits the display value directly
       // A more complex implementation would parse this back to startDate/endDate
       // For now, we'll update the startDate field with the full range text
       // and clear endDate to indicate manual override
       const elementId = createFieldElementId(blockId, entry.id, "startDate");
-      updateContentByPath(elementId, value);
+      editorContext.updateContentByPath(elementId, value);
     },
-    [blockId, entry.id, updateContentByPath]
+    [blockId, entry.id, editorContext]
   );
 
-  // If no blockId, render without inline editing capabilities
-  if (!blockId) {
+  // If not editable, render without inline editing capabilities
+  if (!isEditable || !blockId) {
     return (
       <div>
         <div className="flex justify-between items-baseline">

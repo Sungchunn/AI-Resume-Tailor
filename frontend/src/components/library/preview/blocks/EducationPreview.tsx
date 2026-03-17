@@ -8,7 +8,7 @@ import {
   createFieldElementId,
   createIndexedElementId,
 } from "@/lib/resume/elementPath";
-import { useBlockEditor } from "../../editor/BlockEditorContext";
+import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 import { insertAfter, removeAt } from "@/lib/resume/arrayHelpers";
 
 interface EducationPreviewProps extends BaseBlockPreviewProps<EducationEntry[]> {}
@@ -24,30 +24,32 @@ interface EducationPreviewProps extends BaseBlockPreviewProps<EducationEntry[]> 
  *
  * All text fields are inline-editable via EditableText components.
  * Relevant courses support Enter to add new and Backspace to remove empty.
+ * Falls back to read-only display when rendered outside BlockEditorProvider.
  */
 export function EducationPreview({
   content,
   style,
   blockId,
 }: EducationPreviewProps) {
-  const { updateContentByPath, state, dispatch } = useBlockEditor();
+  const editorContext = useBlockEditorOptional();
+  const isEditable = !!editorContext;
 
   // Update a specific course in an entry
   const updateCourse = useCallback(
     (entryId: string, courseIndex: number, value: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       const elementId = createIndexedElementId(blockId, entryId, "relevantCourses", courseIndex);
-      updateContentByPath(elementId, value);
+      editorContext.updateContentByPath(elementId, value);
     },
-    [blockId, updateContentByPath]
+    [blockId, editorContext]
   );
 
   // Add a new course after the specified index
   const addCourse = useCallback(
     (entryIndex: number, afterIndex: number) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
 
-      const block = state.blocks.find((b) => b.id === blockId);
+      const block = editorContext.state.blocks.find((b) => b.id === blockId);
       if (!block || block.type !== "education") return;
 
       const entries = block.content as EducationEntry[];
@@ -61,20 +63,20 @@ export function EducationPreview({
         i === entryIndex ? { ...e, relevantCourses: newCourses } : e
       );
 
-      dispatch({
+      editorContext.dispatch({
         type: "UPDATE_BLOCK",
         payload: { id: blockId, content: newEntries },
       });
     },
-    [blockId, state.blocks, dispatch]
+    [blockId, editorContext]
   );
 
   // Remove a course at the specified index
   const removeCourse = useCallback(
     (entryIndex: number, courseIndex: number) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
 
-      const block = state.blocks.find((b) => b.id === blockId);
+      const block = editorContext.state.blocks.find((b) => b.id === blockId);
       if (!block || block.type !== "education") return;
 
       const entries = block.content as EducationEntry[];
@@ -87,12 +89,12 @@ export function EducationPreview({
         i === entryIndex ? { ...e, relevantCourses: newCourses } : e
       );
 
-      dispatch({
+      editorContext.dispatch({
         type: "UPDATE_BLOCK",
         payload: { id: blockId, content: newEntries },
       });
     },
-    [blockId, state.blocks, dispatch]
+    [blockId, editorContext]
   );
 
   if (!content || content.length === 0) {
@@ -108,6 +110,7 @@ export function EducationPreview({
           entryIndex={entryIndex}
           style={style}
           blockId={blockId}
+          isEditable={isEditable}
           updateCourse={updateCourse}
           addCourse={addCourse}
           removeCourse={removeCourse}
@@ -122,6 +125,7 @@ interface EducationEntryPreviewProps {
   entryIndex: number;
   style: BaseBlockPreviewProps<unknown>["style"];
   blockId?: string;
+  isEditable: boolean;
   updateCourse: (entryId: string, courseIndex: number, value: string) => void;
   addCourse: (entryIndex: number, afterIndex: number) => void;
   removeCourse: (entryIndex: number, courseIndex: number) => void;
@@ -132,24 +136,25 @@ function EducationEntryPreview({
   entryIndex,
   style,
   blockId,
+  isEditable,
   updateCourse,
   addCourse,
   removeCourse,
 }: EducationEntryPreviewProps) {
-  const { updateContentByPath } = useBlockEditor();
+  const editorContext = useBlockEditorOptional();
 
   // Create handler for text fields
   const handleFieldChange = useCallback(
     (field: string) => (value: string) => {
-      if (!blockId) return;
+      if (!blockId || !editorContext) return;
       const elementId = createFieldElementId(blockId, entry.id, field);
-      updateContentByPath(elementId, value);
+      editorContext.updateContentByPath(elementId, value);
     },
-    [blockId, entry.id, updateContentByPath]
+    [blockId, entry.id, editorContext]
   );
 
-  // If no blockId, render without inline editing capabilities
-  if (!blockId) {
+  // If not editable, render without inline editing capabilities
+  if (!isEditable || !blockId) {
     return (
       <div>
         <div className="flex justify-between items-baseline">
