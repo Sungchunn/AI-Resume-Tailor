@@ -1,17 +1,38 @@
 "use client";
 
+import { useCallback } from "react";
 import type { LanguageEntry } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
 import { PROFICIENCY_LABELS } from "../previewStyles";
+import { EditableText } from "../../editor/inline";
+import { createFieldElementId } from "@/lib/resume/elementPath";
+import { useBlockEditor } from "../../editor/BlockEditorContext";
 
 interface LanguagesPreviewProps extends BaseBlockPreviewProps<LanguageEntry[]> {}
 
 /**
- * LanguagesPreview - Renders language proficiency entries
+ * LanguagesPreview - Renders language proficiency entries with inline editing
  *
  * Displays languages with their proficiency levels in a compact format.
+ * All fields are inline-editable via EditableText components.
  */
-export function LanguagesPreview({ content, style }: LanguagesPreviewProps) {
+export function LanguagesPreview({
+  content,
+  style,
+  blockId,
+}: LanguagesPreviewProps) {
+  const { updateContentByPath } = useBlockEditor();
+
+  // Create handler for field changes
+  const handleFieldChange = useCallback(
+    (entryId: string, field: string) => (value: string) => {
+      if (!blockId) return;
+      const elementId = createFieldElementId(blockId, entryId, field);
+      updateContentByPath(elementId, value);
+    },
+    [blockId, updateContentByPath]
+  );
+
   if (!content || content.length === 0) {
     return null;
   }
@@ -23,20 +44,51 @@ export function LanguagesPreview({ content, style }: LanguagesPreviewProps) {
     return null;
   }
 
+  // If no blockId, render without inline editing capabilities
+  if (!blockId) {
+    return (
+      <div
+        className="flex flex-wrap gap-x-4 gap-y-1"
+        style={{ fontSize: style.bodyFontSize }}
+      >
+        {filteredLanguages.map((entry) => (
+          <span key={entry.id}>
+            <span className="font-medium">{entry.language}</span>
+            {entry.proficiency && (
+              <span className="text-muted-foreground">
+                {" "}
+                ({PROFICIENCY_LABELS[entry.proficiency] || entry.proficiency})
+              </span>
+            )}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div
       className="flex flex-wrap gap-x-4 gap-y-1"
       style={{ fontSize: style.bodyFontSize }}
     >
       {filteredLanguages.map((entry) => (
-        <span key={entry.id}>
-          <span className="font-medium">{entry.language}</span>
-          {entry.proficiency && (
-            <span className="text-muted-foreground">
-              {" "}
-              ({PROFICIENCY_LABELS[entry.proficiency] || entry.proficiency})
-            </span>
-          )}
+        <span key={entry.id} className="inline-flex items-center gap-1">
+          <EditableText
+            elementId={createFieldElementId(blockId, entry.id, "language")}
+            value={entry.language}
+            className="font-medium"
+            placeholder="Language"
+            onCommit={handleFieldChange(entry.id, "language")}
+          />
+          <span className="text-muted-foreground">(</span>
+          <EditableText
+            elementId={createFieldElementId(blockId, entry.id, "proficiency")}
+            value={PROFICIENCY_LABELS[entry.proficiency] || entry.proficiency}
+            className="text-muted-foreground"
+            placeholder="Proficiency"
+            onCommit={handleFieldChange(entry.id, "proficiency")}
+          />
+          <span className="text-muted-foreground">)</span>
         </span>
       ))}
     </div>
