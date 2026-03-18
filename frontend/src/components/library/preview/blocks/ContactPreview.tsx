@@ -37,8 +37,10 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
   const iconSize = 12;
   const iconClass = "text-muted-foreground/60 flex-shrink-0";
 
-  // Helper to check if a field has content or should be shown for editing
-  const shouldShowField = (value: string | undefined) => value !== undefined;
+  // Helper to check if a field has actual content (not just empty string)
+  const shouldShowField = (value: string | undefined): boolean => {
+    return Boolean(value?.trim());
+  };
 
   return (
     <div className="text-center pb-3 border-b border-input">

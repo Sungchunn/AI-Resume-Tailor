@@ -245,32 +245,38 @@ function EducationEntryPreview({
         />
       </div>
 
-      {/* GPA and honors row */}
-      <div
-        className="flex flex-wrap gap-x-2 mt-0.5"
-        style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
-      >
-        <span className="flex items-center gap-1 text-muted-foreground">
-          <span>GPA:</span>
-          <InlinePlainText
-            elementId={createFieldElementId(blockId, entry.id, "gpa")}
-            value={entry.gpa || ""}
-            className="text-muted-foreground"
-            placeholder="3.9"
-            onCommit={handleFieldChange("gpa")}
-          />
-        </span>
-        {(entry.gpa || entry.honors) && (
-          <span className="text-muted-foreground">|</span>
-        )}
-        <InlinePlainText
-          elementId={createFieldElementId(blockId, entry.id, "honors")}
-          value={entry.honors || ""}
-          className="text-muted-foreground"
-          placeholder="Honors (e.g., Magna Cum Laude)"
-          onCommit={handleFieldChange("honors")}
-        />
-      </div>
+      {/* GPA and honors row - only show if either has content */}
+      {(entry.gpa?.trim() || entry.honors?.trim()) && (
+        <div
+          className="flex flex-wrap gap-x-2 mt-0.5"
+          style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
+        >
+          {entry.gpa?.trim() && (
+            <span className="flex items-center gap-1 text-muted-foreground">
+              <span>GPA:</span>
+              <InlinePlainText
+                elementId={createFieldElementId(blockId, entry.id, "gpa")}
+                value={entry.gpa || ""}
+                className="text-muted-foreground"
+                placeholder="3.9"
+                onCommit={handleFieldChange("gpa")}
+              />
+            </span>
+          )}
+          {entry.gpa?.trim() && entry.honors?.trim() && (
+            <span className="text-muted-foreground">|</span>
+          )}
+          {entry.honors?.trim() && (
+            <InlinePlainText
+              elementId={createFieldElementId(blockId, entry.id, "honors")}
+              value={entry.honors || ""}
+              className="text-muted-foreground"
+              placeholder="Honors (e.g., Magna Cum Laude)"
+              onCommit={handleFieldChange("honors")}
+            />
+          )}
+        </div>
+      )}
 
       {/* Relevant courses */}
       {entry.relevantCourses && entry.relevantCourses.length > 0 && (

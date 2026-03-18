@@ -286,37 +286,41 @@ function ProjectEntryPreview({
         />
       </div>
 
-      {/* Technologies */}
-      <div
-        className="text-muted-foreground mt-1"
-        style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
-      >
-        <span className="font-medium">Technologies: </span>
-        <InlinePlainText
-          elementId={createFieldElementId(blockId, entry.id, "technologies")}
-          value={entry.technologies?.join(", ") || ""}
-          placeholder="React, TypeScript, ..."
-          onCommit={(value) => {
-            // Split by comma and trim each technology
-            const technologies = value
-              .split(",")
-              .map((t) => t.trim())
-              .filter((t) => t.length > 0);
-            if (!blockId || !editorContext) return;
-            // Update the technologies array
-            const block = editorContext.state.blocks.find((b) => b.id === blockId);
-            if (!block || block.type !== "projects") return;
-            const entries = block.content as ProjectEntry[];
-            const newEntries = entries.map((e) =>
-              e.id === entry.id ? { ...e, technologies } : e
-            );
-            editorContext.dispatch({
-              type: "UPDATE_BLOCK",
-              payload: { id: blockId, content: newEntries },
-            });
-          }}
-        />
-      </div>
+      {/* Technologies - only show if there are non-empty technologies */}
+      {entry.technologies &&
+        entry.technologies.length > 0 &&
+        entry.technologies.some((t) => t.trim()) && (
+          <div
+            className="text-muted-foreground mt-1"
+            style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
+          >
+            <span className="font-medium">Technologies: </span>
+            <InlinePlainText
+              elementId={createFieldElementId(blockId, entry.id, "technologies")}
+              value={entry.technologies?.join(", ") || ""}
+              placeholder="React, TypeScript, ..."
+              onCommit={(value) => {
+                // Split by comma and trim each technology
+                const technologies = value
+                  .split(",")
+                  .map((t) => t.trim())
+                  .filter((t) => t.length > 0);
+                if (!blockId || !editorContext) return;
+                // Update the technologies array
+                const block = editorContext.state.blocks.find((b) => b.id === blockId);
+                if (!block || block.type !== "projects") return;
+                const entries = block.content as ProjectEntry[];
+                const newEntries = entries.map((e) =>
+                  e.id === entry.id ? { ...e, technologies } : e
+                );
+                editorContext.dispatch({
+                  type: "UPDATE_BLOCK",
+                  payload: { id: blockId, content: newEntries },
+                });
+              }}
+            />
+          </div>
+        )}
 
       {/* Bullets */}
       {entry.bullets && entry.bullets.length > 0 && (
