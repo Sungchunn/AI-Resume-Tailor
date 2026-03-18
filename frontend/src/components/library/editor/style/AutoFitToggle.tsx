@@ -52,8 +52,10 @@ export function AutoFitToggle({
             }`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-card shadow transition-transform ${
-                enabled ? "translate-x-6" : "translate-x-1"
+              className={`inline-block h-4 w-4 transform rounded-full shadow transition-transform ${
+                enabled
+                  ? "translate-x-6 bg-primary-foreground"
+                  : "translate-x-1 bg-background"
               }`}
             />
           </button>
@@ -62,9 +64,9 @@ export function AutoFitToggle({
 
       {/* Show reductions when fitted */}
       {enabled && status.state === "fitted" && reductions.length > 0 && (
-        <div className="text-xs text-muted-foreground bg-green-50 border border-green-100 rounded-md p-2">
-          <span className="font-medium text-green-700">Adjustments made:</span>
-          <ul className="mt-1 space-y-0.5 text-green-600" data-testid="fit-adjustments-list">
+        <div className="text-xs text-muted-foreground bg-green-50 dark:bg-green-900/30 border border-green-100 dark:border-green-800 rounded-md p-2">
+          <span className="font-medium text-green-700 dark:text-green-400">Adjustments made:</span>
+          <ul className="mt-1 space-y-0.5 text-green-600 dark:text-green-400" data-testid="fit-adjustments-list">
             {reductions.map((r, idx) => (
               <li key={idx}>
                 {r.label}: {r.from.toFixed(1)} &rarr; {r.to.toFixed(1)}
@@ -78,7 +80,7 @@ export function AutoFitToggle({
       {enabled && status.state === "minimum_reached" && status.message && (
         <div
           data-testid="fit-minimum-warning"
-          className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2"
+          className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-md p-2"
         >
           {status.message}
         </div>
@@ -105,7 +107,7 @@ function StatusBadge({ status }: { status: AutoFitStatus }) {
       return (
         <span
           data-testid="fit-status-badge"
-          className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded"
+          className="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded"
         >
           Fitted
         </span>
@@ -114,7 +116,7 @@ function StatusBadge({ status }: { status: AutoFitStatus }) {
       return (
         <span
           data-testid="fit-status-badge"
-          className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded"
+          className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded"
         >
           At minimum
         </span>

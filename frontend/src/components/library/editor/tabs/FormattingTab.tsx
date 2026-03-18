@@ -65,13 +65,13 @@ export function FormattingTab() {
                 aria-checked={fitToOnePage}
                 data-testid="fit-to-page-toggle"
                 onClick={() => setFitToOnePage(!fitToOnePage)}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 ${
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
                   fitToOnePage ? "bg-primary" : "bg-muted-foreground/30"
                 }`}
               >
                 <span
-                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-                    fitToOnePage ? "translate-x-[18px]" : "translate-x-[3px]"
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow dark:shadow-md dark:shadow-black/95 ring-0 transition duration-200 ease-in-out ${
+                    fitToOnePage ? "translate-x-5" : "translate-x-0"
                   }`}
                 />
               </button>
@@ -123,7 +123,7 @@ export function FormattingTab() {
                 autoFitStatus.message && (
                   <div
                     data-testid="fit-minimum-warning"
-                    className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2"
+                    className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded p-2"
                   >
                     {autoFitStatus.message}
                   </div>
@@ -208,8 +208,8 @@ function FitStatusBadge({ status }: { status: AutoFitStatus }) {
 
   const styles = {
     fitting: "text-primary bg-primary/10 animate-pulse",
-    fitted: "text-green-600 bg-green-50",
-    minimum_reached: "text-amber-600 bg-amber-50",
+    fitted: "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30",
+    minimum_reached: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30",
   };
 
   const labels = {
@@ -234,10 +234,10 @@ function FitStatusBadge({ status }: { status: AutoFitStatus }) {
 function AdjustmentsList({ reductions }: { reductions: AutoFitReduction[] }) {
   return (
     <div
-      className="text-xs bg-green-50 border border-green-100 rounded p-2"
+      className="text-xs bg-green-50 dark:bg-green-900/30 border border-green-100 dark:border-green-800 rounded p-2"
       data-testid="fit-adjustments-list"
     >
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-green-700">
+      <div className="flex flex-wrap gap-x-3 gap-y-1 text-green-700 dark:text-green-400">
         {reductions.map((r, idx) => (
           <span key={idx} className="whitespace-nowrap">
             {r.label}: {r.from.toFixed(1)} &rarr; {r.to.toFixed(1)}
