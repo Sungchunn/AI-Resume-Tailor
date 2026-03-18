@@ -210,7 +210,7 @@ function LeadershipEntryPreview({
           <ul className="list-disc ml-4 mt-1 space-y-0.5">
             {entry.bullets.map(
               (bullet, idx) =>
-                bullet.trim() && (
+                typeof bullet === 'string' && bullet.trim() && (
                   <li
                     key={idx}
                     style={{
