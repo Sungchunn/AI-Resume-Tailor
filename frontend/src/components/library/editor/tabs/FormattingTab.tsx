@@ -36,10 +36,11 @@ export function FormattingTab() {
     setFitToOnePage,
     setMinFontSize,
     setMinMargin,
+    setMinLineSpacing,
     autoFitStatus,
     autoFitReductions,
   } = useBlockEditor();
-  const { style, fitToOnePage, minFontSize, minMargin } = state;
+  const { style, fitToOnePage, minFontSize, minMargin, minLineSpacing } = state;
 
   // Determine which preset is currently active (if any)
   const activePreset = (Object.keys(STYLE_PRESETS) as StylePresetName[]).find(
@@ -83,7 +84,7 @@ export function FormattingTab() {
           <div
             className={`transition-all duration-200 ${
               fitToOnePage
-                ? "max-h-72 opacity-100"
+                ? "max-h-96 opacity-100"
                 : "max-h-0 opacity-0 overflow-hidden"
             }`}
           >
@@ -134,6 +135,31 @@ export function FormattingTab() {
                 />
                 <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
                   <span>Compact</span>
+                  <span>Spacious</span>
+                </div>
+              </div>
+
+              {/* Min Line Spacing Slider */}
+              <div className="pt-2 border-t border-border/50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-muted-foreground">
+                    Minimum line spacing
+                  </span>
+                  <span className="text-xs font-medium text-foreground tabular-nums">
+                    {minLineSpacing.toFixed(2)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={1.0}
+                  max={1.15}
+                  step={0.05}
+                  value={minLineSpacing}
+                  onChange={(e) => setMinLineSpacing(Number(e.target.value))}
+                  className="w-full h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                  <span>Tight</span>
                   <span>Spacious</span>
                 </div>
               </div>
