@@ -41,6 +41,8 @@ export interface UseAutoFitBlocksOptions {
   minFontSize?: number;
   /** User-defined minimum margin (0.25-0.5 inches). Default: 0.35 inches. */
   minMargin?: number;
+  /** User-defined minimum line spacing (1.0-1.15). Default: 1.05. */
+  minLineSpacing?: number;
 }
 
 export interface UseAutoFitBlocksResult {
@@ -65,9 +67,10 @@ export const SPACING_MINIMUMS = {
  *
  * If userMinFontSize is provided, it overrides font-specific defaults.
  * If userMinMargin is provided, it overrides the default minimum margin.
+ * If userMinLineSpacing is provided, it overrides the default minimum line spacing.
  * Heading and subheading minimums scale proportionally from the body minimum.
  */
-export function getMinimums(fontFamily: string, userMinFontSize?: number, userMinMargin?: number) {
+export function getMinimums(fontFamily: string, userMinFontSize?: number, userMinMargin?: number, userMinLineSpacing?: number) {
   const profile = getFontProfile(fontFamily);
 
   // Use user-defined minimum if provided, otherwise use font-specific
@@ -81,11 +84,14 @@ export function getMinimums(fontFamily: string, userMinFontSize?: number, userMi
   // Use user-defined minimum margin if provided, otherwise use default
   const minMargin = userMinMargin ?? SPACING_MINIMUMS.margin;
 
+  // Use user-defined minimum line spacing if provided, otherwise use default
+  const minLineSpacing = userMinLineSpacing ?? SPACING_MINIMUMS.lineSpacing;
+
   return {
     fontSizeBody: minBody,
     fontSizeHeading: minHeading,
     fontSizeSubheading: minSubheading,
-    lineSpacing: SPACING_MINIMUMS.lineSpacing,
+    lineSpacing: minLineSpacing,
     sectionSpacing: SPACING_MINIMUMS.sectionSpacing,
     entrySpacing: SPACING_MINIMUMS.entrySpacing,
     margin: minMargin,
@@ -133,12 +139,13 @@ export function compactnessToStyle(
   level: number,
   originalStyle: BlockEditorStyle,
   userMinFontSize?: number,
-  userMinMargin?: number
+  userMinMargin?: number,
+  userMinLineSpacing?: number
 ): BlockEditorStyle {
   const style = { ...originalStyle };
 
   // Get minimums (user-defined or font-specific)
-  const minimums = getMinimums(originalStyle.fontFamily, userMinFontSize, userMinMargin);
+  const minimums = getMinimums(originalStyle.fontFamily, userMinFontSize, userMinMargin, userMinLineSpacing);
 
   // Clamp level to valid range
   const clampedLevel = Math.max(0, Math.min(100, level));
@@ -202,10 +209,11 @@ export function calculateReductions(
   compactnessLevel: number,
   originalStyle: BlockEditorStyle,
   userMinFontSize?: number,
-  userMinMargin?: number
+  userMinMargin?: number,
+  userMinLineSpacing?: number
 ): AutoFitReduction[] {
   const reductions: AutoFitReduction[] = [];
-  const adjustedStyle = compactnessToStyle(compactnessLevel, originalStyle, userMinFontSize, userMinMargin);
+  const adjustedStyle = compactnessToStyle(compactnessLevel, originalStyle, userMinFontSize, userMinMargin, userMinLineSpacing);
 
   // Check each phase for reductions (ordered by phase)
 
@@ -351,6 +359,7 @@ export interface BinarySearchResult {
  * @param originalStyle - The user's original style settings
  * @param userMinFontSize - Optional user-defined minimum font size
  * @param userMinMargin - Optional user-defined minimum margin
+ * @param userMinLineSpacing - Optional user-defined minimum line spacing
  * @returns The minimum compactness level that fits, the resulting style, and whether it fits
  *
  * @see /docs/features/fit-to-one-page/130326_tradeoff-5-synchronous-measurement.md
@@ -360,7 +369,8 @@ export async function findOptimalCompactness(
   targetHeight: number,
   originalStyle: BlockEditorStyle,
   userMinFontSize?: number,
-  userMinMargin?: number
+  userMinMargin?: number,
+  userMinLineSpacing?: number
 ): Promise<BinarySearchResult> {
   // First check: does original style fit? (with tolerance for rendering variance)
   const originalHeight = await measureHeight(originalStyle);
@@ -379,7 +389,7 @@ export async function findOptimalCompactness(
   while (low <= high && iterationCount < maxIterations) {
     iterationCount++;
     const mid = Math.floor((low + high) / 2);
-    const testStyle = compactnessToStyle(mid, originalStyle, userMinFontSize, userMinMargin);
+    const testStyle = compactnessToStyle(mid, originalStyle, userMinFontSize, userMinMargin, userMinLineSpacing);
     const height = await measureHeight(testStyle);
 
     // Stability threshold: if height barely changed, consider it converged
@@ -400,7 +410,7 @@ export async function findOptimalCompactness(
   }
 
   // Check if result actually fits (with tolerance for browser rendering variance)
-  const finalStyle = compactnessToStyle(result, originalStyle, userMinFontSize, userMinMargin);
+  const finalStyle = compactnessToStyle(result, originalStyle, userMinFontSize, userMinMargin, userMinLineSpacing);
   const finalHeight = await measureHeight(finalStyle);
   const fits = finalHeight <= targetHeight + FITS_TOLERANCE_PX;
 
@@ -584,6 +594,7 @@ export function useAutoFitBlocks({
   measureFn,
   minFontSize,
   minMargin,
+  minLineSpacing,
 }: UseAutoFitBlocksOptions): UseAutoFitBlocksResult {
   const [status, setStatus] = useState<AutoFitStatus>({ state: "idle" });
   const [reductions, setReductions] = useState<AutoFitReduction[]>([]);
@@ -648,7 +659,7 @@ export function useAutoFitBlocks({
     // Choose algorithm based on whether measureFn is provided
     if (measureFn) {
       // DOM-based binary search algorithm (O(log n))
-      runBinarySearchAutoFit(measureFn, targetHeight, style, minFontSize, minMargin);
+      runBinarySearchAutoFit(measureFn, targetHeight, style, minFontSize, minMargin, minLineSpacing);
     } else {
       // No measureFn - measurements not ready yet
       // Set status to "fitting" to show user we're waiting
@@ -658,14 +669,14 @@ export function useAutoFitBlocks({
       isProcessingRef.current = false; // Allow re-run when measureFn becomes available
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, blocks, style, getTargetHeight, measureFn, minFontSize, minMargin]);
+  }, [enabled, blocks, style, getTargetHeight, measureFn, minFontSize, minMargin, minLineSpacing]);
 
   /**
    * Binary search algorithm with DOM measurement.
    * Max 7 iterations for 100 compactness levels.
    */
   const runBinarySearchAutoFit = useCallback(
-    async (measure: () => number, targetHeight: number, currentStyle: BlockEditorStyle, userMinFontSize?: number, userMinMargin?: number) => {
+    async (measure: () => number, targetHeight: number, currentStyle: BlockEditorStyle, userMinFontSize?: number, userMinMargin?: number, userMinLineSpacing?: number) => {
       setStatus({ state: "fitting" });
 
       try {
@@ -692,10 +703,11 @@ export function useAutoFitBlocks({
           targetHeight,
           currentStyle,
           userMinFontSize,
-          userMinMargin
+          userMinMargin,
+          userMinLineSpacing
         );
 
-        const appliedReductions = calculateReductions(result.level, currentStyle, userMinFontSize, userMinMargin);
+        const appliedReductions = calculateReductions(result.level, currentStyle, userMinFontSize, userMinMargin, userMinLineSpacing);
 
         // Apply final style
         setAdjustedStyle(result.style);
