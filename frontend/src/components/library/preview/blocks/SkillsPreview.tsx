@@ -24,7 +24,7 @@ export function SkillsPreview({
   }
 
   // Filter out empty skills
-  const filteredSkills = content.filter((skill) => skill.trim());
+  const filteredSkills = content.filter((skill) => typeof skill === 'string' && skill.trim());
 
   if (filteredSkills.length === 0) {
     return null;
@@ -69,5 +69,5 @@ export function SkillsPreview({
  * Check if skills block has meaningful content
  */
 export function hasSkillsContent(content: string[]): boolean {
-  return content.some((skill) => skill.trim());
+  return content.some((skill) => typeof skill === 'string' && skill.trim());
 }
