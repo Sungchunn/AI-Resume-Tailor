@@ -202,7 +202,7 @@ function ExperienceEntryPreview({
         {entry.bullets && entry.bullets.length > 0 && (
           <ul className="list-disc ml-4 mt-1 space-y-0.5">
             {entry.bullets.map((bullet, idx) => {
-              if (!bullet.trim()) return null;
+              if (typeof bullet !== 'string' || !bullet.trim()) return null;
               return (
                 <li
                   key={idx}
@@ -304,6 +304,6 @@ export function hasExperienceContent(content: ExperienceEntry[]): boolean {
     (entry) =>
       entry.title ||
       entry.company ||
-      (entry.bullets && entry.bullets.some((b) => b.trim()))
+      (entry.bullets && entry.bullets.some((b) => typeof b === 'string' && b.trim()))
   );
 }
