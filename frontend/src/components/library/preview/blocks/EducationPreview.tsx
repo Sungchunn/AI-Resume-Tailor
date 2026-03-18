@@ -246,37 +246,42 @@ function EducationEntryPreview({
       </div>
 
       {/* GPA and honors row - only show if either has content */}
-      {(entry.gpa?.trim() || entry.honors?.trim()) && (
-        <div
-          className="flex flex-wrap gap-x-2 mt-0.5"
-          style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
-        >
-          {entry.gpa?.trim() && (
-            <span className="flex items-center gap-1 text-muted-foreground">
-              <span>GPA:</span>
+      {(() => {
+        const gpaStr = typeof entry.gpa === 'string' ? entry.gpa.trim() : '';
+        const honorsStr = typeof entry.honors === 'string' ? entry.honors.trim() : '';
+        if (!gpaStr && !honorsStr) return null;
+        return (
+          <div
+            className="flex flex-wrap gap-x-2 mt-0.5"
+            style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
+          >
+            {gpaStr && (
+              <span className="flex items-center gap-1 text-muted-foreground">
+                <span>GPA:</span>
+                <InlinePlainText
+                  elementId={createFieldElementId(blockId, entry.id, "gpa")}
+                  value={entry.gpa || ""}
+                  className="text-muted-foreground"
+                  placeholder="3.9"
+                  onCommit={handleFieldChange("gpa")}
+                />
+              </span>
+            )}
+            {gpaStr && honorsStr && (
+              <span className="text-muted-foreground">|</span>
+            )}
+            {honorsStr && (
               <InlinePlainText
-                elementId={createFieldElementId(blockId, entry.id, "gpa")}
-                value={entry.gpa || ""}
+                elementId={createFieldElementId(blockId, entry.id, "honors")}
+                value={entry.honors || ""}
                 className="text-muted-foreground"
-                placeholder="3.9"
-                onCommit={handleFieldChange("gpa")}
+                placeholder="Honors (e.g., Magna Cum Laude)"
+                onCommit={handleFieldChange("honors")}
               />
-            </span>
-          )}
-          {entry.gpa?.trim() && entry.honors?.trim() && (
-            <span className="text-muted-foreground">|</span>
-          )}
-          {entry.honors?.trim() && (
-            <InlinePlainText
-              elementId={createFieldElementId(blockId, entry.id, "honors")}
-              value={entry.honors || ""}
-              className="text-muted-foreground"
-              placeholder="Honors (e.g., Magna Cum Laude)"
-              onCommit={handleFieldChange("honors")}
-            />
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        );
+      })()}
 
       {/* Relevant courses */}
       {entry.relevantCourses && entry.relevantCourses.length > 0 && (
