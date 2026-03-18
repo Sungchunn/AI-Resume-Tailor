@@ -450,6 +450,12 @@ export function createStarterBlocks(): AnyResumeBlock[] {
 export const DEFAULT_MIN_FONT_SIZE = 8;
 
 /**
+ * Default minimum margin for fit-to-page algorithm (in inches)
+ * 0.35" is professional and ATS-friendly while providing space savings.
+ */
+export const DEFAULT_MIN_MARGIN = 0.35;
+
+/**
  * Create an empty block editor state
  * New resumes default to fitToOnePage: true for auto-fit behavior
  */
@@ -466,6 +472,7 @@ export function createEmptyState(): BlockEditorState {
     error: null,
     fitToOnePage: true,
     minFontSize: DEFAULT_MIN_FONT_SIZE,
+    minMargin: DEFAULT_MIN_MARGIN,
     preAutoFitStyle: null,
   };
 }
@@ -487,6 +494,7 @@ export function createInitialState(): BlockEditorState {
     error: null,
     fitToOnePage: true,
     minFontSize: DEFAULT_MIN_FONT_SIZE,
+    minMargin: DEFAULT_MIN_MARGIN,
     preAutoFitStyle: null,
   };
 }
