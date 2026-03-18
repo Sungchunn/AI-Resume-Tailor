@@ -35,10 +35,11 @@ export function FormattingTab() {
     applyStylePreset,
     setFitToOnePage,
     setMinFontSize,
+    setMinMargin,
     autoFitStatus,
     autoFitReductions,
   } = useBlockEditor();
-  const { style, fitToOnePage, minFontSize } = state;
+  const { style, fitToOnePage, minFontSize, minMargin } = state;
 
   // Determine which preset is currently active (if any)
   const activePreset = (Object.keys(STYLE_PRESETS) as StylePresetName[]).find(
@@ -82,7 +83,7 @@ export function FormattingTab() {
           <div
             className={`transition-all duration-200 ${
               fitToOnePage
-                ? "max-h-48 opacity-100"
+                ? "max-h-72 opacity-100"
                 : "max-h-0 opacity-0 overflow-hidden"
             }`}
           >
@@ -109,6 +110,31 @@ export function FormattingTab() {
                 <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
                   <span>Compact</span>
                   <span>Readable</span>
+                </div>
+              </div>
+
+              {/* Min Margin Slider */}
+              <div className="pt-2 border-t border-border/50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-muted-foreground">
+                    Minimum margins
+                  </span>
+                  <span className="text-xs font-medium text-foreground tabular-nums">
+                    {minMargin.toFixed(2)}"
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0.25}
+                  max={0.5}
+                  step={0.05}
+                  value={minMargin}
+                  onChange={(e) => setMinMargin(Number(e.target.value))}
+                  className="w-full h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                  <span>Compact</span>
+                  <span>Spacious</span>
                 </div>
               </div>
 
@@ -229,6 +255,25 @@ function FitStatusBadge({ status }: { status: AutoFitStatus }) {
 }
 
 /**
+ * Format reduction values with appropriate units based on property type
+ */
+function formatReductionValue(property: string, value: number): string {
+  if (property === "margins") {
+    // Margins are in inches
+    return `${value.toFixed(2)}"`;
+  } else if (property === "fontSizeBody") {
+    // Font size in pt
+    return `${value.toFixed(1)}pt`;
+  } else if (property === "lineSpacing") {
+    // Line spacing is a ratio
+    return value.toFixed(2);
+  } else {
+    // Spacing values in px
+    return `${value.toFixed(1)}px`;
+  }
+}
+
+/**
  * List of adjustments made by auto-fit
  */
 function AdjustmentsList({ reductions }: { reductions: AutoFitReduction[] }) {
@@ -240,7 +285,7 @@ function AdjustmentsList({ reductions }: { reductions: AutoFitReduction[] }) {
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-green-700 dark:text-green-400">
         {reductions.map((r, idx) => (
           <span key={idx} className="whitespace-nowrap">
-            {r.label}: {r.from.toFixed(1)} &rarr; {r.to.toFixed(1)}
+            {r.label}: {formatReductionValue(r.property, r.from)} &rarr; {formatReductionValue(r.property, r.to)}
           </span>
         ))}
       </div>
