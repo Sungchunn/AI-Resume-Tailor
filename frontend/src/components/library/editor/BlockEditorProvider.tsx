@@ -20,7 +20,7 @@ import type {
   ParsedResumeContent,
   ResumeBlockType,
 } from "@/lib/resume/types";
-import { createEmptyState, STYLE_PRESETS, DEFAULT_MIN_FONT_SIZE, DEFAULT_MIN_MARGIN, type StylePresetName } from "@/lib/resume/defaults";
+import { createEmptyState, STYLE_PRESETS, DEFAULT_MIN_FONT_SIZE, DEFAULT_MIN_MARGIN, DEFAULT_MIN_LINE_SPACING, type StylePresetName } from "@/lib/resume/defaults";
 import {
   parsedContentToBlocks,
   blocksToParsedContent,
@@ -311,6 +311,10 @@ export function BlockEditorProvider({
     dispatch(blockEditorActions.setMinMargin(margin));
   }, []);
 
+  const setMinLineSpacing = useCallback((spacing: number) => {
+    dispatch(blockEditorActions.setMinLineSpacing(spacing));
+  }, []);
+
   // Style presets
   const applyStylePreset = useCallback((preset: StylePresetName) => {
     const presetStyle = STYLE_PRESETS[preset];
@@ -334,6 +338,7 @@ export function BlockEditorProvider({
     measureFn: autoFitMeasureFn ?? undefined,
     minFontSize: state.minFontSize,
     minMargin: state.minMargin,
+    minLineSpacing: state.minLineSpacing,
   });
 
   // BroadcastChannel for cross-tab sync
@@ -500,6 +505,7 @@ export function BlockEditorProvider({
       setFitToOnePage,
       setMinFontSize,
       setMinMargin,
+      setMinLineSpacing,
       applyStylePreset,
       autoFitStatus,
       autoFitReductions,
@@ -535,6 +541,7 @@ export function BlockEditorProvider({
       setFitToOnePage,
       setMinFontSize,
       setMinMargin,
+      setMinLineSpacing,
       applyStylePreset,
       autoFitStatus,
       autoFitReductions,
