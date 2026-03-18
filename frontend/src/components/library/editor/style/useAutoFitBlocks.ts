@@ -39,6 +39,8 @@ export interface UseAutoFitBlocksOptions {
   measureFn?: () => number;
   /** User-defined minimum body font size (7-10pt). Overrides font-specific defaults. */
   minFontSize?: number;
+  /** User-defined minimum margin (0.25-0.5 inches). Default: 0.35 inches. */
+  minMargin?: number;
 }
 
 export interface UseAutoFitBlocksResult {
@@ -47,20 +49,25 @@ export interface UseAutoFitBlocksResult {
   reductions: AutoFitReduction[];
 }
 
+// Default minimum margin for auto-fit (inches)
+export const DEFAULT_MIN_MARGIN = 0.35;
+
 // Default minimum values (fallback for spacing properties that don't vary by font)
 export const SPACING_MINIMUMS = {
   lineSpacing: 1.05,
   sectionSpacing: 6,
   entrySpacing: 4,
+  margin: DEFAULT_MIN_MARGIN,
 } as const;
 
 /**
  * Get minimum values for the auto-fit algorithm.
  *
  * If userMinFontSize is provided, it overrides font-specific defaults.
+ * If userMinMargin is provided, it overrides the default minimum margin.
  * Heading and subheading minimums scale proportionally from the body minimum.
  */
-export function getMinimums(fontFamily: string, userMinFontSize?: number) {
+export function getMinimums(fontFamily: string, userMinFontSize?: number, userMinMargin?: number) {
   const profile = getFontProfile(fontFamily);
 
   // Use user-defined minimum if provided, otherwise use font-specific
@@ -71,6 +78,9 @@ export function getMinimums(fontFamily: string, userMinFontSize?: number) {
   const minHeading = Math.round(profile.minHeadingSize * scaleFactor);
   const minSubheading = Math.round(profile.minSubheadingSize * scaleFactor);
 
+  // Use user-defined minimum margin if provided, otherwise use default
+  const minMargin = userMinMargin ?? SPACING_MINIMUMS.margin;
+
   return {
     fontSizeBody: minBody,
     fontSizeHeading: minHeading,
@@ -78,6 +88,7 @@ export function getMinimums(fontFamily: string, userMinFontSize?: number) {
     lineSpacing: SPACING_MINIMUMS.lineSpacing,
     sectionSpacing: SPACING_MINIMUMS.sectionSpacing,
     entrySpacing: SPACING_MINIMUMS.entrySpacing,
+    margin: minMargin,
   };
 }
 
@@ -110,50 +121,67 @@ function getReductionPhases(fontFamily: string, userMinFontSize?: number) {
  * Level 0 = most spacious (original styles), Level 100 = most compact (all minimums).
  *
  * The scale preserves "least impactful first" ordering:
- * - Levels 0-25:   sectionSpacing reduced (max → min)
- * - Levels 25-50:  entrySpacing reduced (max → min)
- * - Levels 50-75:  lineSpacing reduced (max → min)
- * - Levels 75-100: fontSizeBody reduced (max → min) + proportional heading/subheading
+ * - Levels 0-20:   margins reduced (all four sides uniformly, max → min)
+ * - Levels 20-40:  sectionSpacing reduced (max → min)
+ * - Levels 40-60:  entrySpacing reduced (max → min)
+ * - Levels 60-80:  lineSpacing reduced (max → min)
+ * - Levels 80-100: fontSizeBody reduced (max → min) + proportional heading/subheading
  *
  * Minimums are font-specific or user-defined.
  */
 export function compactnessToStyle(
   level: number,
   originalStyle: BlockEditorStyle,
-  userMinFontSize?: number
+  userMinFontSize?: number,
+  userMinMargin?: number
 ): BlockEditorStyle {
   const style = { ...originalStyle };
 
   // Get minimums (user-defined or font-specific)
-  const minimums = getMinimums(originalStyle.fontFamily, userMinFontSize);
+  const minimums = getMinimums(originalStyle.fontFamily, userMinFontSize, userMinMargin);
 
   // Clamp level to valid range
   const clampedLevel = Math.max(0, Math.min(100, level));
 
-  // Phase 1: sectionSpacing (levels 0-25)
+  // Phase 0: margins (levels 0-20) - reduce all four margins uniformly
   if (clampedLevel > 0) {
-    const phaseProgress = Math.min(clampedLevel / 25, 1);
+    const phaseProgress = Math.min(clampedLevel / 20, 1);
+
+    // Reduce each margin from original to minimum
+    const marginProps = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'] as const;
+    for (const prop of marginProps) {
+      const originalMargin = originalStyle[prop];
+      const range = originalMargin - minimums.margin;
+      if (range > 0) {
+        style[prop] = originalMargin - range * phaseProgress;
+      }
+    }
+  }
+
+  // Phase 1: sectionSpacing (levels 20-40)
+  if (clampedLevel > 20) {
+    const phaseProgress = Math.min((clampedLevel - 20) / 20, 1);
     const range = originalStyle.sectionSpacing - minimums.sectionSpacing;
     style.sectionSpacing = originalStyle.sectionSpacing - range * phaseProgress;
   }
 
-  // Phase 2: entrySpacing (levels 25-50)
-  if (clampedLevel > 25) {
-    const phaseProgress = Math.min((clampedLevel - 25) / 25, 1);
+  // Phase 2: entrySpacing (levels 40-60)
+  if (clampedLevel > 40) {
+    const phaseProgress = Math.min((clampedLevel - 40) / 20, 1);
     const range = originalStyle.entrySpacing - minimums.entrySpacing;
     style.entrySpacing = originalStyle.entrySpacing - range * phaseProgress;
   }
 
-  // Phase 3: lineSpacing (levels 50-75)
-  if (clampedLevel > 50) {
-    const phaseProgress = Math.min((clampedLevel - 50) / 25, 1);
+  // Phase 3: lineSpacing (levels 60-80)
+  if (clampedLevel > 60) {
+    const phaseProgress = Math.min((clampedLevel - 60) / 20, 1);
     const range = originalStyle.lineSpacing - minimums.lineSpacing;
     style.lineSpacing = originalStyle.lineSpacing - range * phaseProgress;
   }
 
-  // Phase 4: fontSizeBody (levels 75-100) + proportional heading/subheading
-  if (clampedLevel > 75) {
-    const phaseProgress = Math.min((clampedLevel - 75) / 25, 1);
+  // Phase 4: fontSizeBody (levels 80-100) + proportional heading/subheading
+  if (clampedLevel > 80) {
+    const phaseProgress = Math.min((clampedLevel - 80) / 20, 1);
     const bodyRange = originalStyle.fontSizeBody - minimums.fontSizeBody;
     const newBody = originalStyle.fontSizeBody - bodyRange * phaseProgress;
     const ratio = newBody / originalStyle.fontSizeBody;
@@ -173,13 +201,27 @@ export function compactnessToStyle(
 export function calculateReductions(
   compactnessLevel: number,
   originalStyle: BlockEditorStyle,
-  userMinFontSize?: number
+  userMinFontSize?: number,
+  userMinMargin?: number
 ): AutoFitReduction[] {
   const reductions: AutoFitReduction[] = [];
-  const adjustedStyle = compactnessToStyle(compactnessLevel, originalStyle, userMinFontSize);
+  const adjustedStyle = compactnessToStyle(compactnessLevel, originalStyle, userMinFontSize, userMinMargin);
 
-  // Check each phase for reductions
-  if (compactnessLevel > 0 && adjustedStyle.sectionSpacing < originalStyle.sectionSpacing) {
+  // Check each phase for reductions (ordered by phase)
+
+  // Phase 0: Margins (levels 0-20)
+  // Use marginLeft as representative since all margins are reduced uniformly
+  if (compactnessLevel > 0 && adjustedStyle.marginLeft < originalStyle.marginLeft) {
+    reductions.push({
+      property: "margins",
+      from: originalStyle.marginLeft,
+      to: adjustedStyle.marginLeft,
+      label: "Margins",
+    });
+  }
+
+  // Phase 1: Section spacing (levels 20-40)
+  if (compactnessLevel > 20 && adjustedStyle.sectionSpacing < originalStyle.sectionSpacing) {
     reductions.push({
       property: "sectionSpacing",
       from: originalStyle.sectionSpacing,
@@ -188,7 +230,8 @@ export function calculateReductions(
     });
   }
 
-  if (compactnessLevel > 25 && adjustedStyle.entrySpacing < originalStyle.entrySpacing) {
+  // Phase 2: Entry spacing (levels 40-60)
+  if (compactnessLevel > 40 && adjustedStyle.entrySpacing < originalStyle.entrySpacing) {
     reductions.push({
       property: "entrySpacing",
       from: originalStyle.entrySpacing,
@@ -197,7 +240,8 @@ export function calculateReductions(
     });
   }
 
-  if (compactnessLevel > 50 && adjustedStyle.lineSpacing < originalStyle.lineSpacing) {
+  // Phase 3: Line height (levels 60-80)
+  if (compactnessLevel > 60 && adjustedStyle.lineSpacing < originalStyle.lineSpacing) {
     reductions.push({
       property: "lineSpacing",
       from: originalStyle.lineSpacing,
@@ -206,7 +250,8 @@ export function calculateReductions(
     });
   }
 
-  if (compactnessLevel > 75 && adjustedStyle.fontSizeBody < originalStyle.fontSizeBody) {
+  // Phase 4: Font size (levels 80-100)
+  if (compactnessLevel > 80 && adjustedStyle.fontSizeBody < originalStyle.fontSizeBody) {
     reductions.push({
       property: "fontSizeBody",
       from: originalStyle.fontSizeBody,
@@ -305,6 +350,7 @@ export interface BinarySearchResult {
  * @param targetHeight - Maximum allowed height (page height minus margins)
  * @param originalStyle - The user's original style settings
  * @param userMinFontSize - Optional user-defined minimum font size
+ * @param userMinMargin - Optional user-defined minimum margin
  * @returns The minimum compactness level that fits, the resulting style, and whether it fits
  *
  * @see /docs/features/fit-to-one-page/130326_tradeoff-5-synchronous-measurement.md
@@ -313,7 +359,8 @@ export async function findOptimalCompactness(
   measureHeight: (style: BlockEditorStyle) => Promise<number>,
   targetHeight: number,
   originalStyle: BlockEditorStyle,
-  userMinFontSize?: number
+  userMinFontSize?: number,
+  userMinMargin?: number
 ): Promise<BinarySearchResult> {
   // First check: does original style fit? (with tolerance for rendering variance)
   const originalHeight = await measureHeight(originalStyle);
@@ -332,7 +379,7 @@ export async function findOptimalCompactness(
   while (low <= high && iterationCount < maxIterations) {
     iterationCount++;
     const mid = Math.floor((low + high) / 2);
-    const testStyle = compactnessToStyle(mid, originalStyle, userMinFontSize);
+    const testStyle = compactnessToStyle(mid, originalStyle, userMinFontSize, userMinMargin);
     const height = await measureHeight(testStyle);
 
     // Stability threshold: if height barely changed, consider it converged
@@ -353,7 +400,7 @@ export async function findOptimalCompactness(
   }
 
   // Check if result actually fits (with tolerance for browser rendering variance)
-  const finalStyle = compactnessToStyle(result, originalStyle, userMinFontSize);
+  const finalStyle = compactnessToStyle(result, originalStyle, userMinFontSize, userMinMargin);
   const finalHeight = await measureHeight(finalStyle);
   const fits = finalHeight <= targetHeight + FITS_TOLERANCE_PX;
 
@@ -536,6 +583,7 @@ export function useAutoFitBlocks({
   onStyleChange,
   measureFn,
   minFontSize,
+  minMargin,
 }: UseAutoFitBlocksOptions): UseAutoFitBlocksResult {
   const [status, setStatus] = useState<AutoFitStatus>({ state: "idle" });
   const [reductions, setReductions] = useState<AutoFitReduction[]>([]);
@@ -600,7 +648,7 @@ export function useAutoFitBlocks({
     // Choose algorithm based on whether measureFn is provided
     if (measureFn) {
       // DOM-based binary search algorithm (O(log n))
-      runBinarySearchAutoFit(measureFn, targetHeight, style, minFontSize);
+      runBinarySearchAutoFit(measureFn, targetHeight, style, minFontSize, minMargin);
     } else {
       // No measureFn - measurements not ready yet
       // Set status to "fitting" to show user we're waiting
@@ -610,14 +658,14 @@ export function useAutoFitBlocks({
       isProcessingRef.current = false; // Allow re-run when measureFn becomes available
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, blocks, style, getTargetHeight, measureFn, minFontSize]);
+  }, [enabled, blocks, style, getTargetHeight, measureFn, minFontSize, minMargin]);
 
   /**
    * Binary search algorithm with DOM measurement.
    * Max 7 iterations for 100 compactness levels.
    */
   const runBinarySearchAutoFit = useCallback(
-    async (measure: () => number, targetHeight: number, currentStyle: BlockEditorStyle, userMinFontSize?: number) => {
+    async (measure: () => number, targetHeight: number, currentStyle: BlockEditorStyle, userMinFontSize?: number, userMinMargin?: number) => {
       setStatus({ state: "fitting" });
 
       try {
@@ -643,10 +691,11 @@ export function useAutoFitBlocks({
           measureHeight,
           targetHeight,
           currentStyle,
-          userMinFontSize
+          userMinFontSize,
+          userMinMargin
         );
 
-        const appliedReductions = calculateReductions(result.level, currentStyle, userMinFontSize);
+        const appliedReductions = calculateReductions(result.level, currentStyle, userMinFontSize, userMinMargin);
 
         // Apply final style
         setAdjustedStyle(result.style);
