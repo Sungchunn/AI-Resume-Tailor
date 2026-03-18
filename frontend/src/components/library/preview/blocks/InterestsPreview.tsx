@@ -35,7 +35,7 @@ export function InterestsPreview({
 
   // If no blockId, render without inline editing capabilities
   if (!blockId) {
-    if (!content || content.trim() === "") {
+    if (typeof content !== 'string' || content.trim() === "") {
       return null;
     }
 
@@ -88,5 +88,5 @@ export function InterestsPreview({
  * Check if interests block has meaningful content
  */
 export function hasInterestsContent(content: string): boolean {
-  return Boolean(content && content.trim().length > 0);
+  return typeof content === 'string' && content.trim().length > 0;
 }
