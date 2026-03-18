@@ -222,6 +222,13 @@ export function blockEditorReducer(
         isDirty: true,
       };
 
+    case "SET_MIN_MARGIN":
+      return {
+        ...state,
+        minMargin: action.payload,
+        isDirty: true,
+      };
+
     case "SET_DIRTY":
       return {
         ...state,
@@ -337,6 +344,11 @@ export const blockEditorActions = {
   setMinFontSize: (size: number): BlockEditorAction => ({
     type: "SET_MIN_FONT_SIZE",
     payload: size,
+  }),
+
+  setMinMargin: (margin: number): BlockEditorAction => ({
+    type: "SET_MIN_MARGIN",
+    payload: margin,
   }),
 
   setDirty: (isDirty: boolean): BlockEditorAction => ({
