@@ -229,6 +229,13 @@ export function blockEditorReducer(
         isDirty: true,
       };
 
+    case "SET_MIN_LINE_SPACING":
+      return {
+        ...state,
+        minLineSpacing: action.payload,
+        isDirty: true,
+      };
+
     case "SET_DIRTY":
       return {
         ...state,
@@ -349,6 +356,11 @@ export const blockEditorActions = {
   setMinMargin: (margin: number): BlockEditorAction => ({
     type: "SET_MIN_MARGIN",
     payload: margin,
+  }),
+
+  setMinLineSpacing: (spacing: number): BlockEditorAction => ({
+    type: "SET_MIN_LINE_SPACING",
+    payload: spacing,
   }),
 
   setDirty: (isDirty: boolean): BlockEditorAction => ({

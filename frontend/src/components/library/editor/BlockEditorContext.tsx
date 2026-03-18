@@ -61,6 +61,8 @@ export interface BlockEditorContextValue {
   setMinFontSize: (size: number) => void;
   /** Set user-defined minimum margin for fit-to-page (0.25-0.5 inches) */
   setMinMargin: (margin: number) => void;
+  /** Set user-defined minimum line spacing for fit-to-page (1.0-1.15) */
+  setMinLineSpacing: (spacing: number) => void;
 
   // Style presets
   /** Apply a preset style template */
