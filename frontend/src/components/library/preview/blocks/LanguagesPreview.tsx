@@ -39,7 +39,7 @@ export function LanguagesPreview({
   }
 
   // Filter out empty entries
-  const filteredLanguages = content.filter((entry) => entry.language.trim());
+  const filteredLanguages = content.filter((entry) => typeof entry.language === 'string' && entry.language.trim());
 
   if (filteredLanguages.length === 0) {
     return null;
@@ -100,5 +100,5 @@ export function LanguagesPreview({
  * Check if languages block has meaningful content
  */
 export function hasLanguagesContent(content: LanguageEntry[]): boolean {
-  return content.some((entry) => entry.language.trim());
+  return content.some((entry) => typeof entry.language === 'string' && entry.language.trim());
 }
