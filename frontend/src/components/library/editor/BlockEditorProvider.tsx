@@ -20,7 +20,7 @@ import type {
   ParsedResumeContent,
   ResumeBlockType,
 } from "@/lib/resume/types";
-import { createEmptyState, STYLE_PRESETS, DEFAULT_MIN_FONT_SIZE, type StylePresetName } from "@/lib/resume/defaults";
+import { createEmptyState, STYLE_PRESETS, DEFAULT_MIN_FONT_SIZE, DEFAULT_MIN_MARGIN, type StylePresetName } from "@/lib/resume/defaults";
 import {
   parsedContentToBlocks,
   blocksToParsedContent,
@@ -307,6 +307,10 @@ export function BlockEditorProvider({
     dispatch(blockEditorActions.setMinFontSize(size));
   }, []);
 
+  const setMinMargin = useCallback((margin: number) => {
+    dispatch(blockEditorActions.setMinMargin(margin));
+  }, []);
+
   // Style presets
   const applyStylePreset = useCallback((preset: StylePresetName) => {
     const presetStyle = STYLE_PRESETS[preset];
@@ -329,6 +333,7 @@ export function BlockEditorProvider({
     onStyleChange: updateStyle,
     measureFn: autoFitMeasureFn ?? undefined,
     minFontSize: state.minFontSize,
+    minMargin: state.minMargin,
   });
 
   // BroadcastChannel for cross-tab sync
@@ -494,6 +499,7 @@ export function BlockEditorProvider({
       updateStyle,
       setFitToOnePage,
       setMinFontSize,
+      setMinMargin,
       applyStylePreset,
       autoFitStatus,
       autoFitReductions,
@@ -528,6 +534,7 @@ export function BlockEditorProvider({
       updateStyle,
       setFitToOnePage,
       setMinFontSize,
+      setMinMargin,
       applyStylePreset,
       autoFitStatus,
       autoFitReductions,
