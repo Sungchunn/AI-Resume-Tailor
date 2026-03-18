@@ -213,7 +213,7 @@ function ProjectEntryPreview({
         {entry.bullets && entry.bullets.length > 0 && (
           <ul className="list-disc ml-4 mt-1 space-y-0.5">
             {entry.bullets.map((bullet, idx) => {
-              if (!bullet.trim()) return null;
+              if (typeof bullet !== 'string' || !bullet.trim()) return null;
               return (
                 <li
                   key={idx}
@@ -289,7 +289,7 @@ function ProjectEntryPreview({
       {/* Technologies - only show if there are non-empty technologies */}
       {entry.technologies &&
         entry.technologies.length > 0 &&
-        entry.technologies.some((t) => t.trim()) && (
+        entry.technologies.some((t) => typeof t === 'string' && t.trim()) && (
           <div
             className="text-muted-foreground mt-1"
             style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
@@ -303,7 +303,7 @@ function ProjectEntryPreview({
                 // Split by comma and trim each technology
                 const technologies = value
                   .split(",")
-                  .map((t) => t.trim())
+                  .map((t) => typeof t === 'string' ? t.trim() : '')
                   .filter((t) => t.length > 0);
                 if (!blockId || !editorContext) return;
                 // Update the technologies array
