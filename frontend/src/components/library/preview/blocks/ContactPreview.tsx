@@ -39,7 +39,7 @@ export function ContactPreview({ content, style, blockId }: ContactPreviewProps)
 
   // Helper to check if a field has actual content (not just empty string)
   const shouldShowField = (value: string | undefined): boolean => {
-    return Boolean(value?.trim());
+    return typeof value === 'string' && Boolean(value.trim());
   };
 
   return (
