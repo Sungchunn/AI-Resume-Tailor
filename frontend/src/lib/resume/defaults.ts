@@ -456,6 +456,12 @@ export const DEFAULT_MIN_FONT_SIZE = 8;
 export const DEFAULT_MIN_MARGIN = 0.35;
 
 /**
+ * Default minimum line spacing for fit-to-page algorithm.
+ * 1.0 (single spacing) allows maximum content density for aggressive fitting.
+ */
+export const DEFAULT_MIN_LINE_SPACING = 1.0;
+
+/**
  * Create an empty block editor state
  * New resumes default to fitToOnePage: true for auto-fit behavior
  */
@@ -473,6 +479,7 @@ export function createEmptyState(): BlockEditorState {
     fitToOnePage: true,
     minFontSize: DEFAULT_MIN_FONT_SIZE,
     minMargin: DEFAULT_MIN_MARGIN,
+    minLineSpacing: DEFAULT_MIN_LINE_SPACING,
     preAutoFitStyle: null,
   };
 }
@@ -495,6 +502,7 @@ export function createInitialState(): BlockEditorState {
     fitToOnePage: true,
     minFontSize: DEFAULT_MIN_FONT_SIZE,
     minMargin: DEFAULT_MIN_MARGIN,
+    minLineSpacing: DEFAULT_MIN_LINE_SPACING,
     preAutoFitStyle: null,
   };
 }

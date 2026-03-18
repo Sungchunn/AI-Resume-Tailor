@@ -294,6 +294,8 @@ export interface BlockEditorState {
   minFontSize: number;
   /** User-defined minimum margin for fit-to-page algorithm (0.25-0.5 inches) */
   minMargin: number;
+  /** User-defined minimum line spacing for fit-to-page algorithm (1.0-1.15) */
+  minLineSpacing: number;
   /** Captured style before auto-fit adjustments, restored when toggling off */
   preAutoFitStyle: BlockEditorStyle | null;
 }
@@ -317,6 +319,7 @@ export type BlockEditorAction =
   | { type: "SET_FIT_TO_ONE_PAGE"; payload: boolean }
   | { type: "SET_MIN_FONT_SIZE"; payload: number }
   | { type: "SET_MIN_MARGIN"; payload: number }
+  | { type: "SET_MIN_LINE_SPACING"; payload: number }
   | { type: "SET_DIRTY"; payload: boolean }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null }
