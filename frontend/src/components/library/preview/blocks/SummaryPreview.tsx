@@ -55,5 +55,5 @@ export function SummaryPreview({ content, style, blockId }: SummaryPreviewProps)
  * Check if summary has meaningful content
  */
 export function hasSummaryContent(content: string): boolean {
-  return Boolean(content && content.trim().length > 0);
+  return typeof content === 'string' && content.trim().length > 0;
 }
