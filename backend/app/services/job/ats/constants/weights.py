@@ -41,10 +41,12 @@ RECENCY_WEIGHTS = {
 RECENCY_DEFAULT = 0.8
 
 # Importance tier weights (Stage 2.4)
+# Compressed range (1.0-2.0) to reduce misclassification error propagation
+# See docs/features/ats/190326_keyword-analysis-improvements/task-4-importance-tiers.md
 IMPORTANCE_WEIGHTS = {
-    "required": 3.0,
-    "strongly_preferred": 2.0,
-    "preferred": 1.5,
+    "required": 2.0,
+    "strongly_preferred": 1.5,
+    "preferred": 1.2,
     "nice_to_have": 1.0,
 }
 
