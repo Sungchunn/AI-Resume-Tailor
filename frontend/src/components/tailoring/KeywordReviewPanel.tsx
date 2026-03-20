@@ -17,7 +17,6 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { KeywordCard } from "./KeywordCard";
 import { ImportanceBadge } from "./ImportanceSelector";
 import { AddKeywordModal } from "./AddKeywordModal";
@@ -150,20 +149,23 @@ export function KeywordReviewPanel({
 
         <div className="flex items-center gap-2">
           {hasChanges && (
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
+              type="button"
               onClick={onReset}
-              className="text-muted-foreground"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
             >
-              <RotateCcw className="h-4 w-4 mr-1" />
+              <RotateCcw className="h-4 w-4" />
               Reset
-            </Button>
+            </button>
           )}
-          <Button variant="outline" size="sm" onClick={() => setAddModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" />
+          <button
+            type="button"
+            onClick={() => setAddModalOpen(true)}
+            className="btn-secondary inline-flex items-center gap-1 text-sm"
+          >
+            <Plus className="h-4 w-4" />
             Add Keyword
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -249,19 +251,24 @@ export function KeywordReviewPanel({
 
       {/* Confirm Button */}
       <div className="flex justify-end pt-4 border-t border-border">
-        <Button onClick={onConfirm} disabled={isSaving} className="min-w-[160px]">
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={isSaving}
+          className="btn-primary inline-flex items-center gap-2 min-w-[160px] disabled:opacity-50"
+        >
           {isSaving ? (
             <>
-              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
               Saving...
             </>
           ) : (
             <>
-              <CheckCircle2 className="h-4 w-4 mr-2" />
+              <CheckCircle2 className="h-4 w-4" />
               Confirm Keywords
             </>
           )}
-        </Button>
+        </button>
       </div>
 
       {/* Add Keyword Modal */}

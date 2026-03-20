@@ -7,13 +7,6 @@
 
 "use client";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type { KeywordImportanceEnhanced } from "@/lib/api/types";
 
 interface ImportanceSelectorProps {
@@ -49,6 +42,13 @@ const IMPORTANCE_CONFIG: Record<
   },
 };
 
+const IMPORTANCE_ORDER: KeywordImportanceEnhanced[] = [
+  "required",
+  "strongly_preferred",
+  "preferred",
+  "nice_to_have",
+];
+
 export function ImportanceSelector({
   value,
   onChange,
@@ -58,40 +58,27 @@ export function ImportanceSelector({
   const config = IMPORTANCE_CONFIG[value];
 
   return (
-    <Select
+    <select
       value={value}
-      onValueChange={(v) => onChange(v as KeywordImportanceEnhanced)}
+      onChange={(e) => onChange(e.target.value as KeywordImportanceEnhanced)}
       disabled={disabled}
+      className={`
+        ${size === "sm" ? "h-7 text-xs px-2" : "h-8 text-sm px-3"}
+        min-w-[120px] rounded-md border-0 cursor-pointer
+        ${config.bgColor} ${config.color}
+        focus:outline-none focus:ring-1 focus:ring-primary/50
+        disabled:opacity-50 disabled:cursor-not-allowed
+      `}
     >
-      <SelectTrigger
-        className={`
-          ${size === "sm" ? "h-7 text-xs px-2" : "h-8 text-sm px-3"}
-          w-auto min-w-[120px] border-0
-          ${config.bgColor} ${config.color}
-          focus:ring-1 focus:ring-primary/50
-        `}
-      >
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {(
-          Object.entries(IMPORTANCE_CONFIG) as [
-            KeywordImportanceEnhanced,
-            (typeof IMPORTANCE_CONFIG)[KeywordImportanceEnhanced],
-          ][]
-        ).map(([importance, cfg]) => (
-          <SelectItem
-            key={importance}
-            value={importance}
-            className={`${cfg.color} focus:${cfg.bgColor}`}
-          >
-            <span className={`px-2 py-0.5 rounded ${cfg.bgColor}`}>
-              {cfg.label}
-            </span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      {IMPORTANCE_ORDER.map((importance) => {
+        const cfg = IMPORTANCE_CONFIG[importance];
+        return (
+          <option key={importance} value={importance}>
+            {cfg.label}
+          </option>
+        );
+      })}
+    </select>
   );
 }
 

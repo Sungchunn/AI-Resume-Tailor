@@ -8,7 +8,6 @@
 "use client";
 
 import { X, Quote, Hash, Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { ImportanceSelector } from "./ImportanceSelector";
 import type {
   KeywordWithContext,
@@ -82,14 +81,13 @@ export function KeywordCard({
         />
 
         {/* Remove Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+        <button
+          type="button"
+          className="h-7 w-7 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           onClick={() => onRemove(keyword.keyword)}
         >
           <X className="h-4 w-4" />
-        </Button>
+        </button>
       </div>
 
       {/* Context Sentence */}

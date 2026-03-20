@@ -6,18 +6,8 @@
 
 "use client";
 
-import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState, useEffect, useRef } from "react";
+import { X } from "lucide-react";
 import { ImportanceSelector } from "./ImportanceSelector";
 import type {
   KeywordWithContext,
@@ -41,6 +31,25 @@ export function AddKeywordModal({
   const [importance, setImportance] =
     useState<KeywordImportanceEnhanced>("preferred");
   const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Focus input when modal opens
+  useEffect(() => {
+    if (open && inputRef.current) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [open]);
+
+  // Handle escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && open) {
+        handleClose();
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,46 +83,85 @@ export function AddKeywordModal({
     });
 
     // Reset and close
+    resetAndClose();
+  };
+
+  const handleClose = () => {
+    resetAndClose();
+  };
+
+  const resetAndClose = () => {
     setKeyword("");
     setImportance("preferred");
     setError(null);
     onOpenChange(false);
   };
 
-  const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      // Reset state when closing
-      setKeyword("");
-      setImportance("preferred");
-      setError(null);
-    }
-    onOpenChange(newOpen);
-  };
+  if (!open) return null;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Add Keyword</DialogTitle>
-            <DialogDescription>
-              Add a keyword that you want to emphasize in your resume.
-            </DialogDescription>
-          </DialogHeader>
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50"
+        onClick={handleClose}
+        aria-hidden="true"
+      />
 
-          <div className="grid gap-4 py-4">
+      {/* Modal */}
+      <div
+        className="relative bg-card border border-border rounded-lg shadow-lg w-full max-w-[425px] mx-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
+        {/* Close Button */}
+        <button
+          type="button"
+          onClick={handleClose}
+          className="absolute right-4 top-4 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </button>
+
+        <form onSubmit={handleSubmit}>
+          {/* Header */}
+          <div className="px-6 pt-6 pb-4">
+            <h2 id="modal-title" className="text-lg font-semibold text-foreground">
+              Add Keyword
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Add a keyword that you want to emphasize in your resume.
+            </p>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 space-y-4">
             {/* Keyword Input */}
-            <div className="grid gap-2">
-              <Label htmlFor="keyword">Keyword</Label>
-              <Input
+            <div className="space-y-2">
+              <label
+                htmlFor="keyword"
+                className="text-sm font-medium text-foreground"
+              >
+                Keyword
+              </label>
+              <input
+                ref={inputRef}
                 id="keyword"
+                type="text"
                 value={keyword}
                 onChange={(e) => {
                   setKeyword(e.target.value);
                   setError(null);
                 }}
                 placeholder="e.g., Python, AWS, Leadership"
-                className={error ? "border-destructive" : ""}
+                className={`
+                  w-full px-3 py-2 rounded-md border bg-background text-foreground
+                  placeholder:text-muted-foreground
+                  focus:outline-none focus:ring-2 focus:ring-primary/50
+                  ${error ? "border-destructive" : "border-border"}
+                `}
               />
               {error && (
                 <p className="text-sm text-destructive">{error}</p>
@@ -121,8 +169,10 @@ export function AddKeywordModal({
             </div>
 
             {/* Importance Selector */}
-            <div className="grid gap-2">
-              <Label>Importance</Label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Importance
+              </label>
               <ImportanceSelector
                 value={importance}
                 onChange={setImportance}
@@ -133,19 +183,22 @@ export function AddKeywordModal({
             </div>
           </div>
 
-          <DialogFooter>
-            <Button
+          {/* Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 mt-4 border-t border-border">
+            <button
               type="button"
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
+              onClick={handleClose}
+              className="btn-secondary"
             >
               Cancel
-            </Button>
-            <Button type="submit">Add Keyword</Button>
-          </DialogFooter>
+            </button>
+            <button type="submit" className="btn-primary">
+              Add Keyword
+            </button>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
 

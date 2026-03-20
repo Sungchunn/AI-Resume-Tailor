@@ -21,7 +21,6 @@ import { useRouter, useSearchParams, useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, AlertCircle } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { TailorFlowStepper } from "@/components/tailoring/TailorFlowStepper";
 import { KeywordReviewPanel } from "@/components/tailoring/KeywordReviewPanel";
 import {
@@ -152,11 +151,12 @@ function KeywordsPageContent() {
           <div className="mt-8 flex flex-col items-center gap-4 py-12">
             <AlertCircle className="h-12 w-12 text-destructive" />
             <p className="text-lg text-muted-foreground">Job listing not found</p>
-            <Link href="/tailor">
-              <Button variant="outline">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Tailor
-              </Button>
+            <Link
+              href="/tailor"
+              className="btn-secondary inline-flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Tailor
             </Link>
           </div>
         </div>
