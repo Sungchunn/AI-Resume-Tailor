@@ -1,8 +1,9 @@
 /**
  * TailorFlowStepper Component
  *
- * A horizontal 3-step progress indicator for the tailor flow wizard.
- * Shows the user's progress through: Select Resume → Analyze Match → Review & Edit
+ * A horizontal 4-step progress indicator for the tailor flow wizard.
+ * Shows the user's progress through:
+ *   Select Resume → Analyze Match → Review Keywords → Review & Edit
  *
  * Note: The "Verify Sections" step was removed as part of the
  * Parse-Once, Tailor-Many architecture. Verification now happens
@@ -20,7 +21,7 @@
 // Types
 // ============================================================================
 
-export type TailorFlowStep = "select" | "analyze" | "editor";
+export type TailorFlowStep = "select" | "analyze" | "keywords" | "editor";
 
 interface TailorFlowStepConfig {
   step: TailorFlowStep;
@@ -44,7 +45,8 @@ interface TailorFlowStepperProps {
 const TAILOR_STEPS: TailorFlowStepConfig[] = [
   { step: "select", label: "Select Resume", number: 1 },
   { step: "analyze", label: "Analyze Match", number: 2 },
-  { step: "editor", label: "Review & Edit", number: 3 },
+  { step: "keywords", label: "Review Keywords", number: 3 },
+  { step: "editor", label: "Review & Edit", number: 4 },
 ];
 
 // ============================================================================
