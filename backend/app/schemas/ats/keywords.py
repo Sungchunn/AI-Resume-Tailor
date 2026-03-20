@@ -326,3 +326,126 @@ class ATSKeywordEnhancedResponse(BaseModel):
     # Suggestions and warnings
     suggestions: list[str] = Field(..., description="Prioritized actionable suggestions")
     warnings: list[str] = Field(..., description="Important warnings")
+
+
+# ============================================================
+# Keyword Extraction with Context (for Review Step)
+# ============================================================
+
+# Source section types
+SourceSectionType = Literal[
+    "requirements",
+    "qualifications",
+    "nice_to_have",
+    "responsibilities",
+    "about",
+    "benefits",
+    "other",
+]
+
+
+class KeywordWithContext(BaseModel):
+    """A keyword with its source context from the job description."""
+
+    keyword: str = Field(..., description="The extracted keyword")
+    importance: KeywordImportanceLevelEnhanced = Field(
+        ..., description="Importance level"
+    )
+    context: str | None = Field(
+        None, description="The sentence from JD where keyword appears"
+    )
+    source_section: SourceSectionType | None = Field(
+        None, description="Which section of the JD the keyword was found in"
+    )
+    frequency: int = Field(
+        default=1, description="How many times keyword appears in JD"
+    )
+    user_added: bool = Field(
+        default=False, description="True if user manually added this keyword"
+    )
+    user_modified: bool = Field(
+        default=False, description="True if user changed the importance"
+    )
+
+
+class ExtractKeywordsRequest(BaseModel):
+    """Request for extracting keywords with context."""
+
+    job_description: str = Field(
+        ..., min_length=50, description="Job description to extract keywords from"
+    )
+    job_listing_id: int | None = Field(
+        None, description="Job listing ID (for scraped jobs)"
+    )
+    job_id: int | None = Field(
+        None, description="Job ID (for user-created jobs)"
+    )
+
+
+class ExtractKeywordsResponse(BaseModel):
+    """Response with extracted keywords and context."""
+
+    keywords: list[KeywordWithContext] = Field(
+        ..., description="Extracted keywords with context"
+    )
+    section_breakdown: dict[str, int] = Field(
+        default_factory=dict,
+        description="Count of keywords per section type"
+    )
+    has_cached_override: bool = Field(
+        default=False,
+        description="Whether user has previously saved keyword edits"
+    )
+
+
+# ============================================================
+# Keyword Override (User Edits)
+# ============================================================
+
+
+class KeywordOverrideRequest(BaseModel):
+    """Request to save user's keyword edits."""
+
+    job_listing_id: int | None = Field(
+        None, description="Job listing ID (for scraped jobs)"
+    )
+    job_id: int | None = Field(
+        None, description="Job ID (for user-created jobs)"
+    )
+    job_description: str = Field(
+        ..., min_length=50, description="Original job description (for hash)"
+    )
+    keywords: list[KeywordWithContext] = Field(
+        ..., description="User's edited keyword list"
+    )
+    mark_reviewed: bool = Field(
+        default=True, description="Mark keywords as reviewed"
+    )
+
+
+class KeywordOverrideResponse(BaseModel):
+    """Response after saving keyword overrides."""
+
+    id: str = Field(..., description="MongoDB document ID")
+    keyword_count: int = Field(..., description="Number of keywords saved")
+    reviewed: bool = Field(..., description="Whether keywords are marked as reviewed")
+    is_stale: bool = Field(
+        default=False,
+        description="True if JD changed since last review"
+    )
+
+
+class GetKeywordOverrideResponse(BaseModel):
+    """Response for getting saved keyword overrides."""
+
+    keywords: list[KeywordWithContext] = Field(
+        ..., description="User's saved keyword list"
+    )
+    original_keywords: list[KeywordWithContext] = Field(
+        ..., description="Original AI-extracted keywords"
+    )
+    reviewed: bool = Field(..., description="Whether keywords were reviewed")
+    is_stale: bool = Field(
+        default=False,
+        description="True if JD changed since last review"
+    )

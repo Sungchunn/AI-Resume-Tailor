@@ -31,6 +31,7 @@ from app.schemas.ats.keywords import (
     # Type aliases
     KeywordImportanceLevel,
     KeywordImportanceLevelEnhanced,
+    SourceSectionType,
     # Basic keyword analysis
     ATSKeywordRequest,
     ATSKeywordResponse,
@@ -45,6 +46,14 @@ from app.schemas.ats.keywords import (
     GapAnalysisItem,
     ATSKeywordEnhancedRequest,
     ATSKeywordEnhancedResponse,
+    # Keyword extraction with context (for review step)
+    KeywordWithContext,
+    ExtractKeywordsRequest,
+    ExtractKeywordsResponse,
+    # Keyword overrides (user edits)
+    KeywordOverrideRequest,
+    KeywordOverrideResponse,
+    GetKeywordOverrideResponse,
 )
 
 # Stage 3: Content Quality
@@ -85,6 +94,7 @@ __all__ = [
     # Stage 2
     "KeywordImportanceLevel",
     "KeywordImportanceLevelEnhanced",
+    "SourceSectionType",
     "ATSKeywordRequest",
     "ATSKeywordResponse",
     "ATSTipsResponse",
@@ -96,6 +106,14 @@ __all__ = [
     "GapAnalysisItem",
     "ATSKeywordEnhancedRequest",
     "ATSKeywordEnhancedResponse",
+    # Keyword extraction with context
+    "KeywordWithContext",
+    "ExtractKeywordsRequest",
+    "ExtractKeywordsResponse",
+    # Keyword overrides
+    "KeywordOverrideRequest",
+    "KeywordOverrideResponse",
+    "GetKeywordOverrideResponse",
     # Stage 3
     "BulletAnalysisResponse",
     "BlockTypeAnalysisResponse",
