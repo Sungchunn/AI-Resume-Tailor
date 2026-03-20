@@ -206,6 +206,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         "/api/v1/match": "ai",
         "/api/v1/blocks/import": "ai",
         "/api/v1/workshops/": "ai",  # Workshop suggestions use AI
+        "/api/v1/ats": "ai",  # ATS analysis uses AI for keyword extraction
         # Auth endpoints (brute force protection)
         "/api/auth/login": "auth",
         "/api/auth/register": "auth",
