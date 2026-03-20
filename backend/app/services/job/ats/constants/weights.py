@@ -11,15 +11,16 @@ from typing import Literal
 KeywordImportance = Literal["required", "strongly_preferred", "preferred", "nice_to_have"]
 
 # Section placement weights (Stage 2.1)
-# Keywords in experience sections are weighted higher than skills sections
+# Widened spread so demonstrated usage matters more than claims
+# See docs/features/ats/190326_keyword-analysis-improvements/task-1-placement-weights.md
 SECTION_PLACEMENT_WEIGHTS = {
-    "experience": 1.0,      # Demonstrated experience - highest weight
-    "projects": 0.9,        # Applied knowledge
-    "skills": 0.7,          # Listed but not demonstrated
-    "summary": 0.6,         # Claims without evidence
-    "education": 0.5,       # Academic context
-    "certifications": 0.5,  # Certifications section
-    "other": 0.5,           # Default for unrecognized sections
+    "experience": 1.0,      # Proven in a real role - highest weight
+    "projects": 0.8,        # Applied but not professional
+    "skills": 0.5,          # Listed, not demonstrated
+    "summary": 0.3,         # Claimed without evidence
+    "education": 0.3,       # Academic context only
+    "certifications": 0.4,  # Validated credential
+    "other": 0.3,           # Unknown section
 }
 
 # Density multipliers with diminishing returns (Stage 2.2)
