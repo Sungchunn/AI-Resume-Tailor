@@ -5,12 +5,18 @@ AI-powered keyword extraction from job descriptions.
 """
 
 import json
+import re
 from typing import Any
 
 from app.services.ai.client import get_ai_client
 from app.services.ai.response import AIResponse
 
 from ..base import basic_keyword_extraction
+from .section_parser import (
+    JobDescriptionSectionParser,
+    ParsedSection,
+    SECTION_IMPORTANCE_MAP,
+)
 
 
 class KeywordExtractor:
@@ -236,3 +242,152 @@ Do not include common generic words like "experience", "ability", "skills".
                 for k in basic_keywords
             ]
             return (fallback, None) if return_metrics else fallback
+
+    async def extract_keywords_with_context(
+        self, job_description: str, return_metrics: bool = False
+    ) -> list[dict[str, Any]] | tuple[list[dict[str, Any]], AIResponse | None]:
+        """
+        Extract keywords with context sentences and section-based importance.
+
+        This method combines:
+        1. Deterministic section parsing (Requirements vs Nice to Have)
+        2. AI-powered keyword extraction
+        3. Context sentence extraction for each keyword
+        4. Frequency counting
+
+        Returns list of dicts with:
+        - keyword: the keyword/phrase
+        - importance: "required", "strongly_preferred", "preferred", or "nice_to_have"
+        - context: the sentence where the keyword appears
+        - source_section: "requirements", "nice_to_have", "responsibilities", etc.
+        - frequency: count of occurrences in the JD
+
+        Args:
+            job_description: The job description text
+            return_metrics: If True, return (result, metrics) tuple
+
+        Returns:
+            List of keyword dicts if return_metrics=False, else (list, AIResponse | None)
+        """
+        # Parse the job description into sections
+        parser = JobDescriptionSectionParser()
+        sections = parser.parse(job_description)
+
+        # Extract keywords using AI
+        ai_keywords, ai_response = await self.extract_keywords_with_importance_enhanced(
+            job_description, return_metrics=True
+        )
+
+        # Enrich each keyword with context and section info
+        enriched_keywords = []
+        for kw_data in ai_keywords:
+            keyword = kw_data["keyword"]
+            ai_importance = kw_data["importance"]
+
+            # Find context and section for this keyword
+            context, source_section, frequency = self._find_keyword_context(
+                keyword, job_description, sections
+            )
+
+            # Determine final importance:
+            # - Use section-based importance if found in a clearly defined section
+            # - Otherwise use AI-assigned importance
+            if source_section and source_section in SECTION_IMPORTANCE_MAP:
+                # Section-based importance overrides AI when the section is explicit
+                # "requirements" section → required
+                # "nice_to_have" section → nice_to_have
+                if source_section in ("requirements", "qualifications"):
+                    final_importance = "required"
+                elif source_section == "nice_to_have":
+                    final_importance = "nice_to_have"
+                else:
+                    # For other sections, trust AI classification
+                    final_importance = ai_importance
+            else:
+                final_importance = ai_importance
+
+            enriched_keywords.append({
+                "keyword": keyword,
+                "importance": final_importance,
+                "context": context,
+                "source_section": source_section,
+                "frequency": frequency,
+            })
+
+        return (enriched_keywords, ai_response) if return_metrics else enriched_keywords
+
+    def _find_keyword_context(
+        self,
+        keyword: str,
+        job_description: str,
+        sections: list[ParsedSection],
+    ) -> tuple[str | None, str | None, int]:
+        """
+        Find context sentence, source section, and frequency for a keyword.
+
+        Args:
+            keyword: The keyword to find
+            job_description: Full job description text
+            sections: Parsed sections of the JD
+
+        Returns:
+            Tuple of (context_sentence, source_section, frequency)
+        """
+        # Count total frequency in the full text
+        frequency = self._count_keyword_occurrences(keyword, job_description)
+
+        # Find the first occurrence's context and section
+        context = None
+        source_section = None
+
+        for section in sections:
+            sentences = self._split_into_sentences(section.text)
+            for sentence in sentences:
+                if self._keyword_in_text(keyword, sentence):
+                    context = sentence.strip()
+                    source_section = section.type
+                    break
+            if context:
+                break
+
+        # If not found in sections, search the full text
+        if not context:
+            sentences = self._split_into_sentences(job_description)
+            for sentence in sentences:
+                if self._keyword_in_text(keyword, sentence):
+                    context = sentence.strip()
+                    source_section = "other"
+                    break
+
+        return (context, source_section, frequency)
+
+    def _count_keyword_occurrences(self, keyword: str, text: str) -> int:
+        """Count occurrences of a keyword in text (case-insensitive)."""
+        pattern = r"\b" + re.escape(keyword) + r"\b"
+        matches = re.findall(pattern, text, re.IGNORECASE)
+        return len(matches)
+
+    def _split_into_sentences(self, text: str) -> list[str]:
+        """Split text into sentences, preserving bullet points."""
+        sentences = []
+        lines = text.split("\n")
+
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            # Check if it's a bullet point
+            if line.startswith(("-", "*", "•", "·")) or re.match(r"^\d+[\.\)]\s", line):
+                sentences.append(line)
+            else:
+                # Split by sentence-ending punctuation
+                sub_sentences = re.split(r"(?<=[.!?])\s+", line)
+                sentences.extend(sub_sentences)
+
+        return sentences
+
+    def _keyword_in_text(self, keyword: str, text: str) -> bool:
+        """Check if keyword exists in text (case-insensitive, word boundary)."""
+        pattern = r"\b" + re.escape(keyword) + r"\b"
+        return bool(re.search(pattern, text, re.IGNORECASE))
