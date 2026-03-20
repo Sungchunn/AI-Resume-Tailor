@@ -47,6 +47,13 @@ IMPORTANCE_WEIGHTS = {
     "nice_to_have": 1.0,
 }
 
+# Cross-section bonus (Stage 2 enhancement)
+# Keywords appearing in both claim AND proof sections get a bonus
+# See docs/features/ats/190326_keyword-analysis-improvements/task-6-cross-section-bonus.md
+CROSS_SECTION_BONUS = 1.15  # 15% bonus (or 0.15 additive in new formula)
+DEMONSTRATION_SECTIONS = {"experience", "projects"}  # "Proof" sections
+CLAIM_SECTIONS = {"skills", "summary"}  # "Claim" sections
+
 # Block type weights for content quality scoring
 BLOCK_TYPE_WEIGHTS = {
     "achievement": 1.0,     # Achievements are highest value

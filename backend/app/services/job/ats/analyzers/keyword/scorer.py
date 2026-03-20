@@ -19,6 +19,9 @@ from ...constants import (
     RECENCY_WEIGHTS,
     RECENCY_DEFAULT,
     IMPORTANCE_WEIGHTS,
+    CROSS_SECTION_BONUS,
+    DEMONSTRATION_SECTIONS,
+    CLAIM_SECTIONS,
 )
 from ...models import KeywordMatch
 
@@ -67,6 +70,33 @@ def get_importance_weight(importance: KeywordImportance) -> float:
     Stage 2.4: Required keywords weighted higher than preferred.
     """
     return IMPORTANCE_WEIGHTS.get(importance, 1.0)
+
+
+def get_cross_section_bonus(matches: list[KeywordMatch]) -> float:
+    """
+    Return bonus multiplier if keyword appears in both
+    a demonstration section and a claim section.
+
+    The intuition: If someone lists "Python" in their skills AND
+    demonstrates it in their experience, that's stronger evidence
+    than either alone.
+
+    Args:
+        matches: List of keyword matches with section information
+
+    Returns:
+        CROSS_SECTION_BONUS if both section types present, else 1.0
+
+    See docs/features/ats/190326_keyword-analysis-improvements/task-6-cross-section-bonus.md
+    """
+    matched_sections = {m.section.lower() for m in matches}
+
+    has_demonstration = bool(matched_sections & DEMONSTRATION_SECTIONS)
+    has_claim = bool(matched_sections & CLAIM_SECTIONS)
+
+    if has_demonstration and has_claim:
+        return CROSS_SECTION_BONUS
+    return 1.0
 
 
 # Maximum possible score per keyword for normalization
@@ -123,17 +153,17 @@ def calculate_additive_score(
 def calculate_keyword_weighted_score(
     matches: list[KeywordMatch],
     importance: KeywordImportance,
-    cross_section_bonus: float = 1.0,
 ) -> tuple[float, float, float, float]:
     """
     Calculate weighted score for a keyword based on Stage 2 factors.
 
     Uses additive formula to limit error propagation.
+    Automatically applies cross-section bonus if keyword appears in
+    both claim sections (skills, summary) and proof sections (experience, projects).
 
     Args:
         matches: List of keyword matches in resume
         importance: Keyword importance tier
-        cross_section_bonus: Bonus multiplier for claim+proof (default 1.0)
 
     Returns:
         (placement_score, density_score, recency_score, final_weighted_score)
@@ -160,6 +190,9 @@ def calculate_keyword_weighted_score(
     # Stage 2.4: Importance weight
     importance_weight = get_importance_weight(importance)
 
+    # Cross-section bonus: reward keywords in both claim + proof sections
+    cross_bonus = get_cross_section_bonus(matches)
+
     # Calculate component scores (for reporting)
     placement_score = best_placement
     density_score = density_multiplier
@@ -171,7 +204,7 @@ def calculate_keyword_weighted_score(
         density=density_multiplier,
         recency=best_recency,
         importance=importance_weight,
-        cross_section=cross_section_bonus,
+        cross_section=cross_bonus,
     )
 
     return (placement_score, density_score, recency_score, final_score)
