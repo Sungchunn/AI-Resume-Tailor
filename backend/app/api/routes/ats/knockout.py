@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_id, get_db
 from app.crud.job import JobCRUD
+from app.services.ai import get_usage_tracker
+from app.services.ai.response import AccumulatedMetrics
 from app.services.job.ats import get_ats_analyzer
 from app.services.resume.parser import ResumeParser
 from app.services.job.analyzer import JobAnalyzer
@@ -58,20 +60,25 @@ async def perform_knockout_check(
     cache = get_cache_service()
     resume_parser = ResumeParser(ai_client, cache)
     job_analyzer = JobAnalyzer(ai_client, cache)
+    accumulated_metrics = AccumulatedMetrics()
 
     parsed_resume = None
     parsed_job = None
 
-    # Get parsed resume (resume_id lookup removed - use progressive endpoint for DB lookups)
+    # Get parsed resume with metrics (resume_id lookup removed - use progressive endpoint for DB lookups)
     if request.resume_content:
-        parsed_resume = await resume_parser.parse(request.resume_content)
+        parsed_resume, resume_metrics = await resume_parser.parse(
+            request.resume_content, return_metrics=True
+        )
+        if resume_metrics:
+            accumulated_metrics.add(resume_metrics)
     else:
         raise HTTPException(
             status_code=400,
             detail="resume_content must be provided. Use /analyze-progressive endpoint for database lookups."
         )
 
-    # Get parsed job
+    # Get parsed job with metrics
     if request.job_id:
         job_repo = JobCRUD()
         job = await job_repo.get(db, id=request.job_id)
@@ -83,14 +90,22 @@ async def perform_knockout_check(
         if job.parsed_content:
             parsed_job = job.parsed_content
         elif job.raw_content:
-            parsed_job = await job_analyzer.analyze(job.raw_content)
+            parsed_job, job_metrics = await job_analyzer.analyze(
+                job.raw_content, return_metrics=True
+            )
+            if job_metrics:
+                accumulated_metrics.add(job_metrics)
         else:
             raise HTTPException(
                 status_code=400,
                 detail="Job description has no content to analyze"
             )
     elif request.job_description:
-        parsed_job = await job_analyzer.analyze(request.job_description)
+        parsed_job, job_metrics = await job_analyzer.analyze(
+            request.job_description, return_metrics=True
+        )
+        if job_metrics:
+            accumulated_metrics.add(job_metrics)
     else:
         raise HTTPException(
             status_code=400,
@@ -99,6 +114,17 @@ async def perform_knockout_check(
 
     # Perform knockout check
     result = analyzer.perform_knockout_check(parsed_resume, parsed_job)
+
+    # Log AI usage
+    if accumulated_metrics.call_count > 0:
+        usage_tracker = get_usage_tracker()
+        await usage_tracker.log_generation(
+            db=db,
+            user_id=user_id,
+            endpoint="/ats/knockout-check",
+            response=accumulated_metrics.to_ai_response(),
+        )
+        await db.commit()
 
     # Convert dataclass to response model
     risks = [
