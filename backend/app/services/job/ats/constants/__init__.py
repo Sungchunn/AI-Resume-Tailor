@@ -7,7 +7,6 @@ Re-exports all constant definitions for convenient importing.
 from .weights import (
     KeywordImportance,
     SECTION_PLACEMENT_WEIGHTS,
-    DENSITY_MULTIPLIERS,
     DENSITY_CAP,
     RECENCY_WEIGHTS,
     RECENCY_DEFAULT,
@@ -54,7 +53,6 @@ __all__ = [
     # Weights
     "KeywordImportance",
     "SECTION_PLACEMENT_WEIGHTS",
-    "DENSITY_MULTIPLIERS",
     "DENSITY_CAP",
     "RECENCY_WEIGHTS",
     "RECENCY_DEFAULT",

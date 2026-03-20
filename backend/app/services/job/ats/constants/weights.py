@@ -23,14 +23,10 @@ SECTION_PLACEMENT_WEIGHTS = {
     "other": 0.3,           # Unknown section
 }
 
-# Density multipliers with diminishing returns (Stage 2.2)
-DENSITY_MULTIPLIERS = {
-    1: 1.0,
-    2: 1.3,
-    3: 1.5,
-    # 4+ uses 1.5 (capped)
-}
-DENSITY_CAP = 1.5
+# Density scoring (Stage 2.2)
+# Logarithmic curve replaces step function for smoother diminishing returns
+# See docs/features/ats/190326_keyword-analysis-improvements/task-2-density-curve.md
+DENSITY_CAP = 2.0  # Maximum density multiplier (prevents keyword stuffing)
 
 # Recency weights by role position (Stage 2.3)
 RECENCY_WEIGHTS = {

@@ -3,15 +3,18 @@ Keyword Scoring Functions.
 
 Implements Stage 2 weighted scoring:
 - Stage 2.1: Placement weighting
-- Stage 2.2: Density scoring
+- Stage 2.2: Density scoring (logarithmic curve)
 - Stage 2.3: Recency weighting
 - Stage 2.4: Importance tiers
+
+See docs/features/ats/190326_keyword-analysis-improvements/
 """
+
+import math
 
 from ...constants import (
     KeywordImportance,
     SECTION_PLACEMENT_WEIGHTS,
-    DENSITY_MULTIPLIERS,
     DENSITY_CAP,
     RECENCY_WEIGHTS,
     RECENCY_DEFAULT,
@@ -31,13 +34,19 @@ def get_placement_weight(section: str) -> float:
 
 def get_density_multiplier(occurrence_count: int) -> float:
     """
-    Get the density multiplier with diminishing returns.
+    Logarithmic density scoring with diminishing returns.
 
-    Stage 2.2: Multiple occurrences increase score but with caps.
+    Formula: 1.0 + 0.4 * log2(count), capped at DENSITY_CAP
+
+    This rewards multiple mentions while preventing gaming through
+    keyword stuffing. The log curve ensures each additional mention
+    contributes less than the previous one.
+
+    Stage 2.2: See task-2-density-curve.md for rationale.
     """
     if occurrence_count <= 0:
         return 0.0
-    return DENSITY_MULTIPLIERS.get(occurrence_count, DENSITY_CAP)
+    return min(1.0 + 0.4 * math.log2(occurrence_count), DENSITY_CAP)
 
 
 def get_recency_weight(role_index: int | None) -> float:
