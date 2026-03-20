@@ -265,24 +265,55 @@ function StageResultDetails({ stage, result }: StageResultDetailsProps) {
       const missing = result.required_missing as string[] | undefined;
       if (!matched?.length && !missing?.length) return null;
       return (
-        <div className="mt-2 space-y-1.5">
+        <div className="mt-2 space-y-2">
+          {/* Matched Required Keywords */}
           {matched && matched.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {matched.slice(0, 5).map((kw, idx) => (
-                <span
-                  key={idx}
-                  className="inline-flex px-1.5 py-0.5 text-[10px] font-medium
-                    bg-green-100 text-green-700 rounded
-                    dark:bg-green-900/30 dark:text-green-400"
-                >
-                  {kw}
-                </span>
-              ))}
-              {matched.length > 5 && (
-                <span className="text-[10px] text-muted-foreground">
-                  +{matched.length - 5} more
-                </span>
-              )}
+            <div>
+              <span className="text-[10px] text-muted-foreground font-medium mb-1 block">
+                Found ({matched.length})
+              </span>
+              <div className="flex flex-wrap gap-1">
+                {matched.slice(0, 5).map((kw, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex px-1.5 py-0.5 text-[10px] font-medium
+                      bg-green-100 text-green-700 rounded
+                      dark:bg-green-900/30 dark:text-green-400"
+                  >
+                    {kw}
+                  </span>
+                ))}
+                {matched.length > 5 && (
+                  <span className="text-[10px] text-muted-foreground">
+                    +{matched.length - 5} more
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+          {/* Missing Required Keywords */}
+          {missing && missing.length > 0 && (
+            <div>
+              <span className="text-[10px] text-muted-foreground font-medium mb-1 block">
+                Missing ({missing.length})
+              </span>
+              <div className="flex flex-wrap gap-1">
+                {missing.slice(0, 5).map((kw, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex px-1.5 py-0.5 text-[10px] font-medium
+                      bg-red-100 text-red-700 rounded
+                      dark:bg-red-900/30 dark:text-red-400"
+                  >
+                    {kw}
+                  </span>
+                ))}
+                {missing.length > 5 && (
+                  <span className="text-[10px] text-muted-foreground">
+                    +{missing.length - 5} more
+                  </span>
+                )}
+              </div>
             </div>
           )}
         </div>
