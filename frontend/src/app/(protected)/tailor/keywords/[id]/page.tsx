@@ -88,7 +88,8 @@ function KeywordsPageContent() {
     };
 
     loadKeywords();
-  }, [jobListing?.job_description, jobListingIdNum, store]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable
+  }, [jobListing?.job_description, jobListingIdNum]);
 
   // Handle confirm
   const handleConfirm = useCallback(async () => {
@@ -115,14 +116,16 @@ function KeywordsPageContent() {
     } finally {
       store.setSaving(false);
     }
-  }, [jobListing?.job_description, jobListingIdNum, resumeId, router, store]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable
+  }, [jobListing?.job_description, jobListingIdNum, resumeId, router]);
 
   // Handle add keyword
   const handleAddKeyword = useCallback(
     (keyword: KeywordWithContext) => {
       store.addKeyword(keyword);
     },
-    [store]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable
+    []
   );
 
   // Loading state
