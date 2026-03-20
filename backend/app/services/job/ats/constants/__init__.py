@@ -45,6 +45,11 @@ from .education import (
     EDUCATION_PATTERNS,
 )
 
+from .aliases import (
+    KEYWORD_ALIASES,
+    ALIAS_TO_CANONICAL,
+)
+
 __all__ = [
     # Weights
     "KeywordImportance",
@@ -77,4 +82,7 @@ __all__ = [
     "KnockoutRiskType",
     "EDUCATION_LEVELS",
     "EDUCATION_PATTERNS",
+    # Aliases
+    "KEYWORD_ALIASES",
+    "ALIAS_TO_CANONICAL",
 ]

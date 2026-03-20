@@ -2,14 +2,41 @@
 Keyword Matching Functions.
 
 Functions for finding keyword matches in structured resume data.
+Includes alias matching for common abbreviations (JS -> JavaScript, etc.)
+
+See docs/features/ats/190326_keyword-analysis-improvements/task-5-alias-matching.md
 """
 
 import re
 from datetime import datetime
 from typing import Any
 
+from ...constants import KEYWORD_ALIASES, ALIAS_TO_CANONICAL
 from ...models import KeywordMatch
 from ..base import parse_date
+
+
+def get_keyword_forms(keyword: str) -> list[str]:
+    """
+    Get all forms of a keyword to check (canonical + aliases).
+
+    Args:
+        keyword: The keyword to get forms for
+
+    Returns:
+        List of all forms to check (canonical form first, then aliases)
+    """
+    keyword_lower = keyword.lower()
+
+    # Normalize to canonical form
+    canonical = ALIAS_TO_CANONICAL.get(keyword_lower, keyword_lower)
+
+    # Build list of all forms to check
+    forms = [canonical]
+    if canonical in KEYWORD_ALIASES:
+        forms.extend(KEYWORD_ALIASES[canonical])
+
+    return forms
 
 
 def detect_section_type(key: str) -> str:
@@ -76,6 +103,18 @@ def order_experiences_by_date(
     return [(i, exp) for i, (_, _, exp) in enumerate(dated_experiences)]
 
 
+def _build_pattern_for_forms(forms: list[str]) -> re.Pattern[str]:
+    """
+    Build a compiled regex pattern that matches any of the given keyword forms.
+
+    Uses word boundaries to avoid partial matches (e.g., "JS" won't match "JSON").
+    """
+    # Escape each form and join with OR
+    escaped_forms = [re.escape(form) for form in forms]
+    pattern_str = r"\b(" + "|".join(escaped_forms) + r")\b"
+    return re.compile(pattern_str, re.IGNORECASE)
+
+
 def find_keyword_matches(
     keyword: str,
     parsed_resume: dict[str, Any],
@@ -83,12 +122,16 @@ def find_keyword_matches(
     """
     Find all matches of a keyword in a structured resume.
 
+    Supports alias matching: "JavaScript" in JD will match "JS" in resume.
+
     Returns detailed match information including section and role index
     for placement and recency weighting.
     """
     matches: list[KeywordMatch] = []
-    keyword_lower = keyword.lower()
-    keyword_pattern = r"\b" + re.escape(keyword_lower) + r"\b"
+
+    # Get all forms of the keyword (canonical + aliases)
+    keyword_forms = get_keyword_forms(keyword)
+    keyword_pattern = _build_pattern_for_forms(keyword_forms)
 
     # Order experiences for recency calculation
     experiences = parsed_resume.get("experience", [])
@@ -114,9 +157,7 @@ def find_keyword_matches(
                     bullets = exp.get("bullets", [])
                     if isinstance(bullets, list):
                         for bullet in bullets:
-                            if isinstance(bullet, str) and re.search(
-                                keyword_pattern, bullet.lower()
-                            ):
+                            if isinstance(bullet, str) and keyword_pattern.search(bullet):
                                 recency_idx = exp_role_map.get(orig_idx, orig_idx)
                                 matches.append(KeywordMatch(
                                     section="experience",
@@ -127,9 +168,7 @@ def find_keyword_matches(
                     # Check other text fields in experience
                     for field in ("title", "description", "responsibilities"):
                         field_value = exp.get(field, "")
-                        if isinstance(field_value, str) and re.search(
-                            keyword_pattern, field_value.lower()
-                        ):
+                        if isinstance(field_value, str) and keyword_pattern.search(field_value):
                             recency_idx = exp_role_map.get(orig_idx, orig_idx)
                             matches.append(KeywordMatch(
                                 section="experience",
@@ -139,7 +178,7 @@ def find_keyword_matches(
 
         elif isinstance(value, str):
             # Simple string field
-            if re.search(keyword_pattern, value.lower()):
+            if keyword_pattern.search(value):
                 matches.append(KeywordMatch(
                     section=section_type,
                     role_index=None,
@@ -150,7 +189,7 @@ def find_keyword_matches(
             # List of items (skills, certifications, etc.)
             for item in value:
                 if isinstance(item, str):
-                    if re.search(keyword_pattern, item.lower()):
+                    if keyword_pattern.search(item):
                         matches.append(KeywordMatch(
                             section=section_type,
                             role_index=None,
@@ -159,9 +198,7 @@ def find_keyword_matches(
                 elif isinstance(item, dict):
                     # Dict items (education entries, etc.)
                     for field_value in item.values():
-                        if isinstance(field_value, str) and re.search(
-                            keyword_pattern, field_value.lower()
-                        ):
+                        if isinstance(field_value, str) and keyword_pattern.search(field_value):
                             matches.append(KeywordMatch(
                                 section=section_type,
                                 role_index=None,
@@ -171,9 +208,7 @@ def find_keyword_matches(
         elif isinstance(value, dict):
             # Dict section (contact, etc.)
             for field_value in value.values():
-                if isinstance(field_value, str) and re.search(
-                    keyword_pattern, field_value.lower()
-                ):
+                if isinstance(field_value, str) and keyword_pattern.search(field_value):
                     matches.append(KeywordMatch(
                         section=section_type,
                         role_index=None,
