@@ -4,6 +4,7 @@ from app.crud.mongo.exceptions import VersionConflictError
 from app.crud.mongo.resume import resume_crud, ResumeCRUD
 from app.crud.mongo.tailored_resume import tailored_resume_crud, TailoredResumeCRUD
 from app.crud.mongo.resume_build import resume_build_crud, ResumeBuildCRUD
+from app.crud.mongo.keyword_override import keyword_override_crud, KeywordOverrideCRUD
 
 __all__ = [
     "VersionConflictError",
@@ -13,4 +14,6 @@ __all__ = [
     "TailoredResumeCRUD",
     "resume_build_crud",
     "ResumeBuildCRUD",
+    "keyword_override_crud",
+    "KeywordOverrideCRUD",
 ]

@@ -29,6 +29,15 @@ from app.models.mongo.resume_build import (
     PendingDiff,
     ResumeSections,
 )
+from app.models.mongo.keyword_override import (
+    KeywordOverrideDocument,
+    KeywordOverrideCreate,
+    KeywordOverrideUpdate,
+    KeywordEntry,
+    KeywordImportanceLevel,
+    SourceSectionType,
+    compute_job_content_hash,
+)
 
 __all__ = [
     # Resume
@@ -57,4 +66,12 @@ __all__ = [
     "JobInfo",
     "PendingDiff",
     "ResumeSections",
+    # Keyword Override
+    "KeywordOverrideDocument",
+    "KeywordOverrideCreate",
+    "KeywordOverrideUpdate",
+    "KeywordEntry",
+    "KeywordImportanceLevel",
+    "SourceSectionType",
+    "compute_job_content_hash",
 ]
