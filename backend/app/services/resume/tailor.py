@@ -606,9 +606,25 @@ Output format (ensure valid JSON):
         raw_resume: str,
         raw_job: str,
     ) -> dict[str, Any]:
-        """Get a quick match score without full tailoring."""
-        parsed_resume = await self.resume_parser.parse(raw_resume)
-        parsed_job = await self.job_analyzer.analyze(raw_job)
+        """Get a quick match score without full tailoring.
+
+        Returns dict with match score data and optional ai_metrics for usage tracking.
+        """
+        accumulated_metrics = AccumulatedMetrics()
+
+        # Parse resume with metrics
+        parsed_resume, resume_metrics = await self.resume_parser.parse(
+            raw_resume, return_metrics=True
+        )
+        if resume_metrics:
+            accumulated_metrics.add(resume_metrics)
+
+        # Parse job with metrics
+        parsed_job, job_metrics = await self.job_analyzer.analyze(
+            raw_job, return_metrics=True
+        )
+        if job_metrics:
+            accumulated_metrics.add(job_metrics)
 
         # Extract skills from resume
         resume_skills = set(s.lower() for s in parsed_resume.get("skills", []))
@@ -637,9 +653,15 @@ Output format (ensure valid JSON):
         # Calculate rough match score
         match_score = int((keyword_coverage * 40) + (skill_coverage * 60))
 
-        return {
+        result = {
             "match_score": min(match_score, 100),
             "keyword_coverage": round(keyword_coverage, 2),
             "skill_matches": list(skill_matches),
             "skill_gaps": list(skill_gaps),
         }
+
+        # Include AI metrics for usage tracking
+        if accumulated_metrics.call_count > 0:
+            result["ai_metrics"] = accumulated_metrics.to_ai_response()
+
+        return result
