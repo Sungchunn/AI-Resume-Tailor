@@ -69,12 +69,71 @@ def get_importance_weight(importance: KeywordImportance) -> float:
     return IMPORTANCE_WEIGHTS.get(importance, 1.0)
 
 
+# Maximum possible score per keyword for normalization
+# Base(1.0) + placement(0.7) + density(1.0) + recency(1.4) + importance(1.0) + cross(0.15)
+MAX_KEYWORD_SCORE = 5.25
+
+
+def calculate_additive_score(
+    placement: float,
+    density: float,
+    recency: float,
+    importance: float,
+    cross_section: float = 1.0,
+) -> float:
+    """
+    Additive scoring with bounded bonuses.
+
+    Each factor contributes independently, limiting error propagation.
+    A 2x error in one factor adds ~30% error instead of 100% error
+    with multiplicative scoring.
+
+    Args:
+        placement: Section weight (0.3 to 1.0)
+        density: Mention count multiplier (1.0 to 2.0)
+        recency: Time-based weight (0.6 to 2.0)
+        importance: Tier multiplier (1.0 to 2.0)
+        cross_section: Bonus for claim+proof (1.0 or 1.15)
+
+    Returns:
+        Score for this keyword (1.0 to 5.25 max)
+
+    See docs/features/ats/190326_keyword-analysis-improvements/task-7-additive-formula.md
+    """
+    base = 1.0
+
+    # Convert each factor to a bounded bonus
+    # Each bonus is (factor - minimum) capped at a maximum contribution
+    placement_bonus = min(placement - 0.3, 0.7)      # Range: 0.0 to 0.7
+    density_bonus = min(density - 1.0, 1.0)          # Range: 0.0 to 1.0
+    recency_bonus = min(recency - 0.6, 1.4)          # Range: 0.0 to 1.4
+    importance_bonus = min(importance - 1.0, 1.0)    # Range: 0.0 to 1.0
+    cross_bonus = cross_section - 1.0                # Range: 0.0 to 0.15
+
+    return (
+        base +
+        placement_bonus +
+        density_bonus +
+        recency_bonus +
+        importance_bonus +
+        cross_bonus
+    )
+
+
 def calculate_keyword_weighted_score(
     matches: list[KeywordMatch],
     importance: KeywordImportance,
+    cross_section_bonus: float = 1.0,
 ) -> tuple[float, float, float, float]:
     """
     Calculate weighted score for a keyword based on Stage 2 factors.
+
+    Uses additive formula to limit error propagation.
+
+    Args:
+        matches: List of keyword matches in resume
+        importance: Keyword importance tier
+        cross_section_bonus: Bonus multiplier for claim+proof (default 1.0)
 
     Returns:
         (placement_score, density_score, recency_score, final_weighted_score)
@@ -101,13 +160,18 @@ def calculate_keyword_weighted_score(
     # Stage 2.4: Importance weight
     importance_weight = get_importance_weight(importance)
 
-    # Calculate component scores
+    # Calculate component scores (for reporting)
     placement_score = best_placement
     density_score = density_multiplier
     recency_score = best_recency
 
-    # Final weighted score combines all factors
-    # Base of 1.0 (keyword found) * placement * density * recency * importance
-    final_score = 1.0 * placement_score * density_score * recency_score * importance_weight
+    # Final score uses additive formula
+    final_score = calculate_additive_score(
+        placement=best_placement,
+        density=density_multiplier,
+        recency=best_recency,
+        importance=importance_weight,
+        cross_section=cross_section_bonus,
+    )
 
     return (placement_score, density_score, recency_score, final_score)
