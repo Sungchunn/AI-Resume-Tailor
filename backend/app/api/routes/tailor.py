@@ -269,6 +269,19 @@ async def quick_match(
         raw_job=raw_job,
     )
 
+    # Log AI usage metrics
+    if "ai_metrics" in result:
+        usage_tracker = get_usage_tracker()
+        await usage_tracker.log_generation(
+            db=pg,
+            user_id=current_user_id,
+            endpoint="/tailor/quick-match",
+            response=result["ai_metrics"],
+        )
+        await pg.commit()
+        # Remove ai_metrics before returning (not part of response schema)
+        del result["ai_metrics"]
+
     return QuickMatchResponse(**result)
 
 
