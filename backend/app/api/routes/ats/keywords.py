@@ -339,6 +339,7 @@ async def extract_keywords_with_context(
     request: ExtractKeywordsRequest,
     user_id: int = Depends(get_current_user_id),
     mongo_db: AsyncIOMotorDatabase = Depends(get_mongo_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Extract keywords from job description with context sentences.
@@ -354,11 +355,24 @@ async def extract_keywords_with_context(
     """
     extractor = KeywordExtractor()
 
-    # Extract keywords with context
-    keywords_data = await extractor.extract_keywords_with_context(
+    # Extract keywords with context and metrics
+    keywords_data, ai_metrics = await extractor.extract_keywords_with_context(
         job_description=request.job_description,
-        return_metrics=False,
+        return_metrics=True,
     )
+
+    # Log AI usage
+    if ai_metrics:
+        from app.services.ai import get_usage_tracker
+
+        usage_tracker = get_usage_tracker()
+        await usage_tracker.log_generation(
+            db=db,
+            user_id=user_id,
+            endpoint="/ats/keywords/extract",
+            response=ai_metrics,
+        )
+        await db.commit()
 
     # Convert to response schema
     keywords = [
