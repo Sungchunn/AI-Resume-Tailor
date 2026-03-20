@@ -1,23 +1,11 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useMemo } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import { cn } from "@/lib/utils";
 import { FloatingToolbar } from "./FloatingToolbar";
-
-const EXTENSIONS = [
-  StarterKit.configure({
-    heading: false, // Disable headings for inline use
-    bulletList: false,
-    orderedList: false,
-    blockquote: false,
-    codeBlock: false,
-    horizontalRule: false,
-  }),
-  Underline,
-];
 
 /**
  * Props for InlineRichText component
@@ -39,6 +27,29 @@ export interface InlineRichTextProps {
   onEnter?: () => void;
   /** Callback when Backspace is pressed on empty content (for bullet behavior) */
   onBackspaceEmpty?: () => void;
+}
+
+/**
+ * Ensure content has a block wrapper for TipTap
+ */
+function normalizeContent(html: string): string {
+  if (!html) return "<p></p>";
+  const trimmed = html.trim();
+  if (!trimmed.match(/^<(p|div|h[1-6]|ul|ol|blockquote)/i)) {
+    return `<p>${trimmed}</p>`;
+  }
+  return trimmed;
+}
+
+/**
+ * Remove wrapper paragraph for cleaner storage
+ */
+function cleanupHtml(html: string): string {
+  const match = html.match(/^<p>([\s\S]*)<\/p>$/);
+  if (match) {
+    return match[1];
+  }
+  return html;
 }
 
 /**
@@ -77,46 +88,42 @@ export function InlineRichText({
   const committedRef = useRef(false);
   const valueRef = useRef(value);
   const onCommitRef = useRef(onCommit);
+  const onEnterRef = useRef(onEnter);
+  const onBackspaceEmptyRef = useRef(onBackspaceEmpty);
 
   // Keep refs in sync
   useEffect(() => {
     valueRef.current = value;
     onCommitRef.current = onCommit;
-  }, [value, onCommit]);
+    onEnterRef.current = onEnter;
+    onBackspaceEmptyRef.current = onBackspaceEmpty;
+  }, [value, onCommit, onEnter, onBackspaceEmpty]);
 
-  const handleCommit = useCallback(() => {
-    if (committedRef.current) return;
-    committedRef.current = true;
+  // Create extensions once per component mount
+  // Use useRef to ensure stable extension instances across renders
+  const extensionsRef = useRef<ReturnType<typeof StarterKit.configure>[] | null>(null);
+  if (!extensionsRef.current) {
+    extensionsRef.current = [
+      StarterKit.configure({
+        heading: false,
+        bulletList: false,
+        orderedList: false,
+        blockquote: false,
+        codeBlock: false,
+        horizontalRule: false,
+      }),
+      // Temporarily removed to test if Underline is causing the duplicate warning
+      // Underline.configure({}),
+    ];
+  }
+  const extensions = extensionsRef.current;
 
-    // Access editor via the editorRef set in useEditor
-    const editorEl = document.querySelector(
-      `[data-element-id="${elementId}"]`
-    ) as HTMLElement;
-    if (!editorEl) {
-      committedRef.current = false;
-      return;
-    }
+  // Memoize initial content to prevent editor recreation
+  const initialContent = useMemo(() => normalizeContent(value), []);
 
-    // Get the ProseMirror instance from the editor element
-    const html =
-      editorEl.closest(".tiptap")?.innerHTML ||
-      editorEl.querySelector(".tiptap")?.innerHTML ||
-      "";
-
-    // The actual commit logic will be handled via editor.getHTML()
-    // This is a fallback - the real commit happens in onBlur
-
-    // Reset committed flag after a tick
-    setTimeout(() => {
-      committedRef.current = false;
-    }, 0);
-  }, [elementId]);
-
-  const editor = useEditor({
-    extensions: EXTENSIONS,
-    content: normalizeContent(value),
-    immediatelyRender: false,
-    editorProps: {
+  // Memoize editorProps to prevent recreation
+  const editorProps = useMemo(
+    () => ({
       attributes: {
         class: cn(
           "outline-none min-h-[1em]",
@@ -124,49 +131,58 @@ export function InlineRichText({
         ),
         "data-element-id": elementId,
       },
-      handleKeyDown: (view, event) => {
+      handleKeyDown: (view: { state: { doc: { textContent: string } }; dom: HTMLElement }, event: KeyboardEvent) => {
         // Handle Enter for bullets
-        if (event.key === "Enter" && onEnter) {
+        if (event.key === "Enter" && onEnterRef.current) {
           event.preventDefault();
           // Commit current value first
           const html = view.dom.closest(".ProseMirror")
-            ? cleanupHtml(
-                (view.dom as HTMLElement).innerHTML || ""
-              )
+            ? cleanupHtml((view.dom as HTMLElement).innerHTML || "")
             : "";
           if (html !== valueRef.current) {
             onCommitRef.current(html);
           }
-          onEnter();
+          onEnterRef.current();
           return true;
         }
         // Handle Backspace on empty for bullets
-        if (event.key === "Backspace" && onBackspaceEmpty) {
+        if (event.key === "Backspace" && onBackspaceEmptyRef.current) {
           const isEmpty = view.state.doc.textContent.trim() === "";
           if (isEmpty) {
             event.preventDefault();
-            onBackspaceEmpty();
+            onBackspaceEmptyRef.current();
             return true;
           }
         }
         return false;
       },
-    },
-    onBlur: ({ editor: ed }) => {
-      if (committedRef.current) return;
-      committedRef.current = true;
+    }),
+    [elementId]
+  );
 
-      const html = ed.getHTML();
-      const cleaned = cleanupHtml(html);
+  // Memoize onBlur handler
+  const handleBlur = useCallback(({ editor: ed }: { editor: { getHTML: () => string } }) => {
+    if (committedRef.current) return;
+    committedRef.current = true;
 
-      if (cleaned !== valueRef.current) {
-        onCommitRef.current(cleaned);
-      }
+    const html = ed.getHTML();
+    const cleaned = cleanupHtml(html);
 
-      setTimeout(() => {
-        committedRef.current = false;
-      }, 0);
-    },
+    if (cleaned !== valueRef.current) {
+      onCommitRef.current(cleaned);
+    }
+
+    setTimeout(() => {
+      committedRef.current = false;
+    }, 0);
+  }, []);
+
+  const editor = useEditor({
+    extensions,
+    content: initialContent,
+    immediatelyRender: false,
+    editorProps,
+    onBlur: handleBlur,
   });
 
   // Sync external value changes
@@ -193,27 +209,4 @@ export function InlineRichText({
       {showToolbar && <FloatingToolbar editor={editor} />}
     </>
   );
-}
-
-/**
- * Ensure content has a block wrapper for TipTap
- */
-function normalizeContent(html: string): string {
-  if (!html) return "<p></p>";
-  const trimmed = html.trim();
-  if (!trimmed.match(/^<(p|div|h[1-6]|ul|ol|blockquote)/i)) {
-    return `<p>${trimmed}</p>`;
-  }
-  return trimmed;
-}
-
-/**
- * Remove wrapper paragraph for cleaner storage
- */
-function cleanupHtml(html: string): string {
-  const match = html.match(/^<p>([\s\S]*)<\/p>$/);
-  if (match) {
-    return match[1];
-  }
-  return html;
 }

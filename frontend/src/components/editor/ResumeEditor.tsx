@@ -145,6 +145,8 @@ export function ResumeEditor({
   );
 
   // Memoize extensions to prevent re-creation on every render
+  // Note: Use .configure({}) on Underline to create a fresh instance
+  // rather than reusing the module-level singleton
   const extensions = useMemo(
     () => [
       StarterKit.configure({
@@ -160,7 +162,7 @@ export function ResumeEditor({
           keepAttributes: false,
         },
       }),
-      Underline,
+      Underline.configure({}),
       Highlight.configure({
         multicolor: true,
       }),
@@ -490,14 +492,14 @@ export function useResumeEditor(
 
   const sanitizedContent = useMemo(() => sanitizeHtmlContent(content), [content]);
 
-  const editor = useEditor({
-    extensions: [
+  const extensions = useMemo(
+    () => [
       StarterKit.configure({
         heading: {
           levels: [1, 2, 3],
         },
       }),
-      Underline,
+      Underline.configure({}),
       Highlight.configure({
         multicolor: true,
       }),
@@ -505,6 +507,11 @@ export function useResumeEditor(
         onSuggestionClick: handleSuggestionClick,
       }),
     ],
+    [handleSuggestionClick]
+  );
+
+  const editor = useEditor({
+    extensions,
     content: sanitizedContent,
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
