@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_id, get_db
 from app.crud.job import JobCRUD
+from app.services.ai import get_usage_tracker
+from app.services.ai.response import AccumulatedMetrics
 from app.services.job.ats import get_ats_analyzer
 from app.services.job.analyzer import JobAnalyzer
 from app.services.ai.client import get_ai_client
@@ -75,6 +77,7 @@ async def analyze_role_proximity(
     ai_client = get_ai_client()
     cache = get_cache_service()
     job_analyzer = JobAnalyzer(ai_client, cache)
+    accumulated_metrics = AccumulatedMetrics()
 
     parsed_resume = None
     parsed_job = None
@@ -88,7 +91,7 @@ async def analyze_role_proximity(
             detail="resume_content must be provided. Use /analyze-progressive endpoint for database lookups."
         )
 
-    # Get parsed job
+    # Get parsed job with metrics
     if request.job_id:
         job_repo = JobCRUD()
         job = await job_repo.get(db, id=request.job_id)
@@ -100,7 +103,11 @@ async def analyze_role_proximity(
         if job.parsed_content:
             parsed_job = job.parsed_content
         elif job.raw_content:
-            parsed_job = await job_analyzer.analyze(job.raw_content)
+            parsed_job, job_metrics = await job_analyzer.analyze(
+                job.raw_content, return_metrics=True
+            )
+            if job_metrics:
+                accumulated_metrics.add(job_metrics)
         else:
             raise HTTPException(
                 status_code=400,
@@ -116,6 +123,17 @@ async def analyze_role_proximity(
 
     # Perform role proximity analysis
     result = await analyzer.calculate_role_proximity_score(parsed_resume, parsed_job)
+
+    # Log AI usage
+    if accumulated_metrics.call_count > 0:
+        usage_tracker = get_usage_tracker()
+        await usage_tracker.log_generation(
+            db=db,
+            user_id=user_id,
+            endpoint="/ats/role-proximity",
+            response=accumulated_metrics.to_ai_response(),
+        )
+        await db.commit()
 
     # Convert dataclasses to response models
     return RoleProximityResponse(
