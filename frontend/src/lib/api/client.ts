@@ -72,6 +72,11 @@ import type {
   ScheduleSettingsResponse,
   ATSKeywordDetailedRequest,
   ATSKeywordDetailedResponse,
+  ExtractKeywordsRequest,
+  ExtractKeywordsResponse,
+  KeywordOverrideRequest,
+  KeywordOverrideResponse,
+  GetKeywordOverrideResponse,
   ResumeExportRequest,
   ExportTemplatesResponse,
   ImproveSectionRequest,
@@ -1023,6 +1028,39 @@ export const atsApi = {
     }),
 
   getTips: (): Promise<{ tips: string[] }> => fetchApi("/api/v1/ats/tips"),
+
+  // Keyword extraction with context (for review step)
+  extractKeywords: (
+    data: ExtractKeywordsRequest
+  ): Promise<ExtractKeywordsResponse> =>
+    fetchApi("/api/v1/ats/keywords/extract", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  // Get saved keyword overrides
+  getKeywordOverride: (params: {
+    job_listing_id?: number;
+    job_id?: number;
+    job_description?: string;
+  }): Promise<GetKeywordOverrideResponse | null> => {
+    const searchParams = new URLSearchParams();
+    if (params.job_listing_id)
+      searchParams.set("job_listing_id", String(params.job_listing_id));
+    if (params.job_id) searchParams.set("job_id", String(params.job_id));
+    if (params.job_description)
+      searchParams.set("job_description", params.job_description);
+    return fetchApi(`/api/v1/ats/keywords/override?${searchParams.toString()}`);
+  },
+
+  // Save keyword overrides
+  saveKeywordOverride: (
+    data: KeywordOverrideRequest
+  ): Promise<KeywordOverrideResponse> =>
+    fetchApi("/api/v1/ats/keywords/override", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
 };
 
 // AI Chat API (Resume Section Improvements)

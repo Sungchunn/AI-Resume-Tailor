@@ -963,6 +963,20 @@ export interface ExportTemplatesResponse {
 // ============================================================================
 
 export type KeywordImportance = "required" | "preferred" | "nice_to_have";
+export type KeywordImportanceEnhanced =
+  | "required"
+  | "strongly_preferred"
+  | "preferred"
+  | "nice_to_have";
+
+export type SourceSectionType =
+  | "requirements"
+  | "qualifications"
+  | "nice_to_have"
+  | "responsibilities"
+  | "about"
+  | "benefits"
+  | "other";
 
 export interface KeywordDetail {
   keyword: string;
@@ -1002,6 +1016,52 @@ export interface ATSKeywordDetailedResponse {
   // Suggestions and warnings
   suggestions: string[];
   warnings: string[];
+}
+
+// Keyword Extraction with Context (for Review Step)
+export interface KeywordWithContext {
+  keyword: string;
+  importance: KeywordImportanceEnhanced;
+  context: string | null;
+  source_section: SourceSectionType | null;
+  frequency: number;
+  user_added: boolean;
+  user_modified: boolean;
+}
+
+export interface ExtractKeywordsRequest {
+  job_description: string;
+  job_listing_id?: number | null;
+  job_id?: number | null;
+}
+
+export interface ExtractKeywordsResponse {
+  keywords: KeywordWithContext[];
+  section_breakdown: Record<string, number>;
+  has_cached_override: boolean;
+}
+
+// Keyword Overrides (User Edits)
+export interface KeywordOverrideRequest {
+  job_listing_id?: number | null;
+  job_id?: number | null;
+  job_description: string;
+  keywords: KeywordWithContext[];
+  mark_reviewed?: boolean;
+}
+
+export interface KeywordOverrideResponse {
+  id: string;
+  keyword_count: number;
+  reviewed: boolean;
+  is_stale: boolean;
+}
+
+export interface GetKeywordOverrideResponse {
+  keywords: KeywordWithContext[];
+  original_keywords: KeywordWithContext[];
+  reviewed: boolean;
+  is_stale: boolean;
 }
 
 // ============================================================================
