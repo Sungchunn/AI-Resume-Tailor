@@ -8,7 +8,7 @@
  * - Job context card
  * - Selected resume summary
  * - ATS Progressive Analysis with SSE streaming
- * - CTA to navigate to library editor with job context
+ * - CTA to navigate to keyword review (step 3)
  */
 
 "use client";
@@ -132,21 +132,17 @@ function AnalyzePageContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeId, jobListingIdNum]);
 
-  // Navigate to library editor with job context
-  const handleEditResume = () => {
+  // Navigate to keyword review step (step 3)
+  const handleContinue = () => {
     if (!resumeId) return;
 
-    // Build query params for job context
-    const params = new URLSearchParams();
     if (jobListingIdNum) {
-      params.set("jobListingId", String(jobListingIdNum));
+      // Navigate to keyword review page
+      router.push(`/tailor/keywords/${jobListingIdNum}?resume_id=${resumeId}`);
     } else if (jobIdNum) {
-      params.set("jobId", String(jobIdNum));
+      // For user-created jobs (no keyword extraction), go directly to editor
+      router.push(`/library/resumes/${resumeId}/edit?jobId=${jobIdNum}`);
     }
-
-    // Navigate to library editor with job context
-    const queryString = params.toString();
-    router.push(`/library/resumes/${resumeId}/edit${queryString ? `?${queryString}` : ""}`);
   };
 
   // Loading state
@@ -382,7 +378,7 @@ function AnalyzePageContent() {
             <span>Resume verification required before editing</span>
           ) : (atsComplete || atsStream.isComplete || (!jobListingIdNum && jobIdNum)) ? (
             <span>
-              Open editor with ATS analysis and AI assistance
+              {jobListingIdNum ? "Review and customize target keywords" : "Open editor with AI assistance"}
             </span>
           ) : (
             <span>Analyzing your resume...</span>
@@ -390,14 +386,14 @@ function AnalyzePageContent() {
         </div>
 
         <button
-          onClick={handleEditResume}
+          onClick={handleContinue}
           disabled={
             (resume && !resume.parsed_verified) ||
             !(atsComplete || atsStream.isComplete || (!jobListingIdNum && jobIdNum))
           }
           className="btn-primary flex items-center gap-2"
         >
-          Edit Resume
+          {jobListingIdNum ? "Review Keywords" : "Edit Resume"}
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>
