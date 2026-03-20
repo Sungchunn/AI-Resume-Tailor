@@ -28,14 +28,22 @@ SECTION_PLACEMENT_WEIGHTS = {
 # See docs/features/ats/190326_keyword-analysis-improvements/task-2-density-curve.md
 DENSITY_CAP = 2.0  # Maximum density multiplier (prevents keyword stuffing)
 
-# Recency weights by role position (Stage 2.3)
-RECENCY_WEIGHTS = {
-    0: 2.0,  # Most recent role (index 0)
-    1: 2.0,  # Second most recent
-    2: 1.0,  # Third most recent
-    # Older roles use 0.8
+# Recency weights (Stage 2.3)
+# Date-based scoring with fallback to index-based when dates unavailable
+# See docs/features/ats/190326_keyword-analysis-improvements/task-3-date-based-recency.md
+
+# Fallback: index-based weights when date parsing fails
+RECENCY_WEIGHTS_BY_INDEX = {
+    0: 2.0,   # Most recent role
+    1: 1.5,   # Second most recent (differentiated from index 0)
+    2: 1.0,   # Third most recent
 }
 RECENCY_DEFAULT = 0.8
+
+# Date-based recency constants
+RECENCY_MAX_WEIGHT = 2.0   # Current/recent roles
+RECENCY_MIN_WEIGHT = 0.6   # Oldest roles (3+ years)
+RECENCY_DECAY_MONTHS = 36  # Full decay over 3 years
 
 # Importance tier weights (Stage 2.4)
 # Compressed range (1.0-2.0) to reduce misclassification error propagation

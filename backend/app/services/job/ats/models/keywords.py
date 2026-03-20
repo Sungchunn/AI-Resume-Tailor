@@ -17,6 +17,7 @@ class KeywordMatch:
     section: str  # Which section the match was found in
     role_index: int | None  # Index of the role (0 = most recent) if in experience
     text_snippet: str | None  # Snippet around the match
+    role_end_date: str | None = None  # End date of the role (for date-based recency)
 
 
 @dataclass

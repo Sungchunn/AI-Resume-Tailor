@@ -11,19 +11,24 @@ See docs/features/ats/190326_keyword-analysis-improvements/
 """
 
 import math
+from datetime import datetime
 
 from ...constants import (
     KeywordImportance,
     SECTION_PLACEMENT_WEIGHTS,
     DENSITY_CAP,
-    RECENCY_WEIGHTS,
+    RECENCY_WEIGHTS_BY_INDEX,
     RECENCY_DEFAULT,
+    RECENCY_MAX_WEIGHT,
+    RECENCY_MIN_WEIGHT,
+    RECENCY_DECAY_MONTHS,
     IMPORTANCE_WEIGHTS,
     CROSS_SECTION_BONUS,
     DEMONSTRATION_SECTIONS,
     CLAIM_SECTIONS,
 )
 from ...models import KeywordMatch
+from ..base import parse_date
 
 
 def get_placement_weight(section: str) -> float:
@@ -52,15 +57,51 @@ def get_density_multiplier(occurrence_count: int) -> float:
     return min(1.0 + 0.4 * math.log2(occurrence_count), DENSITY_CAP)
 
 
-def get_recency_weight(role_index: int | None) -> float:
+def get_recency_weight(
+    role_end_date: str | None = None,
+    role_index: int | None = None,
+) -> float:
     """
-    Get the recency weight based on role position.
+    Weight by how recently the role ended.
 
-    Stage 2.3: Recent roles are weighted higher.
+    Prefers date-based scoring when available, falls back to index-based.
+    Date-based uses linear decay from RECENCY_MAX_WEIGHT to RECENCY_MIN_WEIGHT
+    over RECENCY_DECAY_MONTHS.
+
+    Args:
+        role_end_date: ISO date string or "Present" for current roles
+        role_index: Position in resume (0 = most recent) as fallback
+
+    Returns:
+        Weight between RECENCY_MIN_WEIGHT and RECENCY_MAX_WEIGHT
+
+    See docs/features/ats/190326_keyword-analysis-improvements/task-3-date-based-recency.md
     """
+    # Try date-based scoring first
+    if role_end_date:
+        try:
+            # Handle "Present" or current role indicators
+            if role_end_date.lower() in ("present", "current", "now", "ongoing"):
+                return RECENCY_MAX_WEIGHT
+
+            end = parse_date(role_end_date)
+            if end:
+                months_ago = (datetime.now() - end).days / 30
+
+                # Linear decay from max to min over RECENCY_DECAY_MONTHS
+                weight_range = RECENCY_MAX_WEIGHT - RECENCY_MIN_WEIGHT
+                decay = (months_ago / RECENCY_DECAY_MONTHS) * weight_range
+                weight = RECENCY_MAX_WEIGHT - decay
+
+                return max(RECENCY_MIN_WEIGHT, weight)
+
+        except (ValueError, TypeError):
+            pass  # Fall through to index-based
+
+    # Fallback to index-based
     if role_index is None:
         return 1.0  # Not in a role, use neutral weight
-    return RECENCY_WEIGHTS.get(role_index, RECENCY_DEFAULT)
+    return RECENCY_WEIGHTS_BY_INDEX.get(role_index, RECENCY_DEFAULT)
 
 
 def get_importance_weight(importance: KeywordImportance) -> float:
@@ -179,11 +220,11 @@ def calculate_keyword_weighted_score(
     occurrence_count = len(matches)
     density_multiplier = get_density_multiplier(occurrence_count)
 
-    # Stage 2.3: Recency weighting - use best recency
+    # Stage 2.3: Recency weighting - use best recency (date-based with fallback)
     recency_weights = [
-        get_recency_weight(m.role_index)
+        get_recency_weight(role_end_date=m.role_end_date, role_index=m.role_index)
         for m in matches
-        if m.role_index is not None
+        if m.role_index is not None or m.role_end_date is not None
     ]
     best_recency = max(recency_weights) if recency_weights else 1.0
 

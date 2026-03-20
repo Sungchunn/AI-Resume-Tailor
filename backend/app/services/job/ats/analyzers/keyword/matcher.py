@@ -140,40 +140,45 @@ def find_keyword_matches(
     else:
         ordered_experiences = []
 
-    # Create a map from experience content to role index
+    # Create maps from original experience index to recency info
     exp_role_map: dict[int, int] = {}  # original exp index -> recency index
+    exp_end_date_map: dict[int, str | None] = {}  # original exp index -> end_date
     for recency_idx, (orig_idx, exp) in enumerate(ordered_experiences):
         exp_role_map[orig_idx] = recency_idx
+        exp_end_date_map[orig_idx] = exp.get("end_date") if isinstance(exp, dict) else None
 
     # Search each section
     for key, value in parsed_resume.items():
         section_type = detect_section_type(key)
 
         if section_type == "experience" and isinstance(value, list):
-            # Handle experience section specially for recency
+            # Handle experience section specially for recency (date-based)
             for orig_idx, exp in enumerate(value):
                 if isinstance(exp, dict):
+                    recency_idx = exp_role_map.get(orig_idx, orig_idx)
+                    end_date = exp_end_date_map.get(orig_idx)
+
                     # Check bullets
                     bullets = exp.get("bullets", [])
                     if isinstance(bullets, list):
                         for bullet in bullets:
                             if isinstance(bullet, str) and keyword_pattern.search(bullet):
-                                recency_idx = exp_role_map.get(orig_idx, orig_idx)
                                 matches.append(KeywordMatch(
                                     section="experience",
                                     role_index=recency_idx,
                                     text_snippet=bullet[:100] if len(bullet) > 100 else bullet,
+                                    role_end_date=end_date,
                                 ))
 
                     # Check other text fields in experience
                     for field in ("title", "description", "responsibilities"):
                         field_value = exp.get(field, "")
                         if isinstance(field_value, str) and keyword_pattern.search(field_value):
-                            recency_idx = exp_role_map.get(orig_idx, orig_idx)
                             matches.append(KeywordMatch(
                                 section="experience",
                                 role_index=recency_idx,
                                 text_snippet=field_value[:100] if len(field_value) > 100 else field_value,
+                                role_end_date=end_date,
                             ))
 
         elif isinstance(value, str):
