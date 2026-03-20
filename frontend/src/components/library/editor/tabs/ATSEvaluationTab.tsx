@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Target,
   AlertCircle,
@@ -362,12 +362,21 @@ export function ATSEvaluationTab({
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const analysisMutation = useATSKeywordAnalysis();
 
+  // Track if analysis is in progress to prevent duplicate requests
+  const isAnalyzingRef = useRef(false);
+
   // Run ATS analysis
   const runAnalysis = useCallback(() => {
     if (!jobDescription || jobDescription.length < 50) {
       setAnalysisError("Job description is too short for analysis");
       return;
     }
+
+    // Prevent duplicate requests
+    if (isAnalyzingRef.current) {
+      return;
+    }
+    isAnalyzingRef.current = true;
 
     setAnalysisError(null);
     analysisMutation.mutate(
@@ -378,23 +387,32 @@ export function ATSEvaluationTab({
       {
         onSuccess: (data) => {
           setAnalysis(data);
+          isAnalyzingRef.current = false;
         },
         onError: (err) => {
           setAnalysisError(
             err instanceof Error ? err.message : "Failed to analyze keywords"
           );
+          isAnalyzingRef.current = false;
         },
       }
     );
   }, [jobDescription, resumeContent, analysisMutation]);
 
+  // Keep runAnalysis ref in sync for effect
+  const runAnalysisRef = useRef(runAnalysis);
+  useEffect(() => {
+    runAnalysisRef.current = runAnalysis;
+  }, [runAnalysis]);
+
   // Auto-run analysis when job description is loaded or resume changes
+  // Use ref to avoid effect re-running when runAnalysis callback changes
   useEffect(() => {
     if (jobDescription && jobDescription.length >= 50) {
-      const timeoutId = setTimeout(runAnalysis, 1000);
+      const timeoutId = setTimeout(() => runAnalysisRef.current(), 1000);
       return () => clearTimeout(timeoutId);
     }
-  }, [jobDescription, resumeContent, runAnalysis]);
+  }, [jobDescription, resumeContent]);
 
   // Loading states
   const isLoadingJob = isUserJob ? userJobLoading : jobListingLoading;
