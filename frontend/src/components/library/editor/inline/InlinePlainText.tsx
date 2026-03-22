@@ -53,17 +53,19 @@ export function InlinePlainText({
   // Sync value to DOM when not focused
   useEffect(() => {
     if (!isFocused && ref.current) {
-      ref.current.textContent = value;
+      ref.current.textContent = value || placeholder;
     }
-  }, [value, isFocused]);
+  }, [value, isFocused, placeholder]);
 
   const handleBlur = useCallback(() => {
     setIsFocused(false);
-    const newValue = ref.current?.textContent?.trim() || "";
+    const textContent = ref.current?.textContent?.trim() || "";
+    // Don't save the placeholder as actual content
+    const newValue = textContent === placeholder ? "" : textContent;
     if (newValue !== value) {
       onCommit(newValue);
     }
-  }, [value, onCommit]);
+  }, [value, placeholder, onCommit]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     // Prevent newlines in plain text
@@ -80,7 +82,15 @@ export function InlinePlainText({
 
   const handleFocus = useCallback(() => {
     setIsFocused(true);
-  }, []);
+    // If showing placeholder, select all so user can start typing fresh
+    if (!value && ref.current) {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(ref.current);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+  }, [value]);
 
   return (
     <span
