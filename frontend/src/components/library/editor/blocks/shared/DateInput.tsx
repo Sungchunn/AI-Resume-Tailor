@@ -8,16 +8,13 @@ interface DateInputProps {
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
-  showPresent?: boolean;
-  isPresent?: boolean;
-  onPresentChange?: (isPresent: boolean) => void;
 }
 
 /**
  * DateInput - Month/Year date input
  *
- * Accepts and outputs dates in various formats (YYYY-MM, YYYY, Month YYYY).
- * Shows "Present" checkbox for current positions.
+ * Accepts and outputs dates in various formats (YYYY-MM, YYYY, Month YYYY, Present).
+ * Users can type whatever they want including "Present" as text.
  */
 export function DateInput({
   label,
@@ -25,9 +22,6 @@ export function DateInput({
   onChange,
   placeholder = "MM/YYYY",
   disabled = false,
-  showPresent = false,
-  isPresent = false,
-  onPresentChange,
 }: DateInputProps) {
   const inputId = label?.toLowerCase().replace(/\s+/g, "-");
 
@@ -37,12 +31,6 @@ export function DateInput({
     },
     [onChange]
   );
-
-  const handlePresentToggle = useCallback(() => {
-    if (onPresentChange) {
-      onPresentChange(!isPresent);
-    }
-  }, [isPresent, onPresentChange]);
 
   return (
     <div className="space-y-1">
@@ -54,30 +42,17 @@ export function DateInput({
           {label}
         </label>
       )}
-      <div className="flex items-center gap-2">
-        <input
-          id={inputId}
-          type="text"
-          value={isPresent ? "Present" : value}
-          onChange={handleChange}
-          placeholder={placeholder}
-          disabled={disabled || isPresent}
-          className={`flex-1 px-3 py-2 text-sm border border-input rounded-md
-            focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
-            disabled:bg-muted disabled:text-muted-foreground`}
-        />
-        {showPresent && (
-          <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
-            <input
-              type="checkbox"
-              checked={isPresent}
-              onChange={handlePresentToggle}
-              className="rounded border-input text-primary focus:ring-ring"
-            />
-            Present
-          </label>
-        )}
-      </div>
+      <input
+        id={inputId}
+        type="text"
+        value={value}
+        onChange={handleChange}
+        placeholder={placeholder}
+        disabled={disabled}
+        className={`w-full px-3 py-2 text-sm border border-input rounded-md
+          focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
+          disabled:bg-muted disabled:text-muted-foreground`}
+      />
     </div>
   );
 }
