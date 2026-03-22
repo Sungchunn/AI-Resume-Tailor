@@ -93,8 +93,7 @@ export function InlinePlainText({
       onKeyDown={handleKeyDown}
       className={cn(
         "cursor-text outline-none rounded-sm transition-colors",
-        "focus:ring-2 focus:ring-blue-500 focus:ring-offset-1",
-        "hover:bg-blue-50 dark:hover:bg-blue-950/30",
+        "focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1",
         !value && "text-muted-foreground",
         className
       )}

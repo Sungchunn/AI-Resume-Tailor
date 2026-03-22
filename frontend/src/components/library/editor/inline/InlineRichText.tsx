@@ -127,7 +127,7 @@ export function InlineRichText({
       attributes: {
         class: cn(
           "outline-none min-h-[1em]",
-          "focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-sm"
+          "focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 rounded-sm"
         ),
         "data-element-id": elementId,
       },
