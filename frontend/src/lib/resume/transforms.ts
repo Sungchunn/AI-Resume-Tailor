@@ -91,7 +91,7 @@ export function parsedContentToBlocks(
       company: exp.company || "",
       location: exp.location,
       startDate: exp.start_date || "",
-      endDate: exp.end_date || "",
+      endDate: exp.end_date?.toLowerCase() === "present" ? "" : (exp.end_date || ""),
       current: exp.end_date?.toLowerCase() === "present",
       bullets: exp.bullets || [],
     }));
@@ -202,7 +202,7 @@ export function parsedContentToBlocks(
       organization: vol.organization || "",
       location: vol.location,
       startDate: vol.start_date || "",
-      endDate: vol.end_date,
+      endDate: vol.end_date?.toLowerCase() === "present" ? "" : vol.end_date,
       current: vol.end_date?.toLowerCase() === "present",
       description: vol.description,
       bullets: vol.bullets,
@@ -315,7 +315,7 @@ export function parsedContentToBlocks(
         organization: mem.organization || "",
         role: mem.role,
         startDate: mem.start_date,
-        endDate: mem.end_date,
+        endDate: mem.end_date?.toLowerCase() === "present" ? "" : mem.end_date,
         current: mem.end_date?.toLowerCase() === "present",
       })
     );
