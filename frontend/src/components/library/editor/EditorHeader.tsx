@@ -76,7 +76,7 @@ export function EditorHeader({
       <div className="flex items-center gap-2">
         {/* Error indicator */}
         {error && (
-          <span className="text-xs text-destructive bg-destructive/10 px-2 py-1 rounded hidden sm:block">
+          <span className="text-xs text-destructive bg-destructive/10 px-2 py-1 rounded">
             {error}
           </span>
         )}

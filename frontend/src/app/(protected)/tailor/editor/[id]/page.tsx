@@ -87,6 +87,7 @@ export default function TailoredEditorPage({ params }: PageProps) {
     async (data: {
       parsedContent: ParsedResumeContent;
       style: Record<string, unknown>;
+      version: number;
     }) => {
       const tailoredContent = parsedContentToTailoredContent(data.parsedContent);
 

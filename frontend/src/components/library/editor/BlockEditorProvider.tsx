@@ -390,6 +390,12 @@ export function BlockEditorProvider({
    * resume types that have their own save endpoints.
    */
   const performSave = useCallback(async (): Promise<boolean> => {
+    console.log("[BlockEditor] performSave", {
+      isDirty: state.isDirty,
+      hasConflict,
+      isSaving: isSavingRef.current,
+    });
+
     if (isSavingRef.current || hasConflict) return false;
 
     isSavingRef.current = true;
