@@ -1,6 +1,6 @@
 # Cursor-Only Selection Design
 
-**Status:** Planning
+**Status:** Implemented
 **Created:** 2026-03-22
 **Pages:** `/library/resumes/[id]/edit`, `/tailor/editor/[id]`
 
