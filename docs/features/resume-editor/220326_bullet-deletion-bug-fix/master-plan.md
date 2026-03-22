@@ -1,156 +1,93 @@
-# Bullet Point Deletion Bug Fix
+# Plan: Fix Bullet Point Deletion Bug
 
 ## Problem Statement
 
-When editing bullet points in the resume editor pages:
-
-- `/library/resumes/[id]/edit`
-- `/tailor/editor/[id]`
-
-Creating new bullet points with Enter works correctly, but deleting empty bullet points with Backspace deletes the wrong line (the line below instead of the current line).
+When pressing Backspace on an empty bullet, **the bullet BELOW it is deleted** instead of the empty bullet itself. This happens across all editors that use BulletList (Experience, Projects, Volunteer, etc.).
 
 ## Root Cause Analysis
 
-The bug is in `/frontend/src/components/library/editor/blocks/shared/BulletList.tsx`.
+The initial fix (commit `10bcfcf`) added stable IDs but introduced a subtle index desync issue. Here's why:
 
-### Primary Issue: Using `key={index}` (line 101)
+### The Bug Mechanism
 
-```tsx
-{bullets.map((bullet, index) => (
-  <div key={index} className="flex items-start gap-2 group">
+1. **State is managed by parent** - `bullets` array comes from props
+2. **IDs are managed locally** - `bulletIds` ref is synced during render
+3. **Index comes from render** - `handleKeyDown(e, index)` captures render-time index
+
+The problem: When the user types to clear a bullet, `updateBullet` triggers a state update. But the `index` captured in the onKeyDown handler is from the **previous render**. If bullets have shifted, the index no longer points to the correct bullet.
+
+### Specific Scenario
+
+```text
+State: bullets = ["A", "B", "C"]
+User clears "B" → updateBullet(1, "") → state updates to ["A", "", "C"]
+React re-renders BUT the onKeyDown={(e) => handleKeyDown(e, index)}
+   may still reference old index mapping from previous render cycle
+User presses Backspace on visually-empty bullet
+handleKeyDown fires with potentially wrong index
+removeBullet removes wrong bullet
 ```
 
-Using array indices as React keys is a known anti-pattern when:
+### Why the Previous Fix Was Insufficient
 
-1. Items can be added/removed from the middle of the list
-2. The component maintains internal state or refs
-
-When Enter is pressed to create a new bullet:
-
-1. New bullet is spliced at `index + 1`
-2. React re-renders with index-based keys
-3. React cannot properly track which DOM element corresponds to which data item
-4. The `inputRefs` array becomes misaligned with the actual bullets
-
-### Secondary Issue: Ref Array Synchronization
-
-The `inputRefs` array stores refs by index:
-
-```tsx
-ref={(el) => {
-  inputRefs.current[index] = el;
-}}
-```
-
-When bullets are added/removed:
-
-- Old refs may still exist at outdated indices
-- The refs array length does not automatically shrink when bullets are deleted
+The nanoid fix stabilized React keys but didn't address the fundamental issue: **the index parameter passed to handleKeyDown can become stale between state updates**.
 
 ## Solution
 
-### Step 1: Generate Unique IDs for Each Bullet
+**Use bullet ID instead of array index to identify which bullet to delete.**
 
-Since bullets are currently plain strings, we need a way to track them uniquely. Use a stable ID by creating a ref-based map that assigns IDs to bullets.
+Change the approach from index-based to ID-based operations:
 
-The approach: use `nanoid` to generate a stable key for each bullet position, and update the key mapping when bullets are added or removed.
+1. Pass `bulletId` to handlers instead of `index`
+2. Find the current index by searching for the ID in `bulletIds.current`
+3. This ensures we always operate on the correct bullet regardless of render timing
 
-### Step 2: Clean Up Refs Array
-
-Ensure the `inputRefs` array is synchronized with the current bullets array length on each render.
-
-## Implementation
-
-### File: `frontend/src/components/library/editor/blocks/shared/BulletList.tsx`
-
-**Changes:**
-
-1. Add a ref to track stable keys for each bullet:
-
-```tsx
-const bulletKeysRef = useRef<string[]>([]);
-```
-
-2. Synchronize keys with bullets array on changes:
-
-```tsx
-// Keep bullet keys in sync with bullets array
-useEffect(() => {
-  const currentKeys = bulletKeysRef.current;
-  const newKeys: string[] = [];
-
-  for (let i = 0; i < bullets.length; i++) {
-    // Reuse existing key or generate new one
-    newKeys[i] = currentKeys[i] ?? nanoid();
-  }
-
-  bulletKeysRef.current = newKeys;
-}, [bullets.length]);
-```
-
-3. Update key arrays when adding/removing bullets in handlers:
-
-- On Enter (add): insert new key at `index + 1`
-- On Backspace (remove): splice out the key at `index`
-
-4. Trim inputRefs array to match bullets length:
-
-```tsx
-useEffect(() => {
-  inputRefs.current = inputRefs.current.slice(0, bullets.length);
-}, [bullets.length]);
-```
-
-5. Use stable keys in render:
-
-```tsx
-{bullets.map((bullet, index) => (
-  <div key={bulletKeysRef.current[index] ?? index} className="...">
-```
-
-## Verification
-
-### Manual Testing
-
-1. Navigate to `/library/resumes/[id]/edit`
-2. Click on Experience section
-3. Add a new bullet with Enter
-4. Delete the new (empty) bullet with Backspace
-5. Verify the correct bullet is deleted
-6. Repeat for `/tailor/editor/[id]`
-
-### Test Scenarios
-
-| Scenario | Expected Behavior |
-| -------- | ----------------- |
-| Create bullet at end, delete | Current bullet deleted |
-| Create bullet in middle, delete | Current bullet deleted |
-| Create multiple bullets, delete from various positions | Correct bullet deleted each time |
-| Type content, navigate with arrows, delete empty | Correct bullet deleted |
-| Focus moves to previous bullet after delete | Focus behavior correct |
-
-### E2E Tests
-
-Consider adding test coverage in `frontend/e2e/inline-editing/bullets.spec.ts`:
-
-- Test Enter creates bullet at correct position
-- Test Backspace deletes correct bullet
-- Test focus management after operations
-
-## Files to Modify
+### Files to Modify
 
 | File | Changes |
 | ---- | ------- |
-| `frontend/src/components/library/editor/blocks/shared/BulletList.tsx` | Add stable key tracking, fix ref synchronization |
+| `frontend/src/components/library/editor/blocks/shared/BulletList.tsx` | Refactor handlers to use ID-based lookup |
 
-## Related Components
+### Implementation Details
 
-The `BulletList` component is used by:
+```tsx
+// BEFORE: Index-based (buggy)
+onKeyDown={(e) => handleKeyDown(e, index)}
+// ...
+removeBullet(index);
 
-- `ExperienceEditor` - max 8 bullets
-- `ProjectsEditor` - max 5 bullets
-- `LeadershipEditor` - max 5 bullets
-- `VolunteerEditor` - max 5 bullets
-- `CustomSectionEditor` - max 10 bullets
+// AFTER: ID-based (correct)
+onKeyDown={(e) => handleKeyDown(e, bulletId)}
+// ...
+const currentIndex = bulletIds.current.indexOf(bulletId);
+if (currentIndex !== -1) {
+  removeBullet(currentIndex);
+}
+```
 
-All will benefit from this fix without additional changes.
+### Changes Required
+
+1. **handleKeyDown signature**: Change from `(e, index)` to `(e, bulletId)`
+2. **All handlers**: Look up current index from bulletId when needed
+3. **removeBullet, updateBullet, addBullet**: Take bulletId, look up index internally
+4. **Focus logic**: Already uses IDs, no change needed
+
+## Verification
+
+1. **Manual testing:**
+   - Add 3 bullets: "A", "B", "C"
+   - Clear middle bullet to empty
+   - Press Backspace on empty bullet
+   - Verify: ["A", "C"] remains, empty bullet is deleted
+
+2. **Edge cases to test:**
+   - Delete first bullet (index 0)
+   - Delete last bullet
+   - Rapid add/delete operations
+   - Enter to add bullet, then immediately Backspace
+
+3. **Affected editors to test:**
+   - Experience
+   - Projects
+   - Volunteer
+   - Leadership
