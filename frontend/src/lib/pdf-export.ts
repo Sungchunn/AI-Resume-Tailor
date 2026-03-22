@@ -85,16 +85,18 @@ export async function exportToPdfFromPages(
 
     const page = validPages[i];
 
-    // Store original inline styles to restore after capture
-    const originalBoxShadow = page.style.boxShadow;
-    const originalBorder = page.style.border;
-    const originalBorderRadius = page.style.borderRadius;
+    // Store original className to restore after capture
+    const originalClassName = page.className;
 
-    // Override preview-only styles (shadow/border) for clean PDF output
-    // Use setProperty with 'important' to ensure overriding Tailwind classes
-    page.style.setProperty("box-shadow", "none", "important");
-    page.style.setProperty("border", "none", "important");
-    page.style.setProperty("border-radius", "0", "important");
+    // Remove visual preview classes that should not appear in PDF
+    // (shadow-lg, rounded-sm, border, border-border)
+    page.className = page.className
+      .replace(/\bshadow-lg\b/g, "")
+      .replace(/\brounded-sm\b/g, "")
+      .replace(/\bborder-border\b/g, "")
+      .replace(/\bborder\b(?!-)/g, "") // Remove 'border' but not 'border-*' variants
+      .replace(/\s+/g, " ") // Clean up extra whitespace
+      .trim();
 
     try {
       // Capture page as PNG at exact dimensions
@@ -126,10 +128,8 @@ export async function exportToPdfFromPages(
         `Failed to export page ${i + 1}: ${error instanceof Error ? error.message : "Unknown error"}`
       );
     } finally {
-      // Restore original styles so preview remains unchanged
-      page.style.boxShadow = originalBoxShadow;
-      page.style.border = originalBorder;
-      page.style.borderRadius = originalBorderRadius;
+      // Restore original className so preview remains unchanged
+      page.className = originalClassName;
     }
   }
 
