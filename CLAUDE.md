@@ -54,11 +54,11 @@ Keep the root directory clean - only `README.md` and `CLAUDE.md` at project root
 │   └── security-refactor.md       # Cross-cutting technical initiatives
 │
 ├── /features                  # Feature-specific documentation
-│   ├── /feature-name/             # Subdirectory for multi-doc features
-│   │   ├── master-plan.md             # Entry point for the feature
-│   │   ├── phase-1-*.md               # Phase breakdowns
-│   │   └── proposal.md                # Architectural proposals
-│   └── single-feature.md          # Single-doc features (no subdir)
+│   ├── /group-name/               # Group directory (no date prefix)
+│   │   └── /DDMMYY_feature-name/      # Feature subdirectory with date
+│   │       ├── master-plan.md             # Entry point
+│   │       └── phase-*.md                 # Phase breakdowns
+│   └── DDMMYY_standalone.md       # Single-doc features (rare)
 │
 ├── /architecture              # System design and technical decisions
 │   ├── system-architecture.md     # Overall system design
@@ -83,77 +83,77 @@ Keep the root directory clean - only `README.md` and `CLAUDE.md` at project root
 | `/testing` | E2E and Playwright test documentation | Test infrastructure, feature test plans, page objects |
 | `/api` | API reference for consumers | Endpoint docs, schemas, error codes |
 
-#### Feature Documentation: Subdirectory Convention
+#### Feature Documentation: Group Directory Structure
 
-**Multi-document features MUST have their own subdirectory under `/docs/features/`.**
+**All features MUST be organized under group directories in `/docs/features/`.**
 
-Create a subdirectory when:
-
-- Feature has **3+ related documentation files**
-- Feature has **distinct phases** or implementation stages
-- Feature has **separate proposal/analysis documents**
+Features are organized into logical groups. Group directories do NOT have date prefixes. Individual features within groups use date prefixes.
 
 ```text
-/docs/features
-├── /ats-scoring/                             # Multi-doc feature
-│   ├── 030326_master-plan.md                     # Entry point
-│   ├── 030326_phase1-keyword-extraction.md
-│   ├── 030326_phase2-ats-structure-analysis.md
-│   └── ats-scoring-proposal.md
+/docs/features/
+├── ai-usage/                              # AI usage tracking & analytics
+│   ├── 120326_ai-usage-dashboard/
+│   └── 200326_ai-usage-tailor-flow/
 │
-├── /resume-editor/                           # Parent feature (see below)
-│   ├── 250226_resume-workshop/                   # Sub-feature with date prefix
+├── ats/                                   # ATS scoring & keyword analysis
+│   ├── 030326_ats-scoring/
+│   ├── 120326_ats-router-modularization/
+│   ├── 120326_keyword-modularization/
+│   ├── 190326_keyword-analysis-improvements/
+│   └── 200326_keyword-review-workflow/
+│
+├── infrastructure/                        # Backend/database maintenance
+│   ├── 090326_backend-parser-expansion.md
+│   ├── 090326_scraper-requests/
+│   └── 120326_database-cleanup/
+│
+├── resume-editor/                         # Editor page (/library/[id]/edit)
+│   ├── 250226_resume-workshop/
 │   ├── 060326_editor-panel-consolidation/
-│   └── ...
+│   └── ... (25+ features)
 │
-└── 190226_n8n-linkedin-scraper-integration.md  # Single-doc (no subdir)
+├── tailor-flow/                           # Tailoring workflow
+│   ├── 050326_tailor-flow-redesign/
+│   └── 120326_parse-once-tailor-many/
+│
+├── ui/                                    # Global UI & layout
+│   ├── 100326_l-shape-layout/
+│   └── 100326_library-redesign/
+│
+└── upload/                                # Resume upload experience
+    ├── 060326_pdf-upload-loading-states/
+    └── 100326_resume-upload-modal/
 ```
 
-**Single-document features** remain directly in `/docs/features/` with proper date prefix.
+#### Group Directory Reference
 
-#### Resume Editor Documentation
+| Group | Purpose | When to Add Here |
+| ----- | ------- | ---------------- |
+| `ai-usage/` | AI usage tracking, analytics, dashboards | Cost monitoring, usage metrics, AI call tracking |
+| `ats/` | ATS scoring, keyword analysis | ATS compatibility, keyword extraction, scoring algorithms |
+| `infrastructure/` | Backend/database maintenance | DB cleanup, parser improvements, scraper management |
+| `resume-editor/` | Editor page features | PDF preview, panels, pagination, styling, save/sync |
+| `tailor-flow/` | Tailoring workflow | Tailor UX, parse-once patterns, job matching |
+| `ui/` | Global UI & layout | App-wide layout, library page, navigation |
+| `upload/` | Resume upload experience | Upload modals, loading states, file handling |
 
-**All resume editor features MUST be placed under `/docs/features/resume-editor/`.**
+#### Rules for Feature Organization
 
-The resume editor is a complex, multi-phase feature area. To maintain organization, all sub-features related to the editor page are consolidated under a single parent directory with date-prefixed subdirectories.
+1. **Group directories have NO date prefix** - e.g., `resume-editor/`, not `220326_resume-editor/`
+2. **Feature subdirectories MUST have date prefix** - Format: `DDMMYY_feature-name/`
+3. **Choose the most specific group** - A feature affecting the editor goes in `resume-editor/`, not `ui/`
+4. **Each feature follows standard conventions** - Must contain a `master-plan.md` entry point and phase docs as needed
+5. **Chronological ordering** - Date prefix enables natural sorting by implementation date
 
-**Directory naming format:** `DDMMYY_feature-name/`
+#### Adding a New Group
 
-```text
-/docs/features/resume-editor/
-├── 250226_resume-workshop/               # Original editor foundation
-├── 060326_editor-panel-consolidation/    # Panel architecture refactor
-├── 070326_ats-panel-integration/         # ATS scoring as 4th editor tab
-├── 070326_fit-to-page/                   # Backend page fitting
-├── 070326_inline-suggestions/            # AI suggestions in TipTap editor
-├── 090326_dynamic-sections/              # Dynamic section support
-├── 090326_tailor-data-loss-fix/          # Editor save flow data handling
-├── 100326_phase-3-verify-sections/       # Section editing in ContentEditor
-├── 110326_pagination-unification/        # Unified pagination logic
-├── 110326_preview-edit-unification/      # Preview/edit sync
-├── 110326_weasyprint-pdf-migration/      # PDF rendering migration
-├── 130326_fit-to-one-page/               # Auto-fit feature
-├── 130326_optimistic-concurrency-control/ # Conflict resolution
-├── 140326_client-side-pdf-export/        # Client-side PDF generation
-├── 150326_fit-to-one-page-bugfixes/      # Fit-to-one-page bug fixes
-└── 150326_paginated-preview/             # Multi-page preview
-```
+Create a new group directory only when:
 
-**Rules for resume-editor features:**
+- **3+ related features** would belong to it
+- Features share a **clear functional domain**
+- No existing group is appropriate
 
-1. **Always use date prefix on subdirectories** - Format: `DDMMYY_feature-name/`
-2. **Place ALL editor-related features here** - Any feature affecting the `/library/[id]/edit` page belongs under `resume-editor/`
-3. **Chronological ordering** - Date prefix enables natural sorting by implementation date
-4. **Each sub-feature follows standard conventions** - Must contain a `master-plan.md` entry point and phase docs as needed
-
-**When to add a feature under resume-editor:**
-
-- PDF preview/rendering changes
-- Editor panel UI/UX modifications
-- Style controls and formatting
-- Pagination and page fitting
-- Save/sync/conflict handling
-- Section editing functionality
+New groups must be added to this reference table and documented with clear purpose.
 
 #### File Naming Convention
 
@@ -177,6 +177,7 @@ Rules:
 
 - `/docs/api/*` - Permanent API reference docs
 - `/docs/PROJECT_MASTER_PLAN.md` - Project vision doc
+- `/docs/features/<group>/` - Group directories (e.g., `resume-editor/`, `ats/`)
 - Proposal/decision docs within feature subdirs (e.g., `ats-scoring-proposal.md`)
 
 #### Markdown Formatting Rules
