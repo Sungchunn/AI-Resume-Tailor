@@ -91,8 +91,7 @@ export function parsedContentToBlocks(
       company: exp.company || "",
       location: exp.location,
       startDate: exp.start_date || "",
-      endDate: exp.end_date?.toLowerCase() === "present" ? "" : (exp.end_date || ""),
-      current: exp.end_date?.toLowerCase() === "present",
+      endDate: exp.end_date || "",
       bullets: exp.bullets || [],
     }));
 
@@ -202,8 +201,7 @@ export function parsedContentToBlocks(
       organization: vol.organization || "",
       location: vol.location,
       startDate: vol.start_date || "",
-      endDate: vol.end_date?.toLowerCase() === "present" ? "" : vol.end_date,
-      current: vol.end_date?.toLowerCase() === "present",
+      endDate: vol.end_date || "",
       description: vol.description,
       bullets: vol.bullets,
     }));
@@ -315,8 +313,7 @@ export function parsedContentToBlocks(
         organization: mem.organization || "",
         role: mem.role,
         startDate: mem.start_date,
-        endDate: mem.end_date?.toLowerCase() === "present" ? "" : mem.end_date,
-        current: mem.end_date?.toLowerCase() === "present",
+        endDate: mem.end_date || "",
       })
     );
 
@@ -370,7 +367,7 @@ export function blocksToParsedContent(
           company: entry.company,
           location: entry.location,
           start_date: entry.startDate,
-          end_date: entry.current ? "Present" : entry.endDate,
+          end_date: entry.endDate,
           bullets: entry.bullets,
         }));
         break;
@@ -438,7 +435,7 @@ export function blocksToParsedContent(
           organization: entry.organization,
           location: entry.location,
           start_date: entry.startDate,
-          end_date: entry.current ? "Present" : entry.endDate,
+          end_date: entry.endDate,
           description: entry.description,
           bullets: entry.bullets,
         }));
@@ -506,7 +503,7 @@ export function blocksToParsedContent(
           organization: entry.organization,
           role: entry.role,
           start_date: entry.startDate,
-          end_date: entry.current ? "Present" : entry.endDate,
+          end_date: entry.endDate,
         }));
         break;
       }
