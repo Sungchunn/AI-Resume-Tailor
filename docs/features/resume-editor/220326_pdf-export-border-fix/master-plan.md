@@ -30,33 +30,39 @@ The exported PDF has visible gray borders/shadows around each page, creating a "
 
 ## Solution
 
-Temporarily override border/shadow styles during PDF export by applying inline styles before capture and removing them after.
+**Remove Tailwind classes entirely** before capture instead of trying to override them with inline styles.
+
+Inline style overrides (even with `!important`) do not reliably override Tailwind CSS classes during `html-to-image` capture because the library snapshots computed styles before JavaScript property assignments complete.
 
 ### Implementation
 
 **File:** `frontend/src/lib/pdf-export.ts`
 
-Add inline style override before each `toPng()` call:
+Replace inline style overrides with className manipulation:
 
 ```typescript
-// Before capture: store original styles and apply export overrides
-const originalStyle = validPages[i].getAttribute('style') || '';
-const originalClass = validPages[i].className;
+const page = validPages[i];
 
-// Add inline styles to override shadow/border/border-radius
-validPages[i].style.boxShadow = 'none';
-validPages[i].style.border = 'none';
-validPages[i].style.borderRadius = '0';
+// Store original className to restore after capture
+const originalClassName = page.className;
+
+// Remove visual preview classes that should not appear in PDF
+page.className = page.className
+  .replace(/\bshadow-lg\b/g, "")
+  .replace(/\brounded-sm\b/g, "")
+  .replace(/\bborder-border\b/g, "")
+  .replace(/\bborder\b(?!-)/g, "")  // Remove 'border' but not 'border-*' variants
+  .replace(/\s+/g, " ")  // Clean up extra whitespace
+  .trim();
 
 try {
-  const dataUrl = await toPng(validPages[i], {
+  const dataUrl = await toPng(page, {
     // ... existing options
   });
   // ... existing addImage code
 } finally {
-  // Restore original styles
-  validPages[i].setAttribute('style', originalStyle);
-  validPages[i].className = originalClass;
+  // Restore original className so preview remains unchanged
+  page.className = originalClassName;
 }
 ```
 
@@ -64,7 +70,7 @@ try {
 
 | File | Change |
 | ---- | ------ |
-| `frontend/src/lib/pdf-export.ts` | Add inline style overrides before `toPng()` capture |
+| `frontend/src/lib/pdf-export.ts` | Replace inline style overrides with className removal |
 
 ## Verification
 

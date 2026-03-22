@@ -91,9 +91,10 @@ export async function exportToPdfFromPages(
     const originalBorderRadius = page.style.borderRadius;
 
     // Override preview-only styles (shadow/border) for clean PDF output
-    page.style.boxShadow = "none";
-    page.style.border = "none";
-    page.style.borderRadius = "0";
+    // Use setProperty with 'important' to ensure overriding Tailwind classes
+    page.style.setProperty("box-shadow", "none", "important");
+    page.style.setProperty("border", "none", "important");
+    page.style.setProperty("border-radius", "0", "important");
 
     try {
       // Capture page as PNG at exact dimensions
