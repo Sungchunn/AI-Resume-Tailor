@@ -61,7 +61,6 @@ function MembershipEntryPreview({
   isEditable,
 }: MembershipEntryPreviewProps) {
   const editorContext = useBlockEditorOptional();
-  const dateRange = formatDateRange(entry.startDate, entry.endDate);
 
   // Create handler for text fields
   const handleFieldChange = useCallback(
@@ -73,18 +72,9 @@ function MembershipEntryPreview({
     [blockId, entry.id, editorContext]
   );
 
-  // Handler for date range changes
-  const handleDateRangeChange = useCallback(
-    (value: string) => {
-      if (!blockId || !editorContext) return;
-      const elementId = createFieldElementId(blockId, entry.id, "startDate");
-      editorContext.updateContentByPath(elementId, value);
-    },
-    [blockId, entry.id, editorContext]
-  );
-
   // If not editable, render without inline editing capabilities
   if (!isEditable || !blockId) {
+    const dateRange = formatDateRange(entry.startDate, entry.endDate);
     return (
       <div>
         <div className="flex justify-between items-baseline">
@@ -127,15 +117,21 @@ function MembershipEntryPreview({
           onCommit={handleFieldChange("organization")}
         />
         <span
-          className="flex-shrink-0 ml-4"
+          className="flex-shrink-0 ml-4 text-muted-foreground"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
           <InlinePlainText
-            elementId={createFieldElementId(blockId, entry.id, "dateRange")}
-            value={dateRange || ""}
-            className="text-muted-foreground"
-            placeholder="2020 - Present"
-            onCommit={handleDateRangeChange}
+            elementId={createFieldElementId(blockId, entry.id, "startDate")}
+            value={entry.startDate || ""}
+            placeholder="Start"
+            onCommit={handleFieldChange("startDate")}
+          />
+          <span className="mx-1">-</span>
+          <InlinePlainText
+            elementId={createFieldElementId(blockId, entry.id, "endDate")}
+            value={entry.endDate || ""}
+            placeholder="End"
+            onCommit={handleFieldChange("endDate")}
           />
         </span>
       </div>

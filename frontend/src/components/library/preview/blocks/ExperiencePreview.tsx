@@ -148,7 +148,6 @@ function ExperienceEntryPreview({
   removeBullet,
 }: ExperienceEntryPreviewProps) {
   const editorContext = useBlockEditorOptional();
-  const dateRange = formatDateRange(entry.startDate, entry.endDate);
 
   // Create handler for text fields (title, company, location, dates)
   const handleFieldChange = useCallback(
@@ -160,23 +159,9 @@ function ExperienceEntryPreview({
     [blockId, entry.id, editorContext]
   );
 
-  // Handler for date changes - we need to handle both startDate and endDate
-  const handleDateRangeChange = useCallback(
-    (value: string) => {
-      if (!blockId || !editorContext) return;
-      // For simplicity, we store the formatted date range in a combined field
-      // The user edits the display value directly
-      // A more complex implementation would parse this back to startDate/endDate
-      // For now, we'll update the startDate field with the full range text
-      // and clear endDate to indicate manual override
-      const elementId = createFieldElementId(blockId, entry.id, "startDate");
-      editorContext.updateContentByPath(elementId, value);
-    },
-    [blockId, entry.id, editorContext]
-  );
-
   // If not editable, render without inline editing capabilities
   if (!isEditable || !blockId) {
+    const dateRange = formatDateRange(entry.startDate, entry.endDate);
     return (
       <div>
         <div className="flex justify-between items-baseline">
@@ -232,20 +217,24 @@ function ExperienceEntryPreview({
           placeholder="Job Title"
           onCommit={handleFieldChange("title")}
         />
-        {(dateRange || !entry.startDate) && (
-          <span
-            className="flex-shrink-0 ml-4"
-            style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
-          >
-            <InlinePlainText
-              elementId={createFieldElementId(blockId, entry.id, "dateRange")}
-              value={dateRange || ""}
-              className="text-muted-foreground"
-              placeholder="Jan 2020 - Present"
-              onCommit={handleDateRangeChange}
-            />
-          </span>
-        )}
+        <span
+          className="flex-shrink-0 ml-4 text-muted-foreground"
+          style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
+        >
+          <InlinePlainText
+            elementId={createFieldElementId(blockId, entry.id, "startDate")}
+            value={entry.startDate || ""}
+            placeholder="Start"
+            onCommit={handleFieldChange("startDate")}
+          />
+          <span className="mx-1">-</span>
+          <InlinePlainText
+            elementId={createFieldElementId(blockId, entry.id, "endDate")}
+            value={entry.endDate || ""}
+            placeholder="End"
+            onCommit={handleFieldChange("endDate")}
+          />
+        </span>
       </div>
 
       {/* Company and location row */}
