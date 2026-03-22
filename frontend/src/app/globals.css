@@ -470,30 +470,17 @@
 }
 
 /* Granular Highlighting Styles
- * Used for sub-block element selection/hover in resume preview
+ * Used for sub-block element hover in resume preview
+ * Active state relies on cursor only - no visual highlights
  */
 
-/* Inline field highlight (titles, dates, companies) */
-.granular-active-inline {
-  @apply bg-blue-500/20 rounded-sm px-0.5 -mx-0.5;
-}
+/* Subtle hover feedback for discoverability */
 .granular-hover-inline {
-  @apply bg-blue-500/10 cursor-pointer rounded-sm;
-}
-
-/* List item highlight (bullets, skills) */
-.granular-active-item {
-  @apply bg-blue-500/10 ring-1 ring-blue-500 rounded px-1 -mx-1;
+  @apply underline decoration-blue-400/50 decoration-1 underline-offset-2 cursor-pointer;
 }
 .granular-hover-item {
-  @apply bg-blue-500/5 ring-1 ring-blue-500/30 rounded cursor-pointer;
-}
-
-/* Entry-level highlight (entire experience/education entry) */
-.granular-active-entry {
-  @apply ring-2 ring-blue-500/70 ring-offset-2 rounded bg-blue-500/5;
+  @apply underline decoration-blue-400/50 decoration-1 underline-offset-2 cursor-pointer;
 }
 .granular-hover-entry {
-  @apply ring-1 ring-blue-500/40 rounded bg-blue-500/5 cursor-pointer;
-  border-style: dashed;
+  @apply opacity-80 cursor-pointer;
 }

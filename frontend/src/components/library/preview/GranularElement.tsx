@@ -113,16 +113,7 @@ function getStateClasses(
   isActive: boolean,
   isHovered: boolean
 ): string {
-  if (isActive) {
-    switch (variant) {
-      case "inline":
-        return "granular-active-inline";
-      case "item":
-        return "granular-active-item";
-      case "entry":
-        return "granular-active-entry";
-    }
-  }
+  // No active state styling - rely on cursor only
 
   if (isHovered) {
     switch (variant) {
