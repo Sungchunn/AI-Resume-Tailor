@@ -143,7 +143,7 @@ function LeadershipEntryPreview({
   removeBullet,
 }: LeadershipEntryPreviewProps) {
   const editorContext = useBlockEditorOptional();
-  const dateRange = formatDateRange(entry.startDate, entry.endDate, entry.current);
+  const dateRange = formatDateRange(entry.startDate, entry.endDate);
 
   // Create handler for text fields
   const handleFieldChange = useCallback(

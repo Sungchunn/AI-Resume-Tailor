@@ -459,7 +459,7 @@ function VolunteerSection({
               {vol.role}
             </span>
             <span className="text-muted-foreground" style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}>
-              {vol.start_date}{vol.start_date && vol.end_date && " - "}{vol.end_date || (vol.current ? "Present" : "")}
+              {vol.start_date}{vol.start_date && vol.end_date && " - "}{vol.end_date}
             </span>
           </div>
           <div className="text-foreground/80" style={{ fontSize: style.bodyFontSize }}>
@@ -635,7 +635,7 @@ function MembershipsSection({
           {(membership.start_date || membership.end_date || membership.current) && (
             <span className="text-muted-foreground" style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}>
               {membership.start_date}{membership.start_date && (membership.end_date || membership.current) && " - "}
-              {membership.end_date || (membership.current ? "Present" : "")}
+              {membership.end_date}
             </span>
           )}
         </div>
@@ -663,7 +663,7 @@ function LeadershipSection({
             </span>
             <span className="text-muted-foreground" style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}>
               {lead.start_date}{lead.start_date && (lead.end_date || lead.current) && " - "}
-              {lead.end_date || (lead.current ? "Present" : "")}
+              {lead.end_date}
             </span>
           </div>
           <div className="text-foreground/80" style={{ fontSize: style.bodyFontSize }}>

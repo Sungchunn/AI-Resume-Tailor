@@ -81,10 +81,8 @@ export function getSectionTitle(blockType: string): string {
 
 /**
  * Format a date string for display
- * Handles various input formats and "Present" for current positions
  */
-export function formatDate(date: string | undefined, isCurrent?: boolean): string {
-  if (isCurrent) return "Present";
+export function formatDate(date: string | undefined): string {
   if (!date) return "";
   return date;
 }
@@ -94,11 +92,10 @@ export function formatDate(date: string | undefined, isCurrent?: boolean): strin
  */
 export function formatDateRange(
   startDate: string | undefined,
-  endDate: string | undefined,
-  isCurrent?: boolean
+  endDate: string | undefined
 ): string {
   const start = startDate || "";
-  const end = formatDate(endDate, isCurrent);
+  const end = formatDate(endDate);
 
   if (!start && !end) return "";
   if (!start) return end;

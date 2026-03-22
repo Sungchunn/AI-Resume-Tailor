@@ -46,7 +46,7 @@ export function ExperienceEditor({
     return {
       title: entry.title || "",
       company: entry.company || "",
-      dateRange: `${entry.start_date || ""} - ${entry.end_date || "Present"}`,
+      dateRange: `${entry.start_date || ""}${entry.start_date && entry.end_date ? " - " : ""}${entry.end_date || ""}`,
     };
   }, [focusedBullet.entryIndex, entries]);
 

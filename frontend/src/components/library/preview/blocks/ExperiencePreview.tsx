@@ -148,7 +148,7 @@ function ExperienceEntryPreview({
   removeBullet,
 }: ExperienceEntryPreviewProps) {
   const editorContext = useBlockEditorOptional();
-  const dateRange = formatDateRange(entry.startDate, entry.endDate, entry.current);
+  const dateRange = formatDateRange(entry.startDate, entry.endDate);
 
   // Create handler for text fields (title, company, location, dates)
   const handleFieldChange = useCallback(
