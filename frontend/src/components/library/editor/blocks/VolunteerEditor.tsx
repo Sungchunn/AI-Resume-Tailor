@@ -24,7 +24,6 @@ export function VolunteerEditor({ content, onChange }: VolunteerEditorProps) {
       location: "",
       startDate: "",
       endDate: "",
-      current: false,
       description: "",
       bullets: [],
     }),

@@ -24,7 +24,6 @@ export function LeadershipEditor({ content, onChange }: LeadershipEditorProps) {
       location: "",
       startDate: "",
       endDate: "",
-      current: false,
       description: "",
       bullets: [],
     }),

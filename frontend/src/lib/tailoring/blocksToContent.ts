@@ -56,7 +56,7 @@ export function blocksToContent(blocks: AnyResumeBlock[]): TailoredContent {
             company: exp.company || "",
             location: exp.location || "",
             start_date: exp.startDate || "",
-            end_date: exp.current ? "Present" : exp.endDate || "",
+            end_date: exp.endDate || "",
             bullets: exp.bullets || [],
           })
         );

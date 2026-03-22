@@ -26,7 +26,6 @@ export function MembershipsEditor({
       role: "",
       startDate: "",
       endDate: "",
-      current: false,
     }),
     []
   );

@@ -24,7 +24,6 @@ export function ExperienceEditor({ content, onChange }: ExperienceEditorProps) {
       location: "",
       startDate: "",
       endDate: "",
-      current: false,
       bullets: [""],
     }),
     []

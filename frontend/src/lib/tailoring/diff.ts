@@ -560,7 +560,6 @@ function compareExperienceEntry(
   if (orig.location !== ai.location) fields.push("location");
   if (orig.startDate !== ai.startDate) fields.push("startDate");
   if (orig.endDate !== ai.endDate) fields.push("endDate");
-  if (orig.current !== ai.current) fields.push("current");
   // Bullets are handled separately
   return fields;
 }
@@ -633,7 +632,6 @@ function compareVolunteerEntry(
   if (orig.location !== ai.location) fields.push("location");
   if (orig.startDate !== ai.startDate) fields.push("startDate");
   if (orig.endDate !== ai.endDate) fields.push("endDate");
-  if (orig.current !== ai.current) fields.push("current");
   if (orig.description !== ai.description) fields.push("description");
   // Bullets are handled separately
   return fields;
@@ -698,7 +696,6 @@ function compareMembershipEntry(
   if (orig.role !== ai.role) fields.push("role");
   if (orig.startDate !== ai.startDate) fields.push("startDate");
   if (orig.endDate !== ai.endDate) fields.push("endDate");
-  if (orig.current !== ai.current) fields.push("current");
   return fields;
 }
 
