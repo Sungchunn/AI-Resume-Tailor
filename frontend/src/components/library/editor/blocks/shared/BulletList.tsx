@@ -28,6 +28,9 @@ export function BulletList({
   const inputRefs = useRef<Map<string, HTMLInputElement | null>>(new Map());
   // Stable IDs for each bullet - survives additions/removals
   const bulletIds = useRef<string[]>([]);
+  // Ref that always has the latest bullets - avoids stale closures
+  const bulletsRef = useRef(bullets);
+  bulletsRef.current = bullets;
 
   // Synchronize bullet IDs with bullets array length (runs during render)
   // This ensures stable keys even when bullets are added/removed mid-list
@@ -41,28 +44,31 @@ export function BulletList({
 
   const updateBullet = useCallback(
     (index: number, value: string) => {
-      const newBullets = [...bullets];
+      const currentBullets = bulletsRef.current;
+      const newBullets = [...currentBullets];
       newBullets[index] = value;
       onChange(newBullets);
     },
-    [bullets, onChange]
+    [onChange]
   );
 
   const addBullet = useCallback(() => {
-    if (bullets.length >= maxBullets) return;
+    const currentBullets = bulletsRef.current;
+    if (currentBullets.length >= maxBullets) return;
     // Generate ID for new bullet before adding
     const newId = nanoid();
     bulletIds.current.push(newId);
-    onChange([...bullets, ""]);
+    onChange([...currentBullets, ""]);
     // Focus new input after render using the new ID
     setTimeout(() => {
       inputRefs.current.get(newId)?.focus();
     }, 0);
-  }, [bullets, onChange, maxBullets]);
+  }, [onChange, maxBullets]);
 
   const removeBullet = useCallback(
     (index: number) => {
-      if (bullets.length <= 1) {
+      const currentBullets = bulletsRef.current;
+      if (currentBullets.length <= 1) {
         // Keep at least one bullet, just clear it
         // Replace ID with a fresh one for the cleared bullet
         bulletIds.current = [nanoid()];
@@ -70,10 +76,10 @@ export function BulletList({
       } else {
         // Remove the ID at this index to keep IDs in sync
         bulletIds.current.splice(index, 1);
-        onChange(bullets.filter((_, i) => i !== index));
+        onChange(currentBullets.filter((_, i) => i !== index));
       }
     },
-    [bullets, onChange]
+    [onChange]
   );
 
   const handleKeyDown = useCallback(
@@ -83,13 +89,16 @@ export function BulletList({
       const index = bulletIds.current.indexOf(bulletId);
       if (index === -1) return;
 
+      // Always read from ref to get latest bullets (avoids stale closures)
+      const currentBullets = bulletsRef.current;
+
       if (e.key === "Enter") {
         e.preventDefault();
-        if (bullets.length < maxBullets) {
+        if (currentBullets.length < maxBullets) {
           // Insert new bullet after current
           const newId = nanoid();
           bulletIds.current.splice(index + 1, 0, newId);
-          const newBullets = [...bullets];
+          const newBullets = [...currentBullets];
           newBullets.splice(index + 1, 0, "");
           onChange(newBullets);
           // Focus the newly inserted bullet using its ID
@@ -97,7 +106,7 @@ export function BulletList({
             inputRefs.current.get(newId)?.focus();
           }, 0);
         }
-      } else if (e.key === "Backspace" && !bullets[index] && bullets.length > 1) {
+      } else if (e.key === "Backspace" && !currentBullets[index] && currentBullets.length > 1) {
         e.preventDefault();
         // Get the ID of the bullet we'll focus (the one before)
         const focusIndex = Math.max(0, index - 1);
@@ -106,7 +115,7 @@ export function BulletList({
         setTimeout(() => {
           inputRefs.current.get(focusId)?.focus();
         }, 0);
-      } else if (e.key === "ArrowDown" && index < bullets.length - 1) {
+      } else if (e.key === "ArrowDown" && index < currentBullets.length - 1) {
         e.preventDefault();
         const nextId = bulletIds.current[index + 1];
         inputRefs.current.get(nextId)?.focus();
@@ -116,7 +125,7 @@ export function BulletList({
         inputRefs.current.get(prevId)?.focus();
       }
     },
-    [bullets, onChange, maxBullets, removeBullet]
+    [onChange, maxBullets, removeBullet]
   );
 
   const canAddMore = bullets.length < maxBullets;
