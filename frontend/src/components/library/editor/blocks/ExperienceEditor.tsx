@@ -81,10 +81,7 @@ export function ExperienceEditor({ content, onChange }: ExperienceEditorProps) {
             label="End Date"
             value={entry.endDate}
             onChange={(value) => onUpdate({ endDate: value })}
-            placeholder="Dec 2023"
-            showPresent
-            isPresent={entry.current}
-            onPresentChange={(isPresent) => onUpdate({ current: isPresent })}
+            placeholder="Dec 2023 or Present"
           />
         </div>
 
