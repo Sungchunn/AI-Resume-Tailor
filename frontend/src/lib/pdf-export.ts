@@ -83,9 +83,21 @@ export async function exportToPdfFromPages(
     // Report progress
     onProgress?.(i + 1, validPages.length);
 
+    const page = validPages[i];
+
+    // Store original inline styles to restore after capture
+    const originalBoxShadow = page.style.boxShadow;
+    const originalBorder = page.style.border;
+    const originalBorderRadius = page.style.borderRadius;
+
+    // Override preview-only styles (shadow/border) for clean PDF output
+    page.style.boxShadow = "none";
+    page.style.border = "none";
+    page.style.borderRadius = "0";
+
     try {
       // Capture page as PNG at exact dimensions
-      const dataUrl = await toPng(validPages[i], {
+      const dataUrl = await toPng(page, {
         pixelRatio,
         backgroundColor: "#ffffff",
         width: dims.pixels.width,
@@ -112,6 +124,11 @@ export async function exportToPdfFromPages(
       throw new Error(
         `Failed to export page ${i + 1}: ${error instanceof Error ? error.message : "Unknown error"}`
       );
+    } finally {
+      // Restore original styles so preview remains unchanged
+      page.style.boxShadow = originalBoxShadow;
+      page.style.border = originalBorder;
+      page.style.borderRadius = originalBorderRadius;
     }
   }
 
