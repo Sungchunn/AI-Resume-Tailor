@@ -85,9 +85,7 @@ export function LeadershipEditor({ content, onChange }: LeadershipEditorProps) {
             placeholder="Present"
             showPresent
             isPresent={entry.current}
-            onPresentChange={(isPresent) =>
-              onUpdate({ current: isPresent, endDate: isPresent ? "" : entry.endDate })
-            }
+            onPresentChange={(isPresent) => onUpdate({ current: isPresent })}
           />
         </div>
 
