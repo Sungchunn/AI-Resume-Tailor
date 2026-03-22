@@ -77,7 +77,12 @@ export function BulletList({
   );
 
   const handleKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLInputElement>, index: number) => {
+    (e: KeyboardEvent<HTMLInputElement>, bulletId: string) => {
+      // Look up current index from bulletId - this ensures we always
+      // operate on the correct bullet regardless of render timing
+      const index = bulletIds.current.indexOf(bulletId);
+      if (index === -1) return;
+
       if (e.key === "Enter") {
         e.preventDefault();
         if (bullets.length < maxBullets) {
@@ -145,7 +150,7 @@ export function BulletList({
                 type="text"
                 value={bullet}
                 onChange={(e) => updateBullet(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, index)}
+                onKeyDown={(e) => handleKeyDown(e, bulletId)}
                 placeholder={placeholder}
                 className="flex-1 px-3 py-2 text-sm border border-border rounded-md
                   focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
