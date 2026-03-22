@@ -110,13 +110,8 @@ export function BlockRenderer({
  * Get CSS classes for the block wrapper
  */
 function getBlockWrapperClasses(isActive: boolean, onClick?: () => void): string {
-  const baseClasses = "preview-block transition-all duration-200 rounded-sm p-2 -mx-2";
-  const activeClasses = isActive
-    ? "ring-2 ring-blue-400 ring-offset-2 bg-blue-50/30"
-    : "";
-  const hoverClasses = !isActive && onClick ? "hover:bg-accent/50 cursor-pointer" : "";
-
-  return `${baseClasses} ${activeClasses} ${hoverClasses}`.trim();
+  // No active/hover styling for blocks - cursor only
+  return "preview-block transition-all duration-200 rounded-sm p-2 -mx-2";
 }
 
 /**
