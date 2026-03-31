@@ -11,6 +11,7 @@ import {
 } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 import { insertAfter, removeAt } from "@/lib/resume/arrayHelpers";
+import { useBulletIds } from "../hooks/useBulletIds";
 
 interface VolunteerPreviewProps extends BaseBlockPreviewProps<VolunteerEntry[]> {}
 
@@ -34,6 +35,9 @@ export function VolunteerPreview({
 }: VolunteerPreviewProps) {
   const editorContext = useBlockEditorOptional();
   const isEditable = !!editorContext;
+
+  // Generate stable IDs for bullets to use as React keys
+  const bulletIds = useBulletIds(content);
 
   // Update a specific bullet in an entry
   const updateBullet = useCallback(
@@ -115,6 +119,7 @@ export function VolunteerPreview({
           updateBullet={updateBullet}
           addBullet={addBullet}
           removeBullet={removeBullet}
+          bulletIds={bulletIds.get(entry.id) || []}
         />
       ))}
     </div>
@@ -130,6 +135,7 @@ interface VolunteerEntryPreviewProps {
   updateBullet: (entryId: string, bulletIndex: number, value: string) => void;
   addBullet: (entryIndex: number, afterIndex: number) => void;
   removeBullet: (entryIndex: number, bulletIndex: number) => void;
+  bulletIds: string[];
 }
 
 function VolunteerEntryPreview({
@@ -141,6 +147,7 @@ function VolunteerEntryPreview({
   updateBullet,
   addBullet,
   removeBullet,
+  bulletIds,
 }: VolunteerEntryPreviewProps) {
   const editorContext = useBlockEditorOptional();
 
@@ -202,7 +209,7 @@ function VolunteerEntryPreview({
               (bullet, idx) =>
                 typeof bullet === 'string' && bullet.trim() && (
                   <li
-                    key={idx}
+                    key={bulletIds[idx] || idx}
                     style={{
                       fontSize: style.bodyFontSize,
                       lineHeight: style.lineHeight,
@@ -292,7 +299,7 @@ function VolunteerEntryPreview({
         <ul className="list-disc ml-4 mt-1 space-y-0.5">
           {entry.bullets.map((bullet, bulletIndex) => (
             <li
-              key={bulletIndex}
+              key={bulletIds[bulletIndex] || bulletIndex}
               style={{
                 fontSize: style.bodyFontSize,
                 lineHeight: style.lineHeight,

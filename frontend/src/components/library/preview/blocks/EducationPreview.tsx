@@ -10,6 +10,7 @@ import {
 } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 import { insertAfter, removeAt } from "@/lib/resume/arrayHelpers";
+import { useBulletIds } from "../hooks/useBulletIds";
 
 interface EducationPreviewProps extends BaseBlockPreviewProps<EducationEntry[]> {}
 
@@ -33,6 +34,9 @@ export function EducationPreview({
 }: EducationPreviewProps) {
   const editorContext = useBlockEditorOptional();
   const isEditable = !!editorContext;
+
+  // Generate stable IDs for relevant courses to use as React keys
+  const courseIds = useBulletIds(content, "relevantCourses");
 
   // Update a specific course in an entry
   const updateCourse = useCallback(
@@ -114,6 +118,7 @@ export function EducationPreview({
           updateCourse={updateCourse}
           addCourse={addCourse}
           removeCourse={removeCourse}
+          courseIds={courseIds.get(entry.id) || []}
         />
       ))}
     </div>
@@ -129,6 +134,7 @@ interface EducationEntryPreviewProps {
   updateCourse: (entryId: string, courseIndex: number, value: string) => void;
   addCourse: (entryIndex: number, afterIndex: number) => void;
   removeCourse: (entryIndex: number, courseIndex: number) => void;
+  courseIds: string[];
 }
 
 function EducationEntryPreview({
@@ -140,6 +146,7 @@ function EducationEntryPreview({
   updateCourse,
   addCourse,
   removeCourse,
+  courseIds,
 }: EducationEntryPreviewProps) {
   const editorContext = useBlockEditorOptional();
 
@@ -292,7 +299,7 @@ function EducationEntryPreview({
           <span className="font-medium text-muted-foreground">Relevant Courses: </span>
           <ul className="list-disc ml-4 mt-0.5 space-y-0.5">
             {entry.relevantCourses.map((course, courseIndex) => (
-              <li key={courseIndex} className="text-muted-foreground">
+              <li key={courseIds[courseIndex] || courseIndex} className="text-muted-foreground">
                 <InlineRichText
                   elementId={createIndexedElementId(blockId, entry.id, "relevantCourses", courseIndex)}
                   value={course}

@@ -11,6 +11,7 @@ import {
 } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 import { insertAfter, removeAt } from "@/lib/resume/arrayHelpers";
+import { useBulletIds } from "../hooks/useBulletIds";
 
 interface ExperiencePreviewProps extends BaseBlockPreviewProps<ExperienceEntry[]> {}
 
@@ -32,6 +33,9 @@ export function ExperiencePreview({
 }: ExperiencePreviewProps) {
   const editorContext = useBlockEditorOptional();
   const isEditable = !!editorContext;
+
+  // Generate stable IDs for bullets to use as React keys
+  const bulletIds = useBulletIds(content);
 
   // Update a specific bullet in an entry
   const updateBullet = useCallback(
@@ -120,6 +124,7 @@ export function ExperiencePreview({
           updateBullet={updateBullet}
           addBullet={addBullet}
           removeBullet={removeBullet}
+          bulletIds={bulletIds.get(entry.id) || []}
         />
       ))}
     </div>
@@ -135,6 +140,7 @@ interface ExperienceEntryPreviewProps {
   updateBullet: (entryId: string, bulletIndex: number, value: string) => void;
   addBullet: (entryIndex: number, afterIndex: number) => void;
   removeBullet: (entryIndex: number, bulletIndex: number) => void;
+  bulletIds: string[];
 }
 
 function ExperienceEntryPreview({
@@ -146,6 +152,7 @@ function ExperienceEntryPreview({
   updateBullet,
   addBullet,
   removeBullet,
+  bulletIds,
 }: ExperienceEntryPreviewProps) {
   const editorContext = useBlockEditorOptional();
 
@@ -190,7 +197,7 @@ function ExperienceEntryPreview({
               if (typeof bullet !== 'string' || !bullet.trim()) return null;
               return (
                 <li
-                  key={idx}
+                  key={bulletIds[idx] || idx}
                   style={{
                     fontSize: style.bodyFontSize,
                     lineHeight: style.lineHeight,
@@ -262,7 +269,7 @@ function ExperienceEntryPreview({
         <ul className="list-disc ml-4 mt-1 space-y-0.5">
           {entry.bullets.map((bullet, bulletIndex) => (
             <li
-              key={bulletIndex}
+              key={bulletIds[bulletIndex] || bulletIndex}
               style={{
                 fontSize: style.bodyFontSize,
                 lineHeight: style.lineHeight,
