@@ -255,7 +255,7 @@ export function getContentByElementPath(
         if (!entry) return undefined;
 
         if (path.field === "bullets" && path.index !== undefined) {
-          return entry.bullets[path.index];
+          return entry.bullets[path.index]?.text;
         }
 
         if (path.field && path.field in entry) {
@@ -273,7 +273,7 @@ export function getContentByElementPath(
         if (!entry) return undefined;
 
         if (path.field === "relevantCourses" && path.index !== undefined) {
-          return entry.relevantCourses?.[path.index];
+          return entry.relevantCourses?.[path.index]?.text;
         }
 
         if (path.field && path.field in entry) {
@@ -291,7 +291,7 @@ export function getContentByElementPath(
         if (!entry) return undefined;
 
         if (path.field === "bullets" && path.index !== undefined) {
-          return entry.bullets?.[path.index];
+          return entry.bullets?.[path.index]?.text;
         }
 
         if (path.field === "technologies" && path.index !== undefined) {
@@ -341,7 +341,7 @@ export function getContentByElementPath(
         if (!entry) return undefined;
 
         if (path.field === "bullets" && path.index !== undefined) {
-          return entry.bullets?.[path.index];
+          return entry.bullets?.[path.index]?.text;
         }
 
         if (path.field && path.field in entry) {
@@ -429,7 +429,7 @@ export function getContentByElementPath(
         if (!entry) return undefined;
 
         if (path.field === "bullets" && path.index !== undefined) {
-          return entry.bullets?.[path.index];
+          return entry.bullets?.[path.index]?.text;
         }
 
         if (path.field && path.field in entry) {
@@ -511,8 +511,9 @@ export function setContentByElementPath(
             if (entry.id !== path.entryId) return entry;
 
             if (path.field === "bullets" && path.index !== undefined) {
-              const newBullets = [...entry.bullets];
-              newBullets[path.index] = value;
+              const newBullets = entry.bullets.map((bullet, i) =>
+                i === path.index ? { ...bullet, text: value } : bullet
+              );
               return { ...entry, bullets: newBullets };
             }
 
@@ -534,8 +535,9 @@ export function setContentByElementPath(
             if (entry.id !== path.entryId) return entry;
 
             if (path.field === "relevantCourses" && path.index !== undefined) {
-              const newCourses = [...(entry.relevantCourses || [])];
-              newCourses[path.index] = value;
+              const newCourses = (entry.relevantCourses || []).map((course, i) =>
+                i === path.index ? { ...course, text: value } : course
+              );
               return { ...entry, relevantCourses: newCourses };
             }
 
@@ -557,8 +559,9 @@ export function setContentByElementPath(
             if (entry.id !== path.entryId) return entry;
 
             if (path.field === "bullets" && path.index !== undefined) {
-              const newBullets = [...(entry.bullets || [])];
-              newBullets[path.index] = value;
+              const newBullets = (entry.bullets || []).map((bullet, i) =>
+                i === path.index ? { ...bullet, text: value } : bullet
+              );
               return { ...entry, bullets: newBullets };
             }
 
@@ -620,8 +623,9 @@ export function setContentByElementPath(
             if (entry.id !== path.entryId) return entry;
 
             if (path.field === "bullets" && path.index !== undefined) {
-              const newBullets = [...(entry.bullets || [])];
-              newBullets[path.index] = value;
+              const newBullets = (entry.bullets || []).map((bullet, i) =>
+                i === path.index ? { ...bullet, text: value } : bullet
+              );
               return { ...entry, bullets: newBullets };
             }
 
@@ -728,8 +732,9 @@ export function setContentByElementPath(
             if (entry.id !== path.entryId) return entry;
 
             if (path.field === "bullets" && path.index !== undefined) {
-              const newBullets = [...(entry.bullets || [])];
-              newBullets[path.index] = value;
+              const newBullets = (entry.bullets || []).map((bullet, i) =>
+                i === path.index ? { ...bullet, text: value } : bullet
+              );
               return { ...entry, bullets: newBullets };
             }
 

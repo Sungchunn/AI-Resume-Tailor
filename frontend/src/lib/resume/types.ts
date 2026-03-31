@@ -24,6 +24,12 @@ export type ResumeBlockType =
   | "memberships"
   | "leadership";
 
+// Bullet item with stable ID for proper React key handling
+export interface BulletItem {
+  id: string;
+  text: string;
+}
+
 // Contact information content
 export interface ContactContent {
   fullName: string;
@@ -44,7 +50,7 @@ export interface ExperienceEntry {
   startDate: string;
   endDate: string;
   current?: boolean;
-  bullets: string[];
+  bullets: BulletItem[];
 }
 
 // Education entry content
@@ -56,7 +62,7 @@ export interface EducationEntry {
   graduationDate: string;
   gpa?: string;
   honors?: string;
-  relevantCourses?: string[];
+  relevantCourses?: BulletItem[];
 }
 
 // Certification entry content
@@ -79,7 +85,7 @@ export interface ProjectEntry {
   url?: string;
   startDate?: string;
   endDate?: string;
-  bullets?: string[];
+  bullets?: BulletItem[];
 }
 
 // Language proficiency entry
@@ -106,7 +112,7 @@ export interface VolunteerEntry {
   endDate?: string;
   current?: boolean;
   description?: string;
-  bullets?: string[];
+  bullets?: BulletItem[];
 }
 
 // Publication entry (papers, articles, books)
@@ -173,7 +179,7 @@ export interface LeadershipEntry {
   endDate?: string;
   current?: boolean;
   description?: string;
-  bullets?: string[];
+  bullets?: BulletItem[];
 }
 
 // Union type for all block content types

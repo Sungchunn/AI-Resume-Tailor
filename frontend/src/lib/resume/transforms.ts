@@ -40,6 +40,7 @@ import type {
 } from "./types";
 import type { TailoredContent } from "@/lib/api/types";
 import { DEFAULT_STYLE, createDefaultBlock } from "./defaults";
+import { stringsToBullets, bulletsToStrings } from "./bulletHelpers";
 
 /**
  * Convert backend parsed_content to block array
@@ -92,7 +93,7 @@ export function parsedContentToBlocks(
       location: exp.location,
       startDate: exp.start_date || "",
       endDate: exp.end_date || "",
-      bullets: exp.bullets || [],
+      bullets: stringsToBullets(exp.bullets),
     }));
 
     blocks.push({
@@ -113,7 +114,7 @@ export function parsedContentToBlocks(
       graduationDate: edu.graduation_date || "",
       gpa: edu.gpa,
       honors: edu.honors,
-      relevantCourses: edu.relevant_courses,
+      relevantCourses: stringsToBullets(edu.relevant_courses),
     }));
 
     blocks.push({
@@ -166,7 +167,7 @@ export function parsedContentToBlocks(
       url: proj.url,
       startDate: proj.start_date,
       endDate: proj.end_date,
-      bullets: proj.bullets,
+      bullets: stringsToBullets(proj.bullets),
     }));
 
     blocks.push({
@@ -203,7 +204,7 @@ export function parsedContentToBlocks(
       startDate: vol.start_date || "",
       endDate: vol.end_date || "",
       description: vol.description,
-      bullets: vol.bullets,
+      bullets: stringsToBullets(vol.bullets),
     }));
 
     blocks.push({
@@ -368,7 +369,7 @@ export function blocksToParsedContent(
           location: entry.location,
           start_date: entry.startDate,
           end_date: entry.endDate,
-          bullets: entry.bullets,
+          bullets: bulletsToStrings(entry.bullets),
         }));
         break;
       }
@@ -382,7 +383,7 @@ export function blocksToParsedContent(
           graduation_date: entry.graduationDate,
           gpa: entry.gpa,
           honors: entry.honors,
-          relevant_courses: entry.relevantCourses,
+          relevant_courses: bulletsToStrings(entry.relevantCourses),
         }));
         break;
       }
@@ -414,7 +415,7 @@ export function blocksToParsedContent(
           url: entry.url,
           start_date: entry.startDate,
           end_date: entry.endDate,
-          bullets: entry.bullets,
+          bullets: bulletsToStrings(entry.bullets),
         }));
         break;
       }
@@ -437,7 +438,7 @@ export function blocksToParsedContent(
           start_date: entry.startDate,
           end_date: entry.endDate,
           description: entry.description,
-          bullets: entry.bullets,
+          bullets: bulletsToStrings(entry.bullets),
         }));
         break;
       }
@@ -720,7 +721,7 @@ export function blocksToText(blocks: AnyResumeBlock[]): string {
           if (entry.company) lines.push(entry.company);
           if (entry.location) lines.push(entry.location);
           if (entry.bullets) {
-            lines.push(...entry.bullets);
+            lines.push(...entry.bullets.map((b) => b.text));
           }
         }
         break;
@@ -733,7 +734,7 @@ export function blocksToText(blocks: AnyResumeBlock[]): string {
           if (entry.institution) lines.push(entry.institution);
           if (entry.location) lines.push(entry.location);
           if (entry.honors) lines.push(entry.honors);
-          if (entry.relevantCourses) lines.push(...entry.relevantCourses);
+          if (entry.relevantCourses) lines.push(...entry.relevantCourses.map((c) => c.text));
         }
         break;
       }
@@ -759,7 +760,7 @@ export function blocksToText(blocks: AnyResumeBlock[]): string {
           if (entry.name) lines.push(entry.name);
           if (entry.description) lines.push(entry.description);
           if (entry.technologies) lines.push(...entry.technologies);
-          if (entry.bullets) lines.push(...entry.bullets);
+          if (entry.bullets) lines.push(...entry.bullets.map((b) => b.text));
         }
         break;
       }
@@ -778,7 +779,7 @@ export function blocksToText(blocks: AnyResumeBlock[]): string {
           if (entry.role) lines.push(entry.role);
           if (entry.organization) lines.push(entry.organization);
           if (entry.description) lines.push(entry.description);
-          if (entry.bullets) lines.push(...entry.bullets);
+          if (entry.bullets) lines.push(...entry.bullets.map((b) => b.text));
         }
         break;
       }
