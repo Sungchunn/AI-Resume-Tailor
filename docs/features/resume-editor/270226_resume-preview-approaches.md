@@ -92,10 +92,10 @@ Use the existing `ResumeParser` service to send `raw_content` to an AI model (Cl
 ### Technical Flow
 
 ```text
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Upload    │────▶│ Extract     │────▶│  AI Parse   │────▶│   Store     │
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────-┐
+│   Upload    │────▶│ Extract     │────▶│  AI Parse   │────▶│   Store      │
 │  PDF/DOCX   │     │ raw_content │     │  to JSON    │     │parsed_content│
-└─────────────┘     │ html_content│     └─────────────┘     └─────────────┘
+└─────────────┘     │ html_content│     └─────────────┘     └────────────-─┘
                     └─────────────┘            │
                                                ▼
                                     ┌─────────────────────┐
