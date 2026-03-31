@@ -497,7 +497,7 @@ function estimateContentHeight(
           totalHeight += bodyLineHeight; // Company/location line
           // Bullets (each bullet is ~1-2 lines)
           const bulletLines = entry.bullets.reduce((sum, bullet) => {
-            return sum + Math.max(1, Math.ceil(bullet.length / 70));
+            return sum + Math.max(1, Math.ceil(bullet.text.length / 70));
           }, 0);
           totalHeight += bodyLineHeight * bulletLines;
           totalHeight += style.entrySpacing;
@@ -533,7 +533,7 @@ function estimateContentHeight(
           totalHeight += bodyLineHeight * 2; // Description
           if (entry.bullets && entry.bullets.length > 0) {
             const bulletLines = entry.bullets.reduce((sum, bullet) => {
-              return sum + Math.max(1, Math.ceil(bullet.length / 70));
+              return sum + Math.max(1, Math.ceil(bullet.text.length / 70));
             }, 0);
             totalHeight += bodyLineHeight * bulletLines;
           }

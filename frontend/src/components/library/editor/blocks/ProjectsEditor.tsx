@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { nanoid } from "nanoid";
 import { FormInput, FormTextarea, DateInput, TagInput, BulletList, EntryList } from "./shared";
 import type { ProjectEntry } from "@/lib/resume/types";
+import { bulletsToStrings, stringsToBullets } from "@/lib/resume/bulletHelpers";
 
 interface ProjectsEditorProps {
   content: ProjectEntry[];
@@ -98,8 +99,8 @@ export function ProjectsEditor({ content, onChange }: ProjectsEditorProps) {
         {/* Key Accomplishments (Optional) */}
         <BulletList
           label="Key Accomplishments"
-          bullets={entry.bullets || []}
-          onChange={(bullets) => onUpdate({ bullets })}
+          bullets={bulletsToStrings(entry.bullets)}
+          onChange={(strings) => onUpdate({ bullets: stringsToBullets(strings) })}
           placeholder="Highlight a key achievement..."
           hint="Optional - Add notable accomplishments or metrics"
           maxBullets={5}

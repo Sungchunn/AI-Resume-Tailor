@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { nanoid } from "nanoid";
 import { FormInput, FormTextarea, DateInput, BulletList, EntryList } from "./shared";
 import type { VolunteerEntry } from "@/lib/resume/types";
+import { bulletsToStrings, stringsToBullets } from "@/lib/resume/bulletHelpers";
 
 interface VolunteerEditorProps {
   content: VolunteerEntry[];
@@ -97,8 +98,8 @@ export function VolunteerEditor({ content, onChange }: VolunteerEditorProps) {
         {/* Accomplishments */}
         <BulletList
           label="Key Accomplishments"
-          bullets={entry.bullets || []}
-          onChange={(bullets) => onUpdate({ bullets })}
+          bullets={bulletsToStrings(entry.bullets)}
+          onChange={(strings) => onUpdate({ bullets: stringsToBullets(strings) })}
           placeholder="Highlight an accomplishment..."
           hint="Optional - Add notable achievements"
           maxBullets={5}

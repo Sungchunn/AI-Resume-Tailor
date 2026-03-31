@@ -4,6 +4,11 @@ import { useCallback } from "react";
 import { nanoid } from "nanoid";
 import { FormInput, DateInput, BulletList, EntryList } from "./shared";
 import type { ExperienceEntry } from "@/lib/resume/types";
+import {
+  bulletsToStrings,
+  stringsToBullets,
+  createBullet,
+} from "@/lib/resume/bulletHelpers";
 
 interface ExperienceEditorProps {
   content: ExperienceEntry[];
@@ -24,7 +29,7 @@ export function ExperienceEditor({ content, onChange }: ExperienceEditorProps) {
       location: "",
       startDate: "",
       endDate: "",
-      bullets: [""],
+      bullets: [createBullet("")],
     }),
     []
   );
@@ -87,8 +92,8 @@ export function ExperienceEditor({ content, onChange }: ExperienceEditorProps) {
         {/* Bullets */}
         <BulletList
           label="Achievements & Responsibilities"
-          bullets={entry.bullets}
-          onChange={(bullets) => onUpdate({ bullets })}
+          bullets={bulletsToStrings(entry.bullets)}
+          onChange={(strings) => onUpdate({ bullets: stringsToBullets(strings) })}
           placeholder="Describe an achievement or responsibility..."
           hint="Start each bullet with an action verb (Led, Developed, Improved...)"
           maxBullets={8}

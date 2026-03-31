@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { nanoid } from "nanoid";
 import { FormInput, DateInput, TagInput, EntryList } from "./shared";
 import type { EducationEntry } from "@/lib/resume/types";
+import { bulletsToStrings, stringsToBullets } from "@/lib/resume/bulletHelpers";
 
 interface EducationEditorProps {
   content: EducationEntry[];
@@ -98,8 +99,8 @@ export function EducationEditor({ content, onChange }: EducationEditorProps) {
         {/* Relevant Courses */}
         <TagInput
           label="Relevant Courses"
-          tags={entry.relevantCourses || []}
-          onChange={(courses) => onUpdate({ relevantCourses: courses })}
+          tags={bulletsToStrings(entry.relevantCourses)}
+          onChange={(courses) => onUpdate({ relevantCourses: stringsToBullets(courses) })}
           placeholder="Add a course..."
           hint="Optional - Add courses relevant to the target position"
           maxTags={10}
