@@ -1,5 +1,7 @@
 # Fit-to-One-Page Algorithm Optimization
 
+**Status:** Implemented (2026-03-31)
+
 ## Problem Statement
 
 The fit-to-one-page algorithm at `/library/resumes/[id]/edit` fails to actually fit content on one page. User has minimum font size, margin, and line spacing controls, but the algorithm isn't optimizing effectively.
@@ -173,3 +175,30 @@ Update tests in `frontend/e2e/fit-to-page/`:
 - **Phase 1:** Fixes core failure case - content will actually fit on one page
 - **Phase 2:** Improves UX - users can adjust minimums to recover from stuck state
 - **Phase 3-4:** Marginal improvements - defer unless Phase 1-2 don't fully resolve issue
+
+---
+
+## Implementation Notes (2026-03-31)
+
+### Phase 1 Changes
+
+**File:** `frontend/src/components/library/editor/style/useAutoFitBlocks.ts`
+
+1. **Triple RAF measurement** (lines 297-342): Upgraded from double RAF to triple RAF for more reliable measurements. The third RAF provides extra safety margin for React 18+ concurrent features, ensuring pagination has fully recalculated before measurement.
+
+2. **Simplified binary search** (lines 354-443): Refactored `findOptimalCompactness()` to better handle the step function measurement:
+   - Removed stability threshold (irrelevant for discrete page counts)
+   - Track `bestFitLevel` explicitly instead of relying on height comparison subtleties
+   - Added final verification measurement after binary search
+   - Improved logging with height/target info for debugging
+
+### Phase 2 Changes
+
+**File:** `frontend/src/components/library/editor/style/useAutoFitBlocks.ts`
+
+1. **Reset minimumReachedRef on settings change** (lines 622-632): Added `minFontSize`, `minMargin`, `minLineSpacing` to the dependency array. Now when users adjust minimum sliders, the algorithm re-runs and attempts to fit.
+
+### Deferred
+
+- Phase 3 (Additional compaction options): Not implemented
+- Phase 4 (Reorder compaction phases): Not implemented

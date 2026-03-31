@@ -295,19 +295,27 @@ export const FITS_TOLERANCE_PX = 10;
 const TIMING_WARNING_THRESHOLD_MS = 100;
 
 /**
- * Wrap a measurement function with double RAF to ensure DOM has settled.
+ * Wrap a measurement function with triple RAF to ensure DOM has settled.
  * This prevents reading stale layout values after style changes.
  *
- * Why double RAF?
+ * Why triple RAF (upgraded from double)?
  * - First RAF: Wait for current frame's paint
  * - Second RAF: Wait for next frame, after React commit
+ * - Third RAF: Extra safety margin for React 18+ concurrent features
  *
  * This pattern ensures:
  * 1. React has committed DOM changes
  * 2. Browser has calculated layout
- * 3. scrollHeight reflects new styles
+ * 3. All useMemo/useLayoutEffect hooks have run
+ * 4. scrollHeight reflects new styles
+ *
+ * The third RAF is especially important for the fit-to-page algorithm because:
+ * - Pagination uses useMemo which depends on style prop
+ * - Style prop comes from parent component's state
+ * - React may batch state updates across frames
  *
  * @see /docs/features/fit-to-one-page/130326_tradeoff-5-synchronous-measurement.md
+ * @see /docs/features/resume-editor/310326_fit-to-page-optimization/master-plan.md
  */
 export function measureWithRAF(measureFn: () => number): Promise<number> {
   return new Promise((resolve) => {
@@ -315,17 +323,19 @@ export function measureWithRAF(measureFn: () => number): Promise<number> {
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        const elapsed = performance.now() - startTime;
+        requestAnimationFrame(() => {
+          const elapsed = performance.now() - startTime;
 
-        // Flag if timing is suspiciously long (concurrent mode interference?)
-        if (elapsed > TIMING_WARNING_THRESHOLD_MS) {
-          console.warn(
-            `[Auto-fit] Measurement delayed: ${elapsed.toFixed(1)}ms. ` +
-            `This may indicate React concurrent mode interference or heavy rendering.`
-          );
-        }
+          // Flag if timing is suspiciously long (concurrent mode interference?)
+          if (elapsed > TIMING_WARNING_THRESHOLD_MS) {
+            console.warn(
+              `[Auto-fit] Measurement delayed: ${elapsed.toFixed(1)}ms. ` +
+              `This may indicate React concurrent mode interference or heavy rendering.`
+            );
+          }
 
-        resolve(measureFn());
+          resolve(measureFn());
+        });
       });
     });
   });
@@ -349,13 +359,20 @@ export interface BinarySearchResult {
  * - If content fits at compactness level c, it will fit at all levels > c
  * - This allows binary search to efficiently find the optimal level
  *
- * Safeguards (per tradeoff-5):
- * - Max 7 iterations (log₂ 100)
- * - Stability threshold: stops if height change < 2px (measurement noise)
+ * IMPORTANT: The measurement function returns a step function (pageCount * PAGE_HEIGHT),
+ * which means heights are discrete: 1056px (1 page), 2112px (2 pages), etc.
+ * This is handled by:
+ * - NOT using stability threshold for early exit (step function has no noise)
+ * - Verifying fit at final level with fresh measurement
+ * - Using page count semantics: height <= PAGE_HEIGHT means fits on 1 page
+ *
+ * Safeguards:
+ * - Max 10 iterations (slightly above theoretical max of 7)
  * - Early exit if original style fits
+ * - Final verification measurement
  *
  * @param measureHeight - Async function that applies style and returns content height
- * @param targetHeight - Maximum allowed height (page height minus margins)
+ * @param targetHeight - Maximum allowed height (PAGE_HEIGHT for single page)
  * @param originalStyle - The user's original style settings
  * @param userMinFontSize - Optional user-defined minimum font size
  * @param userMinMargin - Optional user-defined minimum margin
@@ -363,6 +380,7 @@ export interface BinarySearchResult {
  * @returns The minimum compactness level that fits, the resulting style, and whether it fits
  *
  * @see /docs/features/fit-to-one-page/130326_tradeoff-5-synchronous-measurement.md
+ * @see /docs/features/resume-editor/310326_fit-to-page-optimization/master-plan.md
  */
 export async function findOptimalCompactness(
   measureHeight: (style: BlockEditorStyle) => Promise<number>,
@@ -372,57 +390,56 @@ export async function findOptimalCompactness(
   userMinMargin?: number,
   userMinLineSpacing?: number
 ): Promise<BinarySearchResult> {
-  // First check: does original style fit? (with tolerance for rendering variance)
+  // First check: does original style fit?
+  // With step function, height is exactly pageCount * PAGE_HEIGHT
+  // So height <= targetHeight means pageCount <= 1 (fits on one page)
   const originalHeight = await measureHeight(originalStyle);
-  if (originalHeight <= targetHeight + FITS_TOLERANCE_PX) {
+  if (originalHeight <= targetHeight) {
     return { level: 0, style: originalStyle, fits: true };
   }
 
   let low = 0;
   let high = 100;
-  let result = 100; // Default to maximum compactness
-  let lastHeight = originalHeight;
+  let bestFitLevel = -1; // Track the minimum level that fits
   let iterationCount = 0;
-  const maxIterations = 10; // Safety cap (slightly above theoretical max of 7)
+  const maxIterations = 10; // Safety cap
 
-  // Binary search for minimum compactness
+  // Binary search for minimum compactness that fits
+  // With step function, we're effectively searching for the boundary between
+  // "overflow" (2+ pages) and "fits" (1 page)
   while (low <= high && iterationCount < maxIterations) {
     iterationCount++;
     const mid = Math.floor((low + high) / 2);
     const testStyle = compactnessToStyle(mid, originalStyle, userMinFontSize, userMinMargin, userMinLineSpacing);
     const height = await measureHeight(testStyle);
 
-    // Stability threshold: if height barely changed, consider it converged
-    // This handles measurement noise and prevents unnecessary iterations
-    if (Math.abs(height - lastHeight) < STABILITY_THRESHOLD_PX && height <= targetHeight) {
-      result = mid;
-      break;
-    }
-
-    lastHeight = height;
-
+    // With step function: height <= targetHeight means fits on 1 page
     if (height <= targetHeight) {
-      result = mid; // This level fits, try less compact
+      bestFitLevel = mid; // This level fits, try less compact
       high = mid - 1;
     } else {
       low = mid + 1; // Need more compact
     }
   }
 
-  // Check if result actually fits (with tolerance for browser rendering variance)
-  const finalStyle = compactnessToStyle(result, originalStyle, userMinFontSize, userMinMargin, userMinLineSpacing);
+  // Determine result: use best fit level if found, otherwise max compactness
+  const resultLevel = bestFitLevel >= 0 ? bestFitLevel : 100;
+  const finalStyle = compactnessToStyle(resultLevel, originalStyle, userMinFontSize, userMinMargin, userMinLineSpacing);
+
+  // Final verification measurement to confirm fit
+  // This is critical because React state updates may have timing issues
   const finalHeight = await measureHeight(finalStyle);
-  const fits = finalHeight <= targetHeight + FITS_TOLERANCE_PX;
+  const fits = finalHeight <= targetHeight;
 
   // Log iteration count in development for monitoring
   if (process.env.NODE_ENV === "development") {
     console.log(
       `[Auto-fit] Binary search completed in ${iterationCount} iterations. ` +
-      `Level: ${result}, Fits: ${fits}`
+      `Level: ${resultLevel}, Fits: ${fits}, FinalHeight: ${finalHeight}, Target: ${targetHeight}`
     );
   }
 
-  return { level: result, style: finalStyle, fits };
+  return { level: resultLevel, style: finalStyle, fits };
 }
 
 // ============================================================================
@@ -619,16 +636,22 @@ export function useAutoFitBlocks({
     }
   }, [enabled, style]);
 
-  // Reset minimum_reached flag when blocks change (user edited content)
-  // This allows re-trying the fit algorithm with new content
+  // Reset minimum_reached flag when blocks or minimum settings change
+  // This allows re-trying the fit algorithm when:
+  // - User edits content (blocksHash changes)
+  // - User adjusts minimum font size slider (minFontSize changes)
+  // - User adjusts minimum margin slider (minMargin changes)
+  // - User adjusts minimum line spacing slider (minLineSpacing changes)
+  //
+  // See: /docs/features/resume-editor/310326_fit-to-page-optimization/master-plan.md
   useEffect(() => {
     minimumReachedRef.current = false;
-  }, [blocksHash]);
+  }, [blocksHash, minFontSize, minMargin, minLineSpacing]);
 
   // Calculate target height for auto-fit
   // When using DOM measurement with paginated preview, the measurement returns
   // pageCount * PAGE_HEIGHT, where pageCount=1 means content fits within margins.
-  // So the target should be the full page height, not page minus margins.
+  // So the target should be the full page height.
   // (The paginated preview handles margin bounds internally when calculating page count)
   const getTargetHeight = useCallback(() => {
     return PAGE_HEIGHT;
