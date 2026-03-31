@@ -18,6 +18,7 @@ import type {
   LanguageProficiency,
   PublicationType,
 } from "@/lib/resume/types";
+import { stringsToBullets, bulletsToStrings } from "@/lib/resume/bulletHelpers";
 
 // Import Library editors
 import { ProjectsEditor } from "@/components/library/editor/blocks/ProjectsEditor";
@@ -390,7 +391,7 @@ function ProjectsEditorWrapper({
         url: item.url ?? "",
         startDate: item.start_date ?? "",
         endDate: item.end_date ?? "",
-        bullets: item.bullets ?? [],
+        bullets: stringsToBullets(item.bullets),
       };
     });
   }, [data]);
@@ -406,7 +407,7 @@ function ProjectsEditorWrapper({
           url: entry.url,
           start_date: entry.startDate,
           end_date: entry.endDate,
-          bullets: entry.bullets,
+          bullets: bulletsToStrings(entry.bullets),
         }))
       );
     },
@@ -487,7 +488,7 @@ function VolunteerEditorWrapper({
         endDate: item.end_date ?? "",
         current: item.current ?? false,
         description: item.description ?? "",
-        bullets: item.bullets ?? [],
+        bullets: stringsToBullets(item.bullets),
       };
     });
   }, [data]);
@@ -504,7 +505,7 @@ function VolunteerEditorWrapper({
           end_date: entry.endDate,
           current: entry.current,
           description: entry.description,
-          bullets: entry.bullets,
+          bullets: bulletsToStrings(entry.bullets),
         }))
       );
     },
@@ -791,7 +792,7 @@ function LeadershipEditorWrapper({
         endDate: item.end_date ?? "",
         current: item.current ?? false,
         description: item.description ?? "",
-        bullets: item.bullets ?? [],
+        bullets: stringsToBullets(item.bullets),
       };
     });
   }, [data]);
@@ -808,7 +809,7 @@ function LeadershipEditorWrapper({
           end_date: entry.endDate,
           current: entry.current,
           description: entry.description,
-          bullets: entry.bullets,
+          bullets: bulletsToStrings(entry.bullets),
         }))
       );
     },
