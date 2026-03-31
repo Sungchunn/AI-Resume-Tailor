@@ -4,7 +4,6 @@ import { use, useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useResume, useDeleteResume } from "@/lib/api";
 import { useRouter } from "next/navigation";
-import ExportDialog from "@/components/export/ExportDialog";
 import { ResumePreview } from "@/components/library/preview";
 import type { ResumePreviewHandle } from "@/components/library/preview";
 import { parsedContentToBlocks, apiStyleToEditorStyle } from "@/lib/resume/transforms";
@@ -21,7 +20,6 @@ export default function ResumeDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { data: resume, isLoading, error } = useResume(resumeId);
   const deleteResume = useDeleteResume();
-  const [showExportDialog, setShowExportDialog] = useState(false);
   const [activeTab, setActiveTab] = useState<"preview" | "plain" | "formatted">("preview");
   const [copied, setCopied] = useState(false);
   const [showFullScreen, setShowFullScreen] = useState(false);
@@ -215,13 +213,6 @@ export default function ResumeDetailPage({ params }: PageProps) {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowExportDialog(true)}
-              className="btn-secondary inline-flex items-center gap-1.5"
-            >
-              <Download className="h-4 w-4" />
-              Export
-            </button>
             <Link
               href={`/library/resumes/${resumeId}/edit`}
               className="btn-primary inline-flex items-center gap-1.5"
@@ -486,14 +477,6 @@ export default function ResumeDetailPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Export Dialog */}
-      {showExportDialog && (
-        <ExportDialog
-          resumeTitle={resume.title}
-          onClose={() => setShowExportDialog(false)}
-          pageElements={previewRef.current?.getPageElement() ? [previewRef.current.getPageElement()!] : undefined}
-        />
-      )}
     </div>
   );
 }
