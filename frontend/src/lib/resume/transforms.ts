@@ -920,7 +920,104 @@ export function tailoredContentToParsedContent(
       description: proj.description,
       technologies: proj.technologies,
       url: proj.url,
+      start_date: proj.start_date,
+      end_date: proj.end_date,
       bullets: proj.bullets,
+    }));
+  }
+
+  // Languages
+  if (tailored.languages && tailored.languages.length > 0) {
+    result.languages = tailored.languages.map((lang) => ({
+      language: lang.language,
+      proficiency: lang.proficiency,
+    }));
+  }
+
+  // Volunteer (has bullets)
+  if (tailored.volunteer && tailored.volunteer.length > 0) {
+    result.volunteer = tailored.volunteer.map((vol) => ({
+      role: vol.role,
+      organization: vol.organization,
+      location: vol.location,
+      start_date: vol.start_date,
+      end_date: vol.end_date,
+      description: vol.description,
+      bullets: vol.bullets,
+    }));
+  }
+
+  // Publications
+  if (tailored.publications && tailored.publications.length > 0) {
+    result.publications = tailored.publications.map((pub) => ({
+      title: pub.title,
+      publication_type: pub.publication_type,
+      publisher: pub.publisher,
+      date: pub.date,
+      url: pub.url,
+      authors: pub.authors,
+      description: pub.description,
+    }));
+  }
+
+  // Awards
+  if (tailored.awards && tailored.awards.length > 0) {
+    result.awards = tailored.awards.map((award) => ({
+      title: award.title,
+      issuer: award.issuer,
+      date: award.date,
+      description: award.description,
+    }));
+  }
+
+  // Interests
+  if (tailored.interests) {
+    result.interests = tailored.interests;
+  }
+
+  // References
+  if (tailored.references && tailored.references.length > 0) {
+    result.references = tailored.references.map((ref) => ({
+      name: ref.name,
+      title: ref.title,
+      company: ref.company,
+      email: ref.email,
+      phone: ref.phone,
+      relationship: ref.relationship,
+    }));
+  }
+
+  // Courses
+  if (tailored.courses && tailored.courses.length > 0) {
+    result.courses = tailored.courses.map((course) => ({
+      name: course.name,
+      provider: course.provider,
+      date: course.date,
+      credential_url: course.credential_url,
+      description: course.description,
+    }));
+  }
+
+  // Memberships
+  if (tailored.memberships && tailored.memberships.length > 0) {
+    result.memberships = tailored.memberships.map((mem) => ({
+      organization: mem.organization,
+      role: mem.role,
+      start_date: mem.start_date,
+      end_date: mem.end_date,
+    }));
+  }
+
+  // Leadership (has bullets)
+  if (tailored.leadership && tailored.leadership.length > 0) {
+    result.leadership = tailored.leadership.map((lead) => ({
+      title: lead.title,
+      organization: lead.organization,
+      location: lead.location,
+      start_date: lead.start_date,
+      end_date: lead.end_date,
+      description: lead.description,
+      bullets: lead.bullets,
     }));
   }
 
@@ -985,7 +1082,68 @@ export function parsedContentToTailoredContent(
       description: proj.description,
       technologies: proj.technologies,
       url: proj.url,
+      start_date: proj.start_date,
+      end_date: proj.end_date,
       bullets: proj.bullets,
+    })),
+    languages: (parsed.languages || []).map((lang) => ({
+      language: lang.language || "",
+      proficiency: lang.proficiency || "",
+    })),
+    volunteer: (parsed.volunteer || []).map((vol) => ({
+      role: vol.role || "",
+      organization: vol.organization || "",
+      location: vol.location,
+      start_date: vol.start_date || "",
+      end_date: vol.end_date,
+      description: vol.description,
+      bullets: vol.bullets,
+    })),
+    publications: (parsed.publications || []).map((pub) => ({
+      title: pub.title || "",
+      publication_type: pub.publication_type,
+      publisher: pub.publisher,
+      date: pub.date,
+      url: pub.url,
+      authors: pub.authors,
+      description: pub.description,
+    })),
+    awards: (parsed.awards || []).map((award) => ({
+      title: award.title || "",
+      issuer: award.issuer || "",
+      date: award.date,
+      description: award.description,
+    })),
+    interests: parsed.interests || "",
+    references: (parsed.references || []).map((ref) => ({
+      name: ref.name || "",
+      title: ref.title || "",
+      company: ref.company || "",
+      email: ref.email,
+      phone: ref.phone,
+      relationship: ref.relationship,
+    })),
+    courses: (parsed.courses || []).map((course) => ({
+      name: course.name || "",
+      provider: course.provider || "",
+      date: course.date,
+      credential_url: course.credential_url,
+      description: course.description,
+    })),
+    memberships: (parsed.memberships || []).map((mem) => ({
+      organization: mem.organization || "",
+      role: mem.role,
+      start_date: mem.start_date,
+      end_date: mem.end_date,
+    })),
+    leadership: (parsed.leadership || []).map((lead) => ({
+      title: lead.title || "",
+      organization: lead.organization || "",
+      location: lead.location,
+      start_date: lead.start_date,
+      end_date: lead.end_date,
+      description: lead.description,
+      bullets: lead.bullets,
     })),
   };
 }

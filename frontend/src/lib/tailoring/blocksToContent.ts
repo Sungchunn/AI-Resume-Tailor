@@ -13,6 +13,15 @@ import type {
   SummaryBlock,
   CertificationsBlock,
   ProjectsBlock,
+  LanguagesBlock,
+  VolunteerBlock,
+  PublicationsBlock,
+  AwardsBlock,
+  InterestsBlock,
+  ReferencesBlock,
+  CoursesBlock,
+  MembershipsBlock,
+  LeadershipBlock,
 } from "@/lib/resume/types";
 import { bulletsToStrings } from "@/lib/resume/bulletHelpers";
 
@@ -97,13 +106,117 @@ export function blocksToContent(blocks: AnyResumeBlock[]): TailoredContent {
             description: proj.description,
             technologies: proj.technologies,
             url: proj.url,
+            start_date: proj.startDate,
+            end_date: proj.endDate,
             bullets: bulletsToStrings(proj.bullets),
           })
         );
         break;
 
+      case "languages":
+        content.languages = ((block as LanguagesBlock).content || []).map(
+          (lang) => ({
+            language: lang.language || "",
+            proficiency: lang.proficiency || "",
+          })
+        );
+        break;
+
+      case "volunteer":
+        content.volunteer = ((block as VolunteerBlock).content || []).map(
+          (vol) => ({
+            role: vol.role || "",
+            organization: vol.organization || "",
+            location: vol.location,
+            start_date: vol.startDate || "",
+            end_date: vol.endDate,
+            description: vol.description,
+            bullets: bulletsToStrings(vol.bullets),
+          })
+        );
+        break;
+
+      case "publications":
+        content.publications = ((block as PublicationsBlock).content || []).map(
+          (pub) => ({
+            title: pub.title || "",
+            publication_type: pub.publicationType,
+            publisher: pub.publisher,
+            date: pub.date,
+            url: pub.url,
+            authors: pub.authors,
+            description: pub.description,
+          })
+        );
+        break;
+
+      case "awards":
+        content.awards = ((block as AwardsBlock).content || []).map(
+          (award) => ({
+            title: award.title || "",
+            issuer: award.issuer || "",
+            date: award.date,
+            description: award.description,
+          })
+        );
+        break;
+
+      case "interests":
+        content.interests = (block as InterestsBlock).content || "";
+        break;
+
+      case "references":
+        content.references = ((block as ReferencesBlock).content || []).map(
+          (ref) => ({
+            name: ref.name || "",
+            title: ref.title || "",
+            company: ref.company || "",
+            email: ref.email,
+            phone: ref.phone,
+            relationship: ref.relationship,
+          })
+        );
+        break;
+
+      case "courses":
+        content.courses = ((block as CoursesBlock).content || []).map(
+          (course) => ({
+            name: course.name || "",
+            provider: course.provider || "",
+            date: course.date,
+            credential_url: course.credentialUrl,
+            description: course.description,
+          })
+        );
+        break;
+
+      case "memberships":
+        content.memberships = ((block as MembershipsBlock).content || []).map(
+          (mem) => ({
+            organization: mem.organization || "",
+            role: mem.role,
+            start_date: mem.startDate,
+            end_date: mem.endDate,
+          })
+        );
+        break;
+
+      case "leadership":
+        content.leadership = ((block as LeadershipBlock).content || []).map(
+          (lead) => ({
+            title: lead.title || "",
+            organization: lead.organization || "",
+            location: lead.location,
+            start_date: lead.startDate,
+            end_date: lead.endDate,
+            description: lead.description,
+            bullets: bulletsToStrings(lead.bullets),
+          })
+        );
+        break;
+
       default:
-        // Other block types can be added as needed
+        // Custom or unhandled block types
         break;
     }
   }
