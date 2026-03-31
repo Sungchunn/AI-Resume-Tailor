@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import type { ExperienceEntry } from "@/lib/resume/types";
+import type { ExperienceEntry, BulletItem } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
 import { formatDateRange } from "../previewStyles";
 import { InlinePlainText, InlineRichText } from "../../editor/inline";
@@ -10,8 +10,11 @@ import {
   createIndexedElementId,
 } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
-import { insertAfter, removeAt } from "@/lib/resume/arrayHelpers";
-import { useBulletIds } from "../hooks/useBulletIds";
+import {
+  insertBulletAfter,
+  removeBulletAt,
+  updateBulletAt,
+} from "@/lib/resume/bulletHelpers";
 
 interface ExperiencePreviewProps extends BaseBlockPreviewProps<ExperienceEntry[]> {}
 
@@ -25,6 +28,8 @@ interface ExperiencePreviewProps extends BaseBlockPreviewProps<ExperienceEntry[]
  *
  * All text fields are inline-editable via InlinePlainText and InlineRichText components.
  * Bullets support Enter to add new and Backspace to remove empty.
+ *
+ * Bullets use BulletItem with stable IDs for proper React key handling.
  */
 export function ExperiencePreview({
   content,
@@ -34,15 +39,27 @@ export function ExperiencePreview({
   const editorContext = useBlockEditorOptional();
   const isEditable = !!editorContext;
 
-  // Generate stable IDs for bullets to use as React keys
-  const bulletIds = useBulletIds(content);
-
-  // Update a specific bullet in an entry
+  // Update a specific bullet's text in an entry (preserves ID)
   const updateBullet = useCallback(
-    (entryId: string, bulletIndex: number, value: string) => {
+    (entryIndex: number, bulletIndex: number, value: string) => {
       if (!blockId || !editorContext) return;
-      const elementId = createIndexedElementId(blockId, entryId, "bullets", bulletIndex);
-      editorContext.updateContentByPath(elementId, value);
+
+      const block = editorContext.state.blocks.find((b) => b.id === blockId);
+      if (!block || block.type !== "experience") return;
+
+      const entries = block.content as ExperienceEntry[];
+      const entry = entries[entryIndex];
+      if (!entry) return;
+
+      const newBullets = updateBulletAt(entry.bullets, bulletIndex, value);
+      const newEntries = entries.map((e, i) =>
+        i === entryIndex ? { ...e, bullets: newBullets } : e
+      );
+
+      editorContext.dispatch({
+        type: "UPDATE_BLOCK",
+        payload: { id: blockId, content: newEntries },
+      });
     },
     [blockId, editorContext]
   );
@@ -52,7 +69,6 @@ export function ExperiencePreview({
     (entryIndex: number, afterIndex: number) => {
       if (!blockId || !editorContext) return;
 
-      // Find the block and update its content
       const block = editorContext.state.blocks.find((b) => b.id === blockId);
       if (!block || block.type !== "experience") return;
 
@@ -60,15 +76,12 @@ export function ExperiencePreview({
       const entry = entries[entryIndex];
       if (!entry) return;
 
-      // Insert new empty bullet after the current index
-      const newBullets = insertAfter(entry.bullets, afterIndex, "");
-
-      // Create new entries array
+      // Insert new bullet with unique ID
+      const newBullets = insertBulletAfter(entry.bullets, afterIndex, "");
       const newEntries = entries.map((e, i) =>
         i === entryIndex ? { ...e, bullets: newBullets } : e
       );
 
-      // Dispatch the update via reducer
       editorContext.dispatch({
         type: "UPDATE_BLOCK",
         payload: { id: blockId, content: newEntries },
@@ -82,7 +95,6 @@ export function ExperiencePreview({
     (entryIndex: number, bulletIndex: number) => {
       if (!blockId || !editorContext) return;
 
-      // Find the block and update its content
       const block = editorContext.state.blocks.find((b) => b.id === blockId);
       if (!block || block.type !== "experience") return;
 
@@ -90,15 +102,11 @@ export function ExperiencePreview({
       const entry = entries[entryIndex];
       if (!entry || entry.bullets.length <= 1) return; // Keep at least one bullet
 
-      // Remove bullet at index
-      const newBullets = removeAt(entry.bullets, bulletIndex);
-
-      // Create new entries array
+      const newBullets = removeBulletAt(entry.bullets, bulletIndex);
       const newEntries = entries.map((e, i) =>
         i === entryIndex ? { ...e, bullets: newBullets } : e
       );
 
-      // Dispatch the update via reducer
       editorContext.dispatch({
         type: "UPDATE_BLOCK",
         payload: { id: blockId, content: newEntries },
@@ -124,7 +132,6 @@ export function ExperiencePreview({
           updateBullet={updateBullet}
           addBullet={addBullet}
           removeBullet={removeBullet}
-          bulletIds={bulletIds.get(entry.id) || []}
         />
       ))}
     </div>
@@ -137,10 +144,9 @@ interface ExperienceEntryPreviewProps {
   style: BaseBlockPreviewProps<unknown>["style"];
   blockId?: string;
   isEditable: boolean;
-  updateBullet: (entryId: string, bulletIndex: number, value: string) => void;
+  updateBullet: (entryIndex: number, bulletIndex: number, value: string) => void;
   addBullet: (entryIndex: number, afterIndex: number) => void;
   removeBullet: (entryIndex: number, bulletIndex: number) => void;
-  bulletIds: string[];
 }
 
 function ExperienceEntryPreview({
@@ -152,7 +158,6 @@ function ExperienceEntryPreview({
   updateBullet,
   addBullet,
   removeBullet,
-  bulletIds,
 }: ExperienceEntryPreviewProps) {
   const editorContext = useBlockEditorOptional();
 
@@ -177,7 +182,7 @@ function ExperienceEntryPreview({
           </span>
           {dateRange && (
             <span
-              className="text-muted-foreground flex-shrink-0 ml-4"
+              className="text-muted-foreground shrink-0 ml-4"
               style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
             >
               {dateRange}
@@ -193,17 +198,17 @@ function ExperienceEntryPreview({
         )}
         {entry.bullets && entry.bullets.length > 0 && (
           <ul className="list-disc ml-4 mt-1 space-y-0.5">
-            {entry.bullets.map((bullet, idx) => {
-              if (typeof bullet !== 'string' || !bullet.trim()) return null;
+            {entry.bullets.map((bullet) => {
+              if (!bullet.text?.trim()) return null;
               return (
                 <li
-                  key={bulletIds[idx] || idx}
+                  key={bullet.id}
                   style={{
                     fontSize: style.bodyFontSize,
                     lineHeight: style.lineHeight,
                   }}
                 >
-                  {bullet}
+                  {bullet.text}
                 </li>
               );
             })}
@@ -225,7 +230,7 @@ function ExperienceEntryPreview({
           onCommit={handleFieldChange("title")}
         />
         <span
-          className="flex-shrink-0 ml-4 text-muted-foreground"
+          className="shrink-0 ml-4 text-muted-foreground"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
           <InlinePlainText
@@ -258,7 +263,7 @@ function ExperienceEntryPreview({
         <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "location")}
           value={entry.location || ""}
-          className="flex-shrink-0 ml-4 text-muted-foreground"
+          className="shrink-0 ml-4 text-muted-foreground"
           placeholder="City, State"
           onCommit={handleFieldChange("location")}
         />
@@ -269,7 +274,7 @@ function ExperienceEntryPreview({
         <ul className="list-disc ml-4 mt-1 space-y-0.5">
           {entry.bullets.map((bullet, bulletIndex) => (
             <li
-              key={bulletIds[bulletIndex] || bulletIndex}
+              key={bullet.id}
               style={{
                 fontSize: style.bodyFontSize,
                 lineHeight: style.lineHeight,
@@ -277,9 +282,9 @@ function ExperienceEntryPreview({
             >
               <InlineRichText
                 elementId={createIndexedElementId(blockId, entry.id, "bullets", bulletIndex)}
-                value={bullet}
+                value={bullet.text}
                 placeholder="Add accomplishment..."
-                onCommit={(value) => updateBullet(entry.id, bulletIndex, value)}
+                onCommit={(value) => updateBullet(entryIndex, bulletIndex, value)}
                 onEnter={() => addBullet(entryIndex, bulletIndex)}
                 onBackspaceEmpty={() => removeBullet(entryIndex, bulletIndex)}
                 showToolbar={false}
@@ -300,6 +305,6 @@ export function hasExperienceContent(content: ExperienceEntry[]): boolean {
     (entry) =>
       entry.title ||
       entry.company ||
-      (entry.bullets && entry.bullets.some((b) => typeof b === 'string' && b.trim()))
+      (entry.bullets && entry.bullets.some((b) => b.text?.trim()))
   );
 }

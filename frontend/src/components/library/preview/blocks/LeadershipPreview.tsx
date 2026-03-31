@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import type { LeadershipEntry } from "@/lib/resume/types";
+import type { LeadershipEntry, BulletItem } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
 import { formatDateRange } from "../previewStyles";
 import { InlinePlainText, InlineRichText } from "../../editor/inline";
@@ -10,8 +10,11 @@ import {
   createIndexedElementId,
 } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
-import { insertAfter, removeAt } from "@/lib/resume/arrayHelpers";
-import { useBulletIds } from "../hooks/useBulletIds";
+import {
+  insertBulletAfter,
+  removeBulletAt,
+  updateBulletAt,
+} from "@/lib/resume/bulletHelpers";
 
 interface LeadershipPreviewProps extends BaseBlockPreviewProps<LeadershipEntry[]> {}
 
@@ -36,15 +39,27 @@ export function LeadershipPreview({
   const editorContext = useBlockEditorOptional();
   const isEditable = !!editorContext;
 
-  // Generate stable IDs for bullets to use as React keys
-  const bulletIds = useBulletIds(content);
-
-  // Update a specific bullet in an entry
+  // Update a specific bullet's text in an entry (preserves ID)
   const updateBullet = useCallback(
-    (entryId: string, bulletIndex: number, value: string) => {
+    (entryIndex: number, bulletIndex: number, value: string) => {
       if (!blockId || !editorContext) return;
-      const elementId = createIndexedElementId(blockId, entryId, "bullets", bulletIndex);
-      editorContext.updateContentByPath(elementId, value);
+
+      const block = editorContext.state.blocks.find((b) => b.id === blockId);
+      if (!block || block.type !== "leadership") return;
+
+      const entries = block.content as LeadershipEntry[];
+      const entry = entries[entryIndex];
+      if (!entry || !entry.bullets) return;
+
+      const newBullets = updateBulletAt(entry.bullets, bulletIndex, value);
+      const newEntries = entries.map((e, i) =>
+        i === entryIndex ? { ...e, bullets: newBullets } : e
+      );
+
+      editorContext.dispatch({
+        type: "UPDATE_BLOCK",
+        payload: { id: blockId, content: newEntries },
+      });
     },
     [blockId, editorContext]
   );
@@ -62,7 +77,7 @@ export function LeadershipPreview({
       if (!entry) return;
 
       const bullets = entry.bullets || [];
-      const newBullets = insertAfter(bullets, afterIndex, "");
+      const newBullets = insertBulletAfter(bullets, afterIndex, "");
 
       const newEntries = entries.map((e, i) =>
         i === entryIndex ? { ...e, bullets: newBullets } : e
@@ -88,7 +103,7 @@ export function LeadershipPreview({
       const entry = entries[entryIndex];
       if (!entry || !entry.bullets || entry.bullets.length <= 1) return;
 
-      const newBullets = removeAt(entry.bullets, bulletIndex);
+      const newBullets = removeBulletAt(entry.bullets, bulletIndex);
 
       const newEntries = entries.map((e, i) =>
         i === entryIndex ? { ...e, bullets: newBullets } : e
@@ -119,7 +134,6 @@ export function LeadershipPreview({
           updateBullet={updateBullet}
           addBullet={addBullet}
           removeBullet={removeBullet}
-          bulletIds={bulletIds.get(entry.id) || []}
         />
       ))}
     </div>
@@ -132,10 +146,9 @@ interface LeadershipEntryPreviewProps {
   style: BaseBlockPreviewProps<unknown>["style"];
   blockId?: string;
   isEditable: boolean;
-  updateBullet: (entryId: string, bulletIndex: number, value: string) => void;
+  updateBullet: (entryIndex: number, bulletIndex: number, value: string) => void;
   addBullet: (entryIndex: number, afterIndex: number) => void;
   removeBullet: (entryIndex: number, bulletIndex: number) => void;
-  bulletIds: string[];
 }
 
 function LeadershipEntryPreview({
@@ -147,7 +160,6 @@ function LeadershipEntryPreview({
   updateBullet,
   addBullet,
   removeBullet,
-  bulletIds,
 }: LeadershipEntryPreviewProps) {
   const editorContext = useBlockEditorOptional();
 
@@ -175,7 +187,7 @@ function LeadershipEntryPreview({
           </span>
           {dateRange && (
             <span
-              className="text-muted-foreground flex-shrink-0 ml-4"
+              className="text-muted-foreground shrink-0 ml-4"
               style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
             >
               {dateRange}
@@ -205,20 +217,20 @@ function LeadershipEntryPreview({
         )}
         {entry.bullets && entry.bullets.length > 0 && (
           <ul className="list-disc ml-4 mt-1 space-y-0.5">
-            {entry.bullets.map(
-              (bullet, idx) =>
-                typeof bullet === 'string' && bullet.trim() && (
-                  <li
-                    key={bulletIds[idx] || idx}
-                    style={{
-                      fontSize: style.bodyFontSize,
-                      lineHeight: style.lineHeight,
-                    }}
-                  >
-                    {bullet}
-                  </li>
-                )
-            )}
+            {entry.bullets.map((bullet) => {
+              if (!bullet.text?.trim()) return null;
+              return (
+                <li
+                  key={bullet.id}
+                  style={{
+                    fontSize: style.bodyFontSize,
+                    lineHeight: style.lineHeight,
+                  }}
+                >
+                  {bullet.text}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -237,7 +249,7 @@ function LeadershipEntryPreview({
           onCommit={handleFieldChange("title")}
         />
         <span
-          className="flex-shrink-0 ml-4 text-muted-foreground"
+          className="shrink-0 ml-4 text-muted-foreground"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
           <InlinePlainText
@@ -270,7 +282,7 @@ function LeadershipEntryPreview({
         <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "location")}
           value={entry.location || ""}
-          className="flex-shrink-0 ml-4 text-muted-foreground"
+          className="shrink-0 ml-4 text-muted-foreground"
           placeholder="City, State"
           onCommit={handleFieldChange("location")}
         />
@@ -299,7 +311,7 @@ function LeadershipEntryPreview({
         <ul className="list-disc ml-4 mt-1 space-y-0.5">
           {entry.bullets.map((bullet, bulletIndex) => (
             <li
-              key={bulletIds[bulletIndex] || bulletIndex}
+              key={bullet.id}
               style={{
                 fontSize: style.bodyFontSize,
                 lineHeight: style.lineHeight,
@@ -307,9 +319,9 @@ function LeadershipEntryPreview({
             >
               <InlineRichText
                 elementId={createIndexedElementId(blockId, entry.id, "bullets", bulletIndex)}
-                value={bullet}
+                value={bullet.text}
                 placeholder="Add accomplishment..."
-                onCommit={(value) => updateBullet(entry.id, bulletIndex, value)}
+                onCommit={(value) => updateBullet(entryIndex, bulletIndex, value)}
                 onEnter={() => addBullet(entryIndex, bulletIndex)}
                 onBackspaceEmpty={() => removeBullet(entryIndex, bulletIndex)}
                 showToolbar={false}

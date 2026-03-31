@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import type { ProjectEntry } from "@/lib/resume/types";
+import type { ProjectEntry, BulletItem } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
 import { formatDateRange } from "../previewStyles";
 import { InlinePlainText, InlineRichText } from "../../editor/inline";
@@ -10,23 +10,19 @@ import {
   createIndexedElementId,
 } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
-import { insertAfter, removeAt } from "@/lib/resume/arrayHelpers";
-import { useBulletIds } from "../hooks/useBulletIds";
+import {
+  insertBulletAfter,
+  removeBulletAt,
+  updateBulletAt,
+  createBullet,
+} from "@/lib/resume/bulletHelpers";
 
 interface ProjectsPreviewProps extends BaseBlockPreviewProps<ProjectEntry[]> {}
 
 /**
  * ProjectsPreview - Renders project entries with inline editing
  *
- * Each entry displays:
- * - Project name and date range
- * - Description
- * - Technologies used
- * - Bullet points (if provided)
- *
- * All text fields are inline-editable via InlinePlainText and InlineRichText components.
- * Bullets support Enter to add new and Backspace to remove empty.
- * Falls back to read-only display when rendered outside BlockEditorProvider.
+ * Bullets use BulletItem with stable IDs for proper React key handling.
  */
 export function ProjectsPreview({
   content,
@@ -36,15 +32,27 @@ export function ProjectsPreview({
   const editorContext = useBlockEditorOptional();
   const isEditable = !!editorContext;
 
-  // Generate stable IDs for bullets to use as React keys
-  const bulletIds = useBulletIds(content);
-
-  // Update a specific bullet in an entry
+  // Update a specific bullet's text in an entry (preserves ID)
   const updateBullet = useCallback(
-    (entryId: string, bulletIndex: number, value: string) => {
+    (entryIndex: number, bulletIndex: number, value: string) => {
       if (!blockId || !editorContext) return;
-      const elementId = createIndexedElementId(blockId, entryId, "bullets", bulletIndex);
-      editorContext.updateContentByPath(elementId, value);
+
+      const block = editorContext.state.blocks.find((b) => b.id === blockId);
+      if (!block || block.type !== "projects") return;
+
+      const entries = block.content as ProjectEntry[];
+      const entry = entries[entryIndex];
+      if (!entry || !entry.bullets) return;
+
+      const newBullets = updateBulletAt(entry.bullets, bulletIndex, value);
+      const newEntries = entries.map((e, i) =>
+        i === entryIndex ? { ...e, bullets: newBullets } : e
+      );
+
+      editorContext.dispatch({
+        type: "UPDATE_BLOCK",
+        payload: { id: blockId, content: newEntries },
+      });
     },
     [blockId, editorContext]
   );
@@ -62,8 +70,7 @@ export function ProjectsPreview({
       if (!entry) return;
 
       const bullets = entry.bullets || [];
-      const newBullets = insertAfter(bullets, afterIndex, "");
-
+      const newBullets = insertBulletAfter(bullets, afterIndex, "");
       const newEntries = entries.map((e, i) =>
         i === entryIndex ? { ...e, bullets: newBullets } : e
       );
@@ -88,8 +95,7 @@ export function ProjectsPreview({
       const entry = entries[entryIndex];
       if (!entry || !entry.bullets || entry.bullets.length <= 1) return;
 
-      const newBullets = removeAt(entry.bullets, bulletIndex);
-
+      const newBullets = removeBulletAt(entry.bullets, bulletIndex);
       const newEntries = entries.map((e, i) =>
         i === entryIndex ? { ...e, bullets: newBullets } : e
       );
@@ -119,7 +125,6 @@ export function ProjectsPreview({
           updateBullet={updateBullet}
           addBullet={addBullet}
           removeBullet={removeBullet}
-          bulletIds={bulletIds.get(entry.id) || []}
         />
       ))}
     </div>
@@ -132,10 +137,9 @@ interface ProjectEntryPreviewProps {
   style: BaseBlockPreviewProps<unknown>["style"];
   blockId?: string;
   isEditable: boolean;
-  updateBullet: (entryId: string, bulletIndex: number, value: string) => void;
+  updateBullet: (entryIndex: number, bulletIndex: number, value: string) => void;
   addBullet: (entryIndex: number, afterIndex: number) => void;
   removeBullet: (entryIndex: number, bulletIndex: number) => void;
-  bulletIds: string[];
 }
 
 function ProjectEntryPreview({
@@ -147,7 +151,6 @@ function ProjectEntryPreview({
   updateBullet,
   addBullet,
   removeBullet,
-  bulletIds,
 }: ProjectEntryPreviewProps) {
   const editorContext = useBlockEditorOptional();
   const dateRange = formatDateRange(entry.startDate, entry.endDate);
@@ -190,7 +193,7 @@ function ProjectEntryPreview({
           </span>
           {dateRange && (
             <span
-              className="text-muted-foreground flex-shrink-0 ml-4"
+              className="text-muted-foreground shrink-0 ml-4"
               style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
             >
               {dateRange}
@@ -219,17 +222,17 @@ function ProjectEntryPreview({
         )}
         {entry.bullets && entry.bullets.length > 0 && (
           <ul className="list-disc ml-4 mt-1 space-y-0.5">
-            {entry.bullets.map((bullet, idx) => {
-              if (typeof bullet !== 'string' || !bullet.trim()) return null;
+            {entry.bullets.map((bullet) => {
+              if (!bullet.text?.trim()) return null;
               return (
                 <li
-                  key={bulletIds[idx] || idx}
+                  key={bullet.id}
                   style={{
                     fontSize: style.bodyFontSize,
                     lineHeight: style.lineHeight,
                   }}
                 >
-                  {bullet}
+                  {bullet.text}
                 </li>
               );
             })}
@@ -264,7 +267,7 @@ function ProjectEntryPreview({
           )}
         </span>
         <span
-          className="flex-shrink-0 ml-4"
+          className="shrink-0 ml-4"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
           <InlinePlainText
@@ -293,7 +296,7 @@ function ProjectEntryPreview({
         />
       </div>
 
-      {/* Technologies - only show if there are non-empty technologies */}
+      {/* Technologies */}
       {entry.technologies &&
         entry.technologies.length > 0 &&
         entry.technologies.some((t) => typeof t === 'string' && t.trim()) && (
@@ -307,13 +310,11 @@ function ProjectEntryPreview({
               value={entry.technologies?.join(", ") || ""}
               placeholder="React, TypeScript, ..."
               onCommit={(value) => {
-                // Split by comma and trim each technology
                 const technologies = value
                   .split(",")
                   .map((t) => typeof t === 'string' ? t.trim() : '')
                   .filter((t) => t.length > 0);
                 if (!blockId || !editorContext) return;
-                // Update the technologies array
                 const block = editorContext.state.blocks.find((b) => b.id === blockId);
                 if (!block || block.type !== "projects") return;
                 const entries = block.content as ProjectEntry[];
@@ -334,7 +335,7 @@ function ProjectEntryPreview({
         <ul className="list-disc ml-4 mt-1 space-y-0.5">
           {entry.bullets.map((bullet, bulletIndex) => (
             <li
-              key={bulletIds[bulletIndex] || bulletIndex}
+              key={bullet.id}
               style={{
                 fontSize: style.bodyFontSize,
                 lineHeight: style.lineHeight,
@@ -342,9 +343,9 @@ function ProjectEntryPreview({
             >
               <InlineRichText
                 elementId={createIndexedElementId(blockId, entry.id, "bullets", bulletIndex)}
-                value={bullet}
+                value={bullet.text}
                 placeholder="Add accomplishment..."
-                onCommit={(value) => updateBullet(entry.id, bulletIndex, value)}
+                onCommit={(value) => updateBullet(entryIndex, bulletIndex, value)}
                 onEnter={() => addBullet(entryIndex, bulletIndex)}
                 onBackspaceEmpty={() => removeBullet(entryIndex, bulletIndex)}
                 showToolbar={false}

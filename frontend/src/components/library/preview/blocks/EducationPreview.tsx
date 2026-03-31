@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import type { EducationEntry } from "@/lib/resume/types";
+import type { EducationEntry, BulletItem } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
 import { InlinePlainText, InlineRichText } from "../../editor/inline";
 import {
@@ -9,8 +9,11 @@ import {
   createIndexedElementId,
 } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
-import { insertAfter, removeAt } from "@/lib/resume/arrayHelpers";
-import { useBulletIds } from "../hooks/useBulletIds";
+import {
+  insertBulletAfter,
+  removeBulletAt,
+  updateBulletAt,
+} from "@/lib/resume/bulletHelpers";
 
 interface EducationPreviewProps extends BaseBlockPreviewProps<EducationEntry[]> {}
 
@@ -35,15 +38,27 @@ export function EducationPreview({
   const editorContext = useBlockEditorOptional();
   const isEditable = !!editorContext;
 
-  // Generate stable IDs for relevant courses to use as React keys
-  const courseIds = useBulletIds(content, "relevantCourses");
-
-  // Update a specific course in an entry
+  // Update a specific course's text in an entry (preserves ID)
   const updateCourse = useCallback(
-    (entryId: string, courseIndex: number, value: string) => {
+    (entryIndex: number, courseIndex: number, value: string) => {
       if (!blockId || !editorContext) return;
-      const elementId = createIndexedElementId(blockId, entryId, "relevantCourses", courseIndex);
-      editorContext.updateContentByPath(elementId, value);
+
+      const block = editorContext.state.blocks.find((b) => b.id === blockId);
+      if (!block || block.type !== "education") return;
+
+      const entries = block.content as EducationEntry[];
+      const entry = entries[entryIndex];
+      if (!entry || !entry.relevantCourses) return;
+
+      const newCourses = updateBulletAt(entry.relevantCourses, courseIndex, value);
+      const newEntries = entries.map((e, i) =>
+        i === entryIndex ? { ...e, relevantCourses: newCourses } : e
+      );
+
+      editorContext.dispatch({
+        type: "UPDATE_BLOCK",
+        payload: { id: blockId, content: newEntries },
+      });
     },
     [blockId, editorContext]
   );
@@ -61,7 +76,7 @@ export function EducationPreview({
       if (!entry) return;
 
       const courses = entry.relevantCourses || [];
-      const newCourses = insertAfter(courses, afterIndex, "");
+      const newCourses = insertBulletAfter(courses, afterIndex, "");
 
       const newEntries = entries.map((e, i) =>
         i === entryIndex ? { ...e, relevantCourses: newCourses } : e
@@ -87,7 +102,7 @@ export function EducationPreview({
       const entry = entries[entryIndex];
       if (!entry || !entry.relevantCourses || entry.relevantCourses.length <= 1) return;
 
-      const newCourses = removeAt(entry.relevantCourses, courseIndex);
+      const newCourses = removeBulletAt(entry.relevantCourses, courseIndex);
 
       const newEntries = entries.map((e, i) =>
         i === entryIndex ? { ...e, relevantCourses: newCourses } : e
@@ -118,7 +133,6 @@ export function EducationPreview({
           updateCourse={updateCourse}
           addCourse={addCourse}
           removeCourse={removeCourse}
-          courseIds={courseIds.get(entry.id) || []}
         />
       ))}
     </div>
@@ -131,10 +145,9 @@ interface EducationEntryPreviewProps {
   style: BaseBlockPreviewProps<unknown>["style"];
   blockId?: string;
   isEditable: boolean;
-  updateCourse: (entryId: string, courseIndex: number, value: string) => void;
+  updateCourse: (entryIndex: number, courseIndex: number, value: string) => void;
   addCourse: (entryIndex: number, afterIndex: number) => void;
   removeCourse: (entryIndex: number, courseIndex: number) => void;
-  courseIds: string[];
 }
 
 function EducationEntryPreview({
@@ -146,7 +159,6 @@ function EducationEntryPreview({
   updateCourse,
   addCourse,
   removeCourse,
-  courseIds,
 }: EducationEntryPreviewProps) {
   const editorContext = useBlockEditorOptional();
 
@@ -170,7 +182,7 @@ function EducationEntryPreview({
           </span>
           {entry.graduationDate && (
             <span
-              className="text-muted-foreground flex-shrink-0 ml-4"
+              className="text-muted-foreground shrink-0 ml-4"
               style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
             >
               {entry.graduationDate}
@@ -200,7 +212,7 @@ function EducationEntryPreview({
             style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
           >
             <span className="font-medium">Relevant Courses: </span>
-            {entry.relevantCourses.join(", ")}
+            {entry.relevantCourses.map((c) => c.text).join(", ")}
           </div>
         )}
       </div>
@@ -219,7 +231,7 @@ function EducationEntryPreview({
           onCommit={handleFieldChange("degree")}
         />
         <span
-          className="flex-shrink-0 ml-4"
+          className="shrink-0 ml-4"
           style={{ fontSize: `calc(${style.bodyFontSize} - 1pt)` }}
         >
           <InlinePlainText
@@ -246,7 +258,7 @@ function EducationEntryPreview({
         <InlinePlainText
           elementId={createFieldElementId(blockId, entry.id, "location")}
           value={entry.location || ""}
-          className="flex-shrink-0 ml-4 text-muted-foreground"
+          className="shrink-0 ml-4 text-muted-foreground"
           placeholder="City, State"
           onCommit={handleFieldChange("location")}
         />
@@ -299,12 +311,12 @@ function EducationEntryPreview({
           <span className="font-medium text-muted-foreground">Relevant Courses: </span>
           <ul className="list-disc ml-4 mt-0.5 space-y-0.5">
             {entry.relevantCourses.map((course, courseIndex) => (
-              <li key={courseIds[courseIndex] || courseIndex} className="text-muted-foreground">
+              <li key={course.id} className="text-muted-foreground">
                 <InlineRichText
                   elementId={createIndexedElementId(blockId, entry.id, "relevantCourses", courseIndex)}
-                  value={course}
+                  value={course.text}
                   placeholder="Course name..."
-                  onCommit={(value) => updateCourse(entry.id, courseIndex, value)}
+                  onCommit={(value) => updateCourse(entryIndex, courseIndex, value)}
                   onEnter={() => addCourse(entryIndex, courseIndex)}
                   onBackspaceEmpty={() => removeCourse(entryIndex, courseIndex)}
                   showToolbar={false}
