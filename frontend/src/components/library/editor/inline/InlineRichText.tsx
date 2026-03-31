@@ -126,8 +126,7 @@ export function InlineRichText({
     () => ({
       attributes: {
         class: cn(
-          "outline-none min-h-[1em]",
-          "focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 rounded-sm"
+          "outline-none min-h-[1em] rounded-sm"
         ),
         "data-element-id": elementId,
       },

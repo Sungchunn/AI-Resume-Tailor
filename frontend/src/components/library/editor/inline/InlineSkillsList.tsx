@@ -99,7 +99,6 @@ export function InlineSkillsList({
       onKeyDown={handleKeyDown}
       className={cn(
         "cursor-text outline-none rounded-sm transition-colors inline",
-        "focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1",
         !displayValue && "text-muted-foreground",
         className
       )}
