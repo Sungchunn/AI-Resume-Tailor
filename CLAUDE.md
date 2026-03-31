@@ -476,7 +476,31 @@ if metrics:  # None if result was cached
 response = await ai_client.generate_json(...)  # No metrics captured!
 ```
 
-### 15. Playwright E2E Testing
+### 15. Tailwind CSS Canonical Classes
+
+**Always use the canonical (shorter) Tailwind class names.**
+
+Tailwind v3+ provides shorter aliases for many utility classes. Always use the canonical form to maintain consistency and avoid linter warnings.
+
+| Legacy Class | Canonical Class |
+| ------------ | --------------- |
+| `flex-shrink-0` | `shrink-0` |
+| `flex-shrink` | `shrink` |
+| `flex-grow-0` | `grow-0` |
+| `flex-grow` | `grow` |
+| `overflow-ellipsis` | `text-ellipsis` |
+| `decoration-slice` | `box-decoration-slice` |
+| `decoration-clone` | `box-decoration-clone` |
+
+```tsx
+// WRONG - Legacy class names
+<div className="flex-shrink-0 flex-grow">
+
+// CORRECT - Canonical class names
+<div className="shrink-0 grow">
+```
+
+### 16. Playwright E2E Testing
 
 **Use Playwright for features requiring real browser behavior (DOM measurements, font rendering, visual regression).**
 
