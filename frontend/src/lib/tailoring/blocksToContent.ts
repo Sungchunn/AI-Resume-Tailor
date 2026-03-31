@@ -14,6 +14,7 @@ import type {
   CertificationsBlock,
   ProjectsBlock,
 } from "@/lib/resume/types";
+import { bulletsToStrings } from "@/lib/resume/bulletHelpers";
 
 /**
  * Converts AnyResumeBlock[] to TailoredContent for preview/editor rendering.
@@ -57,7 +58,7 @@ export function blocksToContent(blocks: AnyResumeBlock[]): TailoredContent {
             location: exp.location || "",
             start_date: exp.startDate || "",
             end_date: exp.endDate || "",
-            bullets: exp.bullets || [],
+            bullets: bulletsToStrings(exp.bullets),
           })
         );
         break;
@@ -96,7 +97,7 @@ export function blocksToContent(blocks: AnyResumeBlock[]): TailoredContent {
             description: proj.description,
             technologies: proj.technologies,
             url: proj.url,
-            bullets: proj.bullets,
+            bullets: bulletsToStrings(proj.bullets),
           })
         );
         break;
