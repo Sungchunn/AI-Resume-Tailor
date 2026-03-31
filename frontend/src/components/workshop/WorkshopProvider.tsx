@@ -11,7 +11,7 @@ import {
   type WorkshopState,
 } from "./WorkshopContext";
 import type { TailoredContent, ResumeStyle, Suggestion, TailoredResumeFullResponse } from "@/lib/api/types";
-import { useTailoredResume, useUpdateTailoredResume, useATSKeywordAnalysis } from "@/lib/api/hooks";
+import { useTailoredResume, useUpdateTailoredResume } from "@/lib/api/hooks";
 import { useScoreCalculation } from "./hooks/useScoreCalculation";
 import { useUndoRedo, HISTORY_LIMIT } from "./hooks/useUndoRedo";
 
@@ -44,7 +44,6 @@ export function WorkshopProvider({ tailoredId, children }: WorkshopProviderProps
   // Fetch initial data
   const { data: tailoredResume, isLoading, error } = useTailoredResume(tailoredId);
   const updateMutation = useUpdateTailoredResume();
-  const atsAnalysisMutation = useATSKeywordAnalysis();
 
   // Initialize state when data loads
   useEffect(() => {
@@ -230,20 +229,14 @@ export function WorkshopProvider({ tailoredId, children }: WorkshopProviderProps
     dispatch({ type: "SET_STYLE", payload: style });
   }, []);
 
+  // NOTE: Keyword analysis is now populated from the progressive ATS analysis endpoint
+  // (Stage 2 results). This callback is kept for backward compatibility but is a no-op.
+  // The actual keyword data is dispatched from useATSProgressiveAnalysis hook when
+  // Stage 2 (Keyword Matching) completes or when cached results are received.
   const runATSAnalysis = useCallback(async () => {
-    if (!state.jobDescription) return;
-    try {
-      // Convert tailored content to string for ATS analysis
-      const resumeContentString = JSON.stringify(state.content);
-      const result = await atsAnalysisMutation.mutateAsync({
-        job_description: state.jobDescription,
-        resume_content: resumeContentString,
-      });
-      dispatch({ type: "SET_ATS_ANALYSIS", payload: result });
-    } catch (err) {
-      console.error("ATS analysis failed:", err);
-    }
-  }, [state.jobDescription, state.content, atsAnalysisMutation]);
+    // No-op: Keyword analysis is now handled by useATSProgressiveAnalysis
+    console.log("[Workshop] runATSAnalysis is deprecated. Use progressive analysis instead.");
+  }, []);
 
   // Generate AI suggestions based on a custom prompt
   // TODO: Connect to backend AI endpoint when available
