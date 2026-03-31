@@ -9,7 +9,18 @@ Both editors need to save content correctly:
 
 ## Issues Found
 
-### Issue 1: Missing Section Mappings in Tailor Flow Transformations
+### Issue 1: Leadership Section Completely Missing from Core Transforms
+
+**Location:** `/frontend/src/lib/resume/transforms.ts`
+
+The `leadership` section is missing from BOTH core transform functions:
+
+- `parsedContentToBlocks()` - does NOT handle leadership (cannot load)
+- `blocksToParsedContent()` - does NOT handle leadership (cannot save)
+
+**Impact:** Leadership sections cannot be saved or loaded in EITHER editor.
+
+### Issue 2: Missing Section Mappings in Tailor Flow Transformations
 
 **Location:** `/frontend/src/lib/resume/transforms.ts`
 
@@ -19,7 +30,7 @@ The `tailoredContentToParsedContent()` (lines 851-928) and `parsedContentToTailo
 
 - contact, summary, experience, education, skills, certifications, projects
 
-**Missing (7):**
+**Missing (9):**
 
 - languages
 - volunteer (has bullets!)
@@ -33,19 +44,19 @@ The `tailoredContentToParsedContent()` (lines 851-928) and `parsedContentToTailo
 
 **Impact:** When saving/loading tailored resumes, these sections will be lost.
 
-### Issue 2: Missing Sections in blocksToContent.ts
+### Issue 3: Missing Sections in blocksToContent.ts
 
 **Location:** `/frontend/src/lib/tailoring/blocksToContent.ts`
 
 The `blocksToContent()` function only handles 7 block types, missing the same sections above. This affects the preview rendering in the tailor flow.
 
-### Issue 3: Education relevant_courses Data Loss
+### Issue 4: Education relevant_courses Data Loss
 
 The `TailoredContent.education` type does NOT have a `relevant_courses` field (see types.ts lines 183-191), but `ParsedResumeContent.education` does. This means education relevant courses will be lost in the tailor flow.
 
 **Note:** This is a known limitation due to API schema - would require backend changes to fix.
 
-### Issue 4: BulletItem Conversion (Verified Correct)
+### Issue 5: BulletItem Conversion (Verified Correct)
 
 The BulletItem handling is correct for sections that ARE mapped:
 
@@ -53,6 +64,66 @@ The BulletItem handling is correct for sections that ARE mapped:
 - `bulletsToStrings()` converts `BulletItem[]` to `string[]` (save)
 
 ## Implementation Plan
+
+### Phase 0: Add Leadership to Core Transforms (CRITICAL - Affects Both Editors)
+
+**Add to `parsedContentToBlocks()` (after memberships block, ~line 327):**
+
+```typescript
+// Leadership block
+if (parsedContent.leadership && parsedContent.leadership.length > 0) {
+  const entries: LeadershipEntry[] = parsedContent.leadership.map((lead) => ({
+    id: nanoid(),
+    title: lead.title || "",
+    organization: lead.organization || "",
+    location: lead.location,
+    startDate: lead.start_date || "",
+    endDate: lead.end_date || "",
+    description: lead.description,
+    bullets: stringsToBullets(lead.bullets),
+  }));
+
+  blocks.push({
+    id: nanoid(),
+    type: "leadership",
+    order: order++,
+    content: entries,
+  } as LeadershipBlock);
+}
+```
+
+**Add to `blocksToParsedContent()` (after memberships case, ~line 510):**
+
+```typescript
+case "leadership": {
+  const entries = block.content as LeadershipEntry[];
+  result.leadership = entries.map((entry) => ({
+    title: entry.title,
+    organization: entry.organization,
+    location: entry.location,
+    start_date: entry.startDate,
+    end_date: entry.endDate,
+    description: entry.description,
+    bullets: bulletsToStrings(entry.bullets),
+  }));
+  break;
+}
+```
+
+**Add to `blocksToText()` (after memberships case, ~line 840):**
+
+```typescript
+case "leadership": {
+  const entries = block.content as LeadershipEntry[];
+  for (const entry of entries) {
+    if (entry.title) lines.push(entry.title);
+    if (entry.organization) lines.push(entry.organization);
+    if (entry.description) lines.push(entry.description);
+    if (entry.bullets) lines.push(...entry.bullets.map((b) => b.text));
+  }
+  break;
+}
+```
 
 ### Phase 1: Update transforms.ts - tailoredContentToParsedContent()
 
@@ -256,10 +327,33 @@ case "languages":
 
 | File | Changes |
 | ---- | ------- |
-| `frontend/src/lib/resume/transforms.ts` | Add missing section mappings in both transform functions |
-| `frontend/src/lib/tailoring/blocksToContent.ts` | Add missing block type handlers |
+| `frontend/src/lib/resume/transforms.ts` | Add leadership to core transforms + add 9 missing sections to tailor transforms |
+| `frontend/src/lib/tailoring/blocksToContent.ts` | Add 9 missing block type handlers |
 
-**Note:** `LeadershipBlock` type already exists in types.ts - no changes needed there.
+**Note:** `LeadershipBlock` and `LeadershipEntry` types already exist in types.ts - no type changes needed.
+
+## Section Coverage Summary
+
+After this fix, the following sections will be fully supported in both editors:
+
+| Section | Library Editor | Tailor Editor | Has Bullets |
+| ------- | -------------- | ------------- | ----------- |
+| contact | Yes | Yes | No |
+| summary | Yes | Yes | No |
+| experience | Yes | Yes | Yes |
+| education | Yes | Yes (no relevant_courses) | No |
+| skills | Yes | Yes | No |
+| certifications | Yes | Yes | No |
+| projects | Yes | Yes | Yes |
+| languages | Yes | **Fix needed** | No |
+| volunteer | Yes | **Fix needed** | Yes |
+| publications | Yes | **Fix needed** | No |
+| awards | Yes | **Fix needed** | No |
+| interests | Yes | **Fix needed** | No |
+| references | Yes | **Fix needed** | No |
+| courses | Yes | **Fix needed** | No |
+| memberships | Yes | **Fix needed** | No |
+| leadership | **Fix needed (Phase 0)** | **Fix needed** | Yes |
 
 ## Verification
 
