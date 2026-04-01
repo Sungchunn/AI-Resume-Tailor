@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useDebouncedCallback } from "use-debounce";
-import type { TailoredContent } from "@/lib/api/types";
+import type { TailoredContent, ATSKeywordDetailedResponse } from "@/lib/api/types";
+import { atsApi } from "@/lib/api/client";
 import { useQuickMatch } from "@/lib/api/hooks";
 import type {
   UseScoreCalculationOptions,
@@ -17,6 +18,8 @@ export function useScoreCalculation({
   resumeId,
   jobId,
   jobListingId,
+  jobDescription,
+  jobContent,
   enabled = true,
   debounceMs = DEFAULT_DEBOUNCE_MS,
 }: UseScoreCalculationOptions): UseScoreCalculationResult {
@@ -24,13 +27,14 @@ export function useScoreCalculation({
   const [previousScore, setPreviousScore] = useState<number | null>(null);
   const [status, setStatus] = useState<ScoreCalculationStatus>({ state: "idle" });
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [keywordAnalysis, setKeywordAnalysis] = useState<ATSKeywordDetailedResponse | null>(null);
 
   // Track content hash to detect changes
   const contentHashRef = useRef<string>("");
   const initialLoadRef = useRef(true);
   const currentScoreRef = useRef<number>(0);
 
-  // Use the existing quick match mutation
+  // Fallback to quick match for when job description is not available
   const quickMatchMutation = useQuickMatch();
 
   // Keep currentScoreRef in sync with score state
@@ -44,13 +48,29 @@ export function useScoreCalculation({
     setStatus({ state: "calculating" });
 
     try {
-      const request = jobListingId
-        ? { resume_id: resumeId, job_listing_id: jobListingId }
-        : { resume_id: resumeId, job_id: jobId! };
+      let newScore: number;
+      let newKeywordAnalysis: ATSKeywordDetailedResponse | null = null;
 
-      const response = await quickMatchMutation.mutateAsync(request);
+      // Use new content-based endpoint if job description is available
+      // This enables live scoring of unsaved edits with consistent 5-stage scoring
+      if (jobDescription) {
+        const response = await atsApi.analyzeContent({
+          resume_content: content,
+          job_description: jobDescription,
+          job_content: jobContent,
+        });
 
-      const newScore = response.match_score;
+        newScore = response.final_score;
+        newKeywordAnalysis = response.keyword_analysis;
+      } else {
+        // Fallback to quick-match (fetches from DB, different scoring algorithm)
+        const request = jobListingId
+          ? { resume_id: resumeId, job_listing_id: jobListingId }
+          : { resume_id: resumeId, job_id: jobId! };
+
+        const response = await quickMatchMutation.mutateAsync(request);
+        newScore = response.match_score;
+      }
 
       // Track previous score for comparison (not on initial load)
       if (!initialLoadRef.current) {
@@ -59,6 +79,7 @@ export function useScoreCalculation({
       initialLoadRef.current = false;
 
       setScore(newScore);
+      setKeywordAnalysis(newKeywordAnalysis);
       setStatus({ state: "success", score: newScore });
       setLastUpdated(new Date());
     } catch (error) {
@@ -67,7 +88,7 @@ export function useScoreCalculation({
         message: error instanceof Error ? error.message : "Failed to calculate score",
       });
     }
-  }, [resumeId, jobId, jobListingId, enabled, quickMatchMutation]);
+  }, [resumeId, jobId, jobListingId, jobDescription, jobContent, content, enabled, quickMatchMutation]);
 
   // Debounced calculation
   const debouncedCalculate = useDebouncedCallback(calculateScore, debounceMs);
@@ -124,5 +145,6 @@ export function useScoreCalculation({
     isUpdating: status.state === "pending" || status.state === "calculating",
     lastUpdated,
     triggerRecalculation,
+    keywordAnalysis,
   };
 }

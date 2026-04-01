@@ -1176,6 +1176,32 @@ export interface ATSProgressiveCompleteEvent {
   composite_score: ATSCompositeScore;
 }
 
+// Content-based synchronous ATS analysis (for editor page live scoring)
+export interface ATSContentAnalysisRequest {
+  resume_content: TailoredContent;
+  job_description: string;
+  job_content?: Record<string, unknown> | null;
+  skip_stages?: number[] | null;
+}
+
+export interface KnockoutRiskItem {
+  risk_type: string;
+  severity: string;
+  description: string;
+  job_requires: string;
+  user_has: string | null;
+}
+
+export interface ATSContentAnalysisResponse {
+  final_score: number;
+  stage_scores: Record<string, number>;
+  stage_breakdown: Record<string, number>;
+  weights_used: Record<string, number>;
+  failed_stages: string[];
+  knockout_risks: KnockoutRiskItem[];
+  keyword_analysis: ATSKeywordDetailedResponse | null;
+}
+
 // ============================================================================
 // Scraper Request Types (User-submitted job URL requests)
 // ============================================================================

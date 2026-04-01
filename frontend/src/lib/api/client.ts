@@ -72,6 +72,8 @@ import type {
   ScheduleSettingsResponse,
   ATSKeywordDetailedRequest,
   ATSKeywordDetailedResponse,
+  ATSContentAnalysisRequest,
+  ATSContentAnalysisResponse,
   ExtractKeywordsRequest,
   ExtractKeywordsResponse,
   KeywordOverrideRequest,
@@ -1059,6 +1061,16 @@ export const atsApi = {
   ): Promise<KeywordOverrideResponse> =>
     fetchApi("/api/v1/ats/keywords/override", {
       method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  // Content-based ATS analysis (synchronous, no DB lookup)
+  // Used by editor page for live scoring of unsaved edits
+  analyzeContent: (
+    data: ATSContentAnalysisRequest
+  ): Promise<ATSContentAnalysisResponse> =>
+    fetchApi("/api/v1/ats/analyze-content", {
+      method: "POST",
       body: JSON.stringify(data),
     }),
 };

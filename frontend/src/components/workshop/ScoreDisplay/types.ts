@@ -31,6 +31,8 @@ export interface UseScoreCalculationOptions {
   resumeId: string;
   jobId: number | null;
   jobListingId?: number | null;
+  jobDescription?: string | null;
+  jobContent?: Record<string, unknown> | null;
   enabled?: boolean;
   debounceMs?: number;
 }
@@ -42,4 +44,5 @@ export interface UseScoreCalculationResult {
   isUpdating: boolean;
   lastUpdated: Date | null;
   triggerRecalculation: () => void;
+  keywordAnalysis: import("@/lib/api/types").ATSKeywordDetailedResponse | null;
 }
