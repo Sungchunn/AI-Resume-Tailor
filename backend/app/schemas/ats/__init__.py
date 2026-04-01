@@ -80,6 +80,10 @@ from app.schemas.ats.progressive import (
     ATSProgressiveRequest,
     ATSStageProgress,
     ATSCompositeScore,
+    # Content-based synchronous analysis
+    ATSContentAnalysisRequest,
+    ATSContentAnalysisResponse,
+    KnockoutRiskItem,
 )
 
 __all__ = [
@@ -131,4 +135,8 @@ __all__ = [
     "ATSProgressiveRequest",
     "ATSStageProgress",
     "ATSCompositeScore",
+    # Content-based analysis
+    "ATSContentAnalysisRequest",
+    "ATSContentAnalysisResponse",
+    "KnockoutRiskItem",
 ]
