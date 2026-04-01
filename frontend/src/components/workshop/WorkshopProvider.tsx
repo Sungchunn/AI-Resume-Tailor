@@ -11,7 +11,7 @@ import {
   type WorkshopState,
 } from "./WorkshopContext";
 import type { TailoredContent, ResumeStyle, Suggestion, TailoredResumeFullResponse } from "@/lib/api/types";
-import { useTailoredResume, useUpdateTailoredResume } from "@/lib/api/hooks";
+import { useTailoredResume, useUpdateTailoredResume, useJob, useJobListing } from "@/lib/api/hooks";
 import { useScoreCalculation } from "./hooks/useScoreCalculation";
 import { useUndoRedo, HISTORY_LIMIT } from "./hooks/useUndoRedo";
 
@@ -45,6 +45,27 @@ export function WorkshopProvider({ tailoredId, children }: WorkshopProviderProps
   const { data: tailoredResume, isLoading, error } = useTailoredResume(tailoredId);
   const updateMutation = useUpdateTailoredResume();
 
+  // Fetch job data for job description (needed for content-based ATS scoring)
+  const jobId = (tailoredResume as TailoredResumeFullResponse | undefined)?.job_id ?? null;
+  const jobListingId = (tailoredResume as TailoredResumeFullResponse | undefined)?.job_listing_id ?? null;
+
+  const { data: job } = useJob(jobId ?? 0);
+  const { data: jobListing } = useJobListing(jobListingId ?? 0);
+
+  // Extract job description and content from whichever source is available
+  const jobDescription = jobListing?.job_description ?? job?.raw_content ?? null;
+  const jobContent = jobListing
+    ? {
+        title: jobListing.job_title,
+        company: jobListing.company_name,
+        location: jobListing.location,
+        seniority: jobListing.seniority,
+        job_function: jobListing.job_function,
+        industry: jobListing.industry,
+        description: jobListing.job_description,
+      }
+    : job?.parsed_content ?? null;
+
   // Initialize state when data loads
   useEffect(() => {
     if (tailoredResume) {
@@ -70,17 +91,27 @@ export function WorkshopProvider({ tailoredId, children }: WorkshopProviderProps
     }
   }, [error]);
 
-  // Real-time score calculation
+  // Sync job description to state for components that need it
+  useEffect(() => {
+    if (jobDescription !== state.jobDescription) {
+      dispatch({ type: "SET_JOB_DESCRIPTION", payload: jobDescription });
+    }
+  }, [jobDescription, state.jobDescription]);
+
+  // Real-time score calculation using content-based ATS analysis
   const {
     score: calculatedScore,
     previousScore: calculatedPreviousScore,
     isUpdating: isScoreUpdating,
     lastUpdated: scoreLastUpdated,
+    keywordAnalysis: calculatedKeywordAnalysis,
   } = useScoreCalculation({
     content: state.content,
     resumeId: state.tailoredResume?.resume_id ?? "",
     jobId: state.tailoredResume?.job_id ?? null,
     jobListingId: state.tailoredResume?.job_listing_id ?? null,
+    jobDescription,
+    jobContent,
     enabled: !!(state.tailoredResume?.job_id || state.tailoredResume?.job_listing_id) && !state.isLoading,
   });
 
@@ -107,6 +138,13 @@ export function WorkshopProvider({ tailoredId, children }: WorkshopProviderProps
       dispatch({ type: "SET_SCORE_LAST_UPDATED", payload: scoreLastUpdated });
     }
   }, [scoreLastUpdated, state.scoreLastUpdated]);
+
+  // Sync keyword analysis from score calculation (for ATS panel consistency)
+  useEffect(() => {
+    if (calculatedKeywordAnalysis && calculatedKeywordAnalysis !== state.atsAnalysis) {
+      dispatch({ type: "SET_ATS_ANALYSIS", payload: calculatedKeywordAnalysis });
+    }
+  }, [calculatedKeywordAnalysis, state.atsAnalysis]);
 
   // Undo/Redo history management
   const undoRedoInitialState: UndoableState = {
