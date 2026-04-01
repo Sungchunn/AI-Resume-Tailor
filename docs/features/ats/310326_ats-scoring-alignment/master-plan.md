@@ -24,20 +24,46 @@ Create `POST /ats/analyze-content` endpoint that:
 **File:** `backend/app/api/routes/ats/content.py` (new)
 
 ```python
+from app.services.ai import get_usage_tracker
+from app.services.ai.response import AccumulatedMetrics
+
 @router.post("/analyze-content")
-async def analyze_content(request: ATSContentAnalysisRequest, ...):
+async def analyze_content(
+    request: ATSContentAnalysisRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user_id: int = Depends(get_current_user_id),
+):
     """
     Same scoring as /analyze-progressive but:
     - Synchronous (no SSE)
     - Accepts raw content (no DB lookup)
     """
+    # Track AI usage across all stages
+    accumulated_metrics = AccumulatedMetrics()
+
     # Reuse existing helpers from helpers.py
     stage_results = {}
 
     stage_results["structure"] = await execute_structure_analysis(...)
-    stage_results["keywords-enhanced"] = await execute_keyword_analysis(...)
+
+    result, ai_metrics = await execute_keyword_analysis(..., return_metrics=True)
+    stage_results["keywords-enhanced"] = result
+    if ai_metrics:
+        accumulated_metrics.add(ai_metrics)
+
     stage_results["content-quality"] = await execute_content_quality(...)
     stage_results["role-proximity"] = await execute_role_proximity(...)
+
+    # Log AI usage to /admin/ai-usage dashboard
+    if accumulated_metrics.call_count > 0:
+        usage_tracker = get_usage_tracker()
+        await usage_tracker.log_generation(
+            db=db,
+            user_id=current_user_id,
+            endpoint="/ats/analyze-content",
+            response=accumulated_metrics,
+        )
+        await db.commit()
 
     # Same composite calculation as progressive
     return calculate_composite_score(stage_results, failed_stages)
@@ -157,11 +183,54 @@ Both stepper and editor will use:
 - Same weights: structure 15%, keywords 40%, content 25%, role 20%
 - Same 4-layer keyword scoring (placement, density, recency, importance)
 
+## AI Usage Tracking
+
+**Requirement:** All AI calls must be logged to `/admin/ai-usage` for cost monitoring.
+
+**Implementation Pattern:**
+
+```python
+from app.services.ai import get_usage_tracker
+from app.services.ai.response import AccumulatedMetrics
+
+# 1. Create accumulator at start of request
+accumulated_metrics = AccumulatedMetrics()
+
+# 2. Collect metrics from each AI-calling stage
+result, ai_metrics = await execute_keyword_analysis(..., return_metrics=True)
+if ai_metrics:
+    accumulated_metrics.add(ai_metrics)
+
+# 3. Log aggregated metrics at end of request
+if accumulated_metrics.call_count > 0:
+    usage_tracker = get_usage_tracker()
+    await usage_tracker.log_generation(
+        db=db,
+        user_id=current_user_id,
+        endpoint="/ats/analyze-content",
+        response=accumulated_metrics,
+    )
+    await db.commit()
+```
+
+**Stages with AI calls:**
+
+| Stage | AI Calls | Tracking |
+| ----- | -------- | -------- |
+| Knockout (0) | ResumeParser, JobAnalyzer | ✅ Accumulated |
+| Structure (1) | None | N/A |
+| Keywords (2) | KeywordExtractor (if enhanced) | ✅ Accumulated |
+| Content Quality (3) | None | N/A |
+| Role Proximity (4) | JobAnalyzer (if not cached) | ✅ Accumulated |
+
+**Consistency with stepper:** Both `/analyze-progressive` and `/analyze-content` use the same `AccumulatedMetrics` pattern to aggregate AI usage across stages, logging a single consolidated entry per request.
+
 ## Design Decisions
 
 - **All 5 stages:** Run full pipeline (knockout, structure, keywords, content quality, role proximity) for complete consistency with stepper
 - **Cost trade-off accepted:** ~4-5 AI calls per recalculation for accuracy
 - **Debounce:** Keep 1500ms debounce to limit API calls during rapid edits
+- **AI usage tracking:** Use `AccumulatedMetrics` pattern matching stepper implementation
 
 ## Verification
 
@@ -181,3 +250,9 @@ Both stepper and editor will use:
    - Run stepper analysis on a resume
    - Open editor, make no changes
    - Verify editor shows same score as stepper
+
+4. **AI usage tracking verification:**
+   - Make an edit in the editor
+   - Go to `/admin/ai-usage` dashboard
+   - Verify entry appears with endpoint `/ats/analyze-content`
+   - Confirm token counts and cost are recorded
