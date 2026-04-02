@@ -21,8 +21,8 @@ pgvector = "^0.3.0"  # Vector similarity search with PostgreSQL
 # Database (MongoDB)
 motor = "^3.3.0"  # Async MongoDB driver
 dnspython = "^2.6.0"  # Required for mongodb+srv:// connection strings
-# Redis
-redis = "^5.0.0"
+# Redis (with hiredis for better performance)
+redis = {extras = ["hiredis"], version = "^5.0.0"}
 # Security
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
