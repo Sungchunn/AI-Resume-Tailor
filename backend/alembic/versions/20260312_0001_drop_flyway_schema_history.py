@@ -20,7 +20,7 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.drop_table('flyway_schema_history')
+    op.execute('DROP TABLE IF EXISTS flyway_schema_history')
 
 
 def downgrade() -> None:

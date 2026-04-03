@@ -118,7 +118,7 @@ def upgrade() -> None:
         sa.Column('source_role', sa.String(length=255), nullable=True),
         sa.Column('source_date_start', sa.Date(), nullable=True),
         sa.Column('source_date_end', sa.Date(), nullable=True),
-        sa.Column('embedding', sa.Column('embedding', sa.LargeBinary()), nullable=True),  # vector(768) handled via raw SQL
+        sa.Column('embedding', sa.LargeBinary(), nullable=True),  # vector(768) handled via raw SQL
         sa.Column('embedding_model', sa.String(length=100), server_default='text-embedding-004', nullable=True),
         sa.Column('content_hash', sa.String(length=64), nullable=True),
         sa.Column('verified', sa.Boolean(), server_default='false', nullable=True),
