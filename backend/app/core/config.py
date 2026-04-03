@@ -1,7 +1,109 @@
+import json
 from functools import lru_cache
+from typing import Any
 
 from pydantic import field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
+
+
+def parse_comma_separated_list(v: Any) -> list[str]:
+    """Parse comma-separated string into list. Handles both JSON and plain formats."""
+    if isinstance(v, list):
+        return v
+    if not isinstance(v, str):
+        return []
+    if not v or not v.strip():
+        return []
+    # Try JSON first for backwards compatibility with ["url1", "url2"] format
+    if v.strip().startswith("["):
+        try:
+            return json.loads(v)
+        except json.JSONDecodeError:
+            pass
+    # Fall back to comma-separated parsing
+    return [origin.strip() for origin in v.split(",") if origin.strip()]
+
+
+class CustomDotEnvSettingsSource(PydanticBaseSettingsSource):
+    """Custom settings source that handles comma-separated list fields without JSON parsing."""
+
+    LIST_FIELDS = {"cors_origins", "admin_emails"}
+
+    def __init__(self, settings_cls: type[BaseSettings], env_file: str | None = ".env"):
+        super().__init__(settings_cls)
+        self._env_file = env_file
+
+    def get_field_value(
+        self, field: Any, field_name: str
+    ) -> tuple[Any, str, bool]:
+        # Delegate to dotenv source but handle list fields specially
+        return None, field_name, False
+
+    def __call__(self) -> dict[str, Any]:
+        """Load values from .env file with custom list parsing."""
+        import os
+        from pathlib import Path
+
+        env_path = Path(self._env_file) if self._env_file else None
+        if not env_path or not env_path.exists():
+            return {}
+
+        # Parse .env file manually
+        env_vars: dict[str, str] = {}
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key = key.strip()
+                # Remove surrounding quotes if present
+                value = value.strip()
+                if (value.startswith('"') and value.endswith('"')) or (
+                    value.startswith("'") and value.endswith("'")
+                ):
+                    value = value[1:-1]
+                env_vars[key] = value
+
+        # Build result dict with custom parsing for list fields
+        result: dict[str, Any] = {}
+        for field_name, field_info in self.settings_cls.model_fields.items():
+            env_name = field_name.upper()
+            if env_name in env_vars:
+                value = env_vars[env_name]
+                if field_name in self.LIST_FIELDS:
+                    result[field_name] = parse_comma_separated_list(value)
+                else:
+                    result[field_name] = value
+
+        return result
+
+
+class CustomEnvSettingsSource(PydanticBaseSettingsSource):
+    """Custom settings source that handles comma-separated list fields from environment."""
+
+    LIST_FIELDS = {"cors_origins", "admin_emails"}
+
+    def get_field_value(
+        self, field: Any, field_name: str
+    ) -> tuple[Any, str, bool]:
+        return None, field_name, False
+
+    def __call__(self) -> dict[str, Any]:
+        """Load values from environment variables with custom list parsing."""
+        import os
+
+        result: dict[str, Any] = {}
+        for field_name in self.settings_cls.model_fields:
+            env_name = field_name.upper()
+            value = os.environ.get(env_name)
+            if value is not None:
+                if field_name in self.LIST_FIELDS:
+                    result[field_name] = parse_comma_separated_list(value)
+                else:
+                    result[field_name] = value
+
+        return result
 
 
 class Settings(BaseSettings):
@@ -112,6 +214,23 @@ class Settings(BaseSettings):
         if not v:
             raise ValueError("MONGODB_URI environment variable must be set")
         return v
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        """Use custom sources that handle comma-separated list fields."""
+        return (
+            init_settings,
+            CustomEnvSettingsSource(settings_cls),
+            CustomDotEnvSettingsSource(settings_cls, env_file=".env"),
+            file_secret_settings,
+        )
 
     class Config:
         env_file = ".env"
