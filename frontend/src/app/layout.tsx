@@ -50,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <body
         className={`min-h-screen ${inter.variable} ${roboto.variable} ${openSans.variable} ${lato.variable} ${lora.variable}`}
       >
