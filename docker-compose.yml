@@ -69,7 +69,10 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: resume-tailor-backend
+    env_file:
+      - ./backend/.env
     environment:
+      # Override database URLs for Docker networking (backend/.env has cloud URLs)
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-resume_tailor}
       DATABASE_URL_SYNC: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-resume_tailor}
       REDIS_URL: redis://redis:6379
@@ -80,15 +83,7 @@ services:
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_BUCKET: ${MINIO_BUCKET:-resumes}
       MINIO_SECURE: "false"
-      # AI Provider Selection
-      AI_PROVIDER: ${AI_PROVIDER:-gemini}
-      # Gemini
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
-      # OpenAI
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
-      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      # AI keys loaded from backend/.env via env_file above
     ports:
       - "8000:8000"
     volumes:
