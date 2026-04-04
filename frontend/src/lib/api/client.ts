@@ -189,12 +189,14 @@ async function fetchApi<T>(
         if (!retryResponse.ok) {
           const error = await retryResponse.json().catch(() => ({ detail: "Unknown error" }));
 
-          // Handle both string errors and Pydantic validation error arrays
+          // Handle various error formats from FastAPI
           let message: string;
           if (typeof error.detail === "string") {
             message = error.detail;
           } else if (Array.isArray(error.detail) && error.detail.length > 0) {
             message = error.detail[0]?.msg || `HTTP ${retryResponse.status}`;
+          } else if (typeof error.detail === "object" && error.detail !== null) {
+            message = error.detail.message || error.detail.msg || `HTTP ${retryResponse.status}`;
           } else {
             message = `HTTP ${retryResponse.status}`;
           }
@@ -231,13 +233,18 @@ async function fetchApi<T>(
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: "Unknown error" }));
 
-    // Handle both string errors and Pydantic validation error arrays
+    // Handle various error formats from FastAPI
     let message: string;
     if (typeof error.detail === "string") {
+      // Simple string error: {"detail": "Email already registered"}
       message = error.detail;
     } else if (Array.isArray(error.detail) && error.detail.length > 0) {
-      // Extract the first validation error message
+      // Pydantic validation errors: {"detail": [{"msg": "...", "loc": [...]}]}
       message = error.detail[0]?.msg || `HTTP ${response.status}`;
+    } else if (typeof error.detail === "object" && error.detail !== null) {
+      // Structured dict errors: {"detail": {"message": "...", "error_code": "..."}}
+      // Used by upload errors, AI validation errors, etc.
+      message = error.detail.message || error.detail.msg || `HTTP ${response.status}`;
     } else {
       message = `HTTP ${response.status}`;
     }
