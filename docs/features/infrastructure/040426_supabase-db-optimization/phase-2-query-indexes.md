@@ -122,7 +122,7 @@ if filters.industry:
     conditions.append(JobListing.industry.ilike(f"%{filters.industry}%"))
 ```
 
-### Why This Is Slow
+### Why ILIKE Is Slow
 
 `ILIKE '%pattern%'` (pattern matching with wildcards on both sides) cannot use standard B-tree indexes. PostgreSQL must:
 

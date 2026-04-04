@@ -149,7 +149,7 @@ DATABASE_URL=postgresql+asyncpg://postgres:YOUR-PASSWORD@db.YOUR-PROJECT-REF.sup
 DATABASE_URL_SYNC=postgresql://postgres:YOUR-PASSWORD@db.YOUR-PROJECT-REF.supabase.co:5432/postgres
 ```
 
-### Problem Analysis
+### Problem Analysis: Direct Connection
 
 - Port `5432` is the **direct connection** to PostgreSQL
 - Each connection consumes server resources directly
@@ -235,7 +235,7 @@ DATABASE_URL_SYNC=postgresql://postgres:YOUR-PASSWORD@db.YOUR-PROJECT-REF.supaba
 
 ## Task 1.4: Add Engine Disposal on Shutdown
 
-### Current Code
+### Current Lifespan Code
 
 **File:** `backend/app/main.py` (lines 20-45)
 
@@ -268,7 +268,7 @@ async def lifespan(app: FastAPI):
     await close_mongodb()
 ```
 
-### Problem Analysis
+### Problem Analysis: Missing Cleanup
 
 - MongoDB and Redis have explicit close handlers
 - PostgreSQL engine has **no corresponding cleanup**
@@ -277,7 +277,7 @@ async def lifespan(app: FastAPI):
 
 ### Solution: Add engine.dispose()
 
-### New Code
+### Updated Lifespan Code
 
 ```python
 from app.db.session import engine  # ADD THIS IMPORT
@@ -326,7 +326,7 @@ The shutdown order should be:
 
 ## Task 1.5: Add Index on created_at for Cleanup Job
 
-### Problem Analysis
+### Problem Analysis: Missing Index
 
 **File:** `backend/app/crud/job_listing.py` (lines 788-802)
 

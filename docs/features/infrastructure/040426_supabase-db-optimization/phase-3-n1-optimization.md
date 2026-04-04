@@ -74,7 +74,7 @@ For a request returning 20 job listings:
 1. **Query 1:** Fetch 20 job listings
 2. **Query 2-21:** Fetch interaction for listing 1, 2, 3... 20
 
-**Total: 21 database queries per request**
+This results in **21 database queries per request**.
 
 This is the classic **N+1 problem**:
 
@@ -378,7 +378,7 @@ Total queries: 2
 Estimated time: 2 * 5ms = 10ms database time
 ```
 
-**Improvement: 90% reduction in database queries**
+This results in a **90% reduction in database queries**.
 
 ---
 
