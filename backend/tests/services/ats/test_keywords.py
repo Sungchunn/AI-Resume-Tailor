@@ -22,9 +22,6 @@ class TestAnalyzeKeywords:
             {"content": "Built Python applications on AWS infrastructure"},
             {"content": "Implemented CI/CD pipelines for deployment"},
         ]
-        vault_blocks = resume_blocks + [
-            {"content": "Led Docker containerization initiatives"},
-        ]
         job_description = "Looking for Python developer with AWS experience"
 
         with patch.object(
@@ -35,7 +32,6 @@ class TestAnalyzeKeywords:
             result = await keyword_analyzer.analyze_keywords(
                 resume_blocks=resume_blocks,
                 job_description=job_description,
-                vault_blocks=vault_blocks,
             )
 
         # ATSReportData is a Pydantic model, use attribute access
@@ -44,14 +40,10 @@ class TestAnalyzeKeywords:
         assert result.keyword_coverage > 0
 
     @pytest.mark.asyncio
-    async def test_missing_keywords_in_vault(self, keyword_analyzer, mock_ai_response):
-        """Should identify keywords in vault but not in resume."""
+    async def test_missing_keywords(self, keyword_analyzer, mock_ai_response):
+        """Should identify missing keywords."""
         resume_blocks = [
             {"content": "Python developer with 5 years experience"},
-        ]
-        vault_blocks = [
-            {"content": "Python developer with 5 years experience"},
-            {"content": "AWS infrastructure management"},  # In vault, not resume
         ]
         job_description = "Python and AWS required"
 
@@ -63,39 +55,11 @@ class TestAnalyzeKeywords:
             result = await keyword_analyzer.analyze_keywords(
                 resume_blocks=resume_blocks,
                 job_description=job_description,
-                vault_blocks=vault_blocks,
             )
 
-        # AWS is in vault but not in resume
+        # AWS is not in resume
         # ATSReportData is a Pydantic model, use attribute access
         assert "AWS" in result.missing_keywords
-
-    @pytest.mark.asyncio
-    async def test_missing_from_vault(self, keyword_analyzer):
-        """Should identify keywords not in vault at all."""
-        resume_blocks = [
-            {"content": "Python developer"},
-        ]
-        vault_blocks = resume_blocks  # Same content
-        job_description = "Need Kubernetes experience"
-
-        # Mock response with Kubernetes
-        mock_response = '["Python", "Kubernetes", "Docker"]'
-
-        with patch.object(
-            keyword_analyzer._ai_client,
-            "generate_json",
-            new=AsyncMock(return_value=mock_response),
-        ):
-            result = await keyword_analyzer.analyze_keywords(
-                resume_blocks=resume_blocks,
-                job_description=job_description,
-                vault_blocks=vault_blocks,
-            )
-
-        # Kubernetes not in vault
-        # ATSReportData is a Pydantic model, use attribute access
-        assert "Kubernetes" in result.missing_from_vault
 
     @pytest.mark.asyncio
     async def test_low_coverage_warning(self, keyword_analyzer):
@@ -103,7 +67,6 @@ class TestAnalyzeKeywords:
         resume_blocks = [
             {"content": "Basic experience"},
         ]
-        vault_blocks = resume_blocks
         job_description = "Expert in Python, AWS, Docker, Kubernetes, CI/CD"
 
         mock_response = '["Python", "AWS", "Docker", "Kubernetes", "CI/CD"]'
@@ -116,7 +79,6 @@ class TestAnalyzeKeywords:
             result = await keyword_analyzer.analyze_keywords(
                 resume_blocks=resume_blocks,
                 job_description=job_description,
-                vault_blocks=vault_blocks,
             )
 
         # ATSReportData is a Pydantic model, use attribute access
@@ -302,7 +264,6 @@ class TestAnalyzeKeywordsDetailed:
     async def test_detailed_analysis_structure(self, keyword_analyzer, mock_importance_response):
         """Should return DetailedKeywordAnalysis with all fields."""
         resume_blocks = [{"content": "Python developer with AWS experience"}]
-        vault_blocks = resume_blocks + [{"content": "Docker containerization"}]
         job_description = "Required: Python, AWS. Preferred: Docker. Nice: Kubernetes"
 
         with patch.object(
@@ -313,7 +274,6 @@ class TestAnalyzeKeywordsDetailed:
             result = await keyword_analyzer.analyze_keywords_detailed(
                 resume_blocks=resume_blocks,
                 job_description=job_description,
-                vault_blocks=vault_blocks,
             )
 
         # Check structure
@@ -328,7 +288,6 @@ class TestAnalyzeKeywordsDetailed:
     async def test_required_keywords_grouping(self, keyword_analyzer, mock_importance_response):
         """Should correctly group required keywords."""
         resume_blocks = [{"content": "Python developer"}]  # Has Python, no AWS
-        vault_blocks = [{"content": "Python developer with AWS"}]  # Has AWS in vault
         job_description = "Required: Python, AWS"
 
         with patch.object(
@@ -339,42 +298,15 @@ class TestAnalyzeKeywordsDetailed:
             result = await keyword_analyzer.analyze_keywords_detailed(
                 resume_blocks=resume_blocks,
                 job_description=job_description,
-                vault_blocks=vault_blocks,
             )
 
         assert "Python" in result.required_matched
         assert "AWS" in result.required_missing
 
     @pytest.mark.asyncio
-    async def test_vault_availability_tracking(self, keyword_analyzer, mock_importance_response):
-        """Should track vault availability for missing keywords."""
-        resume_blocks = [{"content": "Basic developer"}]
-        vault_blocks = [
-            {"content": "Basic developer"},
-            {"content": "Docker experience", "source_company": "TechCorp"},
-        ]
-        job_description = "Need Docker and Kubernetes"
-
-        with patch.object(
-            keyword_analyzer._ai_client,
-            "generate_json",
-            new=AsyncMock(return_value=mock_importance_response),
-        ):
-            result = await keyword_analyzer.analyze_keywords_detailed(
-                resume_blocks=resume_blocks,
-                job_description=job_description,
-                vault_blocks=vault_blocks,
-            )
-
-        # Docker is in vault, Kubernetes is not
-        assert "Docker" in result.missing_available_in_vault
-        assert "Kubernetes" in result.missing_not_in_vault
-
-    @pytest.mark.asyncio
     async def test_coverage_calculation(self, keyword_analyzer, mock_importance_response):
         """Should calculate coverage scores correctly."""
         resume_blocks = [{"content": "Python AWS Docker developer"}]  # 3 of 4 keywords
-        vault_blocks = resume_blocks
         job_description = "Need Python, AWS, Docker, Kubernetes"
 
         with patch.object(
@@ -385,7 +317,6 @@ class TestAnalyzeKeywordsDetailed:
             result = await keyword_analyzer.analyze_keywords_detailed(
                 resume_blocks=resume_blocks,
                 job_description=job_description,
-                vault_blocks=vault_blocks,
             )
 
         assert result.coverage_score == 0.75  # 3/4
@@ -395,7 +326,6 @@ class TestAnalyzeKeywordsDetailed:
     async def test_keyword_details(self, keyword_analyzer, mock_importance_response):
         """Should include detailed info for each keyword."""
         resume_blocks = [{"content": "Python developer"}]
-        vault_blocks = resume_blocks
         job_description = "Python Python developer needed"  # Python appears twice
 
         with patch.object(
@@ -406,7 +336,6 @@ class TestAnalyzeKeywordsDetailed:
             result = await keyword_analyzer.analyze_keywords_detailed(
                 resume_blocks=resume_blocks,
                 job_description=job_description,
-                vault_blocks=vault_blocks,
             )
 
         python_keyword = next((k for k in result.all_keywords if k.keyword == "Python"), None)
@@ -419,7 +348,6 @@ class TestAnalyzeKeywordsDetailed:
     async def test_warnings_on_low_coverage(self, keyword_analyzer):
         """Should generate warnings on low required coverage."""
         resume_blocks = [{"content": "Basic experience"}]
-        vault_blocks = resume_blocks
         job_description = "Must have Python, AWS, Docker, Kubernetes, CI/CD"
 
         mock_response = """[
@@ -438,7 +366,6 @@ class TestAnalyzeKeywordsDetailed:
             result = await keyword_analyzer.analyze_keywords_detailed(
                 resume_blocks=resume_blocks,
                 job_description=job_description,
-                vault_blocks=vault_blocks,
             )
 
         assert result.required_coverage < 0.5
@@ -452,39 +379,26 @@ class TestGenerateDetailedSuggestions:
         """Should prioritize required keywords in suggestions."""
         required_missing = ["Python", "AWS"]
         preferred_missing = ["Docker"]
-        available_in_vault = ["Python", "Docker"]
-        vault_blocks = [
-            {"content": "Python experience", "source_company": "TechCorp"},
-            {"content": "Docker skills", "source_company": "StartupInc"},
-        ]
 
         suggestions = keyword_analyzer._generate_detailed_suggestions(
             required_missing=required_missing,
             preferred_missing=preferred_missing,
-            available_in_vault=available_in_vault,
-            vault_blocks=vault_blocks,
         )
 
         # Should mention required keyword first
         assert any("Python" in s and "required" in s for s in suggestions)
 
-    def test_includes_source_company(self, keyword_analyzer):
-        """Should include source company in suggestions."""
-        required_missing = ["Python"]
-        preferred_missing = []
-        available_in_vault = ["Python"]
-        vault_blocks = [
-            {"content": "Python experience", "source_company": "TechCorp"},
-        ]
+    def test_generates_suggestions_for_preferred(self, keyword_analyzer):
+        """Should generate suggestions for preferred keywords."""
+        required_missing = []
+        preferred_missing = ["Docker"]
 
         suggestions = keyword_analyzer._generate_detailed_suggestions(
             required_missing=required_missing,
             preferred_missing=preferred_missing,
-            available_in_vault=available_in_vault,
-            vault_blocks=vault_blocks,
         )
 
-        assert any("TechCorp" in s for s in suggestions)
+        assert any("Docker" in s and "preferred" in s for s in suggestions)
 
 
 # ============================================================
@@ -905,7 +819,6 @@ class TestAnalyzeKeywordsEnhanced:
             {"keyword": "Docker", "importance": "preferred"},
             {"keyword": "Rust", "importance": "nice_to_have"}
         ]"""
-        vault_blocks = [{"content": "Docker and Kubernetes experience"}]
 
         with patch.object(
             keyword_analyzer._ai_client,
@@ -915,7 +828,6 @@ class TestAnalyzeKeywordsEnhanced:
             result = await keyword_analyzer.analyze_keywords_enhanced(
                 parsed_resume=sample_resume,
                 job_description="Need Python, AWS, Docker, Rust",
-                vault_blocks=vault_blocks,
             )
 
         # Check structure
@@ -936,7 +848,6 @@ class TestAnalyzeKeywordsEnhanced:
             {"keyword": "Docker", "importance": "preferred"},
             {"keyword": "Rust", "importance": "nice_to_have"}
         ]"""
-        vault_blocks = []
 
         with patch.object(
             keyword_analyzer._ai_client,
@@ -946,7 +857,6 @@ class TestAnalyzeKeywordsEnhanced:
             result = await keyword_analyzer.analyze_keywords_enhanced(
                 parsed_resume=sample_resume,
                 job_description="Test job",
-                vault_blocks=vault_blocks,
             )
 
         # Python is in resume -> required_coverage = 1.0
@@ -968,7 +878,6 @@ class TestAnalyzeKeywordsEnhanced:
             {"keyword": "AWS", "importance": "strongly_preferred"},
             {"keyword": "Go", "importance": "strongly_preferred"}
         ]"""
-        vault_blocks = []
 
         with patch.object(
             keyword_analyzer._ai_client,
@@ -978,7 +887,6 @@ class TestAnalyzeKeywordsEnhanced:
             result = await keyword_analyzer.analyze_keywords_enhanced(
                 parsed_resume=sample_resume,
                 job_description="Test job",
-                vault_blocks=vault_blocks,
             )
 
         assert "Python" in result.required_matched
@@ -992,7 +900,6 @@ class TestAnalyzeKeywordsEnhanced:
             {"keyword": "Python", "importance": "required"},
             {"keyword": "AWS", "importance": "required"}
         ]"""
-        vault_blocks = []
 
         with patch.object(
             keyword_analyzer._ai_client,
@@ -1002,7 +909,6 @@ class TestAnalyzeKeywordsEnhanced:
             result = await keyword_analyzer.analyze_keywords_enhanced(
                 parsed_resume=sample_resume,
                 job_description="Test job",
-                vault_blocks=vault_blocks,
             )
 
         # Both keywords matched (100% raw coverage)
@@ -1023,7 +929,6 @@ class TestAnalyzeKeywordsEnhanced:
             {"keyword": "Go", "importance": "nice_to_have"},
             {"keyword": "AWS", "importance": "strongly_preferred"}
         ]"""
-        vault_blocks = []
 
         with patch.object(
             keyword_analyzer._ai_client,
@@ -1033,7 +938,6 @@ class TestAnalyzeKeywordsEnhanced:
             result = await keyword_analyzer.analyze_keywords_enhanced(
                 parsed_resume=resume,
                 job_description="Test job",
-                vault_blocks=vault_blocks,
             )
 
         # Gap list should be ordered: required, strongly_preferred, preferred, nice_to_have
@@ -1048,10 +952,6 @@ class TestAnalyzeKeywordsEnhanced:
             {"keyword": "Python", "importance": "required"},
             {"keyword": "AWS", "importance": "strongly_preferred"}
         ]"""
-        vault_blocks = [
-            {"content": "Python experience", "source_company": "TechCorp"},
-            {"content": "AWS deployment", "source_company": "CloudInc"},
-        ]
 
         with patch.object(
             keyword_analyzer._ai_client,
@@ -1061,7 +961,6 @@ class TestAnalyzeKeywordsEnhanced:
             result = await keyword_analyzer.analyze_keywords_enhanced(
                 parsed_resume=resume,
                 job_description="Test job",
-                vault_blocks=vault_blocks,
             )
 
         # Should have suggestions with priority labels
