@@ -21,6 +21,7 @@ jobs:
             git pull origin main
             cd backend
             poetry install --no-interaction
+            poetry run alembic upgrade head
             cd ..
             pm2 restart fastapi
             pm2 save
