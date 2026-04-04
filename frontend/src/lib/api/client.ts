@@ -243,6 +243,23 @@ async function fetchApi<T>(
     throw new Error("Service temporarily unavailable. Please try again later.");
   }
 
+  // Handle 429 Rate Limiting
+  if (response.status === 429) {
+    const errorBody = await response.json().catch(() => ({}));
+    const retryAfter = errorBody.retry_after || response.headers.get("Retry-After");
+
+    if (retryAfter) {
+      const seconds = parseInt(retryAfter, 10);
+      if (seconds > 60) {
+        const minutes = Math.ceil(seconds / 60);
+        throw new Error(`Too many requests. Please wait ${minutes} minute${minutes > 1 ? "s" : ""} before trying again.`);
+      }
+      throw new Error(`Too many requests. Please wait ${seconds} second${seconds !== 1 ? "s" : ""} before trying again.`);
+    }
+
+    throw new Error("Too many requests. Please slow down and try again later.");
+  }
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: "Unknown error" }));
 
