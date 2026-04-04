@@ -25,10 +25,10 @@ export function Footer() {
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">RT</span>
+                <span className="text-primary-foreground font-bold text-sm">RZ</span>
               </div>
               <span className="font-semibold text-foreground">
-                Resume Tailor
+                re-zoo-me
               </span>
             </Link>
             <p className="mt-4 text-sm text-muted-foreground">
@@ -87,7 +87,7 @@ export function Footer() {
 
         <div className="mt-12 border-t border-border pt-8">
           <p className="text-center text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} Resume Tailor. All rights
+            &copy; {new Date().getFullYear()} re-zoo-me. All rights
             reserved.
           </p>
         </div>
