@@ -105,6 +105,7 @@ class JobListing(Base):
         Index("ix_job_listings_is_remote", "is_remote"),
         Index("ix_job_listings_region", "region"),
         Index("ix_job_listings_easy_apply", "easy_apply"),
+        Index("ix_job_listings_created_at", "created_at"),  # For cleanup job performance
     )
 
     def __repr__(self) -> str:
