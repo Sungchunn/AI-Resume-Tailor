@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="AI Resume Tailor API",
+    title="re-zoo-me API",
     description="API for AI-powered resume customization",
     version="0.1.0",
     lifespan=lifespan,
@@ -82,4 +82,4 @@ async def health_check():
 
 @app.get("/")
 async def root():
-    return {"message": "AI Resume Tailor API", "docs": "/docs"}
+    return {"message": "re-zoo-me API", "docs": "/docs"}
