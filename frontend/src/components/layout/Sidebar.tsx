@@ -70,10 +70,10 @@ export function Sidebar() {
         <div className="pt-8 pb-4 px-4">
           <Link href="/jobs" className="flex items-center gap-3">
             <div className="h-14 w-14 shrink-0 rounded-xl bg-linear-to-b from-primary to-primary/80 flex items-center justify-center shadow-md">
-              <span className="text-primary-foreground font-bold text-2xl">RT</span>
+              <span className="text-primary-foreground font-bold text-2xl">RZ</span>
             </div>
             <span className="text-2xl font-bold text-sidebar-foreground tracking-tight">
-              Resume Tailor
+              re-zoo-me
             </span>
           </Link>
         </div>
