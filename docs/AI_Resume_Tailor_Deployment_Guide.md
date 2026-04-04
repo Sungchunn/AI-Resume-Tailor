@@ -226,11 +226,11 @@ This should return confirmation that FastAPI can reach Postgres, MongoDB, and Re
 
 At your domain registrar, set up:
 
-| Record | Name | Value |
-| ------ | ---- | ----- |
-| A | api | YOUR_DROPLET_IP |
-| CNAME | www | cname.vercel-dns.com |
-| A (or CNAME) | @ | Vercel's IP (shown in dashboard) |
+| Record       | Name | Value                            |
+| ------------ | ---- | -------------------------------- |
+| A            | api  | YOUR_DROPLET_IP                  |
+| CNAME        | www  | cname.vercel-dns.com             |
+| A (or CNAME) | @    | Vercel's IP (shown in dashboard) |
 
 ---
 
