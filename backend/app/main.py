@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError, TimeoutError as SQLTimeoutError
 
 from app.api import api_router
 from app.core.config import get_settings
@@ -88,6 +88,41 @@ async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSON
     return JSONResponse(
         status_code=400,
         content={"detail": "Database constraint violation"},
+    )
+
+
+@app.exception_handler(OperationalError)
+async def operational_error_handler(request: Request, exc: OperationalError) -> JSONResponse:
+    """Handle database operational errors (connection issues, pool exhaustion, etc.).
+
+    These typically indicate infrastructure issues with the database connection.
+    """
+    error_message = str(exc.orig) if exc.orig else str(exc)
+    logger.error(f"Database operational error: {error_message}")
+
+    # Check for connection-related issues
+    if any(keyword in error_message.lower() for keyword in [
+        "connection", "pool", "timeout", "refused", "unavailable", "closed"
+    ]):
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Database temporarily unavailable. Please try again in a moment."},
+        )
+
+    # Generic operational error
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "A database error occurred. Please try again."},
+    )
+
+
+@app.exception_handler(SQLTimeoutError)
+async def timeout_error_handler(request: Request, exc: SQLTimeoutError) -> JSONResponse:
+    """Handle database timeout errors."""
+    logger.error(f"Database timeout error: {exc}")
+    return JSONResponse(
+        status_code=504,
+        content={"detail": "Database request timed out. Please try again."},
     )
 
 
