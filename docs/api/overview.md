@@ -19,7 +19,7 @@ All API endpoints (except health and root) are prefixed with `/api` or `/v1`.
 | v1 | `/api` (legacy routes) | Active |
 | v1 | `/v1` (new routes) | Active |
 
-**Note:** Routes under `/v1` represent newer API additions (blocks, match, resume-builds, ats).
+**Note:** Routes under `/v1` represent newer API additions (resume-builds, ats).
 
 ## Interactive Documentation
 
@@ -88,8 +88,6 @@ curl http://localhost:8000/api/resumes \
 | [Upload](upload-export.md) | `/api/upload` | Document upload and text extraction |
 | [Tailor](tailor-match.md) | `/api/tailor` | AI-powered resume tailoring |
 | [Export](upload-export.md) | `/api/export` | Export tailored resumes |
-| [Blocks/Vault](blocks.md) | `/v1/blocks` | Content block management |
-| [Semantic Match](tailor-match.md) | `/v1/match` | Semantic search and gap analysis |
 | [Resume Builds](resume-builds.md) | `/v1/resume-builds` | Resume building workshops |
 | [ATS Analysis](ats.md) | `/v1/ats` | ATS compatibility checks |
 | [AI Chat](ai-chat.md) | `/v1/ai` | AI-powered section improvements and chat |

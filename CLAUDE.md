@@ -357,7 +357,6 @@ When modifying the backend API (adding endpoints, changing request/response sche
 - `resumes.md` - Resume CRUD operations
 - `jobs.md` - User-created job postings
 - `job-listings.md` - Scraped job listings from LinkedIn
-- `blocks.md` - Content blocks/vault management
 - `tailor-match.md` - AI tailoring and semantic matching
 - `resume-builds.md` - Resume building workshops
 - `upload-export.md` - Document upload and export

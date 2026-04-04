@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Resume Builds API (formerly Workshops) provides a workspace for building tailored resumes. A resume build is a session where users pull blocks from their vault, receive AI-powered suggestions, and build a resume targeted at a specific job.
+The Resume Builds API (formerly Workshops) provides a workspace for building tailored resumes. A resume build is a session where users receive AI-powered suggestions and build a resume targeted at a specific job.
 
 **Base Path:** `/v1/resume-builds`
 
@@ -13,11 +13,11 @@ The Resume Builds API (formerly Workshops) provides a workspace for building tai
 ## Resume Build Lifecycle
 
 ```text
-┌──────────┐     Create      ┌───────────┐     Pull Blocks    ┌─────────────┐
-│  DRAFT   │ ──────────────► │IN_PROGRESS│ ─────────────────► │ IN_PROGRESS │
-└──────────┘                 └───────────┘                    └─────────────┘
-                                                                     │
-                              ┌──────────────────────────────────────┘
+┌──────────┐     Create      ┌───────────┐     Edit Content     ┌─────────────┐
+│  DRAFT   │ ──────────────► │IN_PROGRESS│ ──────────────────► │ IN_PROGRESS │
+└──────────┘                 └───────────┘                      └─────────────┘
+                                                                       │
+                              ┌────────────────────────────────────────┘
                               │  Get AI Suggestions
                               ▼
                         ┌─────────────┐     Accept/Reject    ┌─────────────┐
@@ -86,7 +86,6 @@ curl -X POST http://localhost:8000/v1/resume-builds \
   "job_description": "We are looking for a Senior Software Engineer...",
   "status": "draft",
   "sections": {},
-  "pulled_block_ids": [],
   "pending_diffs": [],
   "created_at": "2026-02-18T10:30:00.000000",
   "updated_at": "2026-02-18T10:30:00.000000"
@@ -185,85 +184,6 @@ No response body.
 
 ---
 
-### Pull Blocks
-
-Add blocks from the vault to the resume build.
-
-```http
-POST /v1/resume-builds/{build_id}/pull
-```
-
-**Request Body:**
-
-| Field       | Type   | Required | Description                |
-| ----------- | ------ | -------- | -------------------------- |
-| `block_ids` | UUID[] | Yes      | Block IDs to pull (min 1)  |
-
-**Example Request:**
-
-```bash
-curl -X POST http://localhost:8000/v1/resume-builds/990e8400-e29b-41d4-a716-446655440000/pull \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "block_ids": [
-      "880e8400-e29b-41d4-a716-446655440001",
-      "880e8400-e29b-41d4-a716-446655440002"
-    ]
-  }'
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "build": {...},
-  "newly_pulled": [
-    "880e8400-e29b-41d4-a716-446655440001",
-    "880e8400-e29b-41d4-a716-446655440002"
-  ],
-  "already_pulled": []
-}
-```
-
----
-
-### Get Build Blocks
-
-Retrieve all blocks pulled into a resume build.
-
-```http
-GET /v1/resume-builds/{build_id}/blocks
-```
-
-**Response (200 OK):**
-
-```json
-[
-  {
-    "id": "880e8400-e29b-41d4-a716-446655440001",
-    "content": "Led migration to microservices...",
-    "block_type": "ACHIEVEMENT"
-  }
-]
-```
-
----
-
-### Remove Block from Build
-
-Remove a block from the resume build.
-
-```http
-DELETE /v1/resume-builds/{build_id}/blocks/{block_id}
-```
-
-**Response (200 OK):**
-
-Returns updated resume build.
-
----
-
 ### Get AI Suggestions
 
 Request AI-powered improvement suggestions.
@@ -303,8 +223,7 @@ curl -X POST http://localhost:8000/v1/resume-builds/990e8400-e29b-41d4-a716-4466
         "value": "Led migration of monolithic application to microservices architecture, reducing deployment time by 75% and achieving 99.9% uptime SLA",
         "original_value": "Led migration to microservices",
         "reason": "Added quantified results to demonstrate impact",
-        "impact": "HIGH",
-        "source_block_id": "880e8400-e29b-41d4-a716-446655440001"
+        "impact": "HIGH"
       },
       {
         "operation": "add",
@@ -312,8 +231,7 @@ curl -X POST http://localhost:8000/v1/resume-builds/990e8400-e29b-41d4-a716-4466
         "value": "Kubernetes",
         "original_value": null,
         "reason": "Job requires Kubernetes experience, which matches your microservices work",
-        "impact": "MEDIUM",
-        "source_block_id": null
+        "impact": "MEDIUM"
       }
     ]
   },
@@ -449,61 +367,6 @@ PATCH /v1/resume-builds/{build_id}/status
 
 ---
 
-### Preview Writeback
-
-Preview writing edited content back to the vault.
-
-```http
-POST /v1/resume-builds/{build_id}/writeback/preview
-```
-
-**Request Body:**
-
-| Field             | Type    | Required | Description                        |
-| ----------------- | ------- | -------- | ---------------------------------- |
-| `edited_content`  | string  | Yes      | Content to write back              |
-| `source_block_id` | UUID    | No       | Original block ID (for updates)    |
-| `create_new`      | boolean | No       | Force create new block             |
-
-**Response (200 OK):**
-
-```json
-{
-  "action": "update",
-  "preview": {
-    "content": "Updated achievement text...",
-    "block_type": "ACHIEVEMENT"
-  },
-  "original": {
-    "content": "Original text...",
-    "block_type": "ACHIEVEMENT"
-  },
-  "changes": [
-    "Content updated with quantified metrics"
-  ]
-}
-```
-
----
-
-### Execute Writeback
-
-Write edited content back to the vault.
-
-```http
-POST /v1/resume-builds/{build_id}/writeback
-```
-
-**Request Body:**
-
-Same as preview.
-
-**Response (200 OK):**
-
-Returns the created or updated block.
-
----
-
 ### Export Resume Build
 
 Export the resume build to a file.
@@ -547,7 +410,6 @@ Binary file download with appropriate Content-Type header.
   original_value: any | null;                // Previous value
   reason: string;                            // Explanation
   impact: "HIGH" | "MEDIUM" | "LOW";         // Importance
-  source_block_id: string | null;            // Related block
 }
 ```
 
@@ -562,7 +424,6 @@ Binary file download with appropriate Content-Type header.
   job_description: string;
   status: ResumeBuildStatus;
   sections: object;
-  pulled_block_ids: string[];
   pending_diffs: DiffSuggestion[];
   created_at: string;
   updated_at: string;
@@ -572,14 +433,11 @@ Binary file download with appropriate Content-Type header.
 ## Usage Notes
 
 - Resume builds provide a structured way to build tailored resumes
-- Pull relevant blocks from your vault to start building
 - Use AI suggestions to improve content and fill gaps
 - Review and accept/reject suggestions individually
-- Writeback allows updating your vault with improved content
 - Export when ready to apply for the job
 
 ## Related Endpoints
 
-- [Blocks](blocks.md) - Manage content blocks
-- [Semantic Match](tailor-match.md) - Find matching blocks for jobs
+- [Tailor & Match](tailor-match.md) - AI-powered resume tailoring
 - [ATS Analysis](ats.md) - Check ATS compatibility
