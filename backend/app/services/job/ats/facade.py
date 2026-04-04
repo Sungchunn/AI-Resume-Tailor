@@ -116,7 +116,6 @@ class ATSAnalyzer:
         self,
         resume_blocks: list[ExperienceBlockData],
         job_description: str,
-        vault_blocks: list[ExperienceBlockData],
     ) -> ATSReportData:
         """
         Analyze keyword coverage.
@@ -124,20 +123,18 @@ class ATSAnalyzer:
         Args:
             resume_blocks: Blocks currently in the resume
             job_description: Target job requirements
-            vault_blocks: All user's Vault blocks (for gap analysis)
 
         Returns:
             ATSReportData with keyword analysis
         """
         return await self._keyword_analyzer.analyze_keywords(
-            resume_blocks, job_description, vault_blocks
+            resume_blocks, job_description
         )
 
     async def analyze_keywords_detailed(
         self,
         resume_blocks: list[ExperienceBlockData],
         job_description: str,
-        vault_blocks: list[ExperienceBlockData],
     ) -> DetailedKeywordAnalysis:
         """
         Perform detailed keyword analysis with importance levels.
@@ -145,20 +142,18 @@ class ATSAnalyzer:
         Args:
             resume_blocks: Blocks currently in the resume
             job_description: Target job requirements
-            vault_blocks: All user's Vault blocks (for gap analysis)
 
         Returns:
             DetailedKeywordAnalysis with importance-grouped keywords
         """
         return await self._keyword_analyzer.analyze_keywords_detailed(
-            resume_blocks, job_description, vault_blocks
+            resume_blocks, job_description
         )
 
     async def analyze_keywords_enhanced(
         self,
         parsed_resume: dict[str, Any],
         job_description: str,
-        vault_blocks: list[ExperienceBlockData],
         return_metrics: bool = False,
     ) -> EnhancedKeywordAnalysis | tuple[EnhancedKeywordAnalysis, AIResponse | None]:
         """
@@ -167,7 +162,6 @@ class ATSAnalyzer:
         Args:
             parsed_resume: Parsed resume content as structured dictionary
             job_description: Target job requirements text
-            vault_blocks: All user's Vault blocks (for gap analysis)
             return_metrics: If True, return (result, AIResponse) tuple
 
         Returns:
@@ -175,7 +169,7 @@ class ATSAnalyzer:
             If return_metrics=True, returns (EnhancedKeywordAnalysis, AIResponse | None).
         """
         return await self._keyword_analyzer.analyze_keywords_enhanced(
-            parsed_resume, job_description, vault_blocks, return_metrics=return_metrics
+            parsed_resume, job_description, return_metrics=return_metrics
         )
 
     # ============================================================

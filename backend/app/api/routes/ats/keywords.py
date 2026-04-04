@@ -10,7 +10,6 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_id, get_db, get_mongo_db
-from app.crud.block import BlockRepository
 from app.crud.mongo import keyword_override_crud
 from app.models.mongo.keyword_override import (
     KeywordOverrideCreate,
@@ -53,40 +52,26 @@ async def analyze_keywords(
     """
     Analyze keyword coverage for a job description.
 
-    Compares job requirements against:
-    1. Blocks currently in the resume
-    2. All blocks in the user's Vault
+    Compares job requirements against resume content.
 
     Returns:
     - Keywords matched in resume
-    - Keywords missing but available in Vault (can be added)
-    - Keywords not in Vault (user may lack this experience)
+    - Keywords missing from resume
     """
     analyzer = get_ats_analyzer()
-    block_repo = BlockRepository()
 
-    # Get all vault blocks
-    vault_blocks = await block_repo.list_blocks(db, user_id=user_id, limit=500)
-
-    # Get resume blocks (either specified or all)
-    if request.resume_block_ids:
-        resume_blocks = [
-            block for block in vault_blocks
-            if block.id in request.resume_block_ids
-        ]
-    else:
-        resume_blocks = vault_blocks
-
-    if not resume_blocks:
+    # Get resume content
+    if not request.resume_content:
         raise HTTPException(
             status_code=400,
-            detail="No blocks found for analysis. Create some experience blocks first.",
+            detail="No resume content provided for analysis.",
         )
+
+    resume_blocks = [{"content": request.resume_content, "id": 0}]
 
     result = await analyzer.analyze_keywords(
         resume_blocks=resume_blocks,
         job_description=request.job_description,
-        vault_blocks=vault_blocks,
     )
 
     return ATSKeywordResponse(
@@ -111,41 +96,24 @@ async def analyze_keywords_detailed(
     This endpoint provides comprehensive keyword analysis including:
     - Keywords grouped by importance (required, preferred, nice-to-have)
     - Coverage percentages for each importance level
-    - Vault availability for missing keywords
     - Actionable suggestions prioritized by importance
 
     Use this for the ATS Keywords Panel in the resume editor.
     """
     analyzer = get_ats_analyzer()
-    block_repo = BlockRepository()
-
-    # Get all vault blocks
-    vault_blocks = await block_repo.list_blocks(db, user_id=user_id, limit=500)
 
     # Determine resume content source
-    if request.resume_content:
-        # Use provided resume content directly
-        resume_blocks = [{"content": request.resume_content, "id": 0}]
-    elif request.resume_block_ids:
-        # Use specified block IDs
-        resume_blocks = [
-            block for block in vault_blocks
-            if block.id in request.resume_block_ids
-        ]
-    else:
-        # Use all vault blocks as resume
-        resume_blocks = vault_blocks
-
-    if not resume_blocks:
+    if not request.resume_content:
         raise HTTPException(
             status_code=400,
-            detail="No resume content found for analysis. Provide resume_content or create vault blocks.",
+            detail="No resume content found for analysis. Provide resume_content.",
         )
+
+    resume_blocks = [{"content": request.resume_content, "id": 0}]
 
     result = await analyzer.analyze_keywords_detailed(
         resume_blocks=resume_blocks,
         job_description=request.job_description,
-        vault_blocks=vault_blocks,
     )
 
     # Convert KeywordDetail dataclasses to response models
@@ -225,10 +193,6 @@ async def analyze_keywords_enhanced(
     - Actionable suggestions for improvement
     """
     analyzer = get_ats_analyzer()
-    block_repo = BlockRepository()
-
-    # Get vault blocks for gap analysis
-    vault_blocks = await block_repo.list_blocks(db, user_id=user_id, limit=500)
 
     # Get parsed resume (resume_id lookup removed - use progressive endpoint for DB lookups)
     if request.resume_content:
@@ -243,7 +207,6 @@ async def analyze_keywords_enhanced(
     result = await analyzer.analyze_keywords_enhanced(
         parsed_resume=parsed_resume,
         job_description=request.job_description,
-        vault_blocks=vault_blocks,
     )
 
     # Convert dataclasses to response models

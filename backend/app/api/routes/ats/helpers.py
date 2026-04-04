@@ -8,7 +8,6 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crud.block import BlockRepository
 from app.schemas.ats import (
     ATSProgressiveRequest,
     KnockoutCheckRequest,
@@ -101,16 +100,11 @@ async def execute_keyword_analysis(
         Tuple of (EnhancedKeywordAnalysis result, AIResponse metrics or None)
     """
     analyzer = get_ats_analyzer()
-    block_repo = BlockRepository()
-
-    # Get vault blocks for gap analysis
-    vault_blocks = await block_repo.list_blocks(db, user_id=user_id, limit=500)
 
     # Perform enhanced keyword analysis with metrics
     result, ai_metrics = await analyzer.analyze_keywords_enhanced(
         parsed_resume=request.resume_content or {},
         job_description=request.job_description or "",
-        vault_blocks=vault_blocks,
         return_metrics=True,
     )
 

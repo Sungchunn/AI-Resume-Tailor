@@ -3,7 +3,6 @@ Resume Builds Router - Job-specific tailoring workspace API.
 
 Provides CRUD operations for resume builds and all related operations:
 - Create, read, update, delete resume builds
-- Pull/remove blocks from Vault
 - Generate and manage AI suggestions (diffs)
 - Update sections and status
 - Export to various formats
@@ -15,14 +14,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db_session, get_current_user_id
 from app.core.protocols import ResumeBuildStatus
 from app.crud.resume_build import resume_build_repository
-from app.crud.block import block_repository
 from app.schemas.resume_build import (
     ResumeBuildCreate,
     ResumeBuildUpdate,
     ResumeBuildResponse,
     ResumeBuildListResponse,
-    PullBlocksRequest,
-    PullBlocksResponse,
     SuggestRequest,
     SuggestResponse,
     DiffActionRequest,
@@ -30,12 +26,9 @@ from app.schemas.resume_build import (
     UpdateSectionsRequest,
     UpdateStatusRequest,
     ExportRequest,
-    WritebackRequest,
-    WritebackProposal,
     BulletSuggestionRequest,
     BulletSuggestionResponse,
 )
-from app.schemas.block import BlockResponse
 
 router = APIRouter()
 
@@ -184,72 +177,6 @@ async def delete_resume_build(
     await db.commit()
 
 
-@router.post("/{resume_build_id}/pull", response_model=PullBlocksResponse)
-async def pull_blocks(
-    resume_build_id: int,
-    pull_in: PullBlocksRequest,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
-) -> PullBlocksResponse:
-    """
-    Pull blocks from Vault into resume build.
-
-    Blocks are copied by reference (ID) and can be used for building
-    the tailored resume.
-    """
-    # Get current resume build to check existing blocks
-    resume_build = await resume_build_repository.get(
-        db, resume_build_id=resume_build_id, user_id=current_user_id
-    )
-    if not resume_build:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resume build not found",
-        )
-
-    existing_ids = set(resume_build.get("pulled_block_ids", []))
-    already_pulled = [bid for bid in pull_in.block_ids if bid in existing_ids]
-    newly_pulled = [bid for bid in pull_in.block_ids if bid not in existing_ids]
-
-    # Pull the blocks
-    updated_resume_build = await resume_build_repository.pull_blocks(
-        db,
-        resume_build_id=resume_build_id,
-        user_id=current_user_id,
-        block_ids=pull_in.block_ids,
-    )
-    await db.commit()
-
-    return PullBlocksResponse(
-        resume_build=ResumeBuildResponse.model_validate(updated_resume_build),
-        newly_pulled=newly_pulled,
-        already_pulled=already_pulled,
-    )
-
-
-@router.delete("/{resume_build_id}/blocks/{block_id}", response_model=ResumeBuildResponse)
-async def remove_block(
-    resume_build_id: int,
-    block_id: int,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
-) -> ResumeBuildResponse:
-    """Remove a block from resume build's pulled blocks."""
-    resume_build = await resume_build_repository.remove_block(
-        db,
-        resume_build_id=resume_build_id,
-        user_id=current_user_id,
-        block_id=block_id,
-    )
-    if not resume_build:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resume build not found",
-        )
-    await db.commit()
-    return ResumeBuildResponse.model_validate(resume_build)
-
-
 @router.post("/{resume_build_id}/suggest", response_model=SuggestResponse)
 async def generate_suggestions(
     resume_build_id: int,
@@ -260,9 +187,8 @@ async def generate_suggestions(
     """
     Generate AI suggestions for the resume build.
 
-    The AI analyzes the job description and pulled blocks to suggest
-    improvements to the resume content. Suggestions are Vault-constrained
-    and will only use facts from the user's experience blocks.
+    The AI analyzes the job description and resume content to suggest
+    improvements to optimize for the target role.
     """
     from app.services.job.diff import get_diff_engine
 
@@ -275,25 +201,12 @@ async def generate_suggestions(
             detail="Resume build not found",
         )
 
-    # Get pulled blocks
-    pulled_block_ids = resume_build.get("pulled_block_ids", [])
-    if not pulled_block_ids:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No blocks pulled into resume build. Pull blocks first.",
-        )
-
-    # Get the actual blocks
-    blocks = await block_repository.get_by_ids(
-        db, block_ids=pulled_block_ids, user_id=current_user_id
-    )
-
-    # Generate suggestions
+    # Generate suggestions based on resume content
     diff_engine = get_diff_engine()
     result = await diff_engine.generate_suggestions(
         workshop=resume_build,
         job_description=resume_build.get("job_description", ""),
-        available_blocks=blocks,
+        available_blocks=[],  # No vault blocks, use resume content directly
         max_suggestions=suggest_in.max_suggestions,
         focus_sections=suggest_in.focus_sections,
     )
@@ -534,113 +447,6 @@ async def update_status(
         )
     await db.commit()
     return ResumeBuildResponse.model_validate(resume_build)
-
-
-@router.post("/{resume_build_id}/writeback/preview", response_model=WritebackProposal)
-async def preview_writeback(
-    resume_build_id: int,
-    writeback_in: WritebackRequest,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
-) -> WritebackProposal:
-    """
-    Preview a write-back to the Vault.
-
-    Shows what would happen (create/update) without executing.
-    """
-    from app.services.resume.writeback import get_writeback_service
-
-    # Verify resume build exists
-    resume_build = await resume_build_repository.get(
-        db, resume_build_id=resume_build_id, user_id=current_user_id
-    )
-    if not resume_build:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resume build not found",
-        )
-
-    writeback_service = get_writeback_service()
-
-    proposal = await writeback_service.propose_writeback(
-        db=db,
-        workshop_id=resume_build_id,
-        user_id=current_user_id,
-        edited_content=writeback_in.edited_content,
-        source_block_id=writeback_in.source_block_id,
-    )
-
-    return WritebackProposal(
-        action=proposal.action,
-        preview=proposal.preview,
-        original=proposal.original,
-        changes=proposal.changes,
-    )
-
-
-@router.post("/{resume_build_id}/writeback", response_model=BlockResponse)
-async def execute_writeback(
-    resume_build_id: int,
-    writeback_in: WritebackRequest,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
-) -> BlockResponse:
-    """
-    Execute a write-back to the Vault.
-
-    Creates or updates a block based on resume build edits.
-    """
-    from app.services.resume.writeback import get_writeback_service
-
-    # Verify resume build exists
-    resume_build = await resume_build_repository.get(
-        db, resume_build_id=resume_build_id, user_id=current_user_id
-    )
-    if not resume_build:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resume build not found",
-        )
-
-    writeback_service = get_writeback_service()
-
-    block = await writeback_service.execute_writeback(
-        db=db,
-        workshop_id=resume_build_id,
-        user_id=current_user_id,
-        edited_content=writeback_in.edited_content,
-        source_block_id=writeback_in.source_block_id,
-        create_new=writeback_in.create_new,
-    )
-
-    return BlockResponse.model_validate(block)
-
-
-@router.get("/{resume_build_id}/blocks", response_model=list[BlockResponse])
-async def get_pulled_blocks(
-    resume_build_id: int,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
-) -> list[BlockResponse]:
-    """Get all blocks pulled into this resume build."""
-    resume_build = await resume_build_repository.get(
-        db, resume_build_id=resume_build_id, user_id=current_user_id
-    )
-    if not resume_build:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resume build not found",
-        )
-
-    block_ids = resume_build.get("pulled_block_ids", [])
-    if not block_ids:
-        return []
-
-    blocks = await block_repository.get_by_ids(
-        db, block_ids=block_ids, user_id=current_user_id
-    )
-
-    return [BlockResponse.model_validate(b) for b in blocks]
 
 
 @router.post("/{resume_build_id}/export")

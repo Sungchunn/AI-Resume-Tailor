@@ -23,8 +23,8 @@ class SuggestionGenerator:
     """
     Generates diff-based suggestions for resume improvements.
 
-    Key principle: All suggestions MUST trace back to content in the
-    user's Vault. The AI cannot hallucinate or invent facts.
+    Key principle: Suggestions improve job fit by enhancing clarity,
+    quantifying achievements, and highlighting relevant skills.
     """
 
     def __init__(self):
@@ -34,7 +34,7 @@ class SuggestionGenerator:
         self,
         workshop: WorkshopData,
         job_description: str,
-        available_blocks: list[ExperienceBlockData],
+        available_blocks: list[ExperienceBlockData] | None = None,
         max_suggestions: int = 10,
         focus_sections: list[str] | None = None,
         return_metrics: bool = False,
@@ -42,13 +42,13 @@ class SuggestionGenerator:
         """
         Generate diff suggestions for a workshop.
 
-        CRITICAL: Suggestions can ONLY use content from available_blocks.
-        The AI cannot hallucinate or invent facts.
+        Suggestions improve job fit by enhancing clarity, quantifying
+        achievements, and highlighting relevant skills from the resume.
 
         Args:
             workshop: Current workshop state
             job_description: Target job requirements
-            available_blocks: User's Vault blocks to draw from
+            available_blocks: Optional additional content blocks (deprecated)
             max_suggestions: Maximum suggestions to generate
             focus_sections: Optional sections to focus on
             return_metrics: If True, return (result, metrics) tuple
@@ -57,8 +57,9 @@ class SuggestionGenerator:
             Dict with "suggestions" and "gaps" keys if return_metrics=False,
             else (dict, AIResponse | None)
         """
-        # Format vault blocks for prompt
-        vault_text = self._format_blocks_for_prompt(available_blocks)
+        # Format additional blocks for prompt (if provided)
+        available_blocks = available_blocks or []
+        vault_text = self._format_blocks_for_prompt(available_blocks) if available_blocks else "No additional content blocks provided."
 
         # Format workshop sections
         sections_text = json.dumps(workshop.get("sections", {}), indent=2)
@@ -230,7 +231,7 @@ Source: {block.get('source_company', 'N/A')} - {block.get('source_role', 'N/A')}
     def _validate_suggestion(
         self,
         raw: dict[str, Any],
-        available_blocks: list[ExperienceBlockData],
+        available_blocks: list[ExperienceBlockData] | None = None,
     ) -> DiffSuggestionData | None:
         """Validate and normalize a suggestion."""
         # Required fields
@@ -254,14 +255,6 @@ Source: {block.get('source_company', 'N/A')} - {block.get('source_role', 'N/A')}
         if impact not in ["high", "medium", "low"]:
             impact = "medium"
 
-        source_block_id = raw.get("source_block_id")
-
-        # Validate source_block_id exists in available blocks
-        if source_block_id is not None:
-            block_ids = {b["id"] for b in available_blocks}
-            if source_block_id not in block_ids:
-                source_block_id = None  # Clear invalid reference
-
         return {
             "operation": operation,
             "path": path,
@@ -269,5 +262,4 @@ Source: {block.get('source_company', 'N/A')} - {block.get('source_role', 'N/A')}
             "original_value": raw.get("original_value"),
             "reason": reason,
             "impact": impact,
-            "source_block_id": source_block_id,
         }

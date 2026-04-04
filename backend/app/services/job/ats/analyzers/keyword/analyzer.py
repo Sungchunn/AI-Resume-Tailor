@@ -7,7 +7,7 @@ Main orchestrator class for keyword analysis (Stage 1 basic and Stage 2 enhanced
 import re
 from typing import Any
 
-from app.core.protocols import ExperienceBlockData, ATSReportData
+from app.core.protocols import ATSReportData, ExperienceBlockData
 from app.services.ai.response import AIResponse
 
 from ...constants import KeywordImportance
@@ -117,13 +117,9 @@ class KeywordAnalyzer:
         self,
         required_missing: list[str],
         preferred_missing: list[str],
-        available_in_vault: list[str],
-        vault_blocks: list[ExperienceBlockData],
     ) -> list[str]:
         """Backward compatibility wrapper for generate_detailed_suggestions."""
-        return generate_detailed_suggestions(
-            required_missing, preferred_missing, available_in_vault, vault_blocks
-        )
+        return generate_detailed_suggestions(required_missing, preferred_missing)
 
     # ============================================================
     # Public Analysis Methods
@@ -133,20 +129,17 @@ class KeywordAnalyzer:
         self,
         resume_blocks: list[ExperienceBlockData],
         job_description: str,
-        vault_blocks: list[ExperienceBlockData],
     ) -> ATSReportData:
         """
         Analyze keyword coverage.
 
         Provides honest report showing:
         - Keywords matched
-        - Keywords missing but available in Vault (user can add these)
-        - Keywords missing entirely (user doesn't have this experience)
+        - Keywords missing from resume
 
         Args:
             resume_blocks: Blocks currently in the resume
             job_description: Target job requirements
-            vault_blocks: All user's Vault blocks (for gap analysis)
 
         Returns:
             ATSReportData with keyword analysis
@@ -160,15 +153,9 @@ class KeywordAnalyzer:
             for block in resume_blocks
         ).lower()
 
-        vault_text = " ".join(
-            block.get("content", "") if isinstance(block, dict) else block.content
-            for block in vault_blocks
-        ).lower()
-
         # Categorize keywords
         matched_keywords: list[str] = []
         missing_keywords: list[str] = []
-        missing_from_vault: list[str] = []
 
         for keyword in job_keywords:
             keyword_lower = keyword.lower()
@@ -176,19 +163,15 @@ class KeywordAnalyzer:
 
             if re.search(keyword_pattern, resume_text):
                 matched_keywords.append(keyword)
-            elif re.search(keyword_pattern, vault_text):
-                missing_keywords.append(keyword)  # In vault but not in resume
             else:
-                missing_from_vault.append(keyword)  # Not in vault at all
+                missing_keywords.append(keyword)
 
         # Calculate coverage
         total_keywords = len(job_keywords) if job_keywords else 1
         keyword_coverage = len(matched_keywords) / total_keywords
 
         # Generate suggestions
-        suggestions = generate_keyword_suggestions(
-            missing_keywords, vault_blocks
-        )
+        suggestions = generate_keyword_suggestions(missing_keywords)
 
         # Generate warnings
         warnings: list[str] = []
@@ -196,9 +179,9 @@ class KeywordAnalyzer:
             warnings.append(
                 "Low keyword match - your resume may not pass ATS keyword filters"
             )
-        if len(missing_from_vault) > len(job_keywords) * 0.3:
+        if len(missing_keywords) > len(job_keywords) * 0.5:
             warnings.append(
-                f"{len(missing_from_vault)} job requirements not found in your experience. "
+                f"{len(missing_keywords)} job requirements not found in your resume. "
                 "Consider whether this role is a good fit or if you have transferable skills."
             )
 
@@ -207,7 +190,7 @@ class KeywordAnalyzer:
             keyword_coverage=round(keyword_coverage, 2),
             matched_keywords=matched_keywords,
             missing_keywords=missing_keywords,
-            missing_from_vault=missing_from_vault,
+            missing_from_vault=[],  # Deprecated, kept for API compatibility
             warnings=warnings,
             suggestions=suggestions,
         )
@@ -216,7 +199,6 @@ class KeywordAnalyzer:
         self,
         resume_blocks: list[ExperienceBlockData],
         job_description: str,
-        vault_blocks: list[ExperienceBlockData],
     ) -> DetailedKeywordAnalysis:
         """
         Perform detailed keyword analysis with importance levels.
@@ -224,7 +206,6 @@ class KeywordAnalyzer:
         Args:
             resume_blocks: Blocks currently in the resume
             job_description: Target job requirements
-            vault_blocks: All user's Vault blocks (for gap analysis)
 
         Returns:
             DetailedKeywordAnalysis with importance-grouped keywords
@@ -240,11 +221,6 @@ class KeywordAnalyzer:
             for block in resume_blocks
         ).lower()
 
-        vault_text = " ".join(
-            block.get("content", "") if isinstance(block, dict) else block.content
-            for block in vault_blocks
-        ).lower()
-
         # Categorize keywords
         all_keywords: list[KeywordDetail] = []
         required_matched: list[str] = []
@@ -253,8 +229,6 @@ class KeywordAnalyzer:
         preferred_missing: list[str] = []
         nice_to_have_matched: list[str] = []
         nice_to_have_missing: list[str] = []
-        missing_available_in_vault: list[str] = []
-        missing_not_in_vault: list[str] = []
 
         for kw_data in keywords_with_importance:
             keyword = kw_data["keyword"]
@@ -263,7 +237,6 @@ class KeywordAnalyzer:
             keyword_pattern = r"\b" + re.escape(keyword_lower) + r"\b"
 
             found_in_resume = bool(re.search(keyword_pattern, resume_text))
-            found_in_vault = bool(re.search(keyword_pattern, vault_text))
             frequency = count_keyword_frequency(keyword, job_description)
             context = get_keyword_context(keyword, job_description)
 
@@ -271,7 +244,7 @@ class KeywordAnalyzer:
                 keyword=keyword,
                 importance=importance,
                 found_in_resume=found_in_resume,
-                found_in_vault=found_in_vault,
+                found_in_vault=False,  # Deprecated
                 frequency_in_job=frequency,
                 context=context,
             ))
@@ -292,13 +265,6 @@ class KeywordAnalyzer:
                     nice_to_have_matched.append(keyword)
                 else:
                     nice_to_have_missing.append(keyword)
-
-            # Track vault availability for missing keywords
-            if not found_in_resume:
-                if found_in_vault:
-                    missing_available_in_vault.append(keyword)
-                else:
-                    missing_not_in_vault.append(keyword)
 
         # Calculate coverage scores
         total_keywords = len(keywords_with_importance)
@@ -321,8 +287,6 @@ class KeywordAnalyzer:
         suggestions = generate_detailed_suggestions(
             required_missing,
             preferred_missing,
-            missing_available_in_vault,
-            vault_blocks,
         )
 
         # Generate warnings
@@ -332,9 +296,11 @@ class KeywordAnalyzer:
                 f"Only {int(required_coverage * 100)}% of required keywords found. "
                 "This may significantly reduce your chances."
             )
-        if len(missing_not_in_vault) > 5:
+
+        total_missing = len(required_missing) + len(preferred_missing) + len(nice_to_have_missing)
+        if total_missing > 5:
             warnings.append(
-                f"{len(missing_not_in_vault)} keywords not found in your vault. "
+                f"{total_missing} keywords not found in your resume. "
                 "Consider if you have transferable skills or if this role is a good fit."
             )
 
@@ -348,8 +314,8 @@ class KeywordAnalyzer:
             preferred_missing=preferred_missing,
             nice_to_have_matched=nice_to_have_matched,
             nice_to_have_missing=nice_to_have_missing,
-            missing_available_in_vault=missing_available_in_vault,
-            missing_not_in_vault=missing_not_in_vault,
+            missing_available_in_vault=[],  # Deprecated
+            missing_not_in_vault=[],  # Deprecated
             all_keywords=all_keywords,
             suggestions=suggestions,
             warnings=warnings,
@@ -359,7 +325,6 @@ class KeywordAnalyzer:
         self,
         parsed_resume: dict[str, Any],
         job_description: str,
-        vault_blocks: list[ExperienceBlockData],
         return_metrics: bool = False,
     ) -> EnhancedKeywordAnalysis | tuple[EnhancedKeywordAnalysis, AIResponse | None]:
         """
@@ -374,7 +339,6 @@ class KeywordAnalyzer:
         Args:
             parsed_resume: Parsed resume content as structured dictionary
             job_description: Target job requirements text
-            vault_blocks: All user's Vault blocks (for gap analysis)
             return_metrics: If True, return (result, AIResponse) tuple
 
         Returns:
@@ -386,12 +350,6 @@ class KeywordAnalyzer:
             job_description, return_metrics=True
         )
         keywords_with_importance, ai_metrics = extraction_result
-
-        # Build vault text for checking availability
-        vault_text = " ".join(
-            block.get("content", "") if isinstance(block, dict) else block.content
-            for block in vault_blocks
-        ).lower()
 
         # Analyze each keyword
         all_keywords: list[EnhancedKeywordDetail] = []
@@ -405,10 +363,6 @@ class KeywordAnalyzer:
         preferred_missing: list[str] = []
         nice_to_have_matched: list[str] = []
         nice_to_have_missing: list[str] = []
-
-        # Vault availability
-        missing_available_in_vault: list[str] = []
-        missing_not_in_vault: list[str] = []
 
         # Gap analysis
         gap_list: list[dict[str, Any]] = []
@@ -425,15 +379,10 @@ class KeywordAnalyzer:
         for kw_data in keywords_with_importance:
             keyword = kw_data["keyword"]
             importance: KeywordImportance = kw_data["importance"]
-            keyword_lower = keyword.lower()
-            keyword_pattern = r"\b" + re.escape(keyword_lower) + r"\b"
 
             # Find matches in resume
             matches = find_keyword_matches(keyword, parsed_resume)
             found_in_resume = len(matches) > 0
-
-            # Check vault
-            found_in_vault = bool(re.search(keyword_pattern, vault_text))
 
             # Get frequency in job description
             frequency = count_keyword_frequency(keyword, job_description)
@@ -466,7 +415,7 @@ class KeywordAnalyzer:
                 keyword=keyword,
                 importance=importance,
                 found_in_resume=found_in_resume,
-                found_in_vault=found_in_vault,
+                found_in_vault=False,  # Deprecated
                 frequency_in_job=frequency,
                 context=context,
                 matches=matches,
@@ -502,24 +451,14 @@ class KeywordAnalyzer:
                 else:
                     nice_to_have_missing.append(keyword)
 
-            # Track vault availability and build gap list for missing keywords
+            # Build gap list for missing keywords
             if not found_in_resume:
-                if found_in_vault:
-                    missing_available_in_vault.append(keyword)
-                    gap_list.append({
-                        "keyword": keyword,
-                        "importance": importance,
-                        "in_vault": True,
-                        "suggestion": f"Add '{keyword}' from your vault",
-                    })
-                else:
-                    missing_not_in_vault.append(keyword)
-                    gap_list.append({
-                        "keyword": keyword,
-                        "importance": importance,
-                        "in_vault": False,
-                        "suggestion": f"Consider gaining experience with '{keyword}'",
-                    })
+                gap_list.append({
+                    "keyword": keyword,
+                    "importance": importance,
+                    "in_vault": False,  # Deprecated
+                    "suggestion": f"Consider adding '{keyword}' to your resume",
+                })
 
         # Sort gap list by importance (required first)
         importance_order = {"required": 0, "strongly_preferred": 1, "preferred": 2, "nice_to_have": 3}
@@ -551,8 +490,6 @@ class KeywordAnalyzer:
             required_missing,
             strongly_preferred_missing,
             preferred_missing,
-            missing_available_in_vault,
-            vault_blocks,
         )
 
         # Generate warnings
@@ -567,9 +504,10 @@ class KeywordAnalyzer:
                 f"Missing {len(required_missing)} required keywords. "
                 "Focus on adding these to your resume."
             )
-        if len(missing_not_in_vault) > 5:
+        total_missing = len(required_missing) + len(strongly_preferred_missing) + len(preferred_missing) + len(nice_to_have_missing)
+        if total_missing > 5:
             warnings.append(
-                f"{len(missing_not_in_vault)} keywords not found in your vault. "
+                f"{total_missing} keywords not found in your resume. "
                 "Consider if you have transferable skills or if this role is a good fit."
             )
 
@@ -591,8 +529,8 @@ class KeywordAnalyzer:
             preferred_missing=preferred_missing,
             nice_to_have_matched=nice_to_have_matched,
             nice_to_have_missing=nice_to_have_missing,
-            missing_available_in_vault=missing_available_in_vault,
-            missing_not_in_vault=missing_not_in_vault,
+            missing_available_in_vault=[],  # Deprecated
+            missing_not_in_vault=[],  # Deprecated
             gap_list=gap_list,
             all_keywords=all_keywords,
             suggestions=suggestions,
