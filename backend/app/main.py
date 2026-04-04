@@ -1,7 +1,10 @@
+import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 
 from app.api import api_router
 from app.core.config import get_settings
@@ -11,6 +14,7 @@ from app.middleware.rate_limiter import RateLimitConfig, RateLimitMiddleware
 from app.services.scraping.scheduler import get_scheduler_service
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -47,6 +51,45 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+# Global exception handlers
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
+    """Handle database integrity errors (unique constraints, foreign keys, etc.).
+
+    Converts SQLAlchemy IntegrityError to user-friendly error responses.
+    """
+    error_message = str(exc.orig) if exc.orig else str(exc)
+    logger.warning(f"Database integrity error: {error_message}")
+
+    # Check for common constraint violations and provide user-friendly messages
+    if "unique constraint" in error_message.lower() or "duplicate key" in error_message.lower():
+        # Try to extract the field name from the error
+        if "email" in error_message.lower():
+            detail = "Email already registered"
+        elif "username" in error_message.lower():
+            detail = "Username already taken"
+        else:
+            detail = "A record with this value already exists"
+        return JSONResponse(
+            status_code=409,
+            content={"detail": detail},
+        )
+
+    if "foreign key" in error_message.lower():
+        detail = "Referenced record does not exist"
+        return JSONResponse(
+            status_code=400,
+            content={"detail": detail},
+        )
+
+    # Generic database error
+    return JSONResponse(
+        status_code=400,
+        content={"detail": "Database constraint violation"},
+    )
+
 
 # Add middleware in order (last added = first executed)
 # Rate limiting middleware
