@@ -106,6 +106,18 @@ class JobListing(Base):
         Index("ix_job_listings_region", "region"),
         Index("ix_job_listings_easy_apply", "easy_apply"),
         Index("ix_job_listings_created_at", "created_at"),  # For cleanup job performance
+        # Expression indexes (created via migration 20260404_0002, not declarative):
+        # - ix_job_listings_seniority_lower: LOWER(seniority)
+        # - ix_job_listings_city_lower: LOWER(city)
+        #
+        # GIN trigram indexes (created via migration 20260404_0003, not declarative):
+        # - ix_job_listings_location_gin
+        # - ix_job_listings_region_gin
+        # - ix_job_listings_country_gin
+        # - ix_job_listings_city_gin
+        # - ix_job_listings_job_function_gin
+        # - ix_job_listings_industry_gin
+        # - ix_job_listings_company_name_gin
     )
 
     def __repr__(self) -> str:
