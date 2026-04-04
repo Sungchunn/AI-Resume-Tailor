@@ -10,6 +10,7 @@ from app.api import api_router
 from app.core.config import get_settings
 from app.db.mongodb import close_mongodb, connect_mongodb
 from app.db.redis import close_redis, connect_redis
+from app.db.session import engine
 from app.middleware.rate_limiter import RateLimitConfig, RateLimitMiddleware
 from app.services.scraping.scheduler import get_scheduler_service
 
@@ -37,6 +38,9 @@ async def lifespan(app: FastAPI):
 
     # Shutdown: Stop scheduler gracefully
     scheduler.stop()
+
+    # Shutdown: Dispose PostgreSQL engine (releases all connections)
+    await engine.dispose()
 
     # Shutdown: Close Redis connection
     await close_redis()
