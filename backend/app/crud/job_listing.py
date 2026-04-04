@@ -848,6 +848,42 @@ class UserJobInteractionRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_batch(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: int,
+        job_listing_ids: list[int],
+    ) -> dict[int, UserJobInteraction]:
+        """
+        Get interactions for multiple job listings in a single query.
+
+        This method eliminates N+1 query problems when fetching interactions
+        for a list of job listings. Instead of N individual queries, it uses
+        a single query with an IN clause.
+
+        Args:
+            db: Database session
+            user_id: The user's ID
+            job_listing_ids: List of job listing IDs to fetch interactions for
+
+        Returns:
+            Dictionary mapping job_listing_id -> UserJobInteraction.
+            Job listings without interactions will not have entries in the dict.
+        """
+        if not job_listing_ids:
+            return {}
+
+        result = await db.execute(
+            select(UserJobInteraction).where(
+                UserJobInteraction.user_id == user_id,
+                UserJobInteraction.job_listing_id.in_(job_listing_ids),
+            )
+        )
+        interactions = result.scalars().all()
+
+        return {interaction.job_listing_id: interaction for interaction in interactions}
+
     async def set_saved(
         self,
         db: AsyncSession,

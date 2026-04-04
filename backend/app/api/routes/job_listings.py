@@ -209,13 +209,17 @@ async def list_job_listings(
         db, filters=filters, user_id=current_user_id
     )
 
-    # Get user interactions for each listing
-    response_listings = []
-    for listing in listings:
-        interaction = await user_job_interaction_repository.get(
-            db, user_id=current_user_id, job_listing_id=listing.id
-        )
-        response_listings.append(_build_listing_response(listing, interaction))
+    # Batch fetch all interactions in a single query (fixes N+1)
+    listing_ids = [listing.id for listing in listings]
+    interactions_map = await user_job_interaction_repository.get_batch(
+        db, user_id=current_user_id, job_listing_ids=listing_ids
+    )
+
+    # Build responses using the pre-fetched interactions
+    response_listings = [
+        _build_listing_response(listing, interactions_map.get(listing.id))
+        for listing in listings
+    ]
 
     return JobListingListResponse(
         listings=response_listings,
@@ -251,12 +255,16 @@ async def search_job_listings(
         db, filters=filters, user_id=current_user_id
     )
 
-    response_listings = []
-    for listing in listings:
-        interaction = await user_job_interaction_repository.get(
-            db, user_id=current_user_id, job_listing_id=listing.id
-        )
-        response_listings.append(_build_listing_response(listing, interaction))
+    # Batch fetch all interactions in a single query (fixes N+1)
+    listing_ids = [listing.id for listing in listings]
+    interactions_map = await user_job_interaction_repository.get_batch(
+        db, user_id=current_user_id, job_listing_ids=listing_ids
+    )
+
+    response_listings = [
+        _build_listing_response(listing, interactions_map.get(listing.id))
+        for listing in listings
+    ]
 
     return JobListingListResponse(
         listings=response_listings,
@@ -287,12 +295,16 @@ async def list_saved_jobs(
         db, filters=filters, user_id=current_user_id
     )
 
-    response_listings = []
-    for listing in listings:
-        interaction = await user_job_interaction_repository.get(
-            db, user_id=current_user_id, job_listing_id=listing.id
-        )
-        response_listings.append(_build_listing_response(listing, interaction))
+    # Batch fetch all interactions in a single query (fixes N+1)
+    listing_ids = [listing.id for listing in listings]
+    interactions_map = await user_job_interaction_repository.get_batch(
+        db, user_id=current_user_id, job_listing_ids=listing_ids
+    )
+
+    response_listings = [
+        _build_listing_response(listing, interactions_map.get(listing.id))
+        for listing in listings
+    ]
 
     return JobListingListResponse(
         listings=response_listings,
@@ -323,12 +335,16 @@ async def list_applied_jobs(
         db, filters=filters, user_id=current_user_id
     )
 
-    response_listings = []
-    for listing in listings:
-        interaction = await user_job_interaction_repository.get(
-            db, user_id=current_user_id, job_listing_id=listing.id
-        )
-        response_listings.append(_build_listing_response(listing, interaction))
+    # Batch fetch all interactions in a single query (fixes N+1)
+    listing_ids = [listing.id for listing in listings]
+    interactions_map = await user_job_interaction_repository.get_batch(
+        db, user_id=current_user_id, job_listing_ids=listing_ids
+    )
+
+    response_listings = [
+        _build_listing_response(listing, interactions_map.get(listing.id))
+        for listing in listings
+    ]
 
     return JobListingListResponse(
         listings=response_listings,
