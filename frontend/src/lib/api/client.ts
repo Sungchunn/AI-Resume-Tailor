@@ -230,6 +230,19 @@ async function fetchApi<T>(
     throw new Error(errorBody.detail?.message || "Conflict error");
   }
 
+  // Handle 503 Service Unavailable (AI service failures, database unavailable, etc.)
+  if (response.status === 503) {
+    const errorBody = await response.json().catch(() => ({}));
+    const detail = typeof errorBody.detail === "string" ? errorBody.detail : "";
+
+    // Provide user-friendly message for AI service failures
+    if (detail.toLowerCase().includes("ai service") || detail.toLowerCase().includes("openai")) {
+      throw new Error("AI service is temporarily unavailable. Please try again in a few moments.");
+    }
+
+    throw new Error("Service temporarily unavailable. Please try again later.");
+  }
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: "Unknown error" }));
 
