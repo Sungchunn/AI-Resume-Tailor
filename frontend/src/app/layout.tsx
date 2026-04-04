@@ -40,7 +40,7 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "AI Resume Tailor",
+  title: "re-zoo-me",
   description: "AI-powered resume customization for job applications",
 };
 
