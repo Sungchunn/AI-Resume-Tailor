@@ -188,7 +188,18 @@ async function fetchApi<T>(
 
         if (!retryResponse.ok) {
           const error = await retryResponse.json().catch(() => ({ detail: "Unknown error" }));
-          throw new Error(error.detail || `HTTP ${retryResponse.status}`);
+
+          // Handle both string errors and Pydantic validation error arrays
+          let message: string;
+          if (typeof error.detail === "string") {
+            message = error.detail;
+          } else if (Array.isArray(error.detail) && error.detail.length > 0) {
+            message = error.detail[0]?.msg || `HTTP ${retryResponse.status}`;
+          } else {
+            message = `HTTP ${retryResponse.status}`;
+          }
+
+          throw new Error(message);
         }
 
         if (retryResponse.status === 204) {
@@ -219,7 +230,19 @@ async function fetchApi<T>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: "Unknown error" }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
+
+    // Handle both string errors and Pydantic validation error arrays
+    let message: string;
+    if (typeof error.detail === "string") {
+      message = error.detail;
+    } else if (Array.isArray(error.detail) && error.detail.length > 0) {
+      // Extract the first validation error message
+      message = error.detail[0]?.msg || `HTTP ${response.status}`;
+    } else {
+      message = `HTTP ${response.status}`;
+    }
+
+    throw new Error(message);
   }
 
   // Handle 204 No Content
