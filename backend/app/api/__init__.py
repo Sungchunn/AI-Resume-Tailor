@@ -6,11 +6,9 @@ from app.api.routes import (
     ai,
     ats,
     auth,
-    blocks,
     export,
     job_listings,
     jobs,
-    match,
     profile,
     resume_builds,
     resumes,
@@ -27,9 +25,7 @@ api_router.include_router(tailor.router, prefix="/tailor", tags=["tailor"])
 api_router.include_router(export.router, prefix="/export", tags=["export"])
 api_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 
-# Phase 2: Vault & Resume Build API
-api_router.include_router(blocks.router, prefix="/v1/blocks", tags=["blocks"])
-api_router.include_router(match.router, prefix="/v1/match", tags=["match"])
+# Resume Build API
 api_router.include_router(
     resume_builds.router, prefix="/v1/resume-builds", tags=["resume-builds"]
 )

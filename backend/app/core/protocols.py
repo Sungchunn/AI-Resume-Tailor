@@ -126,7 +126,6 @@ class DiffSuggestionData(BaseModel):
     original_value: Any | None = None  # What's being replaced
     reason: str  # Why this improves job fit
     impact: SuggestionImpact
-    source_block_id: int | None = None  # Which Vault block supports this
 
 
 class SemanticMatchData(BaseModel):
@@ -148,7 +147,6 @@ class ResumeBuildData(BaseModel):
     job_company: str | None = None
     job_description: str | None = None
     status: ResumeBuildStatus = ResumeBuildStatus.DRAFT
-    pulled_block_ids: list[int] = Field(default_factory=list)
     pending_diffs: list[DiffSuggestionData] = Field(default_factory=list)
     sections: Dict[str, Any] = Field(default_factory=dict)
     created_at: datetime

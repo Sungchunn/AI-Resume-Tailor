@@ -4,7 +4,6 @@ from app.models.job import JobDescription
 from app.models.job_listing import JobListing
 from app.models.user_job_interaction import UserJobInteraction
 from app.models.tailored_resume import TailoredResume
-from app.models.experience_block import ExperienceBlock
 from app.models.resume_build import ResumeBuild
 from app.models.audit_log import AuditLog
 from app.models.scraper_run import ScraperRun
@@ -24,7 +23,6 @@ __all__ = [
     "JobListing",
     "UserJobInteraction",
     "TailoredResume",
-    "ExperienceBlock",
     "ResumeBuild",
     "Workshop",  # Backward compatibility
     "AuditLog",

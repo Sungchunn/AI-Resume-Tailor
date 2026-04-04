@@ -22,7 +22,6 @@ class DiffSuggestion(BaseModel):
     original_value: Any | None = Field(None, description="Original value being replaced")
     reason: str = Field(..., description="Explanation for why this improves job fit")
     impact: SuggestionImpact = Field(..., description="Impact level of the suggestion")
-    source_block_id: int | None = Field(None, description="Vault block supporting this suggestion")
 
 
 class ResumeBuildBase(BaseModel):
@@ -55,7 +54,6 @@ class ResumeBuildResponse(ResumeBuildBase):
     status: str
     sections: dict[str, Any] = Field(default_factory=dict)
     section_order: list[str] = Field(default_factory=list)
-    pulled_block_ids: list[int] = Field(default_factory=list)  # FK to Postgres blocks
     pending_diffs: list[DiffSuggestion] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime | None = None
@@ -73,26 +71,6 @@ class ResumeBuildListResponse(BaseModel):
     offset: int
 
 
-class PullBlocksRequest(BaseModel):
-    """Schema for pulling blocks into a resume build."""
-
-    block_ids: list[int] = Field(..., min_length=1, description="IDs of blocks to pull from Vault")
-
-
-class PullBlocksResponse(BaseModel):
-    """Schema for pull blocks response."""
-
-    resume_build: ResumeBuildResponse
-    newly_pulled: list[int] = Field(..., description="Block IDs that were newly added")
-    already_pulled: list[int] = Field(default_factory=list, description="Block IDs already in resume build")
-
-
-class RemoveBlockRequest(BaseModel):
-    """Schema for removing a block from a resume build."""
-
-    block_id: int
-
-
 class SuggestRequest(BaseModel):
     """Schema for requesting AI suggestions."""
 
@@ -105,7 +83,7 @@ class SuggestResponse(BaseModel):
 
     resume_build: ResumeBuildResponse
     new_suggestions_count: int
-    gaps_identified: list[str] = Field(default_factory=list, description="Skill gaps with no Vault coverage")
+    gaps_identified: list[str] = Field(default_factory=list, description="Skill gaps identified in resume")
 
 
 class DiffActionRequest(BaseModel):
@@ -132,23 +110,6 @@ class UpdateStatusRequest(BaseModel):
     """Schema for updating resume build status."""
 
     status: ResumeBuildStatus
-
-
-class WritebackRequest(BaseModel):
-    """Schema for write-back request."""
-
-    edited_content: str = Field(..., min_length=1, description="Content to write back to Vault")
-    source_block_id: int | None = Field(None, description="Original block ID if updating")
-    create_new: bool = Field(False, description="Force creation of new block")
-
-
-class WritebackProposal(BaseModel):
-    """Schema for write-back proposal response."""
-
-    action: str = Field(..., description="create or update")
-    preview: dict[str, Any] = Field(..., description="Preview of the block that would be created/updated")
-    original: dict[str, Any] | None = Field(None, description="Original block if updating")
-    changes: list[str] = Field(default_factory=list, description="List of changes detected")
 
 
 class ExportRequest(BaseModel):
