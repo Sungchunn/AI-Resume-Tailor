@@ -3,8 +3,8 @@ Service layer for AI Resume Tailor.
 
 This module provides organized access to all services through domain-specific subpackages:
 
-- ai/: AI client, embeddings, semantic matching
-- resume/: Resume parsing, tailoring, block management
+- ai/: AI client, embeddings, usage tracking
+- resume/: Resume parsing, tailoring
 - job/: Job analysis, ATS scoring, diff suggestions
 - scraping/: External job scraping (APIFY, scheduling)
 - export/: Document generation and text extraction
@@ -21,7 +21,6 @@ from app.services.ai.embedding import (
     get_embedding_service,
     EMBEDDING_DIMENSIONS,
 )
-from app.services.ai.semantic_matcher import SemanticMatcher, get_semantic_matcher
 
 # Core infrastructure services
 from app.services.core.audit import (
@@ -46,9 +45,6 @@ from app.services.resume.tailor import (
     TailoringResult,
     TailoringValidationError,
 )
-from app.services.resume.block_splitter import BlockSplitter, get_block_splitter
-from app.services.resume.block_classifier import BlockClassifier, get_block_classifier
-from app.services.resume.writeback import WriteBackService, get_writeback_service
 
 # Job analysis services
 from app.services.job.analyzer import JobAnalyzer, ParsedJob, RequiredSkill, Requirement
@@ -90,8 +86,6 @@ __all__ = [
     "EmbeddingTaskType",
     "get_embedding_service",
     "EMBEDDING_DIMENSIONS",
-    "SemanticMatcher",
-    "get_semantic_matcher",
     # Core
     "AuditAction",
     "AuditService",
@@ -110,12 +104,6 @@ __all__ = [
     "TailoringService",
     "TailoringResult",
     "TailoringValidationError",
-    "BlockSplitter",
-    "get_block_splitter",
-    "BlockClassifier",
-    "get_block_classifier",
-    "WriteBackService",
-    "get_writeback_service",
     # Job
     "JobAnalyzer",
     "ParsedJob",

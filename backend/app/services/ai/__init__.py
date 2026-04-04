@@ -14,7 +14,6 @@ from app.services.ai.response import (
     BatchEmbeddingResponse,
     AccumulatedMetrics,
 )
-from app.services.ai.semantic_matcher import SemanticMatcher, get_semantic_matcher
 from app.services.ai.usage_tracker import AIUsageTracker, get_usage_tracker
 
 __all__ = [
@@ -35,7 +34,4 @@ __all__ = [
     # Usage tracking
     "AIUsageTracker",
     "get_usage_tracker",
-    # Semantic matching
-    "SemanticMatcher",
-    "get_semantic_matcher",
 ]
