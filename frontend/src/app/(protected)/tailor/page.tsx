@@ -107,11 +107,11 @@ function TailorPageContent() {
           </p>
           <div className="flex items-center justify-center gap-4">
             {!hasResumes && resumes && resumes.length > 0 ? (
-              <Link href="/library?tab=resumes" className="btn-primary">
+              <Link href="/profile" className="btn-primary">
                 View Resumes
               </Link>
             ) : !hasResumes ? (
-              <Link href="/library/resumes/new" className="btn-primary">
+              <Link href="/profile" className="btn-primary">
                 Add Resume
               </Link>
             ) : null}

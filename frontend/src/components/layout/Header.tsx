@@ -51,7 +51,6 @@ const HamburgerIcon = ({ isOpen }: { isOpen: boolean }) => (
 const navigationLinks = [
   { href: "#how-it-works", label: "How It Works" },
   { href: "/jobs", label: "Jobs", protected: true },
-  { href: "/library", label: "Library", protected: true },
   { href: "/tailor", label: "Tailor", protected: true },
 ];
 

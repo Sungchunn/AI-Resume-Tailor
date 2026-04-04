@@ -4,7 +4,6 @@ import {
   jobApi,
   jobListingApi,
   tailorApi,
-  blockApi,
   matchApi,
   workshopApi,
   uploadApi,
@@ -24,11 +23,6 @@ import type {
   QuickMatchRequest,
   TailoredResumeUpdateRequest,
   TailoringFinalizeRequest,
-  BlockCreate,
-  BlockUpdate,
-  BlockImportRequest,
-  BlockEmbedRequest,
-  BlockType,
   MatchRequest,
   WorkshopCreate,
   WorkshopUpdate,
@@ -75,15 +69,6 @@ export const queryKeys = {
       [...queryKeys.tailored.all, "resume", resumeId] as const,
     byJob: (jobId: number) =>
       [...queryKeys.tailored.all, "job", jobId] as const,
-  },
-  blocks: {
-    all: ["blocks"] as const,
-    list: (params?: {
-      block_types?: BlockType[];
-      tags?: string[];
-      verified_only?: boolean;
-    }) => [...queryKeys.blocks.all, "list", params] as const,
-    detail: (id: number) => [...queryKeys.blocks.all, "detail", id] as const,
   },
   match: {
     all: ["match"] as const,
@@ -463,101 +448,6 @@ export function useFinalizeTailoredResume() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tailored.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.tailored.all });
-    },
-  });
-}
-
-// Block Hooks (Vault)
-export function useBlocks(params?: {
-  block_types?: BlockType[];
-  tags?: string[];
-  verified_only?: boolean;
-  limit?: number;
-  offset?: number;
-  enabled?: boolean;
-}) {
-  const { enabled, ...queryParams } = params ?? {};
-  return useQuery({
-    queryKey: queryKeys.blocks.list(queryParams),
-    queryFn: () => blockApi.list(queryParams),
-    enabled,
-  });
-}
-
-export function useBlock(id: number) {
-  return useQuery({
-    queryKey: queryKeys.blocks.detail(id),
-    queryFn: () => blockApi.get(id),
-    enabled: !!id,
-  });
-}
-
-export function useCreateBlock() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: BlockCreate) => blockApi.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.blocks.all });
-    },
-  });
-}
-
-export function useUpdateBlock() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: BlockUpdate }) =>
-      blockApi.update(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.blocks.detail(id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.blocks.all });
-    },
-  });
-}
-
-export function useDeleteBlock() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: number) => blockApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.blocks.all });
-    },
-  });
-}
-
-export function useVerifyBlock() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, verified }: { id: number; verified?: boolean }) =>
-      blockApi.verify(id, verified),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.blocks.detail(id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.blocks.all });
-    },
-  });
-}
-
-export function useImportBlocks() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: BlockImportRequest) => blockApi.import(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.blocks.all });
-    },
-  });
-}
-
-export function useEmbedBlocks() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data?: BlockEmbedRequest) => blockApi.embed(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.blocks.all });
     },
   });
 }

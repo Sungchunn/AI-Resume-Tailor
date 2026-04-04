@@ -24,15 +24,6 @@ import type {
   AboutMeResponse,
   UpdateProfileRequest,
   ProfileResponse,
-  BlockCreate,
-  BlockUpdate,
-  BlockResponse,
-  BlockListResponse,
-  BlockImportRequest,
-  BlockImportResponse,
-  BlockEmbedRequest,
-  BlockEmbedResponse,
-  BlockType,
   MatchRequest,
   MatchResponse,
   GapAnalysisResponse,
@@ -515,81 +506,6 @@ export const tailorApi = {
     fetchApi(`/api/tailor/${id}/finalize`, {
       method: "POST",
       body: JSON.stringify(data),
-    }),
-};
-
-// Block API (Vault)
-export const blockApi = {
-  list: (
-    params: {
-      block_types?: BlockType[];
-      tags?: string[];
-      verified_only?: boolean;
-      limit?: number;
-      offset?: number;
-    } = {}
-  ): Promise<BlockListResponse> => {
-    const searchParams = new URLSearchParams();
-    if (params.block_types) {
-      params.block_types.forEach((bt) => searchParams.append("block_types", bt));
-    }
-    if (params.tags) {
-      params.tags.forEach((tag) => searchParams.append("tags", tag));
-    }
-    if (params.verified_only) {
-      searchParams.append("verified_only", "true");
-    }
-    if (params.limit !== undefined) {
-      searchParams.append("limit", String(params.limit));
-    }
-    if (params.offset !== undefined) {
-      searchParams.append("offset", String(params.offset));
-    }
-    const query = searchParams.toString();
-    return fetchApi(`/api/v1/blocks${query ? `?${query}` : ""}`);
-  },
-
-  get: (id: number): Promise<BlockResponse> =>
-    fetchApi(`/api/v1/blocks/${id}`),
-
-  create: (data: BlockCreate): Promise<BlockResponse> =>
-    fetchApi("/api/v1/blocks", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-
-  update: (id: number, data: BlockUpdate): Promise<BlockResponse> =>
-    fetchApi(`/api/v1/blocks/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    }),
-
-  delete: (id: number): Promise<void> =>
-    fetchApi(`/api/v1/blocks/${id}`, {
-      method: "DELETE",
-    }),
-
-  verify: (id: number, verified: boolean = true): Promise<BlockResponse> =>
-    fetchApi(`/api/v1/blocks/${id}/verify`, {
-      method: "POST",
-      body: JSON.stringify({ verified }),
-    }),
-
-  import: (data: BlockImportRequest): Promise<BlockImportResponse> =>
-    fetchApi("/api/v1/blocks/import", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-
-  embed: (data?: BlockEmbedRequest): Promise<BlockEmbedResponse> =>
-    fetchApi("/api/v1/blocks/embed", {
-      method: "POST",
-      body: JSON.stringify(data || {}),
-    }),
-
-  embedSingle: (id: number): Promise<BlockResponse> =>
-    fetchApi(`/api/v1/blocks/${id}/embed`, {
-      method: "POST",
     }),
 };
 
