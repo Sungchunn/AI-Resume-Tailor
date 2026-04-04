@@ -174,10 +174,10 @@ export function Header() {
             className="flex items-center gap-3 hover:opacity-90 transition-opacity"
           >
             <div className="h-11 w-11 rounded-xl bg-linear-to-b from-primary to-primary/80 flex items-center justify-center shadow-md">
-              <span className="text-primary-foreground font-extrabold text-lg">RT</span>
+              <span className="text-primary-foreground font-extrabold text-lg">RZ</span>
             </div>
             <span className="hidden sm:inline-block text-xl font-bold text-foreground tracking-tight">
-              Resume Tailor
+              re-zoo-me
             </span>
           </Link>
 
