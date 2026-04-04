@@ -230,6 +230,16 @@ async function fetchApi<T>(
     throw new Error(errorBody.detail?.message || "Conflict error");
   }
 
+  // Handle 502 Bad Gateway (proxy errors, database connection pool exhausted, etc.)
+  if (response.status === 502) {
+    throw new Error("Server is experiencing connection issues. Please try again in a moment.");
+  }
+
+  // Handle 504 Gateway Timeout (long-running requests, database timeouts)
+  if (response.status === 504) {
+    throw new Error("Request timed out. The server is taking too long to respond. Please try again.");
+  }
+
   // Handle 503 Service Unavailable (AI service failures, database unavailable, etc.)
   if (response.status === 503) {
     const errorBody = await response.json().catch(() => ({}));
