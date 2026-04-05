@@ -72,7 +72,7 @@ export function GoogleSignInButton({
   }
 
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-center w-full">
       <GoogleLogin
         onSuccess={handleSuccess}
         onError={handleError}
@@ -80,7 +80,7 @@ export function GoogleSignInButton({
         shape="rectangular"
         theme="outline"
         size="large"
-        width="100%"
+        width={320}
       />
     </div>
   );
