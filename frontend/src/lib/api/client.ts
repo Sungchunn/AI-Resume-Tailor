@@ -20,6 +20,7 @@ import type {
   UserResponse,
   Token,
   TokenRefresh,
+  GoogleAuthResponse,
   GenerateAboutMeRequest,
   AboutMeResponse,
   UpdateProfileRequest,
@@ -319,6 +320,19 @@ export const authApi = {
 
   logout: (): void => {
     tokenManager.clearTokens();
+  },
+
+  googleAuth: async (idToken: string): Promise<GoogleAuthResponse> => {
+    const response = await fetchApi<GoogleAuthResponse>(
+      "/api/auth/google",
+      {
+        method: "POST",
+        body: JSON.stringify({ id_token: idToken }),
+      },
+      false // No auth required
+    );
+    tokenManager.setTokens(response.access_token, response.refresh_token);
+    return response;
   },
 };
 

@@ -24,6 +24,20 @@ export interface UserResponse {
   about_me?: string | null;
   about_me_generated_at?: string | null;
   timezone?: string | null;
+  // OAuth fields
+  auth_provider: "email" | "google";
+  has_password: boolean;
+  google_linked: boolean;
+}
+
+// Google OAuth Types
+export interface GoogleAuthRequest {
+  id_token: string;
+}
+
+export interface GoogleAuthResponse extends Token {
+  is_new_user: boolean;
+  account_linked: boolean;
 }
 
 // Profile Types
