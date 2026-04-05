@@ -1,8 +1,11 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db_session, get_current_user
+from app.core.config import get_settings
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -11,7 +14,16 @@ from app.core.security import (
     verify_password_async,
 )
 from app.models import User
-from app.schemas import Token, TokenRefresh, UserCreate, UserLogin, UserResponse
+from app.schemas import (
+    Token,
+    TokenRefresh,
+    UserCreate,
+    UserLogin,
+    UserResponse,
+    GoogleAuthRequest,
+    GoogleAuthResponse,
+)
+from app.services.google_oauth import get_google_oauth_service, GoogleOAuthService
 
 router = APIRouter()
 
@@ -53,7 +65,23 @@ async def login(
     result = await db.execute(select(User).where(User.email == credentials.email))
     user = result.scalar_one_or_none()
 
-    if not user or not await verify_password_async(credentials.password, user.hashed_password):
+    # Check if user exists
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Check if user has a password (Google-only users don't)
+    if not user.hashed_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This account uses Google Sign-In. Please use the Google login button.",
+        )
+
+    # Verify password
+    if not await verify_password_async(credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
@@ -136,3 +164,108 @@ async def get_me(
 ) -> User:
     """Get current authenticated user."""
     return current_user
+
+
+@router.post("/google", response_model=GoogleAuthResponse)
+async def google_auth(
+    data: GoogleAuthRequest,
+    db: AsyncSession = Depends(get_db_session),
+    google_service: GoogleOAuthService = Depends(get_google_oauth_service),
+) -> GoogleAuthResponse:
+    """
+    Authenticate or register user via Google OAuth.
+
+    Flow:
+    1. Verify Google ID token
+    2. Check if user exists by google_id
+    3. If not, check if user exists by email (for account linking)
+    4. Create new user or link accounts as needed
+    5. Return JWT tokens
+    """
+    settings = get_settings()
+
+    # Check if Google OAuth is enabled
+    if not settings.google_oauth_configured:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google Sign-In is not configured",
+        )
+
+    # Verify the Google ID token
+    google_user = await google_service.verify_id_token(data.id_token)
+
+    if not google_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Google token",
+        )
+
+    # Require verified email
+    if not google_user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google account email is not verified",
+        )
+
+    is_new_user = False
+    account_linked = False
+
+    # Try to find user by google_id first
+    result = await db.execute(
+        select(User).where(User.google_id == google_user.google_id)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        # No user with this google_id, check by email
+        result = await db.execute(select(User).where(User.email == google_user.email))
+        user = result.scalar_one_or_none()
+
+        if user:
+            # Existing email user - link Google account
+            if user.google_id and user.google_id != google_user.google_id:
+                # Email already linked to different Google account
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="This email is already linked to a different Google account",
+                )
+
+            # Link Google to existing account
+            user.google_id = google_user.google_id
+            user.google_linked_at = datetime.now(timezone.utc)
+            account_linked = True
+
+        else:
+            # New user - create account with Google
+            user = User(
+                email=google_user.email,
+                full_name=google_user.full_name,
+                auth_provider="google",
+                google_id=google_user.google_id,
+                google_linked_at=datetime.now(timezone.utc),
+                hashed_password=None,  # No password for Google-only users
+            )
+            db.add(user)
+            is_new_user = True
+
+        await db.commit()
+        await db.refresh(user)
+
+    # Check if user is active
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is inactive",
+        )
+
+    # Generate JWT tokens
+    access_token = create_access_token(subject=user.id)
+    refresh_token = create_refresh_token(subject=user.id)
+
+    return GoogleAuthResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        is_new_user=is_new_user,
+        account_linked=account_linked,
+    )
