@@ -200,6 +200,15 @@ class Settings(BaseSettings):
     job_retention_days: int = 21  # Delete jobs older than this many days
     job_cleanup_enabled: bool = True  # Enable automatic job cleanup
 
+    # Google OAuth
+    google_client_id: str = ""
+    google_oauth_enabled: bool = False
+
+    @property
+    def google_oauth_configured(self) -> bool:
+        """Check if Google OAuth is properly configured."""
+        return bool(self.google_client_id) and self.google_oauth_enabled
+
     @field_validator("jwt_secret_key")
     @classmethod
     def validate_jwt_secret(cls, v: str, info) -> str:
