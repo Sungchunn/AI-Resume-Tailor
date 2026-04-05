@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Roboto, Open_Sans, Lato, Lora } from "next/font/google";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -54,13 +55,17 @@ export default function RootLayout({
       <body
         className={`min-h-screen ${inter.variable} ${roboto.variable} ${openSans.variable} ${lato.variable} ${lora.variable}`}
       >
-        <ThemeProvider>
-          <QueryProvider>
-            <AuthProvider>
-              <TimezoneProvider>{children}</TimezoneProvider>
-            </AuthProvider>
-          </QueryProvider>
-        </ThemeProvider>
+        <GoogleOAuthProvider
+          clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}
+        >
+          <ThemeProvider>
+            <QueryProvider>
+              <AuthProvider>
+                <TimezoneProvider>{children}</TimezoneProvider>
+              </AuthProvider>
+            </QueryProvider>
+          </ThemeProvider>
+        </GoogleOAuthProvider>
       </body>
     </html>
   );

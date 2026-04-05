@@ -17,6 +17,10 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (credentials: UserLogin) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<{
+    isNewUser: boolean;
+    accountLinked: boolean;
+  }>;
   register: (data: UserCreate) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -57,6 +61,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push("/jobs");
   };
 
+  const loginWithGoogle = async (credential: string) => {
+    const response = await authApi.googleAuth(credential);
+    await refreshUser();
+    router.push("/jobs");
+    return {
+      isNewUser: response.is_new_user,
+      accountLinked: response.account_linked,
+    };
+  };
+
   const register = async (data: UserCreate) => {
     await authApi.register(data);
     // Auto-login after registration
@@ -76,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         login,
+        loginWithGoogle,
         register,
         logout,
         refreshUser,
