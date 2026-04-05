@@ -65,7 +65,7 @@ This feature establishes a professional navigation linkage between the webapp's 
 
 ## Implementation Scope
 
-**Phase 1: Auth Page Navigation**
+### Phase 1: Auth Page Navigation
 
 - Add prominent back button to login/signup pages
 - Ensure bidirectional linking between auth pages
