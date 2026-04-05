@@ -170,6 +170,7 @@ class Settings(BaseSettings):
     max_upload_size_mb: int = 10
 
     # MinIO / S3 Object Storage
+    storage_enabled: bool = False  # Set to True to enable file storage
     minio_endpoint: str = "localhost:9000"
     minio_access_key: str = "minioadmin"
     minio_secret_key: str = "minioadmin"

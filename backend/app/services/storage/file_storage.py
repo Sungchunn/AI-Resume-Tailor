@@ -63,6 +63,10 @@ class FileStorageService:
         except S3Error as e:
             logger.error(f"Failed to ensure bucket exists: {e}")
             raise FileStorageError(f"Failed to initialize storage: {e}")
+        except Exception as e:
+            # Catch connection errors (MaxRetryError, ConnectionRefusedError, etc.)
+            logger.error(f"Failed to connect to storage backend: {e}")
+            raise FileStorageError(f"Storage backend unavailable: {e}")
 
     def generate_file_key(
         self,

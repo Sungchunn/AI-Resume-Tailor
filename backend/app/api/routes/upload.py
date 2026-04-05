@@ -131,9 +131,9 @@ async def extract_document(
         html_content = f"<p>{html_escape.escape(extraction_result.raw_content)}</p>"
         warnings.append(f"HTML conversion used fallback: {str(e)}")
 
-    # Step 3: Store original file in MinIO (optional)
+    # Step 3: Store original file in MinIO/S3 (optional, requires STORAGE_ENABLED=true)
     file_key: str | None = None
-    if store_file:
+    if store_file and settings.storage_enabled:
         try:
             storage = get_storage_service()
             file_key = storage.generate_file_key(
