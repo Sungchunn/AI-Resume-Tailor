@@ -42,14 +42,48 @@ class ATSAnalyzer:
     - Stage 2: Keyword analysis (KeywordAnalyzer)
     - Stage 3: Content quality analysis (ContentAnalyzer)
     - Stage 4: Role proximity analysis (RoleAnalyzer)
+
+    Analyzers are lazily initialized to avoid requiring API keys
+    for tests that only use non-AI analyzers (e.g., structure tests).
     """
 
     def __init__(self):
-        self._structure_analyzer = StructureAnalyzer()
-        self._knockout_analyzer = KnockoutAnalyzer()
-        self._keyword_analyzer = KeywordAnalyzer()
-        self._content_analyzer = ContentAnalyzer()
-        self._role_analyzer = RoleAnalyzer()
+        # Lazy initialization - set to None and create on first access
+        self._structure_analyzer_instance: StructureAnalyzer | None = None
+        self._knockout_analyzer_instance: KnockoutAnalyzer | None = None
+        self._keyword_analyzer_instance: KeywordAnalyzer | None = None
+        self._content_analyzer_instance: ContentAnalyzer | None = None
+        self._role_analyzer_instance: RoleAnalyzer | None = None
+
+    @property
+    def _structure_analyzer(self) -> StructureAnalyzer:
+        if self._structure_analyzer_instance is None:
+            self._structure_analyzer_instance = StructureAnalyzer()
+        return self._structure_analyzer_instance
+
+    @property
+    def _knockout_analyzer(self) -> KnockoutAnalyzer:
+        if self._knockout_analyzer_instance is None:
+            self._knockout_analyzer_instance = KnockoutAnalyzer()
+        return self._knockout_analyzer_instance
+
+    @property
+    def _keyword_analyzer(self) -> KeywordAnalyzer:
+        if self._keyword_analyzer_instance is None:
+            self._keyword_analyzer_instance = KeywordAnalyzer()
+        return self._keyword_analyzer_instance
+
+    @property
+    def _content_analyzer(self) -> ContentAnalyzer:
+        if self._content_analyzer_instance is None:
+            self._content_analyzer_instance = ContentAnalyzer()
+        return self._content_analyzer_instance
+
+    @property
+    def _role_analyzer(self) -> RoleAnalyzer:
+        if self._role_analyzer_instance is None:
+            self._role_analyzer_instance = RoleAnalyzer()
+        return self._role_analyzer_instance
 
     # ============================================================
     # Stage 0: Knockout Checks

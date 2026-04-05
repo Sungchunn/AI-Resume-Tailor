@@ -27,10 +27,25 @@ class KeywordExtractor:
     - Basic keyword extraction (list of keywords)
     - Detailed extraction with importance levels
     - Enhanced extraction with strongly_preferred tier
+
+    The AI client is lazily initialized to allow tests to mock it
+    before any actual API calls are made.
     """
 
     def __init__(self):
-        self._ai_client = get_ai_client()
+        self._ai_client_instance = None
+
+    @property
+    def _ai_client(self):
+        """Lazily initialize and return the AI client."""
+        if self._ai_client_instance is None:
+            self._ai_client_instance = get_ai_client()
+        return self._ai_client_instance
+
+    @_ai_client.setter
+    def _ai_client(self, value):
+        """Allow tests to set a mock AI client."""
+        self._ai_client_instance = value
 
     async def extract_keywords(
         self, job_description: str, return_metrics: bool = False
