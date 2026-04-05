@@ -8,16 +8,13 @@ Tests for the 3-step tailor flow:
 4. Focus Keywords: User-selected keywords feature (Phase 3)
 """
 
-import pytest
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
-from httpx import AsyncClient
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.job_listing import JobListing
-from app.models.job import JobDescription
-
 
 # =============================================================================
 # Test Fixtures
@@ -165,8 +162,9 @@ class TestTailorRequestValidation:
 
     def test_invalid_no_job_source(self):
         """Test that request fails without job source."""
-        from app.schemas.tailor import TailorRequest
         from pydantic import ValidationError
+
+        from app.schemas.tailor import TailorRequest
 
         with pytest.raises(ValidationError) as exc_info:
             TailorRequest(resume_id="67890abcdef123456789abcd")
@@ -175,8 +173,9 @@ class TestTailorRequestValidation:
 
     def test_invalid_both_job_sources(self):
         """Test that request fails with both job sources."""
-        from app.schemas.tailor import TailorRequest
         from pydantic import ValidationError
+
+        from app.schemas.tailor import TailorRequest
 
         with pytest.raises(ValidationError) as exc_info:
             TailorRequest(
@@ -464,6 +463,7 @@ class TestTailorAPISchemaValidation:
     def test_tailor_resume_validation_error_no_job_source(self):
         """Test validation error when no job source provided in request body."""
         from pydantic import ValidationError
+
         from app.schemas.tailor import TailorRequest
 
         with pytest.raises(ValidationError) as exc_info:
@@ -478,6 +478,7 @@ class TestTailorAPISchemaValidation:
     def test_tailor_resume_validation_error_both_job_sources(self):
         """Test validation error when both job sources provided in request body."""
         from pydantic import ValidationError
+
         from app.schemas.tailor import TailorRequest
 
         with pytest.raises(ValidationError) as exc_info:
@@ -518,6 +519,7 @@ class TestTailorAPISchemaValidation:
     def test_quick_match_request_validation(self):
         """Test QuickMatchRequest also validates job source requirement."""
         from pydantic import ValidationError
+
         from app.schemas.tailor import QuickMatchRequest
 
         with pytest.raises(ValidationError):

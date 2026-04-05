@@ -5,12 +5,17 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from app.api.deps import get_mongo_db, get_current_user_id
+from app.api.deps import get_current_user_id, get_mongo_db
 from app.crud.mongo import tailored_resume_crud
-from app.schemas.export import FitToPageRequest, FitToPageResponse, PageSize, StyleReduction
-from app.services.export.service import get_export_service
+from app.schemas.export import (
+    FitToPageRequest,
+    FitToPageResponse,
+    PageSize,
+    StyleReduction,
+)
 from app.services.export.fit_to_page import get_fit_to_page_service
-from app.services.export.html_to_document import ExportOptions, get_html_export_service
+from app.services.export.html_to_document import ExportOptions
+from app.services.export.service import get_export_service
 
 router = APIRouter()
 

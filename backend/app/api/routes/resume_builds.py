@@ -8,26 +8,26 @@ Provides CRUD operations for resume builds and all related operations:
 - Export to various formats
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db_session, get_current_user_id
+from app.api.deps import get_current_user_id, get_db_session
 from app.core.protocols import ResumeBuildStatus
 from app.crud.resume_build import resume_build_repository
 from app.schemas.resume_build import (
-    ResumeBuildCreate,
-    ResumeBuildUpdate,
-    ResumeBuildResponse,
-    ResumeBuildListResponse,
-    SuggestRequest,
-    SuggestResponse,
-    DiffActionRequest,
-    DiffActionResponse,
-    UpdateSectionsRequest,
-    UpdateStatusRequest,
-    ExportRequest,
     BulletSuggestionRequest,
     BulletSuggestionResponse,
+    DiffActionRequest,
+    DiffActionResponse,
+    ExportRequest,
+    ResumeBuildCreate,
+    ResumeBuildListResponse,
+    ResumeBuildResponse,
+    ResumeBuildUpdate,
+    SuggestRequest,
+    SuggestResponse,
+    UpdateSectionsRequest,
+    UpdateStatusRequest,
 )
 
 router = APIRouter()
@@ -462,6 +462,7 @@ async def export_resume_build(
     Returns the file as a download.
     """
     from fastapi.responses import Response
+
     from app.services.export.service import get_export_service
 
     resume_build = await resume_build_repository.get(

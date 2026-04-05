@@ -6,11 +6,11 @@ settings for automated scraper runs.
 """
 
 from sqlalchemy import (
+    Boolean,
     Column,
+    DateTime,
     Integer,
     String,
-    Boolean,
-    DateTime,
 )
 from sqlalchemy.sql import func
 

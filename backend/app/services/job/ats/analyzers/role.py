@@ -8,19 +8,19 @@ import re
 from typing import Any, Literal
 
 from ..constants import (
-    TITLE_ABBREVIATIONS,
+    FUNCTION_CATEGORIES,
+    INDUSTRY_TAXONOMY,
     LEVEL_HIERARCHY,
     NUMERIC_LEVEL_MAP,
-    FUNCTION_CATEGORIES,
+    TITLE_ABBREVIATIONS,
     TRAJECTORY_MODIFIERS,
-    INDUSTRY_TAXONOMY,
     TrajectoryType,
 )
 from ..models import (
-    TitleMatchResult,
-    TrajectoryResult,
     IndustryAlignmentResult,
     RoleProximityResult,
+    TitleMatchResult,
+    TrajectoryResult,
 )
 
 
@@ -296,8 +296,9 @@ class RoleAnalyzer:
             Similarity score 0-1
         """
         try:
-            from app.services.ai.embedding import get_embedding_service
             import numpy as np
+
+            from app.services.ai.embedding import get_embedding_service
 
             embedding_service = get_embedding_service()
 

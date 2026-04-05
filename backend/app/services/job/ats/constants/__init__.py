@@ -4,55 +4,50 @@ ATS Analyzer Constants.
 Re-exports all constant definitions for convenient importing.
 """
 
-from .weights import (
-    KeywordImportance,
-    SECTION_PLACEMENT_WEIGHTS,
-    DENSITY_CAP,
-    RECENCY_WEIGHTS_BY_INDEX,
-    RECENCY_DEFAULT,
-    RECENCY_MAX_WEIGHT,
-    RECENCY_MIN_WEIGHT,
-    RECENCY_DECAY_MONTHS,
-    IMPORTANCE_WEIGHTS,
-    CROSS_SECTION_BONUS,
-    DEMONSTRATION_SECTIONS,
-    CLAIM_SECTIONS,
-    BLOCK_TYPE_WEIGHTS,
-    QUANTIFICATION_TARGET,
-    ACHIEVEMENT_RATIO_TARGET,
-    ACTION_VERB_THRESHOLD,
+from .aliases import (
+    ALIAS_TO_CANONICAL,
+    KEYWORD_ALIASES,
 )
-
-from .patterns import (
-    QUANTIFICATION_PATTERNS,
-    ACTION_VERB_PATTERNS,
-    WEAK_PHRASE_PATTERNS,
-    TECH_KEYWORD_PATTERNS,
+from .education import (
+    EDUCATION_LEVELS,
+    EDUCATION_PATTERNS,
+    KnockoutRiskType,
+    KnockoutSeverity,
 )
-
-from .titles import (
-    TITLE_ABBREVIATIONS,
-    LEVEL_HIERARCHY,
-    NUMERIC_LEVEL_MAP,
-    FUNCTION_CATEGORIES,
-    TRAJECTORY_MODIFIERS,
-    TrajectoryType,
-)
-
 from .industry import (
     INDUSTRY_TAXONOMY,
 )
-
-from .education import (
-    KnockoutSeverity,
-    KnockoutRiskType,
-    EDUCATION_LEVELS,
-    EDUCATION_PATTERNS,
+from .patterns import (
+    ACTION_VERB_PATTERNS,
+    QUANTIFICATION_PATTERNS,
+    TECH_KEYWORD_PATTERNS,
+    WEAK_PHRASE_PATTERNS,
 )
-
-from .aliases import (
-    KEYWORD_ALIASES,
-    ALIAS_TO_CANONICAL,
+from .titles import (
+    FUNCTION_CATEGORIES,
+    LEVEL_HIERARCHY,
+    NUMERIC_LEVEL_MAP,
+    TITLE_ABBREVIATIONS,
+    TRAJECTORY_MODIFIERS,
+    TrajectoryType,
+)
+from .weights import (
+    ACHIEVEMENT_RATIO_TARGET,
+    ACTION_VERB_THRESHOLD,
+    BLOCK_TYPE_WEIGHTS,
+    CLAIM_SECTIONS,
+    CROSS_SECTION_BONUS,
+    DEMONSTRATION_SECTIONS,
+    DENSITY_CAP,
+    IMPORTANCE_WEIGHTS,
+    QUANTIFICATION_TARGET,
+    RECENCY_DECAY_MONTHS,
+    RECENCY_DEFAULT,
+    RECENCY_MAX_WEIGHT,
+    RECENCY_MIN_WEIGHT,
+    RECENCY_WEIGHTS_BY_INDEX,
+    SECTION_PLACEMENT_WEIGHTS,
+    KeywordImportance,
 )
 
 __all__ = [

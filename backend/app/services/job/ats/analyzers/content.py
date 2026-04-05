@@ -8,19 +8,19 @@ import re
 from typing import Any
 
 from ..constants import (
-    QUANTIFICATION_PATTERNS,
-    ACTION_VERB_PATTERNS,
-    WEAK_PHRASE_PATTERNS,
-    QUANTIFICATION_TARGET,
     ACHIEVEMENT_RATIO_TARGET,
+    ACTION_VERB_PATTERNS,
     ACTION_VERB_THRESHOLD,
+    QUANTIFICATION_PATTERNS,
+    QUANTIFICATION_TARGET,
+    WEAK_PHRASE_PATTERNS,
 )
 from ..models import (
-    BulletAnalysis,
-    BlockTypeAnalysis,
-    QuantificationAnalysis,
     ActionVerbAnalysis,
+    BlockTypeAnalysis,
+    BulletAnalysis,
     ContentQualityResult,
+    QuantificationAnalysis,
 )
 
 

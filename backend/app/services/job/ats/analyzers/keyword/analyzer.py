@@ -12,33 +12,32 @@ from app.services.ai.response import AIResponse
 
 from ...constants import KeywordImportance
 from ...models import (
-    KeywordDetail,
-    EnhancedKeywordDetail,
-    EnhancedKeywordAnalysis,
     DetailedKeywordAnalysis,
+    EnhancedKeywordAnalysis,
+    EnhancedKeywordDetail,
+    KeywordDetail,
 )
 from ..base import (
-    get_keyword_context,
     count_keyword_frequency,
+    get_keyword_context,
 )
-
 from .extractor import KeywordExtractor
-from .scorer import (
-    get_placement_weight,
-    get_density_multiplier,
-    get_recency_weight,
-    get_importance_weight,
-    calculate_keyword_weighted_score,
-)
 from .matcher import (
     detect_section_type,
-    order_experiences_by_date,
     find_keyword_matches,
+    order_experiences_by_date,
+)
+from .scorer import (
+    calculate_keyword_weighted_score,
+    get_density_multiplier,
+    get_importance_weight,
+    get_placement_weight,
+    get_recency_weight,
 )
 from .suggestions import (
-    generate_keyword_suggestions,
     generate_detailed_suggestions,
     generate_enhanced_suggestions,
+    generate_keyword_suggestions,
 )
 
 

@@ -5,7 +5,7 @@ Stores pricing configuration for AI providers and models.
 Allows dynamic pricing updates without code changes.
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Numeric, Index
+from sqlalchemy import Boolean, Column, DateTime, Index, Integer, Numeric, String
 from sqlalchemy.sql import func
 
 from app.db.session import Base

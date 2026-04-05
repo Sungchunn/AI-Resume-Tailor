@@ -2,32 +2,51 @@
 
 import logging
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
 from fastapi.responses import Response
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from app.api.deps import get_mongo_db, get_current_user_id
+from app.api.deps import get_current_user_id, get_mongo_db
 from app.crud.mongo import resume_crud
 from app.crud.mongo.exceptions import VersionConflictError
 from app.db.mongodb import get_mongodb
 from app.models.mongo.resume import (
-    ResumeCreate as MongoResumeCreate,
-    ResumeUpdate as MongoResumeUpdate,
     OriginalFile,
     ParsedContent,
     StyleSettings,
 )
+from app.models.mongo.resume import (
+    ResumeCreate as MongoResumeCreate,
+)
+from app.models.mongo.resume import (
+    ResumeUpdate as MongoResumeUpdate,
+)
 from app.schemas import ResumeCreate, ResumeUpdate
-from app.schemas.resume import ResumeResponse, OriginalFileInfo
-from app.schemas.export import ResumeExportRequest, ExportTemplatesResponse, ExportTemplateInfo
-from app.schemas.resume import ParseTaskResponse, ParseStatusResponse
+from app.schemas.export import (
+    ExportTemplateInfo,
+    ExportTemplatesResponse,
+    ResumeExportRequest,
+)
+from app.schemas.resume import (
+    OriginalFileInfo,
+    ParseStatusResponse,
+    ParseTaskResponse,
+    ResumeResponse,
+)
+from app.services.ai.client import get_ai_client
 from app.services.core.audit import audit_service
 from app.services.core.cache import get_cache_service
-from app.services.ai.client import get_ai_client
 from app.services.export.html_to_document import get_html_export_service
-from app.services.resume.parser import ResumeParser
 from app.services.resume.parse_task import get_parse_task_service
-
+from app.services.resume.parser import ResumeParser
 
 logger = logging.getLogger(__name__)
 
@@ -510,8 +529,6 @@ async def parse_resume(
         )
 
     # Log AI operation (still uses PostgreSQL for audit logs)
-    from app.api.deps import get_db_session
-    from sqlalchemy.ext.asyncio import AsyncSession
 
     # Get a fresh Postgres session for audit logging
     from app.db.session import AsyncSessionLocal

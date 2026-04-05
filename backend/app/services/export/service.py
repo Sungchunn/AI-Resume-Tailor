@@ -10,10 +10,10 @@ from dataclasses import dataclass
 from typing import Any
 
 from docx import Document
-from docx.shared import Pt, Inches
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.shared import Inches, Pt
 
-from app.services.export.html_to_document import ExportOptions, WEASYPRINT_AVAILABLE
+from app.services.export.html_to_document import WEASYPRINT_AVAILABLE, ExportOptions
 from app.services.export.template_renderer import (
     ExportStyle,
     get_template_renderer,

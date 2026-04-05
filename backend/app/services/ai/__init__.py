@@ -2,17 +2,17 @@
 
 from app.services.ai.client import AIClient, get_ai_client
 from app.services.ai.embedding import (
+    EMBEDDING_DIMENSIONS,
     EmbeddingService,
     EmbeddingTaskType,
     get_embedding_service,
-    EMBEDDING_DIMENSIONS,
 )
 from app.services.ai.response import (
+    AccumulatedMetrics,
     AIResponse,
     AIUsageMetrics,
-    EmbeddingResponse,
     BatchEmbeddingResponse,
-    AccumulatedMetrics,
+    EmbeddingResponse,
 )
 from app.services.ai.usage_tracker import AIUsageTracker, get_usage_tracker
 

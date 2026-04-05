@@ -33,7 +33,6 @@ sys.path.insert(0, str(__file__).rsplit("/scripts", 1)[0])
 
 from app.core.config import get_settings
 
-
 settings = get_settings()
 
 

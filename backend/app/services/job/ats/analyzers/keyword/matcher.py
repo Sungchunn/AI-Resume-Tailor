@@ -11,7 +11,7 @@ import re
 from datetime import datetime
 from typing import Any
 
-from ...constants import KEYWORD_ALIASES, ALIAS_TO_CANONICAL
+from ...constants import ALIAS_TO_CANONICAL, KEYWORD_ALIASES
 from ...models import KeywordMatch
 from ..base import parse_date
 

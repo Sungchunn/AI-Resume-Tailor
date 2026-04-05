@@ -1,9 +1,8 @@
 """Tests for ATS role proximity analysis functionality."""
 
-import pytest
 from unittest.mock import AsyncMock, patch
 
-from app.services.job.ats.analyzers import RoleAnalyzer
+import pytest
 
 
 class TestTitleNormalization:

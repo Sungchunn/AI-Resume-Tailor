@@ -13,10 +13,69 @@ Usage:
 """
 
 # Stage 0: Knockout Check
+# Stage 3: Content Quality
+from app.schemas.ats.content_quality import (
+    ActionVerbAnalysisResponse,
+    BlockTypeAnalysisResponse,
+    BulletAnalysisResponse,
+    ContentQualityRequest,
+    ContentQualityResponse,
+    QuantificationAnalysisResponse,
+)
+
+# Stage 2: Keyword Analysis
+from app.schemas.ats.keywords import (
+    ATSKeywordDetailedRequest,
+    ATSKeywordDetailedResponse,
+    ATSKeywordEnhancedRequest,
+    ATSKeywordEnhancedResponse,
+    # Basic keyword analysis
+    ATSKeywordRequest,
+    ATSKeywordResponse,
+    ATSTipsResponse,
+    EnhancedKeywordDetailResponse,
+    ExtractKeywordsRequest,
+    ExtractKeywordsResponse,
+    GapAnalysisItem,
+    GetKeywordOverrideResponse,
+    # Detailed keyword analysis
+    KeywordDetailResponse,
+    # Type aliases
+    KeywordImportanceLevel,
+    KeywordImportanceLevelEnhanced,
+    # Enhanced keyword analysis (weighted scoring)
+    KeywordMatchResponse,
+    # Keyword overrides (user edits)
+    KeywordOverrideRequest,
+    KeywordOverrideResponse,
+    # Keyword extraction with context (for review step)
+    KeywordWithContext,
+    SourceSectionType,
+)
 from app.schemas.ats.knockout import (
     KnockoutCheckRequest,
     KnockoutCheckResponse,
     KnockoutRiskResponse,
+)
+
+# Progressive SSE Analysis
+from app.schemas.ats.progressive import (
+    ATSCompositeScore,
+    # Content-based synchronous analysis
+    ATSContentAnalysisRequest,
+    ATSContentAnalysisResponse,
+    ATSProgressiveRequest,
+    ATSStageProgress,
+    KnockoutRiskItem,
+)
+
+# Stage 4: Role Proximity
+from app.schemas.ats.role_proximity import (
+    IndustryAlignmentResponse,
+    RoleProximityRequest,
+    RoleProximityResponse,
+    TitleMatchResponse,
+    TrajectoryResponse,
 )
 
 # Stage 1: Structure Analysis
@@ -24,66 +83,6 @@ from app.schemas.ats.structure import (
     ATSStructureRequest,
     ATSStructureResponse,
     SectionOrderDetails,
-)
-
-# Stage 2: Keyword Analysis
-from app.schemas.ats.keywords import (
-    # Type aliases
-    KeywordImportanceLevel,
-    KeywordImportanceLevelEnhanced,
-    SourceSectionType,
-    # Basic keyword analysis
-    ATSKeywordRequest,
-    ATSKeywordResponse,
-    ATSTipsResponse,
-    # Detailed keyword analysis
-    KeywordDetailResponse,
-    ATSKeywordDetailedRequest,
-    ATSKeywordDetailedResponse,
-    # Enhanced keyword analysis (weighted scoring)
-    KeywordMatchResponse,
-    EnhancedKeywordDetailResponse,
-    GapAnalysisItem,
-    ATSKeywordEnhancedRequest,
-    ATSKeywordEnhancedResponse,
-    # Keyword extraction with context (for review step)
-    KeywordWithContext,
-    ExtractKeywordsRequest,
-    ExtractKeywordsResponse,
-    # Keyword overrides (user edits)
-    KeywordOverrideRequest,
-    KeywordOverrideResponse,
-    GetKeywordOverrideResponse,
-)
-
-# Stage 3: Content Quality
-from app.schemas.ats.content_quality import (
-    BulletAnalysisResponse,
-    BlockTypeAnalysisResponse,
-    QuantificationAnalysisResponse,
-    ActionVerbAnalysisResponse,
-    ContentQualityRequest,
-    ContentQualityResponse,
-)
-
-# Stage 4: Role Proximity
-from app.schemas.ats.role_proximity import (
-    RoleProximityRequest,
-    RoleProximityResponse,
-    TitleMatchResponse,
-    TrajectoryResponse,
-    IndustryAlignmentResponse,
-)
-
-# Progressive SSE Analysis
-from app.schemas.ats.progressive import (
-    ATSProgressiveRequest,
-    ATSStageProgress,
-    ATSCompositeScore,
-    # Content-based synchronous analysis
-    ATSContentAnalysisRequest,
-    ATSContentAnalysisResponse,
-    KnockoutRiskItem,
 )
 
 __all__ = [

@@ -20,33 +20,33 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db_session, require_admin
-from app.models.user import User
 from app.crud.job_listing import job_listing_repository
-from app.crud.scraper_run import scraper_run_repository
-from app.crud.scraper_preset import scraper_preset_repository
 from app.crud.schedule_settings import schedule_settings_repository
+from app.crud.scraper_preset import scraper_preset_repository
 from app.crud.scraper_request import scraper_request_repository
+from app.crud.scraper_run import scraper_run_repository
 from app.models.job_listing import JobListing
+from app.models.scraper_request import RequestStatus
+from app.models.user import User
 from app.schemas.scraper import (
     AdHocScrapeRequest,
     AdHocScrapeResponse,
     ApifyCostSummary,
-    ScraperBatchResult,
-    ScraperStatsResponse,
-    ScraperStatusResponse,
-    ScraperPresetCreate,
-    ScraperPresetUpdate,
-    ScraperPresetResponse,
-    ScraperPresetListResponse,
-    ScheduleSettingsUpdate,
     ScheduleSettingsResponse,
-    ScraperRequestResponse,
-    ScraperRequestAdminResponse,
+    ScheduleSettingsUpdate,
+    ScraperBatchResult,
+    ScraperPresetCreate,
+    ScraperPresetListResponse,
+    ScraperPresetResponse,
+    ScraperPresetUpdate,
     ScraperRequestAdminListResponse,
+    ScraperRequestAdminResponse,
     ScraperRequestApproveRequest,
     ScraperRequestRejectRequest,
+    ScraperRequestResponse,
+    ScraperStatsResponse,
+    ScraperStatusResponse,
 )
-from app.models.scraper_request import RequestStatus
 from app.services.scraping.apify_client import get_apify_client
 from app.services.scraping.cost_tracker import get_cost_tracker
 from app.services.scraping.scheduler import get_scheduler_service

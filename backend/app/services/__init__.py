@@ -16,10 +16,10 @@ All services are re-exported here for backward compatibility.
 # AI services
 from app.services.ai.client import AIClient, get_ai_client
 from app.services.ai.embedding import (
+    EMBEDDING_DIMENSIONS,
     EmbeddingService,
     EmbeddingTaskType,
     get_embedding_service,
-    EMBEDDING_DIMENSIONS,
 )
 
 # Core infrastructure services
@@ -31,25 +31,35 @@ from app.services.core.audit import (
 )
 from app.services.core.cache import CacheService, get_cache_service
 from app.services.core.pii_stripper import PIIStripper, get_pii_stripper
+from app.services.export.document_extractor import (
+    DocumentExtractionError,
+    ExtractionResult,
+    extract_text,
+    extract_text_from_docx,
+    extract_text_from_pdf,
+)
 
-# Resume processing services
-from app.services.resume.parser import (
-    ResumeParser,
-    ParsedResume,
-    ContactInfo,
-    Experience,
-    Education,
-)
-from app.services.resume.tailor import (
-    TailoringService,
-    TailoringResult,
-    TailoringValidationError,
-)
+# Export services
+from app.services.export.service import ExportService, get_export_service
 
 # Job analysis services
 from app.services.job.analyzer import JobAnalyzer, ParsedJob, RequiredSkill, Requirement
 from app.services.job.ats import ATSAnalyzer, get_ats_analyzer
 from app.services.job.diff import DiffEngine, get_diff_engine
+
+# Resume processing services
+from app.services.resume.parser import (
+    ContactInfo,
+    Education,
+    Experience,
+    ParsedResume,
+    ResumeParser,
+)
+from app.services.resume.tailor import (
+    TailoringResult,
+    TailoringService,
+    TailoringValidationError,
+)
 
 # Scraping services
 from app.services.scraping.apify_client import (
@@ -62,20 +72,10 @@ from app.services.scraping.orchestrator import (
     get_scraper_orchestrator,
 )
 from app.services.scraping.scheduler import (
+    NonRetryableError,
+    RetryableError,
     SchedulerService,
     get_scheduler_service,
-    RetryableError,
-    NonRetryableError,
-)
-
-# Export services
-from app.services.export.service import ExportService, get_export_service
-from app.services.export.document_extractor import (
-    DocumentExtractionError,
-    ExtractionResult,
-    extract_text,
-    extract_text_from_pdf,
-    extract_text_from_docx,
 )
 
 __all__ = [

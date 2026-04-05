@@ -8,8 +8,8 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.crud.mongo.exceptions import VersionConflictError
 from app.models.mongo.resume import (
-    ResumeDocument,
     ResumeCreate,
+    ResumeDocument,
     ResumeUpdate,
 )
 

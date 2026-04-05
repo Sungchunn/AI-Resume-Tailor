@@ -8,7 +8,6 @@ import html
 import logging
 import re
 from io import BytesIO
-from typing import Literal
 
 import mammoth
 import pdfplumber

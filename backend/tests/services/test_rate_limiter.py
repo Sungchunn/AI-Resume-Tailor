@@ -1,8 +1,8 @@
 """Tests for the Rate Limiter middleware."""
 
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from starlette.testclient import TestClient
 
 from app.middleware.rate_limiter import (
     RateLimitConfig,

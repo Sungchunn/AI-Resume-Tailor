@@ -1,9 +1,7 @@
 """Tests for ATS content quality analysis functionality."""
 
-import pytest
 
 from app.services.job.ats import ContentQualityResult
-from app.services.job.ats.analyzers import ContentAnalyzer
 
 
 class TestQuantificationDetection:

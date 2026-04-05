@@ -8,11 +8,12 @@ Tests cover:
 - Error handling for missing/invalid resumes
 """
 
+from io import BytesIO
+from zipfile import ZipFile
+
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
-from io import BytesIO
-from zipfile import ZipFile
 
 
 class TestExportTemplatesEndpoint:

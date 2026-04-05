@@ -11,23 +11,22 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_id, get_db
+from app.api.routes.ats.helpers import (
+    calculate_composite_score,
+    execute_content_quality,
+    execute_keyword_analysis,
+    execute_knockout_check,
+    execute_role_proximity,
+    execute_structure_analysis,
+)
 from app.schemas.ats import (
-    ATSProgressiveRequest,
     ATSContentAnalysisRequest,
     ATSContentAnalysisResponse,
+    ATSProgressiveRequest,
     KnockoutRiskItem,
 )
 from app.services.ai import get_usage_tracker
 from app.services.ai.response import AccumulatedMetrics
-
-from app.api.routes.ats.helpers import (
-    execute_knockout_check,
-    execute_structure_analysis,
-    execute_keyword_analysis,
-    execute_content_quality,
-    execute_role_proximity,
-    calculate_composite_score,
-)
 
 router = APIRouter()
 
@@ -106,7 +105,7 @@ async def analyze_content(
                             user_has=risk.get("user_has"),
                         )
                     )
-        except Exception as e:
+        except Exception:
             failed_stages.append("Knockout Check")
 
     # Stage 1: Structure Analysis
@@ -117,7 +116,7 @@ async def analyze_content(
             )
             stage_results["structure"] = structure_result
             stage_scores["structure"] = float(structure_result.format_score)
-        except Exception as e:
+        except Exception:
             failed_stages.append("Structure Analysis")
 
     # Stage 2: Enhanced Keyword Matching
@@ -140,7 +139,7 @@ async def analyze_content(
                 keyword_analysis_data = asdict(keyword_result)
             else:
                 keyword_analysis_data = keyword_result
-        except Exception as e:
+        except Exception:
             failed_stages.append("Keyword Matching")
 
     # Stage 3: Content Quality
@@ -153,7 +152,7 @@ async def analyze_content(
             stage_scores["content-quality"] = float(
                 content_quality_result.content_quality_score
             )
-        except Exception as e:
+        except Exception:
             failed_stages.append("Content Quality")
 
     # Stage 4: Role Proximity
@@ -166,7 +165,7 @@ async def analyze_content(
             stage_scores["role-proximity"] = float(
                 role_proximity_result.role_proximity_score
             )
-        except Exception as e:
+        except Exception:
             failed_stages.append("Role Proximity")
 
     # Calculate composite score using the same logic as progressive endpoint

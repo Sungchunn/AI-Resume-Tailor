@@ -9,7 +9,7 @@ from typing import Any
 
 from app.core.protocols import DiffSuggestionData
 
-from .pointer import parse_path, get_value_at_path, navigate_to_parent
+from .pointer import get_value_at_path, navigate_to_parent, parse_path
 
 
 class DiffOperations:

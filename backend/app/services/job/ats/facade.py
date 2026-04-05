@@ -8,24 +8,24 @@ and maintains backward compatibility with the original API.
 from functools import lru_cache
 from typing import Any
 
-from app.core.protocols import ExperienceBlockData, ATSReportData
+from app.core.protocols import ATSReportData, ExperienceBlockData
 from app.services.ai.response import AIResponse
 
+from .analyzers import (
+    ContentAnalyzer,
+    KeywordAnalyzer,
+    KnockoutAnalyzer,
+    RoleAnalyzer,
+    StructureAnalyzer,
+    get_ats_tips,
+)
 from .models import (
-    KnockoutCheckResult,
-    SectionOrderResult,
+    ContentQualityResult,
     DetailedKeywordAnalysis,
     EnhancedKeywordAnalysis,
-    ContentQualityResult,
+    KnockoutCheckResult,
     RoleProximityResult,
-)
-from .analyzers import (
-    StructureAnalyzer,
-    KnockoutAnalyzer,
-    KeywordAnalyzer,
-    ContentAnalyzer,
-    RoleAnalyzer,
-    get_ats_tips,
+    SectionOrderResult,
 )
 
 

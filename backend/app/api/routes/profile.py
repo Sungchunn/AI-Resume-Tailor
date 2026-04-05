@@ -13,10 +13,10 @@ from app.api.deps import get_current_user_id, get_db_session, get_mongo_db
 from app.crud.mongo.resume import resume_crud
 from app.models import User
 from app.schemas.profile import (
-    GenerateAboutMeRequest,
     AboutMeResponse,
-    UpdateProfileRequest,
+    GenerateAboutMeRequest,
     ProfileResponse,
+    UpdateProfileRequest,
 )
 from app.services import get_ai_client
 from app.services.ai import get_usage_tracker

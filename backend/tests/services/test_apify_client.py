@@ -7,14 +7,13 @@ Tests cover:
 - HTTP error handling
 """
 
-import pytest
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
+import pytest
 
-from app.services.scraping.apify_client import ApifyClient, ApifyClientError
 from app.schemas.scraper import ScraperConfig, ScraperRegion
+from app.services.scraping.apify_client import ApifyClient
 
 
 @pytest.fixture
@@ -368,10 +367,9 @@ class TestApifyClientConfiguration:
             )
 
             # When using get_apify_client, it should use settings
-            from app.services.scraping.apify_client import get_apify_client
-
             # Clear the cached client
             import app.services.scraping.apify_client
+            from app.services.scraping.apify_client import get_apify_client
 
             app.services.scraping.apify_client.get_apify_client.cache_clear()
 

@@ -11,21 +11,21 @@ Each resume build:
 """
 
 from datetime import datetime, timezone
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Column,
-    Integer,
-    String,
-    Text,
     DateTime,
     ForeignKey,
     Index,
+    Integer,
+    String,
+    Text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from sqlalchemy.orm import relationship, Mapped
+from sqlalchemy.orm import Mapped, relationship
 from sqlalchemy.sql import func
-from pgvector.sqlalchemy import Vector
 
 from app.db.session import Base
 

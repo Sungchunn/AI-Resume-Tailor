@@ -13,9 +13,9 @@ from app.services.ai.response import AIResponse
 
 from ..base import basic_keyword_extraction
 from .section_parser import (
+    SECTION_IMPORTANCE_MAP,
     JobDescriptionSectionParser,
     ParsedSection,
-    SECTION_IMPORTANCE_MAP,
 )
 
 

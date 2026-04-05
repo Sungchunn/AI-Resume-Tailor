@@ -1,20 +1,19 @@
 import os
-import pytest
+
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.pool import StaticPool
+from httpx import ASGITransport, AsyncClient
+from mongomock_motor import AsyncMongoMockClient
 from sqlalchemy import event
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.types import JSON
-from mongomock_motor import AsyncMongoMockClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
 
 # Disable rate limiting for tests
 os.environ["RATE_LIMIT_ENABLED"] = "false"
 
-from app.main import app
-from app.db.session import Base
 from app.api.deps import get_current_user_id, get_db_session, get_mongo_db
+from app.db.session import Base
+from app.main import app
 from app.models.user import User
 
 # Use SQLite for testing
@@ -37,8 +36,8 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 
 
 # Override PostgreSQL types for SQLite compatibility
-from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.ext.compiler import compiles
 
 
 @compiles(JSONB, "sqlite")

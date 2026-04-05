@@ -8,10 +8,11 @@ Tests cover:
 - Response schema validation
 """
 
+from io import BytesIO
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 from httpx import AsyncClient
-from unittest.mock import patch, MagicMock, AsyncMock
-from io import BytesIO
 
 
 class TestUploadExtract:

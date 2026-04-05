@@ -30,9 +30,12 @@ from enum import Enum
 from functools import lru_cache
 
 from app.core.config import get_settings
-from app.services.ai.response import AIUsageMetrics, EmbeddingResponse, BatchEmbeddingResponse
+from app.services.ai.response import (
+    AIUsageMetrics,
+    BatchEmbeddingResponse,
+    EmbeddingResponse,
+)
 from app.services.core.pii_stripper import get_pii_stripper
-
 
 # Default embedding dimensions (Gemini text-embedding-004)
 # Use get_embedding_service().dimensions for the actual configured provider's dimensions

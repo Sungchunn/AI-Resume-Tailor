@@ -8,22 +8,21 @@ as job sources, with style settings and section ordering.
 from typing import Any
 
 from sqlalchemy import (
+    JSON,
+    CheckConstraint,
     Column,
+    DateTime,
+    Float,
+    ForeignKey,
     Integer,
     String,
     Text,
-    DateTime,
-    ForeignKey,
-    JSON,
-    Float,
-    CheckConstraint,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from sqlalchemy.orm import relationship, Mapped
+from sqlalchemy.orm import Mapped, relationship
 from sqlalchemy.sql import func
 
 from app.db.session import Base
-
 
 # Default section order for new tailored resumes
 DEFAULT_SECTION_ORDER = ["summary", "experience", "skills", "education", "projects"]

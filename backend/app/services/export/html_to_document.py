@@ -12,13 +12,9 @@ import io
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Literal
 
 from docx import Document
-from docx.shared import Pt, Inches, RGBColor
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-from docx.oxml.ns import qn
-from docx.oxml import OxmlElement
+from docx.shared import Inches, Pt, RGBColor
 
 # WeasyPrint requires system dependencies (pango, gobject)
 # Import conditionally to allow DOCX export even without PDF support
@@ -26,7 +22,7 @@ try:
     from weasyprint import HTML
     from weasyprint.text.fonts import FontConfiguration
     WEASYPRINT_AVAILABLE = True
-except (ImportError, OSError) as e:
+except (ImportError, OSError):
     WEASYPRINT_AVAILABLE = False
     HTML = None
     FontConfiguration = None

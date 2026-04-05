@@ -10,7 +10,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from app.core.protocols import ResumeBuildStatus, DiffOperation, SuggestionImpact
+from app.core.protocols import DiffOperation, ResumeBuildStatus, SuggestionImpact
 
 
 class DiffSuggestion(BaseModel):

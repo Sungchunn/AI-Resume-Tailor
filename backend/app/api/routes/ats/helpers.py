@@ -8,22 +8,22 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.ats import (
-    ATSProgressiveRequest,
-    KnockoutCheckRequest,
-    ATSStructureRequest,
-    ContentQualityRequest,
-    RoleProximityRequest,
-    ATSCompositeScore,
-)
-from app.services.ai.response import AIResponse
-from app.services.job.ats import get_ats_analyzer
+from app.api.routes.ats.content_quality import analyze_content_quality
 
 # Import endpoint functions from stage modules
 from app.api.routes.ats.knockout import perform_knockout_check
-from app.api.routes.ats.structure import analyze_structure
-from app.api.routes.ats.content_quality import analyze_content_quality
 from app.api.routes.ats.role_proximity import analyze_role_proximity
+from app.api.routes.ats.structure import analyze_structure
+from app.schemas.ats import (
+    ATSCompositeScore,
+    ATSProgressiveRequest,
+    ATSStructureRequest,
+    ContentQualityRequest,
+    KnockoutCheckRequest,
+    RoleProximityRequest,
+)
+from app.services.ai.response import AIResponse
+from app.services.job.ats import get_ats_analyzer
 
 
 async def execute_knockout_check(

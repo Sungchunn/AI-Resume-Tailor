@@ -15,10 +15,9 @@ avoiding issues with system library dependencies (e.g., WeasyPrint/gobject).
 
 import sys
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
-from unittest.mock import patch, MagicMock
-from io import BytesIO
 
 # Add the backend app to the path for direct imports
 backend_path = Path(__file__).parent.parent.parent
@@ -27,12 +26,12 @@ sys.path.insert(0, str(backend_path))
 # Import directly from the module to avoid loading the full app
 from app.services.document.converter import (
     DocumentConversionError,
-    convert_docx_to_html,
-    convert_pdf_to_html,
-    convert_to_html,
     _clean_html,
     _detect_section_header,
     _text_to_html_paragraphs,
+    convert_docx_to_html,
+    convert_pdf_to_html,
+    convert_to_html,
 )
 
 

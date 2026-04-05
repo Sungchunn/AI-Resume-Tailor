@@ -4,36 +4,32 @@ ATS Analyzer Models.
 Re-exports all dataclass definitions for convenient importing.
 """
 
-from .knockout import (
-    KnockoutRisk,
-    KnockoutCheckResult,
-)
-
-from .keywords import (
-    KeywordMatch,
-    KeywordDetail,
-    EnhancedKeywordDetail,
-    EnhancedKeywordAnalysis,
-    DetailedKeywordAnalysis,
-)
-
-from .structure import (
-    SectionOrderResult,
-)
-
 from .content import (
-    BulletAnalysis,
-    BlockTypeAnalysis,
-    QuantificationAnalysis,
     ActionVerbAnalysis,
+    BlockTypeAnalysis,
+    BulletAnalysis,
     ContentQualityResult,
+    QuantificationAnalysis,
 )
-
+from .keywords import (
+    DetailedKeywordAnalysis,
+    EnhancedKeywordAnalysis,
+    EnhancedKeywordDetail,
+    KeywordDetail,
+    KeywordMatch,
+)
+from .knockout import (
+    KnockoutCheckResult,
+    KnockoutRisk,
+)
 from .role import (
-    TitleMatchResult,
-    TrajectoryResult,
     IndustryAlignmentResult,
     RoleProximityResult,
+    TitleMatchResult,
+    TrajectoryResult,
+)
+from .structure import (
+    SectionOrderResult,
 )
 
 __all__ = [

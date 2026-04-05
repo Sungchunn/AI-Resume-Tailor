@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field, HttpUrl
 from datetime import datetime
 from typing import Any
+
+from pydantic import BaseModel, Field
 
 
 class JobBase(BaseModel):

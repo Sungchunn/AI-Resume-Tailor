@@ -12,33 +12,32 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user_id, get_db, get_mongo_db
 from app.crud.mongo import keyword_override_crud
 from app.models.mongo.keyword_override import (
-    KeywordOverrideCreate,
     KeywordEntry,
+    KeywordOverrideCreate,
     compute_job_content_hash,
 )
-from app.services.job.ats import get_ats_analyzer
-from app.services.job.ats.analyzers.keyword.extractor import KeywordExtractor
-
 from app.schemas.ats import (
+    ATSKeywordDetailedRequest,
+    ATSKeywordDetailedResponse,
+    ATSKeywordEnhancedRequest,
+    ATSKeywordEnhancedResponse,
     ATSKeywordRequest,
     ATSKeywordResponse,
     ATSTipsResponse,
-    KeywordDetailResponse,
-    ATSKeywordDetailedRequest,
-    ATSKeywordDetailedResponse,
-    KeywordMatchResponse,
     EnhancedKeywordDetailResponse,
-    GapAnalysisItem,
-    ATSKeywordEnhancedRequest,
-    ATSKeywordEnhancedResponse,
-    # New schemas for keyword review
-    KeywordWithContext,
     ExtractKeywordsRequest,
     ExtractKeywordsResponse,
+    GapAnalysisItem,
+    GetKeywordOverrideResponse,
+    KeywordDetailResponse,
+    KeywordMatchResponse,
     KeywordOverrideRequest,
     KeywordOverrideResponse,
-    GetKeywordOverrideResponse,
+    # New schemas for keyword review
+    KeywordWithContext,
 )
+from app.services.job.ats import get_ats_analyzer
+from app.services.job.ats.analyzers.keyword.extractor import KeywordExtractor
 
 router = APIRouter()
 

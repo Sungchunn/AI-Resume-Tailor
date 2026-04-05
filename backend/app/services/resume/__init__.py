@@ -1,8 +1,18 @@
 """Resume processing services for parsing and tailoring."""
 
-from app.services.resume.parser import ResumeParser, ParsedResume, ContactInfo, Experience, Education
-from app.services.resume.tailor import TailoringService, TailoringResult, TailoringValidationError
 from app.services.resume.parse_task import ParseTaskService, get_parse_task_service
+from app.services.resume.parser import (
+    ContactInfo,
+    Education,
+    Experience,
+    ParsedResume,
+    ResumeParser,
+)
+from app.services.resume.tailor import (
+    TailoringResult,
+    TailoringService,
+    TailoringValidationError,
+)
 
 __all__ = [
     # Parser

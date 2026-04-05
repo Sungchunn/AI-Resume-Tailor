@@ -7,10 +7,10 @@ from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.models.mongo.resume_build import (
-    ResumeBuildDocument,
-    ResumeBuildCreate,
-    ResumeBuildUpdate,
     PendingDiff,
+    ResumeBuildCreate,
+    ResumeBuildDocument,
+    ResumeBuildUpdate,
     ResumeSections,
 )
 

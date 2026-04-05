@@ -13,8 +13,7 @@ from typing import Any, Literal
 from bson import ObjectId
 from pydantic import BaseModel, Field, field_serializer
 
-from app.models.mongo.resume import PyObjectId, ParsedContent
-
+from app.models.mongo.resume import PyObjectId
 
 # Default section order for new tailored resumes (all 16 sections)
 DEFAULT_SECTION_ORDER = [

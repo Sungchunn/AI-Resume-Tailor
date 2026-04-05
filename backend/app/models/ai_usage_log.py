@@ -5,7 +5,7 @@ Stores usage records for all AI API calls (LLM and embedding operations).
 Used for cost tracking, performance monitoring, and analytics.
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, Numeric, Index
+from sqlalchemy import Boolean, Column, DateTime, Index, Integer, Numeric, String, Text
 from sqlalchemy.sql import func
 
 from app.db.session import Base

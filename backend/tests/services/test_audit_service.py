@@ -1,13 +1,14 @@
 """Tests for the Audit Service."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
 
 from app.services.core.audit import (
-    AuditService,
     AuditAction,
-    get_audit_service,
+    AuditService,
     audit_service,
+    get_audit_service,
 )
 
 

@@ -1,5 +1,5 @@
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
 from app.main import app
 
@@ -26,5 +26,5 @@ async def test_root():
         response = await client.get("/")
     assert response.status_code == 200
     data = response.json()
-    assert data["message"] == "AI Resume Tailor API"
+    assert data["message"] == "re-zoo-me API"
     assert data["docs"] == "/docs"

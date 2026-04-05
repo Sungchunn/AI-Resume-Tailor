@@ -8,29 +8,28 @@ This module configures Alembic to work with synchronous database connections
 from logging.config import fileConfig
 
 from sqlalchemy import create_engine, pool
-from sqlalchemy.engine import Connection
 
 from alembic import context
+from app.core.config import get_settings
 
 # Import the SQLAlchemy Base and all models to enable autogeneration
 from app.db.session import Base
 from app.models import (  # noqa: F401 - imported for model registration
-    User,
-    Resume,
+    AIPricingConfig,
+    AIUsageLog,
+    AuditLog,
     JobDescription,
     JobListing,
-    UserJobInteraction,
-    TailoredResume,
+    Resume,
     ResumeBuild,
-    AuditLog,
-    ScraperRun,
     ScraperPreset,
-    ScraperScheduleSettings,
     ScraperRequest,
-    AIUsageLog,
-    AIPricingConfig,
+    ScraperRun,
+    ScraperScheduleSettings,
+    TailoredResume,
+    User,
+    UserJobInteraction,
 )
-from app.core.config import get_settings
 
 # Alembic Config object
 config = context.config

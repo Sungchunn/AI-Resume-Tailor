@@ -7,13 +7,13 @@ not user-owned but system-wide resources.
 """
 
 from sqlalchemy import (
+    Boolean,
     Column,
+    DateTime,
+    Index,
     Integer,
     String,
     Text,
-    DateTime,
-    Boolean,
-    Index,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship

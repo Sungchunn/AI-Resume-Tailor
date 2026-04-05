@@ -13,14 +13,13 @@ from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.models.mongo.tailored_resume import (
-    TailoredResumeDocument,
+    DEFAULT_SECTION_ORDER,
     TailoredResumeCreate,
-    TailoredResumeUpdate,
+    TailoredResumeDocument,
     TailoredResumeFinalize,
     TailoredResumeStatus,
-    DEFAULT_SECTION_ORDER,
+    TailoredResumeUpdate,
 )
-from app.models.mongo.resume import ResumeDocument
 
 
 class CompareData:

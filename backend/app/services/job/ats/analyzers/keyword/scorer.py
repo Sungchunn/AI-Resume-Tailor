@@ -14,18 +14,18 @@ import math
 from datetime import datetime
 
 from ...constants import (
-    KeywordImportance,
-    SECTION_PLACEMENT_WEIGHTS,
+    CLAIM_SECTIONS,
+    CROSS_SECTION_BONUS,
+    DEMONSTRATION_SECTIONS,
     DENSITY_CAP,
-    RECENCY_WEIGHTS_BY_INDEX,
+    IMPORTANCE_WEIGHTS,
+    RECENCY_DECAY_MONTHS,
     RECENCY_DEFAULT,
     RECENCY_MAX_WEIGHT,
     RECENCY_MIN_WEIGHT,
-    RECENCY_DECAY_MONTHS,
-    IMPORTANCE_WEIGHTS,
-    CROSS_SECTION_BONUS,
-    DEMONSTRATION_SECTIONS,
-    CLAIM_SECTIONS,
+    RECENCY_WEIGHTS_BY_INDEX,
+    SECTION_PLACEMENT_WEIGHTS,
+    KeywordImportance,
 )
 from ...models import KeywordMatch
 from ..base import parse_date

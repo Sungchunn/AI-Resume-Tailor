@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db_session, get_current_user
+from app.api.deps import get_current_user, get_db_session
 from app.core.config import get_settings
 from app.core.security import (
     create_access_token,
@@ -15,15 +15,15 @@ from app.core.security import (
 )
 from app.models import User
 from app.schemas import (
+    GoogleAuthRequest,
+    GoogleAuthResponse,
     Token,
     TokenRefresh,
     UserCreate,
     UserLogin,
     UserResponse,
-    GoogleAuthRequest,
-    GoogleAuthResponse,
 )
-from app.services.google_oauth import get_google_oauth_service, GoogleOAuthService
+from app.services.google_oauth import GoogleOAuthService, get_google_oauth_service
 
 router = APIRouter()
 

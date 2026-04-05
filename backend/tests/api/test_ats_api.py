@@ -8,8 +8,8 @@ The service layer logic is thoroughly tested in test_ats_analyzer.py.
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
 from app.api.deps import get_current_user_id, get_db
+from app.main import app
 
 
 # Override dependencies for all tests in this module

@@ -41,7 +41,6 @@ class CustomDotEnvSettingsSource(PydanticBaseSettingsSource):
 
     def __call__(self) -> dict[str, Any]:
         """Load values from .env file with custom list parsing."""
-        import os
         from pathlib import Path
 
         env_path = Path(self._env_file) if self._env_file else None

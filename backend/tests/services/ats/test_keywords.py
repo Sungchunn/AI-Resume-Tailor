@@ -1,14 +1,14 @@
 """Tests for ATS keyword analysis functionality."""
 
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 
 from app.services.job.ats import KeywordMatch
 from app.services.job.ats.analyzers import (
-    KeywordAnalyzer,
     basic_keyword_extraction,
-    get_keyword_context,
     count_keyword_frequency,
+    get_keyword_context,
 )
 
 

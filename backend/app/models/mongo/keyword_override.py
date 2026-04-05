@@ -14,7 +14,6 @@ from pydantic import BaseModel, Field, field_serializer
 
 from app.models.mongo.resume import PyObjectId
 
-
 # Valid importance levels (4-tier system)
 KeywordImportanceLevel = Literal[
     "required",

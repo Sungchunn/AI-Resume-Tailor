@@ -10,13 +10,13 @@ Allows authenticated users to:
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db_session, get_current_user
-from app.models.user import User
+from app.api.deps import get_current_user, get_db_session
 from app.crud.scraper_request import scraper_request_repository
+from app.models.user import User
 from app.schemas.scraper import (
     ScraperRequestCreate,
-    ScraperRequestResponse,
     ScraperRequestListResponse,
+    ScraperRequestResponse,
 )
 
 router = APIRouter(prefix="/scraper-requests", tags=["scraper-requests"])

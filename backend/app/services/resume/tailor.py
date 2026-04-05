@@ -17,11 +17,11 @@ from pydantic import ValidationError
 
 from app.core.config import get_settings
 from app.models.mongo.resume import ParsedContent
-from app.services.ai.client import AIClient, AIServiceError
-from app.services.ai.response import AIResponse, AccumulatedMetrics
+from app.services.ai.client import AIClient
+from app.services.ai.response import AccumulatedMetrics, AIResponse
 from app.services.core.cache import CacheService
-from app.services.resume.parser import ResumeParser, ParsedResume
 from app.services.job.analyzer import JobAnalyzer, ParsedJob
+from app.services.resume.parser import ParsedResume, ResumeParser
 
 logger = logging.getLogger(__name__)
 

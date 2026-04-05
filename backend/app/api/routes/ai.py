@@ -2,15 +2,16 @@
 
 import json
 import re
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_id, get_db
 from app.schemas.ai import (
-    ImproveSectionRequest,
-    ImproveSectionResponse,
     ChatRequest,
     ChatResponse,
+    ImproveSectionRequest,
+    ImproveSectionResponse,
 )
 from app.services import get_ai_client
 from app.services.ai import get_usage_tracker

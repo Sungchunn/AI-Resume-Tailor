@@ -5,7 +5,7 @@ Stores audit records for all data access and modification operations.
 Used for security compliance, debugging, and analytics.
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, Index
+from sqlalchemy import JSON, Column, DateTime, Index, Integer, String, Text
 from sqlalchemy.sql import func
 
 from app.db.session import Base

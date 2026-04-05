@@ -8,9 +8,9 @@ from typing import Any
 
 from ..models import SectionOrderResult
 from .base import (
-    STANDARD_SECTIONS,
     EXPECTED_SECTION_ORDER,
     SECTION_ORDER_SCORES,
+    STANDARD_SECTIONS,
 )
 
 

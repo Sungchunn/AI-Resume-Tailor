@@ -8,15 +8,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_id, get_db
-from app.services.job.ats import get_ats_analyzer
-
 from app.schemas.ats import (
-    BlockTypeAnalysisResponse,
-    QuantificationAnalysisResponse,
     ActionVerbAnalysisResponse,
+    BlockTypeAnalysisResponse,
     ContentQualityRequest,
     ContentQualityResponse,
+    QuantificationAnalysisResponse,
 )
+from app.services.job.ats import get_ats_analyzer
 
 router = APIRouter()
 

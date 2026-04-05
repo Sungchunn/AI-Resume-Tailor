@@ -71,7 +71,16 @@ python_functions = ["test_*"]
 [tool.ruff]
 line-length = 88
 target-version = "py311"
+exclude = [
+    "alembic/versions/",
+    "alembic/versions_archived/",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W"]
-ignore = ["E501"]
+ignore = [
+    "E501",  # Line too long
+    "E402",  # Module level import not at top (intentional for conditional imports)
+    "E712",  # Comparison to True/False (common in SQLAlchemy filters)
+    "N815",  # MixedCase in class scope (intentional for external API schemas)
+]

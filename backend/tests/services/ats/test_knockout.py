@@ -1,9 +1,8 @@
 """Tests for ATS knockout check functionality."""
 
-import pytest
 
 from app.services.job.ats import KnockoutCheckResult
-from app.services.job.ats.analyzers import KnockoutAnalyzer, parse_date
+from app.services.job.ats.analyzers import parse_date
 
 
 class TestKnockoutCheckBasics:

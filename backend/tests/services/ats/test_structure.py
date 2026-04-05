@@ -1,8 +1,6 @@
 """Tests for ATS structure analysis functionality."""
 
-import pytest
 
-from app.services.job.ats import ATSAnalyzer
 
 
 class TestAnalyzeStructure:

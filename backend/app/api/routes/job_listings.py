@@ -11,26 +11,26 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db_session, get_current_user_id
+from app.api.deps import get_current_user_id, get_db_session
 from app.crud import job_listing_repository, user_job_interaction_repository
 from app.schemas.job_listing import (
     ApplicationStatus,
-    JobListingResponse,
-    JobListingListResponse,
-    JobListingFilters,
-    JobListingFilterOptionsResponse,
-    FilterOption,
-    SaveJobRequest,
-    HideJobRequest,
     ApplyJobRequest,
+    FilterOption,
+    HideJobRequest,
     JobInteractionActionResponse,
-    UserJobInteractionResponse,
-    UpdateApplicationStatusRequest,
-    ReorderKanbanRequest,
-    KanbanColumnResponse,
+    JobListingFilterOptionsResponse,
+    JobListingFilters,
+    JobListingListResponse,
+    JobListingResponse,
     KanbanBoardResponse,
+    KanbanColumnResponse,
+    ReorderKanbanRequest,
+    SaveJobRequest,
     SortBy,
     SortOrder,
+    UpdateApplicationStatusRequest,
+    UserJobInteractionResponse,
 )
 
 router = APIRouter()
@@ -375,14 +375,14 @@ async def get_kanban_board(
     )
 
     columns: dict[str, KanbanColumnResponse] = {}
-    for status in ApplicationStatus:
-        items = board_data.get(status.value, [])
+    for app_status in ApplicationStatus:
+        items = board_data.get(app_status.value, [])
         jobs = [
             _build_listing_response(listing, interaction)
             for interaction, listing in items
         ]
-        columns[status.value] = KanbanColumnResponse(
-            status=status.value,
+        columns[app_status.value] = KanbanColumnResponse(
+            status=app_status.value,
             jobs=jobs,
             total=len(jobs),
         )

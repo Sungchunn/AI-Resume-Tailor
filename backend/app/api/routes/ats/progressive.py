@@ -14,23 +14,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
 from app.api.deps import get_current_user_id_sse, get_db, get_mongo_db
+from app.api.routes.ats.helpers import (
+    calculate_composite_score,
+    execute_content_quality,
+    execute_keyword_analysis,
+    execute_knockout_check,
+    execute_role_proximity,
+    execute_structure_analysis,
+)
 from app.crud.job import JobCRUD
 from app.crud.job_listing import JobListingRepository
 from app.crud.mongo.resume import ResumeCRUD as MongoResumeCRUD
-from app.services.core.cache import get_cache_service
-from app.services.ai import get_usage_tracker
-from app.services.ai.response import AIResponse, AccumulatedMetrics
-
 from app.schemas.ats import ATSProgressiveRequest
-
-from app.api.routes.ats.helpers import (
-    execute_knockout_check,
-    execute_structure_analysis,
-    execute_keyword_analysis,
-    execute_content_quality,
-    execute_role_proximity,
-    calculate_composite_score,
-)
+from app.services.ai import get_usage_tracker
+from app.services.ai.response import AccumulatedMetrics
+from app.services.core.cache import get_cache_service
 
 router = APIRouter()
 

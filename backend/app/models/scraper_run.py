@@ -7,12 +7,12 @@ success/failure status, and job counts per region.
 
 from sqlalchemy import (
     Column,
-    Integer,
-    String,
-    Text,
     DateTime,
     Float,
     Index,
+    Integer,
+    String,
+    Text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func

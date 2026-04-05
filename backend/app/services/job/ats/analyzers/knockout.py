@@ -11,11 +11,11 @@ from typing import Any
 from dateutil.relativedelta import relativedelta
 
 from ..constants import (
-    KnockoutSeverity,
     EDUCATION_LEVELS,
     EDUCATION_PATTERNS,
+    KnockoutSeverity,
 )
-from ..models import KnockoutRisk, KnockoutCheckResult
+from ..models import KnockoutCheckResult, KnockoutRisk
 from .base import parse_date
 
 

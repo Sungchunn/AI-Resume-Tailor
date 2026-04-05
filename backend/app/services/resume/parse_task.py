@@ -6,15 +6,14 @@ Provides task lifecycle management: create, complete, fail, query.
 """
 
 import json
-import uuid
 import logging
+import uuid
 from functools import lru_cache
 
 import redis.asyncio as redis
 
 from app.core.config import get_settings
 from app.schemas.resume import ParseStatusResponse
-
 
 logger = logging.getLogger(__name__)
 

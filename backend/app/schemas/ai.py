@@ -1,8 +1,8 @@
 """AI Chat Schemas for Resume Section Improvements."""
 
 from typing import Literal
-from pydantic import BaseModel, Field
 
+from pydantic import BaseModel, Field
 
 # Section types that can be improved
 SectionType = Literal[

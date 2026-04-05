@@ -1,14 +1,14 @@
 """Tests for the File Storage Service."""
 
 import io
-import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
+import pytest
 from minio.error import S3Error
 
 from app.services.storage.file_storage import (
-    FileStorageService,
     FileStorageError,
+    FileStorageService,
     FileUploadError,
     StorageFileNotFoundError,
     get_storage_service,

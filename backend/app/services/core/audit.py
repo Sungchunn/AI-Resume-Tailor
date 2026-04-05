@@ -28,16 +28,16 @@ Usage:
 """
 
 import logging
-from datetime import datetime, timezone
-from typing import Any
+from datetime import datetime
 from functools import lru_cache
+from typing import Any
 
 from fastapi import Request
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.audit_log import AuditLog
 from app.core.config import get_settings
+from app.models.audit_log import AuditLog
 
 logger = logging.getLogger(__name__)
 

@@ -9,15 +9,15 @@ import copy
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import select, and_, func
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.resume_build import ResumeBuild
 from app.core.protocols import (
-    ResumeBuildStatus,
-    ResumeBuildData,
     DiffSuggestionData,
+    ResumeBuildData,
+    ResumeBuildStatus,
 )
+from app.models.resume_build import ResumeBuild
 
 
 def _resume_build_to_data(resume_build: ResumeBuild) -> ResumeBuildData:

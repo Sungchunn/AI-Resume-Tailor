@@ -1,10 +1,10 @@
 """MongoDB CRUD operations."""
 
 from app.crud.mongo.exceptions import VersionConflictError
-from app.crud.mongo.resume import resume_crud, ResumeCRUD
-from app.crud.mongo.tailored_resume import tailored_resume_crud, TailoredResumeCRUD
-from app.crud.mongo.resume_build import resume_build_crud, ResumeBuildCRUD
-from app.crud.mongo.keyword_override import keyword_override_crud, KeywordOverrideCRUD
+from app.crud.mongo.keyword_override import KeywordOverrideCRUD, keyword_override_crud
+from app.crud.mongo.resume import ResumeCRUD, resume_crud
+from app.crud.mongo.resume_build import ResumeBuildCRUD, resume_build_crud
+from app.crud.mongo.tailored_resume import TailoredResumeCRUD, tailored_resume_crud
 
 __all__ = [
     "VersionConflictError",

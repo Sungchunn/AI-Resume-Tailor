@@ -6,7 +6,6 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_settings
 from app.core.security import decode_token
 from app.db import get_db
 from app.db.mongodb import get_mongodb

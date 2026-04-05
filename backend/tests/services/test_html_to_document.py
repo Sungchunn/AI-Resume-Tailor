@@ -13,24 +13,23 @@ Note: PDF export tests mock WeasyPrint to avoid system dependency issues in CI.
 """
 
 import sys
-from pathlib import Path
 from io import BytesIO
+from pathlib import Path
 from zipfile import ZipFile
 
 import pytest
-from unittest.mock import patch, MagicMock
 
 # Add the backend app to the path for direct imports
 backend_path = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(backend_path))
 
 from app.services.export.html_to_document import (
-    HTMLToDocumentService,
-    get_html_export_service,
-    StyleTemplate,
-    ExportOptions,
     TEMPLATE_CSS,
     WEASYPRINT_AVAILABLE,
+    ExportOptions,
+    HTMLToDocumentService,
+    StyleTemplate,
+    get_html_export_service,
 )
 
 

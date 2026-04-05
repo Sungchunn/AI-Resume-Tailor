@@ -4,10 +4,10 @@ import pytest
 
 from app.services.job.ats import ATSAnalyzer
 from app.services.job.ats.analyzers import (
-    RoleAnalyzer,
     ContentAnalyzer,
-    KnockoutAnalyzer,
     KeywordAnalyzer,
+    KnockoutAnalyzer,
+    RoleAnalyzer,
 )
 
 

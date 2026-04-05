@@ -7,19 +7,18 @@ Tests cover:
 - Error handling and partial success scenarios
 """
 
-import pytest
-import pytest_asyncio
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.scraping.orchestrator import ScraperOrchestrator
-from app.services.scraping.apify_client import ApifyClient
-from app.schemas.scraper import ScraperConfig, ScraperRegion, ScraperRunResult
-from app.schemas.job_listing import ApifyJobListing
 from app.crud.job_listing import job_listing_repository
 from app.models.job_listing import JobListing
+from app.schemas.job_listing import ApifyJobListing
+from app.schemas.scraper import ScraperConfig, ScraperRegion, ScraperRunResult
+from app.services.scraping.apify_client import ApifyClient
+from app.services.scraping.orchestrator import ScraperOrchestrator
 
 
 @pytest.fixture

@@ -1,8 +1,7 @@
 """Tests for core ATSAnalyzer functionality."""
 
-import pytest
 
-from app.services.job.ats import ATSAnalyzer, get_ats_analyzer
+from app.services.job.ats import get_ats_analyzer
 from app.services.job.ats.analyzers import STANDARD_SECTIONS
 
 

@@ -9,20 +9,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_id, get_db
 from app.crud.job import JobCRUD
-from app.services.ai import get_usage_tracker
-from app.services.ai.response import AccumulatedMetrics
-from app.services.job.ats import get_ats_analyzer
-from app.services.job.analyzer import JobAnalyzer
-from app.services.ai.client import get_ai_client
-from app.services.core.cache import get_cache_service
-
 from app.schemas.ats import (
+    IndustryAlignmentResponse,
     RoleProximityRequest,
     RoleProximityResponse,
     TitleMatchResponse,
     TrajectoryResponse,
-    IndustryAlignmentResponse,
 )
+from app.services.ai import get_usage_tracker
+from app.services.ai.client import get_ai_client
+from app.services.ai.response import AccumulatedMetrics
+from app.services.core.cache import get_cache_service
+from app.services.job.analyzer import JobAnalyzer
+from app.services.job.ats import get_ats_analyzer
 
 router = APIRouter()
 

@@ -5,14 +5,14 @@ Tracks saves, hides, applications, and views for each user-job combination.
 """
 
 from sqlalchemy import (
+    Boolean,
     Column,
+    DateTime,
+    ForeignKey,
+    Index,
     Integer,
     String,
-    DateTime,
-    Boolean,
-    ForeignKey,
     UniqueConstraint,
-    Index,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func

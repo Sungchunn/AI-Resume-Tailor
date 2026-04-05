@@ -9,7 +9,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 # Importance level types
 KeywordImportanceLevel = Literal["required", "preferred", "nice_to_have"]
 KeywordImportanceLevelEnhanced = Literal["required", "strongly_preferred", "preferred", "nice_to_have"]

@@ -14,9 +14,9 @@ from app.core.protocols import (
     WorkshopData,
 )
 from app.services.ai.client import get_ai_client
-from app.services.ai.response import AIResponse, AccumulatedMetrics
+from app.services.ai.response import AIResponse
 
-from .prompts import SINGLE_BULLET_SUGGESTION_PROMPT, DIFF_SUGGESTION_PROMPT
+from .prompts import DIFF_SUGGESTION_PROMPT, SINGLE_BULLET_SUGGESTION_PROMPT
 
 
 class SuggestionGenerator:

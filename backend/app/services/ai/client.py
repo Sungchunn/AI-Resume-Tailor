@@ -17,7 +17,6 @@ from functools import lru_cache
 from app.core.config import get_settings
 from app.services.ai.response import AIResponse, AIUsageMetrics
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -211,7 +210,7 @@ class OpenAIClient(BaseAIClient):
         temperature: float = 0.7,
     ) -> AIResponse:
         """Generate a response from the OpenAI model with usage metrics."""
-        from openai import APIError, APIConnectionError, RateLimitError
+        from openai import APIConnectionError, APIError, RateLimitError
 
         start_time = time.perf_counter()
 

@@ -19,54 +19,52 @@ Usage:
     result = await analyzer.analyze_keywords(resume_blocks, job_description, vault_blocks)
 """
 
-from .facade import ATSAnalyzer, get_ats_analyzer
-
-from .models import (
-    # Knockout
-    KnockoutRisk,
-    KnockoutCheckResult,
-    # Keywords
-    KeywordMatch,
-    KeywordDetail,
-    EnhancedKeywordDetail,
-    EnhancedKeywordAnalysis,
-    DetailedKeywordAnalysis,
-    # Structure
-    SectionOrderResult,
-    # Content
-    BulletAnalysis,
-    BlockTypeAnalysis,
-    QuantificationAnalysis,
-    ActionVerbAnalysis,
-    ContentQualityResult,
-    # Role
-    TitleMatchResult,
-    TrajectoryResult,
-    IndustryAlignmentResult,
-    RoleProximityResult,
-)
-
 from .constants import (
-    # Types / Enums
-    KeywordImportance,
-    KnockoutSeverity,
-    KnockoutRiskType,
-    TrajectoryType,
-    # Weights and thresholds
-    QUANTIFICATION_TARGET,
     ACHIEVEMENT_RATIO_TARGET,
-    # Patterns
-    QUANTIFICATION_PATTERNS,
     ACTION_VERB_PATTERNS,
-    # Titles
-    LEVEL_HIERARCHY,
-    FUNCTION_CATEGORIES,
-    TRAJECTORY_MODIFIERS,
-    # Industry
-    INDUSTRY_TAXONOMY,
     # Education
     EDUCATION_LEVELS,
     EDUCATION_PATTERNS,
+    FUNCTION_CATEGORIES,
+    # Industry
+    INDUSTRY_TAXONOMY,
+    # Titles
+    LEVEL_HIERARCHY,
+    # Patterns
+    QUANTIFICATION_PATTERNS,
+    # Weights and thresholds
+    QUANTIFICATION_TARGET,
+    TRAJECTORY_MODIFIERS,
+    # Types / Enums
+    KeywordImportance,
+    KnockoutRiskType,
+    KnockoutSeverity,
+    TrajectoryType,
+)
+from .facade import ATSAnalyzer, get_ats_analyzer
+from .models import (
+    ActionVerbAnalysis,
+    BlockTypeAnalysis,
+    # Content
+    BulletAnalysis,
+    ContentQualityResult,
+    DetailedKeywordAnalysis,
+    EnhancedKeywordAnalysis,
+    EnhancedKeywordDetail,
+    IndustryAlignmentResult,
+    KeywordDetail,
+    # Keywords
+    KeywordMatch,
+    KnockoutCheckResult,
+    # Knockout
+    KnockoutRisk,
+    QuantificationAnalysis,
+    RoleProximityResult,
+    # Structure
+    SectionOrderResult,
+    # Role
+    TitleMatchResult,
+    TrajectoryResult,
 )
 
 __all__ = [

@@ -23,19 +23,18 @@ Usage:
     # Type checker will verify that passed objects implement the protocols
 """
 
-from typing import (
-    Protocol,
-    List,
-    Dict,
-    Any,
-    AsyncIterator,
-    runtime_checkable,
-)
 from datetime import date, datetime
 from enum import Enum
+from typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    List,
+    Protocol,
+    runtime_checkable,
+)
 
-from pydantic import BaseModel, Field, ConfigDict
-
+from pydantic import BaseModel, ConfigDict, Field
 
 # =============================================================================
 # ENUMS - Strongly typed categories

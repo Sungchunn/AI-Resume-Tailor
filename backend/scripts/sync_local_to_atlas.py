@@ -21,9 +21,7 @@ import argparse
 import asyncio
 import re
 import sys
-from datetime import datetime, timezone
 
-from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 
 # Add parent directory to path for imports

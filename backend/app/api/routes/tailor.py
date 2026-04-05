@@ -10,37 +10,42 @@ from datetime import datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from app.api.deps import get_databases, get_current_user_id, DatabaseSessions
+from app.api.deps import DatabaseSessions, get_current_user_id, get_databases
 from app.crud import job_crud
 from app.crud.job_listing import job_listing_repository
 from app.crud.mongo import resume_crud, tailored_resume_crud
 from app.models.mongo.tailored_resume import (
-    TailoredResumeCreate as MongoTailoredResumeCreate,
-    TailoredResumeUpdate as MongoTailoredResumeUpdate,
-    TailoredResumeFinalize as MongoTailoredResumeFinalize,
-    TailoredResumeStatus,
     JobSource,
+    TailoredResumeStatus,
+)
+from app.models.mongo.tailored_resume import (
+    TailoredResumeCreate as MongoTailoredResumeCreate,
+)
+from app.models.mongo.tailored_resume import (
+    TailoredResumeFinalize as MongoTailoredResumeFinalize,
+)
+from app.models.mongo.tailored_resume import (
+    TailoredResumeUpdate as MongoTailoredResumeUpdate,
 )
 from app.schemas.tailor import (
-    TailorRequest,
-    TailorResponse,
     QuickMatchRequest,
     QuickMatchResponse,
-    TailoredResumeListResponse,
-    TailoredResumeUpdateRequest,
-    TailoredResumeFullResponse,
     TailoredResumeCompareResponse,
     TailoredResumeFinalizeRequest,
+    TailoredResumeFullResponse,
+    TailoredResumeListResponse,
+    TailoredResumeUpdateRequest,
+    TailorRequest,
+    TailorResponse,
 )
 from app.services import (
-    get_ai_client,
-    get_cache_service,
-    ResumeParser,
     JobAnalyzer,
+    ResumeParser,
     TailoringService,
     TailoringValidationError,
+    get_ai_client,
+    get_cache_service,
 )
 from app.services.ai import get_usage_tracker
 from app.services.ai.client import AIServiceError

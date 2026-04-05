@@ -16,12 +16,12 @@ Usage:
 
 from .engine import DiffEngine, get_diff_engine
 from .operations import DiffOperations
-from .suggestions import SuggestionGenerator
 from .pointer import (
-    parse_path,
     get_value_at_path,
+    parse_path,
     set_value_at_path,
 )
+from .suggestions import SuggestionGenerator
 
 __all__ = [
     # Main exports

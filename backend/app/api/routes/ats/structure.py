@@ -7,13 +7,12 @@ Analyzes resume structure for ATS compatibility.
 from fastapi import APIRouter, Depends
 
 from app.api.deps import get_current_user_id
-from app.services.job.ats import get_ats_analyzer
-
 from app.schemas.ats import (
     ATSStructureRequest,
     ATSStructureResponse,
     SectionOrderDetails,
 )
+from app.services.job.ats import get_ats_analyzer
 
 router = APIRouter()
 

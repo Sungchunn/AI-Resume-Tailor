@@ -6,12 +6,12 @@ for scheduled scraping runs.
 """
 
 from sqlalchemy import (
+    Boolean,
     Column,
+    DateTime,
     Integer,
     String,
     Text,
-    Boolean,
-    DateTime,
 )
 from sqlalchemy.sql import func
 

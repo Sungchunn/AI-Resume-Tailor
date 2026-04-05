@@ -1,6 +1,7 @@
 """Profile schemas for user profile operations."""
 
 from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 

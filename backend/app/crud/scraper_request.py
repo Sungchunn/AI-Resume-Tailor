@@ -7,11 +7,11 @@ scraper requests.
 
 from datetime import datetime, timezone
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.scraper_request import ScraperRequest, RequestStatus
+from app.models.scraper_request import RequestStatus, ScraperRequest
 
 
 class ScraperRequestRepository:

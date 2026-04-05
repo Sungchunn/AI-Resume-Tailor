@@ -26,9 +26,9 @@ from apscheduler.triggers.cron import CronTrigger
 
 from app.core.config import Settings, get_settings
 from app.crud.job_listing import job_listing_repository
-from app.crud.scraper_run import scraper_run_repository
-from app.crud.scraper_preset import scraper_preset_repository
 from app.crud.schedule_settings import schedule_settings_repository
+from app.crud.scraper_preset import scraper_preset_repository
+from app.crud.scraper_run import scraper_run_repository
 from app.db.session import AsyncSessionLocal
 from app.schemas.scraper import (
     SCRAPER_CONFIGS,
@@ -36,9 +36,9 @@ from app.schemas.scraper import (
     ScraperConfig,
     ScraperRunResult,
 )
+from app.services.core.cache import get_cache_service
 from app.services.scraping.apify_client import ApifyClientError, get_apify_client
 from app.services.scraping.cost_tracker import get_cost_tracker
-from app.services.core.cache import get_cache_service
 
 logger = logging.getLogger(__name__)
 
