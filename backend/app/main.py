@@ -4,14 +4,15 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.exc import TimeoutError as SQLTimeoutError
 
 from app.api import api_router
 from app.core.config import get_settings
-from app.db.mongodb import close_mongodb, connect_mongodb
+from app.db.mongodb import close_mongodb, connect_mongodb, get_mongodb
 from app.db.redis import close_redis, connect_redis
-from app.db.session import engine
+from app.db.session import AsyncSessionLocal, engine
 from app.middleware.rate_limiter import RateLimitConfig, RateLimitMiddleware
 from app.services.scraping.scheduler import get_scheduler_service
 
@@ -160,7 +161,48 @@ app.include_router(api_router, prefix="/api")
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    """
+    Health check endpoint with dependency verification.
+
+    Returns:
+        200: All dependencies healthy
+        503: One or more dependencies unhealthy
+
+    Response format:
+        {
+            "status": "healthy" | "unhealthy",
+            "checks": {
+                "postgres": "ok" | "error: <message>",
+                "mongodb": "ok" | "error: <message>"
+            }
+        }
+    """
+    checks = {
+        "status": "healthy",
+        "checks": {}
+    }
+
+    # Check PostgreSQL connectivity
+    try:
+        async with AsyncSessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+        checks["checks"]["postgres"] = "ok"
+    except Exception as e:
+        checks["checks"]["postgres"] = f"error: {str(e)}"
+        checks["status"] = "unhealthy"
+
+    # Check MongoDB connectivity
+    try:
+        mongo = get_mongodb()
+        await mongo.command("ping")
+        checks["checks"]["mongodb"] = "ok"
+    except Exception as e:
+        checks["checks"]["mongodb"] = f"error: {str(e)}"
+        checks["status"] = "unhealthy"
+
+    # Return appropriate status code
+    status_code = 200 if checks["status"] == "healthy" else 503
+    return JSONResponse(content=checks, status_code=status_code)
 
 
 @app.get("/")
