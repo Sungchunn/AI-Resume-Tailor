@@ -212,20 +212,20 @@ curl -X POST http://localhost:8000/api/auth/google \
 
 **Response Fields:**
 
-| Field            | Type    | Description                                       |
-| ---------------- | ------- | ------------------------------------------------- |
-| `is_new_user`    | boolean | `true` if this created a new account              |
-| `account_linked` | boolean | `true` if Google was linked to existing email account |
+| Field            | Type    | Description                                              |
+| ---------------- | ------- | -------------------------------------------------------- |
+| `is_new_user`    | boolean | `true` if this created a new account                     |
+| `account_linked` | boolean | `true` if Google was linked to existing email account    |
 
 **Error Responses:**
 
-| Status | Condition                                        |
-| ------ | ------------------------------------------------ |
-| 400    | Google account email is not verified             |
-| 401    | Invalid or expired Google token                  |
-| 403    | User account is inactive                         |
+| Status | Condition                                          |
+| ------ | -------------------------------------------------- |
+| 400    | Google account email is not verified               |
+| 401    | Invalid or expired Google token                    |
+| 403    | User account is inactive                           |
 | 409    | Email already linked to a different Google account |
-| 503    | Google Sign-In is not configured                 |
+| 503    | Google Sign-In is not configured                   |
 
 **Account Linking Behavior:**
 
