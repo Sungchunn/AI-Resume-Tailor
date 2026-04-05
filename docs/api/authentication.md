@@ -2,7 +2,10 @@
 
 ## Overview
 
-The API uses JWT (JSON Web Token) authentication with Bearer scheme. Users must register and login to receive access tokens for authenticated requests.
+The API uses JWT (JSON Web Token) authentication with Bearer scheme. Users can authenticate via:
+
+- **Email/Password:** Traditional registration and login
+- **Google OAuth:** One-click sign-in with Google (frontend-driven flow)
 
 ## Token Types
 
@@ -11,7 +14,9 @@ The API uses JWT (JSON Web Token) authentication with Bearer scheme. Users must 
 | Access Token  | API request authentication | 30 minutes     |
 | Refresh Token | Obtain new access tokens   | 7 days         |
 
-## Authentication Flow
+## Authentication Flows
+
+### Email/Password Flow
 
 ```text
 ┌──────────┐     Register/Login      ┌──────────┐
@@ -35,6 +40,24 @@ The API uses JWT (JSON Web Token) authentication with Bearer scheme. Users must 
 │  Client  │ ──────────────────────► │   API    │
 │          │ ◄────────────────────── │          │
 └──────────┘    New access token     └──────────┘
+```
+
+### Google OAuth Flow (Frontend-Driven)
+
+```text
+┌──────────┐    Google Sign-In       ┌──────────┐
+│  Client  │ ──────────────────────► │  Google  │
+│          │ ◄────────────────────── │          │
+└──────────┘     ID token (popup)    └──────────┘
+     │
+     │         POST /auth/google
+     │         { id_token: "..." }
+     ▼
+┌──────────┐                         ┌──────────┐
+│  Client  │ ──────────────────────► │   API    │
+│          │ ◄────────────────────── │          │
+└──────────┘   access + refresh      └──────────┘
+                   tokens
 ```
 
 ---
@@ -132,9 +155,86 @@ curl -X POST http://localhost:8000/api/auth/login \
 
 **Error Responses:**
 
-| Status | Condition                 |
-|--------|---------------------------|
-| 401    | Invalid email or password |
+| Status | Condition                                                        |
+| ------ | ---------------------------------------------------------------- |
+| 400    | Account uses Google Sign-In (no password set)                    |
+| 401    | Invalid email or password                                        |
+| 403    | User account is inactive                                         |
+
+---
+
+### Google OAuth
+
+Authenticate or register via Google Sign-In. Supports:
+
+- New user registration with Google
+- Existing Google user login
+- Linking Google to existing email account
+
+```http
+POST /api/auth/google
+```
+
+**Authentication:** None required
+
+**Prerequisites:**
+
+- Google OAuth must be enabled (`GOOGLE_OAUTH_ENABLED=true`)
+- Valid `GOOGLE_CLIENT_ID` must be configured
+
+**Request Body:**
+
+| Field      | Type   | Required | Description                   |
+| ---------- | ------ | -------- | ----------------------------- |
+| `id_token` | string | Yes      | Google ID token from frontend |
+
+**Example Request:**
+
+```bash
+curl -X POST http://localhost:8000/api/auth/google \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }'
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "is_new_user": true,
+  "account_linked": false
+}
+```
+
+**Response Fields:**
+
+| Field            | Type    | Description                                       |
+| ---------------- | ------- | ------------------------------------------------- |
+| `is_new_user`    | boolean | `true` if this created a new account              |
+| `account_linked` | boolean | `true` if Google was linked to existing email account |
+
+**Error Responses:**
+
+| Status | Condition                                        |
+| ------ | ------------------------------------------------ |
+| 400    | Google account email is not verified             |
+| 401    | Invalid or expired Google token                  |
+| 403    | User account is inactive                         |
+| 409    | Email already linked to a different Google account |
+| 503    | Google Sign-In is not configured                 |
+
+**Account Linking Behavior:**
+
+| Scenario                  | Action                                      |
+| ------------------------- | ------------------------------------------- |
+| New Google user           | Creates account with `auth_provider=google` |
+| Returning Google user     | Returns tokens                              |
+| Email user clicks Google  | Links Google to existing account            |
+| Conflicting Google link   | Returns 409 error                           |
 
 ---
 
@@ -277,10 +377,11 @@ Refresh tokens contain:
 Authentication endpoints have specific rate limits:
 
 | Endpoint         | Per Minute | Per Hour |
-|------------------|------------|----------|
+| ---------------- | ---------- | -------- |
 | `/auth/login`    | 10         | 50       |
 | `/auth/register` | 10         | 50       |
 | `/auth/refresh`  | 10         | 50       |
+| `/auth/google`   | 10         | 50       |
 
 See [Errors & Rate Limits](errors-rate-limits.md) for details.
 
@@ -309,11 +410,20 @@ See [Errors & Rate Limits](errors-rate-limits.md) for details.
 
 ```typescript
 {
-  id: string;           // UUID
+  id: number;
   email: string;
-  full_name: string;
+  full_name: string | null;
   is_active: boolean;
-  created_at: string;   // ISO 8601 datetime
+  is_admin: boolean;
+  created_at: string;              // ISO 8601 datetime
+  headline: string | null;
+  about_me: string | null;
+  about_me_generated_at: string | null;
+  timezone: string | null;
+  // OAuth fields
+  auth_provider: "email" | "google";
+  has_password: boolean;           // Can user use password login?
+  google_linked: boolean;          // Is Google account linked?
 }
 ```
 
@@ -332,5 +442,25 @@ See [Errors & Rate Limits](errors-rate-limits.md) for details.
 ```typescript
 {
   refresh_token: string;
+}
+```
+
+### GoogleAuthRequest
+
+```typescript
+{
+  id_token: string;  // Google ID token from frontend Sign-In
+}
+```
+
+### GoogleAuthResponse
+
+```typescript
+{
+  access_token: string;
+  refresh_token: string;
+  token_type: "bearer";
+  is_new_user: boolean;     // True if newly created account
+  account_linked: boolean;  // True if Google linked to existing email account
 }
 ```
