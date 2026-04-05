@@ -21,10 +21,14 @@ from app.models import (  # noqa: F401 - imported for model registration
     JobListing,
     UserJobInteraction,
     TailoredResume,
-    ExperienceBlock,
     ResumeBuild,
     AuditLog,
     ScraperRun,
+    ScraperPreset,
+    ScraperScheduleSettings,
+    ScraperRequest,
+    AIUsageLog,
+    AIPricingConfig,
 )
 from app.core.config import get_settings
 
