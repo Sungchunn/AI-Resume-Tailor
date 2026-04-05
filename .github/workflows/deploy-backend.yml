@@ -80,7 +80,8 @@ jobs:
           script: |
             set -e
             cd /home/deploy/app
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
             cd backend
             poetry install --no-interaction
             poetry run alembic upgrade head
