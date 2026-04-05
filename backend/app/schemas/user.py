@@ -1,7 +1,8 @@
 import re
+from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
-from datetime import datetime
 
 
 class UserBase(BaseModel):
@@ -39,6 +40,11 @@ class UserResponse(UserBase):
     about_me_generated_at: datetime | None = None
     timezone: str | None = "UTC"
 
+    # OAuth fields
+    auth_provider: Literal["email", "google"] = "email"
+    has_password: bool = Field(description="Whether user can use password login")
+    google_linked: bool = Field(description="Whether Google is linked")
+
     model_config = {"from_attributes": True}
 
 
@@ -50,3 +56,21 @@ class Token(BaseModel):
 
 class TokenRefresh(BaseModel):
     refresh_token: str
+
+
+class GoogleAuthRequest(BaseModel):
+    """Request body for Google OAuth login/signup."""
+
+    id_token: str = Field(..., description="Google ID token from frontend")
+
+
+class GoogleAuthResponse(BaseModel):
+    """Response for Google OAuth, extends Token with metadata."""
+
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    is_new_user: bool = Field(description="True if this is a newly created account")
+    account_linked: bool = Field(
+        description="True if Google was linked to existing email account"
+    )

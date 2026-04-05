@@ -1,4 +1,13 @@
-from app.schemas.user import UserCreate, UserResponse, UserBase, UserLogin, Token, TokenRefresh
+from app.schemas.user import (
+    UserCreate,
+    UserResponse,
+    UserBase,
+    UserLogin,
+    Token,
+    TokenRefresh,
+    GoogleAuthRequest,
+    GoogleAuthResponse,
+)
 from app.schemas.resume import ResumeCreate, ResumeUpdate, ResumeResponse, ResumeBase
 from app.schemas.job import JobCreate, JobUpdate, JobResponse, JobBase
 from app.schemas.job_listing import (
@@ -67,6 +76,8 @@ __all__ = [
     "UserResponse",
     "Token",
     "TokenRefresh",
+    "GoogleAuthRequest",
+    "GoogleAuthResponse",
     # Resume schemas
     "ResumeBase",
     "ResumeCreate",
