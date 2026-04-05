@@ -80,7 +80,7 @@ jobs:
           key: ${{ secrets.DO_SSH_KEY }}
           script: |
             set -e
-            export PATH="$HOME/.local/bin:$PATH"
+            export PATH="/root/.local/bin:$PATH"
             cd /home/deploy/app
             git fetch origin
             git reset --hard origin/main
