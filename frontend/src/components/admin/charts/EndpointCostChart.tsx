@@ -97,7 +97,7 @@ export function EndpointCostChart({ data, loading }: EndpointCostChartProps) {
     .map((item) => ({
       ...item,
       // Shorten endpoint names for display (remove api prefix, truncate if too long)
-      shortEndpoint: truncateEndpoint(item.endpoint.replace(/^\/api\/v\d+/, ""), 22),
+      shortEndpoint: truncateEndpoint(item.endpoint.replace(/^\/api\/v\d+/, ""), 18),
     }));
 
   function truncateEndpoint(name: string, maxLen: number): string {
@@ -106,7 +106,7 @@ export function EndpointCostChart({ data, loading }: EndpointCostChartProps) {
   }
 
   return (
-    <div className="h-[180px] w-full">
+    <div className="h-[180px] w-full overflow-hidden">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={chartData}
