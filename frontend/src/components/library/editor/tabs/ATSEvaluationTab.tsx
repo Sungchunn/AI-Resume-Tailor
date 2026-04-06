@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Target,
   AlertCircle,
+  AlertTriangle,
   LinkIcon,
   RefreshCw,
   ChevronDown,
@@ -15,6 +16,9 @@ import {
 import { useBlockEditor } from "../BlockEditorContext";
 import { blocksToText } from "@/lib/resume/transforms";
 import { useJob, useJobListing, useATSKeywordAnalysis } from "@/lib/api/hooks";
+import { useATSProgressStore } from "@/lib/stores/atsProgressStore";
+import { useBulletSuggestionsStore } from "@/lib/stores/bulletSuggestionsStore";
+import { generateContentHash } from "@/lib/utils/contentHash";
 import type {
   ATSKeywordDetailedResponse,
   KeywordImportance,
@@ -303,6 +307,20 @@ export function ATSEvaluationTab({
   const { state } = useBlockEditor();
   const { blocks } = state;
 
+  // ATS content staleness tracking
+  const analyzedContentHash = useATSProgressStore((s) => s.analyzedContentHash);
+  const contentStale = useATSProgressStore((s) => s.contentStale);
+  const setAnalyzedContentHash = useATSProgressStore(
+    (s) => s.setAnalyzedContentHash
+  );
+  const markContentStale = useATSProgressStore((s) => s.markContentStale);
+  const clearStaleFlag = useATSProgressStore((s) => s.clearStaleFlag);
+
+  // Bullet suggestions store for clearing on re-analysis
+  const clearBulletSuggestions = useBulletSuggestionsStore(
+    (s) => s.clearSuggestions
+  );
+
   // Determine which type of job we're fetching
   const isUserJob = jobId !== null;
   const isJobListing = jobListingId !== null;
@@ -388,6 +406,9 @@ export function ATSEvaluationTab({
         onSuccess: (data) => {
           setAnalysis(data);
           isAnalyzingRef.current = false;
+          // Store the content hash at analysis time for staleness detection
+          const currentHash = generateContentHash(blocks);
+          setAnalyzedContentHash(currentHash);
         },
         onError: (err) => {
           setAnalysisError(
@@ -397,7 +418,7 @@ export function ATSEvaluationTab({
         },
       }
     );
-  }, [jobDescription, resumeContent, analysisMutation]);
+  }, [jobDescription, resumeContent, analysisMutation, blocks, setAnalyzedContentHash]);
 
   // Keep runAnalysis ref in sync for effect
   const runAnalysisRef = useRef(runAnalysis);
@@ -413,6 +434,27 @@ export function ATSEvaluationTab({
       return () => clearTimeout(timeoutId);
     }
   }, [jobDescription, resumeContent]);
+
+  // Detect content changes after analysis and mark as stale
+  useEffect(() => {
+    // Only check if we have a previous hash (analysis was run)
+    if (!analyzedContentHash || !analysis) return;
+
+    const currentHash = generateContentHash(blocks);
+    if (currentHash !== analyzedContentHash && !contentStale) {
+      markContentStale();
+    }
+  }, [blocks, analyzedContentHash, analysis, contentStale, markContentStale]);
+
+  // Re-analyze handler - clears stale state and bullet suggestions
+  const handleReanalyze = useCallback(() => {
+    // Clear bullet suggestions (they're based on old ATS data)
+    clearBulletSuggestions();
+    // Clear stale flag
+    clearStaleFlag();
+    // Run fresh analysis
+    runAnalysis();
+  }, [clearBulletSuggestions, clearStaleFlag, runAnalysis]);
 
   // Loading states
   const isLoadingJob = isUserJob ? userJobLoading : jobListingLoading;
@@ -539,6 +581,35 @@ export function ATSEvaluationTab({
             company={jobCompany}
             isJobListing={isJobListing}
           />
+        )}
+
+        {/* Stale content warning */}
+        {contentStale && analysis && (
+          <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
+                    Content has changed
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    Your resume was modified since the last analysis
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleReanalyze}
+                disabled={isAnalyzing}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-700 dark:text-yellow-400 rounded-md transition-colors shrink-0 disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={`w-3.5 h-3.5 ${isAnalyzing ? "animate-spin" : ""}`}
+                />
+                Re-analyze
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Analyzing state */}
