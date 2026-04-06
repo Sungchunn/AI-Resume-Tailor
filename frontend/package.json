@@ -50,6 +50,7 @@
     "react-dropzone": "^15.0.0",
     "react-hook-form": "^7.71.1",
     "react-resizable-panels": "^4.6.4",
+    "recharts": "^3.8.1",
     "tailwindcss": "^4.1.18",
     "use-debounce": "^10.1.0",
     "zod": "^4.3.6",
