@@ -284,6 +284,7 @@ export default function TailoredEditorPage({ params }: PageProps) {
                 hasParsedContent={!!initialParsedContent}
                 jobId={jobId}
                 jobListingId={jobListingId}
+                tailoredResumeId={id}
               />
             </BlockEditorProvider>
           </TailorEditorProvider>

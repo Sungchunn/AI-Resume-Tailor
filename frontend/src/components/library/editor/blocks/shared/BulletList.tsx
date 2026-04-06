@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, type KeyboardEvent } from "react";
-import { Plus, X, GripVertical } from "lucide-react";
+import { Plus, X, GripVertical, Sparkles } from "lucide-react";
 import { nanoid } from "nanoid";
 
 interface BulletListProps {
@@ -11,6 +11,14 @@ interface BulletListProps {
   placeholder?: string;
   maxBullets?: number;
   hint?: string;
+  /** Map of bulletId -> hasSuggestion for showing sparkle indicators */
+  suggestionIndicators?: Map<string, boolean>;
+  /** Callback when suggestion indicator is clicked */
+  onIndicatorClick?: (bulletId: string) => void;
+  /** Block ID for building unique bullet identifiers */
+  blockId?: string;
+  /** Entry index for building unique bullet identifiers */
+  entryIndex?: number;
 }
 
 /**
@@ -23,6 +31,10 @@ export function BulletList({
   placeholder = "Add a bullet point...",
   maxBullets = 10,
   hint,
+  suggestionIndicators,
+  onIndicatorClick,
+  blockId,
+  entryIndex,
 }: BulletListProps) {
   // Use Map for refs keyed by stable IDs instead of array indices
   const inputRefs = useRef<Map<string, HTMLInputElement | null>>(new Map());
@@ -142,8 +154,31 @@ export function BulletList({
       <div className="space-y-2">
         {bullets.map((bullet, index) => {
           const bulletId = ids[index];
+          // Build the suggestion bullet ID format: "blockId:entry-N:bullet-M"
+          const suggestionBulletId =
+            blockId !== undefined && entryIndex !== undefined
+              ? `${blockId}:entry-${entryIndex}:bullet-${index}`
+              : null;
+          const hasSuggestion = suggestionBulletId
+            ? suggestionIndicators?.get(suggestionBulletId) ?? false
+            : false;
+
           return (
-            <div key={bulletId} className="flex items-start gap-2 group">
+            <div key={bulletId} className="flex items-start gap-2 group relative">
+              {/* AI Suggestion Indicator */}
+              {hasSuggestion && suggestionBulletId && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onIndicatorClick?.(suggestionBulletId);
+                  }}
+                  className="absolute -left-6 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-600 transition-colors"
+                  title="AI suggestion available"
+                >
+                  <Sparkles className="h-4 w-4" />
+                </button>
+              )}
               <div className="pt-2.5 text-muted-foreground/60 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity">
                 <GripVertical className="w-4 h-4" />
               </div>

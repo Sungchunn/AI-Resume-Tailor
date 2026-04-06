@@ -29,6 +29,8 @@ interface EditorLayoutProps {
   jobId?: number | null;
   /** Scraped job listing ID for ATS analysis - passed via query param from job board */
   jobListingId?: number | null;
+  /** Tailored resume ID for bullet suggestions - only provided in tailor editor */
+  tailoredResumeId?: string | null;
 }
 
 /**
@@ -48,6 +50,7 @@ export function EditorLayout({
   onParseComplete,
   jobId = null,
   jobListingId = null,
+  tailoredResumeId = null,
 }: EditorLayoutProps) {
   const {
     state,
@@ -308,7 +311,7 @@ export function EditorLayout({
               <Separator className="w-1.5 bg-muted hover:bg-primary/20 transition-colors cursor-col-resize" />
 
               <Panel defaultSize="27%" minSize="20%" maxSize="40%">
-                <ControlPanel jobId={jobId} jobListingId={jobListingId} />
+                <ControlPanel jobId={jobId} jobListingId={jobListingId} tailoredResumeId={tailoredResumeId} />
               </Panel>
             </>
           )}

@@ -11,6 +11,8 @@ interface ControlPanelProps {
   jobId: number | null;
   /** Scraped job listing ID for ATS analysis - null means no job context */
   jobListingId: number | null;
+  /** Tailored resume ID for bullet suggestions - only provided in tailor editor */
+  tailoredResumeId?: string | null;
 }
 
 /**
@@ -22,7 +24,7 @@ interface ControlPanelProps {
  * 3. Formatting - Style, font, and spacing controls
  * 4. Sections - Drag-and-drop section ordering
  */
-export function ControlPanel({ jobId, jobListingId }: ControlPanelProps) {
+export function ControlPanel({ jobId, jobListingId, tailoredResumeId }: ControlPanelProps) {
   const [activeTab, setActiveTab] = useState<ControlPanelTab>("formatting");
 
   // Has job context if either job ID is provided
@@ -62,7 +64,7 @@ export function ControlPanel({ jobId, jobListingId }: ControlPanelProps) {
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === "ai" && <AIChatTab jobId={jobId} jobListingId={jobListingId} />}
+        {activeTab === "ai" && <AIChatTab jobId={jobId} jobListingId={jobListingId} tailoredResumeId={tailoredResumeId} />}
         {activeTab === "ats" && (
           <ATSEvaluationTab jobId={jobId} jobListingId={jobListingId} />
         )}

@@ -21,6 +21,8 @@ import { useJobListing } from "@/lib/api";
 import { BLOCK_TYPE_INFO } from "@/lib/resume/defaults";
 import type { AnyResumeBlock } from "@/lib/resume/types";
 import type { ChatMessage, AISectionType, AIChatResponse } from "@/lib/api/types";
+import { useTailorEditorContextSafe } from "@/components/tailor/editor/TailorEditorContext";
+import { BulletSuggestionsPanel } from "@/components/tailor/editor/BulletSuggestionsPanel";
 
 interface DisplayMessage {
   id: string;
@@ -43,6 +45,8 @@ interface AIChatTabProps {
   jobId: number | null;
   /** Scraped job listing ID for context - null means no job context */
   jobListingId: number | null;
+  /** Tailored resume ID for bullet suggestions - only provided in tailor editor */
+  tailoredResumeId?: string | null;
 }
 
 const QUICK_ACTIONS: QuickAction[] = [
@@ -82,12 +86,16 @@ const QUICK_ACTIONS: QuickAction[] = [
  * - Apply/reject suggested improvements
  * - Job context integration for targeted suggestions
  */
-export function AIChatTab({ jobId, jobListingId }: AIChatTabProps) {
+export function AIChatTab({ jobId, jobListingId, tailoredResumeId }: AIChatTabProps) {
   const { state, updateBlock, getBlockById, setActiveBlock } = useBlockEditor();
   const { blocks, activeBlockId } = state;
 
   // Fetch job listing data when available (for job context)
   const { data: jobListing } = useJobListing(jobListingId ?? 0);
+
+  // Check if we're in tailor mode (context exists and has AI assistant enabled)
+  const tailorContext = useTailorEditorContextSafe();
+  const isTailorMode = tailorContext?.aiAssistantEnabled ?? false;
 
   // Has job context if either job ID is provided
   const hasJobContext = jobId !== null || jobListingId !== null;
@@ -285,6 +293,13 @@ export function AIChatTab({ jobId, jobListingId }: AIChatTabProps) {
           </div>
         )}
       </div>
+
+      {/* Bullet Suggestions Panel (tailor mode only) */}
+      {isTailorMode && tailoredResumeId && (
+        <div className="px-4 py-3 border-b border-border">
+          <BulletSuggestionsPanel tailoredResumeId={tailoredResumeId} />
+        </div>
+      )}
 
       {/* Section Selector */}
       <div className="px-4 py-2 border-b border-border bg-muted/30">
