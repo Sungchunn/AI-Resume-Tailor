@@ -87,7 +87,7 @@ export default function AIUsageDashboard() {
       {/* Header + Time Range */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground">AI Usage Dashboard</h1>
+          <h1 className="text-2xl font-bold text-foreground">AI Usage Dashboard</h1>
           <p className="text-sm text-muted-foreground">
             Monitor AI API usage, costs, and performance across all endpoints.
           </p>
