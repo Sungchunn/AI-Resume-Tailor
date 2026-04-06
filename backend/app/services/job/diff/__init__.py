@@ -14,6 +14,7 @@ Usage:
     result = await engine.generate_suggestions(workshop, job_description, blocks)
 """
 
+from .bullet_analyzer import BulletAnalyzer
 from .engine import DiffEngine, get_diff_engine
 from .operations import DiffOperations
 from .pointer import (
@@ -28,6 +29,7 @@ __all__ = [
     "DiffEngine",
     "get_diff_engine",
     # Components (for direct use if needed)
+    "BulletAnalyzer",
     "DiffOperations",
     "SuggestionGenerator",
     # Pointer utilities
