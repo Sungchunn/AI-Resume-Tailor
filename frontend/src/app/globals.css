@@ -32,12 +32,12 @@
   --color-input: oklch(0.92 0.004 286.32);
   --color-ring: oklch(0 0 0);
 
-  /* Chart Colors */
-  --color-chart-1: oklch(0.646 0.222 41.116);
-  --color-chart-2: oklch(0.6 0.118 184.704);
-  --color-chart-3: oklch(0.398 0.07 227.392);
-  --color-chart-4: oklch(0.828 0.189 84.429);
-  --color-chart-5: oklch(0.769 0.188 70.08);
+  /* Chart Colors - Blue/Purple scheme */
+  --color-chart-1: oklch(0.55 0.2 260);
+  --color-chart-2: oklch(0.5 0.22 285);
+  --color-chart-3: oklch(0.55 0.2 305);
+  --color-chart-4: oklch(0.65 0.18 320);
+  --color-chart-5: oklch(0.7 0.15 235);
 
   /* Sidebar Colors - L-frame: sidebar is darker than content */
   --color-sidebar: oklch(0.967 0.001 286.375);
@@ -91,12 +91,12 @@
   --color-input: oklch(0.377 0.009 264.5 / 70%);
   --color-ring: oklch(1 0 0);
 
-  /* Chart Colors */
-  --color-chart-1: oklch(0.488 0.243 264.376);
-  --color-chart-2: oklch(0.696 0.17 162.48);
-  --color-chart-3: oklch(0.769 0.188 70.08);
-  --color-chart-4: oklch(0.627 0.265 303.9);
-  --color-chart-5: oklch(0.645 0.246 16.439);
+  /* Chart Colors - Blue/Purple scheme */
+  --color-chart-1: oklch(0.65 0.2 260);
+  --color-chart-2: oklch(0.6 0.22 285);
+  --color-chart-3: oklch(0.65 0.2 305);
+  --color-chart-4: oklch(0.72 0.18 320);
+  --color-chart-5: oklch(0.75 0.15 235);
 
   /* Sidebar Colors - L-frame: sidebar is darker (zinc-900) */
   --color-sidebar: oklch(0.188 0.006 264.5);
@@ -140,12 +140,12 @@
     --color-input: oklch(0.377 0.009 264.5 / 70%);
     --color-ring: oklch(1 0 0);
 
-    /* Chart Colors */
-    --color-chart-1: oklch(0.488 0.243 264.376);
-    --color-chart-2: oklch(0.696 0.17 162.48);
-    --color-chart-3: oklch(0.769 0.188 70.08);
-    --color-chart-4: oklch(0.627 0.265 303.9);
-    --color-chart-5: oklch(0.645 0.246 16.439);
+    /* Chart Colors - Blue/Purple scheme */
+    --color-chart-1: oklch(0.65 0.2 260);
+    --color-chart-2: oklch(0.6 0.22 285);
+    --color-chart-3: oklch(0.65 0.2 305);
+    --color-chart-4: oklch(0.72 0.18 320);
+    --color-chart-5: oklch(0.75 0.15 235);
 
     /* Sidebar Colors - L-frame: sidebar is darker (zinc-900) */
     --color-sidebar: oklch(0.188 0.006 264.5);
