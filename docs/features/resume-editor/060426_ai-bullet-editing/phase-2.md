@@ -434,7 +434,7 @@ Return a JSON array. Only include bullets that need improvement:
 ```
 
 If ALL bullets are already well-written, return an empty array: `[]`"""
-
+<!-- markdownlint-disable-next-line MD040 -->
 ```
 
 ### User Prompt Builder
