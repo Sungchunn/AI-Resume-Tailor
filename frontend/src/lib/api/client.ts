@@ -15,6 +15,8 @@ import type {
   TailoredResumeUpdateRequest,
   TailoringCompareResponse,
   TailoringFinalizeRequest,
+  BulletAnalysisRequest,
+  AnalyzeBulletsResponse,
   UserCreate,
   UserLogin,
   UserResponse,
@@ -518,6 +520,16 @@ export const tailorApi = {
    */
   finalize: (id: string, data: TailoringFinalizeRequest): Promise<TailoredResumeFullResponse> =>
     fetchApi(`/api/tailor/${id}/finalize`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  /**
+   * Analyze bullets for AI improvement suggestions.
+   * Requires ATS analysis to be completed first.
+   */
+  analyzeBullets: (id: string, data: BulletAnalysisRequest): Promise<AnalyzeBulletsResponse> =>
+    fetchApi(`/api/tailor/${id}/analyze-bullets`, {
       method: "POST",
       body: JSON.stringify(data),
     }),

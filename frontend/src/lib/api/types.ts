@@ -409,6 +409,56 @@ export interface TailoringFinalizeRequest {
   finalized_blocks: import("@/lib/resume/types").AnyResumeBlock[];
 }
 
+// ============================================================================
+// Bullet Analysis Types (AI Bullet Editing)
+// ============================================================================
+
+export interface BulletEntryContext {
+  title: string;
+  company: string;
+  date_range: string;
+}
+
+export interface BulletInput {
+  id: string;
+  text: string;
+  entry_context: BulletEntryContext;
+}
+
+export interface KeywordGapInput {
+  keyword: string;
+  importance: "required" | "strongly_preferred" | "preferred" | "nice_to_have";
+}
+
+export interface ATSContextInput {
+  keyword_gaps: KeywordGapInput[];
+  importance_map: Record<string, string>;
+  bullets_needing_metrics: string[];
+  bullets_with_weak_verbs: string[];
+}
+
+export interface BulletAnalysisRequest {
+  bullets: BulletInput[];
+  ats_context: ATSContextInput;
+}
+
+export interface BulletSuggestionResponse {
+  bullet_id: string;
+  original: string;
+  suggested: string;
+  reason: string;
+  impact: "high" | "medium" | "low";
+  keywords_added: string[];
+  metrics_added: boolean;
+}
+
+export interface AnalyzeBulletsResponse {
+  suggestions: BulletSuggestionResponse[];
+  total_analyzed: number;
+  suggestions_count: number;
+  skipped_count: number;
+}
+
 // Block Types (Vault)
 export type BlockType =
   | "achievement"
