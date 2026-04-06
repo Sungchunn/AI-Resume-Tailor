@@ -11,6 +11,10 @@ import {
 import {
   UsageTimeSeriesChart,
   MetricToggle,
+  CostDistributionChart,
+  TokenIOChart,
+  EndpointCostChart,
+  LatencyChart,
   type MetricType,
 } from "@/components/admin/charts";
 
@@ -79,34 +83,34 @@ export default function AIUsageDashboard() {
   );
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">AI Usage Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
-          Monitor AI API usage, costs, and performance across all endpoints.
-        </p>
-      </div>
-
-      {/* Time Range Selector */}
-      <div className="flex gap-2">
-        {(["24h", "7d", "30d"] as TimeRange[]).map((range) => (
-          <button
-            key={range}
-            onClick={() => setTimeRange(range)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              timeRange === range
-                ? "bg-primary text-primary-foreground"
-                : "bg-card text-muted-foreground hover:bg-accent"
-            }`}
-          >
-            {range === "24h" ? "Last 24 Hours" : range === "7d" ? "Last 7 Days" : "Last 30 Days"}
-          </button>
-        ))}
+    <div className="space-y-4">
+      {/* Header + Time Range */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">AI Usage Dashboard</h1>
+          <p className="text-sm text-muted-foreground">
+            Monitor AI API usage, costs, and performance across all endpoints.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {(["24h", "7d", "30d"] as TimeRange[]).map((range) => (
+            <button
+              key={range}
+              onClick={() => setTimeRange(range)}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                timeRange === range
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-card text-muted-foreground hover:bg-accent"
+              }`}
+            >
+              {range === "24h" ? "24h" : range === "7d" ? "7d" : "30d"}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <StatsCard
           label="Total Requests"
           value={summary ? formatNumber(summary.total_requests) : "-"}
@@ -134,54 +138,78 @@ export default function AIUsageDashboard() {
         />
       </div>
 
-      {/* Usage Over Time Chart */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-medium text-foreground">Usage Over Time</h2>
-          <MetricToggle value={selectedMetric} onChange={setSelectedMetric} />
+      {/* Usage Over Time Chart + Data Table */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div className="card">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-medium text-foreground">Usage Over Time</h2>
+            <MetricToggle value={selectedMetric} onChange={setSelectedMetric} />
+          </div>
+          <div className="h-[180px]">
+            <UsageTimeSeriesChart
+              data={timeSeries?.data || []}
+              loading={timeSeriesLoading}
+              metric={selectedMetric}
+              granularity={granularity}
+            />
+          </div>
         </div>
-        <UsageTimeSeriesChart
-          data={timeSeries?.data || []}
-          loading={timeSeriesLoading}
-          metric={selectedMetric}
-          granularity={granularity}
-        />
+        <div className="card">
+          <div className="border-b border-border mb-3">
+            <nav className="flex gap-4">
+              {[
+                { id: "endpoint" as const, label: "By Endpoint" },
+                { id: "provider" as const, label: "By Provider" },
+                { id: "user" as const, label: "By User" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === tab.id
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+          <div className="h-[180px] overflow-y-auto">
+            {activeTab === "endpoint" && (
+              <EndpointTable data={byEndpoint || []} loading={endpointLoading} />
+            )}
+            {activeTab === "provider" && (
+              <ProviderTable data={byProvider || []} loading={providerLoading} />
+            )}
+            {activeTab === "user" && (
+              <UserTable data={byUser || []} loading={userLoading} />
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-border">
-        <nav className="flex gap-4">
-          {[
-            { id: "endpoint" as const, label: "By Endpoint" },
-            { id: "provider" as const, label: "By Provider" },
-            { id: "user" as const, label: "By User" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
+      {/* Analytics Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="card">
+          <h3 className="text-sm font-medium text-foreground mb-3">Cost by Provider</h3>
+          <CostDistributionChart data={byProvider || []} loading={providerLoading} />
+        </div>
+        <div className="card lg:col-span-2">
+          <h3 className="text-sm font-medium text-foreground mb-3">Token Usage by Model</h3>
+          <TokenIOChart data={byProvider || []} loading={providerLoading} />
+        </div>
       </div>
-
-      {/* Tab Content */}
-      <div className="card">
-        {activeTab === "endpoint" && (
-          <EndpointTable data={byEndpoint || []} loading={endpointLoading} />
-        )}
-        {activeTab === "provider" && (
-          <ProviderTable data={byProvider || []} loading={providerLoading} />
-        )}
-        {activeTab === "user" && (
-          <UserTable data={byUser || []} loading={userLoading} />
-        )}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div className="card">
+          <h3 className="text-sm font-medium text-foreground mb-3">Cost by Endpoint</h3>
+          <EndpointCostChart data={byEndpoint || []} loading={endpointLoading} />
+        </div>
+        <div className="card">
+          <h3 className="text-sm font-medium text-foreground mb-3">Latency by Endpoint</h3>
+          <LatencyChart data={byEndpoint || []} loading={endpointLoading} />
+        </div>
       </div>
     </div>
   );
@@ -198,12 +226,12 @@ function StatsCard({
   loading: boolean;
 }) {
   return (
-    <div className="card p-4">
+    <div className="card p-3">
       <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
       {loading ? (
-        <div className="h-7 mt-1 bg-muted animate-pulse rounded" />
+        <div className="h-6 mt-1 bg-muted animate-pulse rounded" />
       ) : (
-        <p className="text-xl font-semibold text-foreground mt-1">{value}</p>
+        <p className="text-lg font-semibold text-foreground mt-0.5">{value}</p>
       )}
     </div>
   );
