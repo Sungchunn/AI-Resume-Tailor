@@ -6,7 +6,13 @@ import {
   useAIUsageByEndpoint,
   useAIUsageByProvider,
   useAIUsageByUser,
+  useAIUsageTimeSeries,
 } from "@/lib/api/hooks";
+import {
+  UsageTimeSeriesChart,
+  MetricToggle,
+  type MetricType,
+} from "@/components/admin/charts";
 
 type TimeRange = "24h" | "7d" | "30d";
 
@@ -44,16 +50,33 @@ function formatNumber(value: number): string {
   return new Intl.NumberFormat("en-US").format(value);
 }
 
+function getGranularity(range: TimeRange): "hour" | "day" | "week" {
+  switch (range) {
+    case "24h":
+      return "hour";
+    case "7d":
+    case "30d":
+      return "day";
+  }
+}
+
 export default function AIUsageDashboard() {
   const [timeRange, setTimeRange] = useState<TimeRange>("7d");
   const [activeTab, setActiveTab] = useState<"endpoint" | "provider" | "user">("endpoint");
+  const [selectedMetric, setSelectedMetric] = useState<MetricType>("requests");
 
   const { start, end } = useMemo(() => getDateRange(timeRange), [timeRange]);
+  const granularity = useMemo(() => getGranularity(timeRange), [timeRange]);
 
   const { data: summary, isLoading: summaryLoading } = useAIUsageSummary(start, end);
   const { data: byEndpoint, isLoading: endpointLoading } = useAIUsageByEndpoint(start, end);
   const { data: byProvider, isLoading: providerLoading } = useAIUsageByProvider(start, end);
   const { data: byUser, isLoading: userLoading } = useAIUsageByUser(start, end, 10);
+  const { data: timeSeries, isLoading: timeSeriesLoading } = useAIUsageTimeSeries(
+    start,
+    end,
+    granularity
+  );
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -108,6 +131,20 @@ export default function AIUsageDashboard() {
           label="Success Rate"
           value={summary ? `${(summary.success_rate * 100).toFixed(1)}%` : "-"}
           loading={summaryLoading}
+        />
+      </div>
+
+      {/* Usage Over Time Chart */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-medium text-foreground">Usage Over Time</h2>
+          <MetricToggle value={selectedMetric} onChange={setSelectedMetric} />
+        </div>
+        <UsageTimeSeriesChart
+          data={timeSeries?.data || []}
+          loading={timeSeriesLoading}
+          metric={selectedMetric}
+          granularity={granularity}
         />
       </div>
 
