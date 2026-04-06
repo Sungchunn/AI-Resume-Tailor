@@ -5,28 +5,36 @@
  * - Visual A4 preview (like the library editor)
  * - Control panel with AI, ATS, Formatting, and Sections tabs
  * - Job context for ATS analysis from the tailored resume
+ * - AI bullet suggestions with ATS-aware improvements
  */
 
 "use client";
 
-import { use, useCallback, useMemo } from "react";
+import { use, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { ChevronLeftIcon } from "@/components/icons";
-import { useTailoredResume, useUpdateTailoredResume } from "@/lib/api";
+import {
+  useTailoredResume,
+  useUpdateTailoredResume,
+  useJob,
+  useJobListing,
+} from "@/lib/api";
 import {
   BlockEditorProvider,
   EditorLayout,
 } from "@/components/library/editor";
 import { TailorFlowStepper } from "@/components/tailoring";
 import { TailorEditorErrorBoundary } from "@/components/errors/TailorEditorErrorBoundary";
+import {
+  TailorEditorProvider,
+  type ATSContext,
+} from "@/components/tailor/editor/TailorEditorContext";
 import { useATSProgressStore } from "@/lib/stores/atsProgressStore";
+import { useBulletSuggestionsStore } from "@/lib/stores/bulletSuggestionsStore";
 import type { ParsedResumeContent } from "@/lib/resume/types";
 import {
   tailoredContentToParsedContent,
   parsedContentToTailoredContent,
-  blocksToParsedContent,
-  apiStyleToEditorStyle,
-  editorStyleToApiStyle,
 } from "@/lib/resume/transforms";
 
 interface PageProps {
@@ -51,6 +59,22 @@ export default function TailoredEditorPage({ params }: PageProps) {
   const jobId = tailored?.job_id ?? null;
   const jobListingId = tailored?.job_listing_id ?? null;
 
+  // Fetch job data conditionally
+  const { data: job } = useJob(jobId ?? 0);
+  const { data: jobListing } = useJobListing(jobListingId ?? 0);
+
+  // Resolve job description, title, and company from the job data
+  // Note: JobResponse uses title/company, JobListingResponse uses job_title/company_name
+  const jobDescription = job?.raw_content ?? jobListing?.job_description ?? null;
+  const resolvedJobTitle = job?.title ?? jobListing?.job_title ?? null;
+  const resolvedCompanyName = job?.company ?? jobListing?.company_name ?? null;
+
+  // Get ATS stage data and composite score from store
+  const atsStages = useATSProgressStore((state) => state.stages);
+  const storedCompositeScore = useATSProgressStore(
+    (state) => state.compositeScore
+  );
+
   // Get ATS score from the store if it matches this job listing
   const atsCompositeScore = useATSProgressStore((state) => {
     // Check if the stored ATS score is for this job listing
@@ -59,6 +83,60 @@ export default function TailoredEditorPage({ params }: PageProps) {
     }
     return null;
   });
+
+  // Extract ATS context from store when analysis is complete
+  const atsContext = useMemo<ATSContext | null>(() => {
+    const stage2 = atsStages[2];
+    const stage3 = atsStages[3];
+
+    if (stage2?.status !== "completed" || stage3?.status !== "completed") {
+      return null;
+    }
+
+    // Extract gap_list from Stage 2 (keywords-enhanced)
+    const gapList = stage2.result?.gap_list ?? [];
+    const keywordGaps = gapList.map(
+      (gap: { keyword: string; importance: string; in_vault: boolean }) => ({
+        keyword: gap.keyword,
+        importance: gap.importance as
+          | "required"
+          | "strongly_preferred"
+          | "preferred"
+          | "nice_to_have",
+        inVault: gap.in_vault,
+      })
+    );
+
+    // Extract content quality hints from Stage 3 (content-quality)
+    const contentQualityHints = {
+      bulletsNeedingMetrics:
+        stage3.result?.quantification_analysis?.bullets_needing_metrics ?? [],
+      bulletsWithWeakVerbs:
+        stage3.result?.action_verb_analysis?.bullets_with_weak_phrases ?? [],
+      quantificationScore:
+        stage3.result?.quantification_analysis?.quality_score ?? 0,
+      actionVerbScore: stage3.result?.action_verb_analysis?.quality_score ?? 0,
+      achievementRatio:
+        stage3.result?.block_type_analysis?.achievement_ratio ?? 0,
+    };
+
+    return {
+      keywordGaps,
+      contentQualityHints,
+      analysisComplete: true,
+      compositeScore: storedCompositeScore?.finalScore ?? null,
+    };
+  }, [atsStages, storedCompositeScore]);
+
+  // Bind suggestions store to this resume
+  const bindToResume = useBulletSuggestionsStore(
+    (state) => state.bindToResume
+  );
+  useEffect(() => {
+    if (id) {
+      bindToResume(id);
+    }
+  }, [id, bindToResume]);
 
   // Use ATS score if available, otherwise fall back to semantic match score
   const displayScore = atsCompositeScore ?? tailored?.match_score ?? null;
@@ -182,21 +260,33 @@ export default function TailoredEditorPage({ params }: PageProps) {
       {/* Block Editor */}
       <div className="flex-1 overflow-hidden">
         <TailorEditorErrorBoundary>
-          <BlockEditorProvider
-            resumeId={id}
-            initialParsedContent={initialParsedContent}
-            initialStyle={initialStyle}
-            onSave={handleSave}
+          <TailorEditorProvider
+            value={{
+              aiAssistantEnabled: true,
+              jobId,
+              jobListingId,
+              jobDescription,
+              jobTitle: resolvedJobTitle,
+              companyName: resolvedCompanyName,
+              atsContext,
+            }}
           >
-            <EditorLayout
+            <BlockEditorProvider
               resumeId={id}
-              title={editorTitle}
-              hasRawContent={false}
-              hasParsedContent={!!initialParsedContent}
-              jobId={jobId}
-              jobListingId={jobListingId}
-            />
-          </BlockEditorProvider>
+              initialParsedContent={initialParsedContent}
+              initialStyle={initialStyle}
+              onSave={handleSave}
+            >
+              <EditorLayout
+                resumeId={id}
+                title={editorTitle}
+                hasRawContent={false}
+                hasParsedContent={!!initialParsedContent}
+                jobId={jobId}
+                jobListingId={jobListingId}
+              />
+            </BlockEditorProvider>
+          </TailorEditorProvider>
         </TailorEditorErrorBoundary>
       </div>
     </div>
