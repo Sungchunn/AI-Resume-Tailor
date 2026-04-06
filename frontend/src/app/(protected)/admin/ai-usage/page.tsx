@@ -145,7 +145,7 @@ export default function AIUsageDashboard() {
             <h2 className="text-sm font-medium text-foreground">Usage Over Time</h2>
             <MetricToggle value={selectedMetric} onChange={setSelectedMetric} />
           </div>
-          <div className="h-45">
+          <div className="h-56">
             <UsageTimeSeriesChart
               data={timeSeries?.data || []}
               loading={timeSeriesLoading}
@@ -176,7 +176,7 @@ export default function AIUsageDashboard() {
               ))}
             </nav>
           </div>
-          <div className="h-45 overflow-y-auto">
+          <div className="h-56 overflow-y-auto">
             {activeTab === "endpoint" && (
               <EndpointTable data={byEndpoint || []} loading={endpointLoading} />
             )}
