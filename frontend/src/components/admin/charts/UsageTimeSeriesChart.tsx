@@ -108,7 +108,7 @@ function CustomTooltip({ active, payload, metric, granularity }: CustomTooltipPr
 
 function ChartSkeleton() {
   return (
-    <div className="h-[300px] bg-muted/30 rounded-lg animate-pulse flex items-center justify-center">
+    <div className="h-full min-h-[200px] bg-muted/30 rounded-lg animate-pulse flex items-center justify-center">
       <span className="text-muted-foreground text-sm">Loading chart...</span>
     </div>
   );
@@ -116,7 +116,7 @@ function ChartSkeleton() {
 
 function EmptyState() {
   return (
-    <div className="h-[300px] bg-muted/30 rounded-lg flex items-center justify-center">
+    <div className="h-full min-h-[200px] bg-muted/30 rounded-lg flex items-center justify-center">
       <span className="text-muted-foreground text-sm">No data available for this period</span>
     </div>
   );
@@ -140,7 +140,7 @@ export function UsageTimeSeriesChart({
   }));
 
   return (
-    <div className="h-[300px] w-full">
+    <div className="h-full min-h-[200px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           data={chartData}
