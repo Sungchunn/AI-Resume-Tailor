@@ -272,7 +272,7 @@ interface BulletSuggestionsPanelProps {
 }
 ```
 
-### Implementation
+### Panel Implementation
 
 ```typescript
 import { Sparkles, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
@@ -461,7 +461,7 @@ export function BulletSuggestionsPanel({ tailoredResumeId }: BulletSuggestionsPa
 
 **File:** `frontend/src/components/tailor/editor/BulletSuggestionCard.tsx`
 
-### Implementation
+### Card Implementation
 
 ```typescript
 import { useEffect, useRef } from "react";
@@ -620,6 +620,7 @@ interface BulletListProps {
 ### Integration Point
 
 The `ExperienceEditor` and `ProjectsEditor` components need to:
+
 1. Import `usePendingSuggestions` from the store
 2. Build the `suggestionIndicators` map
 3. Pass to `BulletList`
@@ -656,7 +657,7 @@ const handleIndicatorClick = (bulletId: string) => {
 
 **File:** `frontend/src/components/library/editor/tabs/AIChatTab.tsx`
 
-### Changes Required
+### AIChatTab Changes
 
 Add `BulletSuggestionsPanel` at the top when in tailor mode.
 
