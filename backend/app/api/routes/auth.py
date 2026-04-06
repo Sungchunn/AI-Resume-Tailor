@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db_session
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -28,12 +28,19 @@ from app.services.google_oauth import GoogleOAuthService, get_google_oauth_servi
 router = APIRouter()
 
 
+def _is_admin_email(email: str, settings: Settings) -> bool:
+    """Check if email is in the admin emails list."""
+    return email.lower() in [e.lower() for e in settings.admin_emails]
+
+
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     user_data: UserCreate,
     db: AsyncSession = Depends(get_db_session),
 ) -> User:
     """Register a new user."""
+    settings = get_settings()
+
     # Check if email already exists
     result = await db.execute(select(User).where(User.email == user_data.email))
     existing_user = result.scalar_one_or_none()
@@ -43,11 +50,12 @@ async def register(
             detail="Email already registered",
         )
 
-    # Create new user
+    # Create new user (auto-grant admin if email is in ADMIN_EMAILS)
     user = User(
         email=user_data.email,
         hashed_password=await get_password_hash_async(user_data.password),
         full_name=user_data.full_name,
+        is_admin=_is_admin_email(user_data.email, settings),
     )
     db.add(user)
     await db.commit()
@@ -237,6 +245,7 @@ async def google_auth(
 
         else:
             # New user - create account with Google
+            # Auto-grant admin if email is in ADMIN_EMAILS
             user = User(
                 email=google_user.email,
                 full_name=google_user.full_name,
@@ -244,6 +253,7 @@ async def google_auth(
                 google_id=google_user.google_id,
                 google_linked_at=datetime.now(timezone.utc),
                 hashed_password=None,  # No password for Google-only users
+                is_admin=_is_admin_email(google_user.email, settings),
             )
             db.add(user)
             is_new_user = True

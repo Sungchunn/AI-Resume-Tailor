@@ -149,8 +149,8 @@ class Settings(BaseSettings):
     trust_proxy: bool = False  # Set True when behind reverse proxy
 
     # Admin Authentication
-    # DEPRECATED: admin_emails is only used for migration seeding (20260223_0002).
-    # Remove this setting after migration has run in all environments.
+    # Comma-separated list of admin email addresses.
+    # Users with these emails will automatically get admin access on registration.
     admin_emails: list[str] = []
 
     # Rate Limiting
