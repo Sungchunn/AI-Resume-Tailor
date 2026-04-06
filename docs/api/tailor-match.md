@@ -326,6 +326,125 @@ No response body.
 
 ---
 
+### Analyze Bullets (AI Suggestions)
+
+Analyze bullet points and suggest ATS-optimized improvements.
+
+```http
+POST /api/tailor/{tailored_id}/analyze-bullets
+```
+
+**Prerequisites:**
+
+- User must own the tailored resume
+- ATS analysis must be completed first (keyword_gaps required)
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+| --------- | ------ | ----------- |
+| `tailored_id` | string | Tailored resume ID (MongoDB ObjectId) |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+| ----- | ---- | -------- | ----------- |
+| `bullets` | array | Yes | Bullets to analyze (max 50) |
+| `bullets[].id` | string | Yes | Unique bullet ID (e.g., `exp-0:entry-0:bullet-0`) |
+| `bullets[].text` | string | Yes | Current bullet text |
+| `bullets[].entry_context.title` | string | Yes | Job title or project name |
+| `bullets[].entry_context.company` | string | Yes | Company or organization name |
+| `bullets[].entry_context.date_range` | string | Yes | Date range string |
+| `ats_context.keyword_gaps` | array | Yes | Missing keywords from ATS analysis |
+| `ats_context.keyword_gaps[].keyword` | string | Yes | The missing keyword |
+| `ats_context.keyword_gaps[].importance` | string | Yes | `required`, `strongly_preferred`, `preferred`, or `nice_to_have` |
+| `ats_context.bullets_needing_metrics` | array | No | Bullet IDs lacking quantification |
+| `ats_context.bullets_with_weak_verbs` | array | No | Bullet IDs with weak action verbs |
+
+**Example Request:**
+
+```bash
+curl -X POST "http://localhost:8000/api/tailor/abcdef123456/analyze-bullets" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bullets": [
+      {
+        "id": "exp-0:entry-0:bullet-0",
+        "text": "Managed team projects",
+        "entry_context": {
+          "title": "Product Manager",
+          "company": "Acme Corp",
+          "date_range": "2020 - 2023"
+        }
+      }
+    ],
+    "ats_context": {
+      "keyword_gaps": [
+        {"keyword": "Agile", "importance": "required"},
+        {"keyword": "stakeholder management", "importance": "strongly_preferred"}
+      ],
+      "bullets_needing_metrics": ["exp-0:entry-0:bullet-0"],
+      "bullets_with_weak_verbs": []
+    }
+  }'
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "suggestions": [
+    {
+      "bullet_id": "exp-0:entry-0:bullet-0",
+      "original": "Managed team projects",
+      "suggested": "Led cross-functional team of 8 engineers using Agile methodologies, delivering 12 projects on-time with 95% stakeholder satisfaction",
+      "reason": "Added metrics (8 engineers, 12 projects, 95%), action verb (Led), keywords (Agile, stakeholder)",
+      "impact": "high",
+      "keywords_added": ["Agile", "stakeholder"],
+      "metrics_added": true
+    }
+  ],
+  "total_analyzed": 1,
+  "suggestions_count": 1,
+  "skipped_count": 0
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `suggestions` | array | Improvement suggestions |
+| `suggestions[].bullet_id` | string | Target bullet ID |
+| `suggestions[].original` | string | Original bullet text |
+| `suggestions[].suggested` | string | Improved bullet text |
+| `suggestions[].reason` | string | Explanation of improvements |
+| `suggestions[].impact` | string | `high`, `medium`, or `low` |
+| `suggestions[].keywords_added` | array | Keywords integrated |
+| `suggestions[].metrics_added` | boolean | Whether metrics were added |
+| `total_analyzed` | int | Total bullets analyzed |
+| `suggestions_count` | int | Number of suggestions returned |
+| `skipped_count` | int | Bullets that didn't need changes |
+
+**Impact Levels:**
+
+- **high**: Addresses a required/strongly_preferred keyword gap OR adds significant metrics
+- **medium**: Improves quantification, action verbs, or structure
+- **low**: Minor wording or clarity improvements only
+
+**Error Responses:**
+
+| Status | Detail |
+| ------ | ------ |
+| 400 | "ATS analysis required. Run ATS analysis before bullet suggestions." |
+| 400 | "No job description available for this tailored resume" |
+| 403 | "Not authorized" |
+| 404 | "Tailored resume not found" |
+| 503 | "AI service error: ..." |
+
+---
+
 ## Semantic Match API
 
 **Base Path:** `/v1/match`
