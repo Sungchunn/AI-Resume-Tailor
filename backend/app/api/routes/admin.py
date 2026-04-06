@@ -114,7 +114,11 @@ async def get_scraper_status() -> ScraperStatusResponse:
     last_run_result = None
     if status_data["last_run_result"]:
         # The status is now stored as a dict, need to handle appropriately
-        last_run_result = status_data["last_run_result"]
+        raw_result = status_data["last_run_result"]
+        # Ensure region_results is a list (DB may store None)
+        if raw_result.get("region_results") is None:
+            raw_result["region_results"] = []
+        last_run_result = raw_result
 
     return ScraperStatusResponse(
         scheduler_running=status_data["scheduler_running"],

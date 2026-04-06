@@ -276,6 +276,12 @@ class SchedulerService:
                 replace_existing=True,
             )
 
+            # Update next_run_at in database for monitoring/display
+            next_run = self.get_next_run_time()
+            if next_run:
+                await schedule_settings_repository.update_next_run(db, next_run)
+                await db.commit()
+
             logger.info(
                 f"Scraper job reconfigured: {settings.schedule_type} at "
                 f"{settings.schedule_hour:02d}:{settings.schedule_minute:02d} {settings.schedule_timezone}"
