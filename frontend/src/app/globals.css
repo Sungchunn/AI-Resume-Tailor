@@ -91,12 +91,12 @@
   --color-input: oklch(0.377 0.009 264.5 / 70%);
   --color-ring: oklch(1 0 0);
 
-  /* Chart Colors - Blue/Purple scheme */
-  --color-chart-1: oklch(0.65 0.2 260);
-  --color-chart-2: oklch(0.6 0.22 285);
-  --color-chart-3: oklch(0.65 0.2 305);
-  --color-chart-4: oklch(0.72 0.18 320);
-  --color-chart-5: oklch(0.75 0.15 235);
+  /* Chart Colors - Blue/Purple scheme (brighter for dark mode) */
+  --color-chart-1: oklch(0.7 0.22 260);
+  --color-chart-2: oklch(0.65 0.24 285);
+  --color-chart-3: oklch(0.7 0.22 305);
+  --color-chart-4: oklch(0.78 0.2 320);
+  --color-chart-5: oklch(0.8 0.17 235);
 
   /* Sidebar Colors - L-frame: sidebar is darker (zinc-900) */
   --color-sidebar: oklch(0.188 0.006 264.5);
@@ -140,12 +140,12 @@
     --color-input: oklch(0.377 0.009 264.5 / 70%);
     --color-ring: oklch(1 0 0);
 
-    /* Chart Colors - Blue/Purple scheme */
-    --color-chart-1: oklch(0.65 0.2 260);
-    --color-chart-2: oklch(0.6 0.22 285);
-    --color-chart-3: oklch(0.65 0.2 305);
-    --color-chart-4: oklch(0.72 0.18 320);
-    --color-chart-5: oklch(0.75 0.15 235);
+    /* Chart Colors - Blue/Purple scheme (brighter for dark mode) */
+    --color-chart-1: oklch(0.7 0.22 260);
+    --color-chart-2: oklch(0.65 0.24 285);
+    --color-chart-3: oklch(0.7 0.22 305);
+    --color-chart-4: oklch(0.78 0.2 320);
+    --color-chart-5: oklch(0.8 0.17 235);
 
     /* Sidebar Colors - L-frame: sidebar is darker (zinc-900) */
     --color-sidebar: oklch(0.188 0.006 264.5);
