@@ -96,9 +96,14 @@ export function EndpointCostChart({ data, loading }: EndpointCostChartProps) {
     .slice(0, 6)
     .map((item) => ({
       ...item,
-      // Shorten endpoint names for display
-      shortEndpoint: item.endpoint.replace(/^\/api\/v\d+/, ""),
+      // Shorten endpoint names for display (remove api prefix, truncate if too long)
+      shortEndpoint: truncateEndpoint(item.endpoint.replace(/^\/api\/v\d+/, ""), 22),
     }));
+
+  function truncateEndpoint(name: string, maxLen: number): string {
+    if (name.length <= maxLen) return name;
+    return name.slice(0, maxLen - 1) + "…";
+  }
 
   return (
     <div className="h-[180px] w-full">
@@ -106,7 +111,7 @@ export function EndpointCostChart({ data, loading }: EndpointCostChartProps) {
         <BarChart
           data={chartData}
           layout="vertical"
-          margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
         >
           <XAxis
             type="number"
@@ -121,7 +126,7 @@ export function EndpointCostChart({ data, loading }: EndpointCostChartProps) {
             tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
             tickLine={false}
             axisLine={false}
-            width={120}
+            width={140}
           />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--color-muted)", opacity: 0.2 }} />
           <Bar dataKey="total_cost_usd" radius={[0, 4, 4, 0]}>
