@@ -31,6 +31,12 @@ export interface ATSProgressState {
   totalElapsedMs: number;
   fatalError: string | null;
   eventSource: EventSource | null;
+
+  // Content tracking for staleness detection
+  analyzedContentHash: string | null;
+  contentStale: boolean;
+
+  // Actions
   startAnalysis: (resumeId: number, jobId: number) => void;
   updateStage: (stage: ATSStageResult) => void;
   setCompositeScore: (score: ATSCompositeScore) => void;
@@ -38,6 +44,11 @@ export interface ATSProgressState {
   setError: (error: string) => void;
   resetAnalysis: () => void;
   closeConnection: () => void;
+
+  // Content tracking actions
+  setAnalyzedContentHash: (hash: string) => void;
+  markContentStale: () => void;
+  clearStaleFlag: () => void;
 }
 
 export const useATSProgressStore = create<ATSProgressState>()(
@@ -54,6 +65,10 @@ export const useATSProgressStore = create<ATSProgressState>()(
       totalElapsedMs: 0,
       fatalError: null,
       eventSource: null,
+
+      // Content tracking initial state
+      analyzedContentHash: null,
+      contentStale: false,
 
       startAnalysis: (resumeId, jobId) => {
         set({
@@ -125,6 +140,19 @@ export const useATSProgressStore = create<ATSProgressState>()(
           set({ eventSource: null });
         }
       },
+
+      // Content tracking actions
+      setAnalyzedContentHash: (hash) => {
+        set({ analyzedContentHash: hash, contentStale: false });
+      },
+
+      markContentStale: () => {
+        set({ contentStale: true });
+      },
+
+      clearStaleFlag: () => {
+        set({ contentStale: false });
+      },
     }),
     {
       name: 'ats-progress-storage',
@@ -133,6 +161,7 @@ export const useATSProgressStore = create<ATSProgressState>()(
         compositeScore: state.compositeScore,
         resumeId: state.resumeId,
         jobId: state.jobId,
+        analyzedContentHash: state.analyzedContentHash,
       }),
     }
   )
