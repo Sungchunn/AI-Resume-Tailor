@@ -140,12 +140,12 @@ export default function AIUsageDashboard() {
 
       {/* Usage Over Time Chart + Data Table */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <div className="card">
+        <div className="card overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-medium text-foreground">Usage Over Time</h2>
             <MetricToggle value={selectedMetric} onChange={setSelectedMetric} />
           </div>
-          <div className="h-56">
+          <div className="h-56 overflow-hidden">
             <UsageTimeSeriesChart
               data={timeSeries?.data || []}
               loading={timeSeriesLoading}
