@@ -39,6 +39,10 @@ from app.schemas.tailor import (
     TailorRequest,
     TailorResponse,
 )
+from app.schemas.tailor.suggestions import (
+    AnalyzeBulletsResponse,
+    BulletAnalysisRequest,
+)
 from app.services import (
     JobAnalyzer,
     ResumeParser,
@@ -49,6 +53,7 @@ from app.services import (
 )
 from app.services.ai import get_usage_tracker
 from app.services.ai.client import AIServiceError
+from app.services.job.diff import BulletAnalyzer
 
 router = APIRouter()
 
@@ -618,3 +623,105 @@ async def delete_tailored_resume(
         )
 
     await tailored_resume_crud.delete(mongo, id=tailored_id)
+
+
+@router.post(
+    "/{tailored_id}/analyze-bullets",
+    response_model=AnalyzeBulletsResponse,
+)
+async def analyze_bullets(
+    tailored_id: str,
+    request: BulletAnalysisRequest,
+    dbs: DatabaseSessions = Depends(get_databases),
+    current_user_id: int = Depends(get_current_user_id),
+) -> AnalyzeBulletsResponse:
+    """
+    Analyze bullet points and suggest ATS-optimized improvements.
+
+    Requires ATS analysis to be completed first for keyword-aware suggestions.
+    Returns suggestions only for bullets that genuinely need improvement.
+    """
+    pg = dbs["pg"]
+    mongo = dbs["mongo"]
+
+    # 1. Validate user owns the tailored resume
+    tailored = await tailored_resume_crud.get(mongo, id=tailored_id)
+    if not tailored:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tailored resume not found",
+        )
+    if tailored.user_id != current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized",
+        )
+
+    # 2. Fetch job description based on job source
+    job_description = await _fetch_job_description(
+        pg,
+        job_source=tailored.job_source,
+    )
+    if not job_description:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No job description available for this tailored resume",
+        )
+
+    # 3. Validate ATS context is provided (required prerequisite)
+    if not request.ats_context.keyword_gaps:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ATS analysis required. Run ATS analysis before bullet suggestions.",
+        )
+
+    # 4. Run bullet analysis
+    ai_client = get_ai_client()
+    usage_tracker = get_usage_tracker()
+    analyzer = BulletAnalyzer(ai_client)
+
+    try:
+        suggestions, ai_response = await analyzer.analyze_batch(
+            bullets=request.bullets,
+            job_description=job_description,
+            ats_context=request.ats_context,
+            return_metrics=True,
+        )
+    except AIServiceError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"AI service error: {str(e)}",
+        )
+
+    # 5. Log AI usage (required per CLAUDE.md)
+    await usage_tracker.log_generation(
+        db=pg,
+        user_id=current_user_id,
+        endpoint=f"/tailor/{tailored_id}/analyze-bullets",
+        response=ai_response,
+    )
+    await pg.commit()
+
+    # 6. Return response
+    return AnalyzeBulletsResponse(
+        suggestions=suggestions,
+        total_analyzed=len(request.bullets),
+        suggestions_count=len(suggestions),
+        skipped_count=len(request.bullets) - len(suggestions),
+    )
+
+
+async def _fetch_job_description(
+    pg,
+    job_source: JobSource,
+) -> str | None:
+    """Fetch job description from user job or scraped listing."""
+    if job_source.type == "user_created":
+        job = await job_crud.get(pg, id=job_source.id)
+        return job.raw_content if job else None
+
+    if job_source.type == "job_listing":
+        listing = await job_listing_repository.get(pg, id=job_source.id)
+        return listing.job_description if listing else None
+
+    return None
