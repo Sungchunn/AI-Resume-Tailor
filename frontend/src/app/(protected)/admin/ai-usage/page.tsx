@@ -110,19 +110,19 @@ export default function AIUsageDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="flex flex-wrap lg:flex-nowrap gap-3">
         <StatsCard
-          label="Total Requests"
+          label="Requests"
           value={summary ? formatNumber(summary.total_requests) : "-"}
           loading={summaryLoading}
         />
         <StatsCard
-          label="Total Cost"
+          label="Cost"
           value={summary ? formatCurrency(summary.total_cost_usd) : "-"}
           loading={summaryLoading}
         />
         <StatsCard
-          label="Total Tokens"
+          label="Tokens"
           value={summary ? formatNumber(summary.total_tokens) : "-"}
           loading={summaryLoading}
         />
@@ -132,7 +132,7 @@ export default function AIUsageDashboard() {
           loading={summaryLoading}
         />
         <StatsCard
-          label="Success Rate"
+          label="Success"
           value={summary ? `${(summary.success_rate * 100).toFixed(1)}%` : "-"}
           loading={summaryLoading}
         />
@@ -226,12 +226,12 @@ function StatsCard({
   loading: boolean;
 }) {
   return (
-    <div className="card p-3">
-      <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
+    <div className="card p-3 flex-1 min-w-0">
+      <p className="text-xs text-muted-foreground uppercase tracking-wide truncate">{label}</p>
       {loading ? (
         <div className="h-6 mt-1 bg-muted animate-pulse rounded" />
       ) : (
-        <p className="text-lg font-semibold text-foreground mt-0.5">{value}</p>
+        <p className="text-lg font-semibold text-foreground mt-0.5 truncate">{value}</p>
       )}
     </div>
   );
