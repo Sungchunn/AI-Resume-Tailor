@@ -434,6 +434,7 @@ Return a JSON array. Only include bullets that need improvement:
 ```
 
 If ALL bullets are already well-written, return an empty array: `[]`"""
+
 ```
 
 ### User Prompt Builder
