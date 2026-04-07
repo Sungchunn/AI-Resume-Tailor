@@ -466,7 +466,7 @@ async def delete_job(
 
 Some operations need to bypass RLS (admin panels, background jobs, migrations).
 
-**Option 1: Separate admin role**
+#### Option 1: Separate admin role
 
 ```sql
 -- Create admin role that bypasses RLS
@@ -482,7 +482,7 @@ USING (true)
 WITH CHECK (true);
 ```
 
-**Option 2: Service account connection (Recommended)**
+#### Option 2: Service account connection (Recommended)
 
 ```python
 # /backend/app/db/session.py
@@ -499,7 +499,7 @@ async def get_admin_db() -> AsyncGenerator[AsyncSession, None]:
         yield session
 ```
 
-**Option 3: Temporary RLS disable (for specific operations)**
+#### Option 3: Temporary RLS disable (for specific operations)
 
 ```python
 async def admin_get_all_jobs(db: AsyncSession) -> list[JobDescription]:
@@ -755,6 +755,6 @@ alembic downgrade -1
 
 ## Related Documentation
 
-- PostgreSQL RLS: https://www.postgresql.org/docs/current/ddl-rowsecurity.html
-- Supabase RLS Guide: https://supabase.com/docs/guides/auth/row-level-security
-- SQLAlchemy Session Variables: https://docs.sqlalchemy.org/en/20/core/connections.html
+- PostgreSQL RLS: <https://www.postgresql.org/docs/current/ddl-rowsecurity.html>
+- Supabase RLS Guide: <https://supabase.com/docs/guides/auth/row-level-security>
+- SQLAlchemy Session Variables: <https://docs.sqlalchemy.org/en/20/core/connections.html>

@@ -25,7 +25,7 @@ This document outlines the comprehensive testing strategy to verify the security
 
 ## Phase 1: UUID Migration Tests
 
-### Unit Tests
+### Phase 1 Unit Tests
 
 **File:** `/backend/tests/unit/test_uuid_columns.py`
 
@@ -397,7 +397,7 @@ class TestJobsAPIWithUUID:
 
 ## Phase 3: Frontend Tests
 
-### Unit Tests
+### Phase 3 Unit Tests
 
 **File:** `/frontend/src/lib/api/__tests__/jobs.test.ts`
 

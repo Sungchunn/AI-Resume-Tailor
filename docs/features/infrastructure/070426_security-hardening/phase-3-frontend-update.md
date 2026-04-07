@@ -466,7 +466,7 @@ export function useRecentJobs() {
 
 Users may have bookmarked URLs with integer IDs. Options:
 
-**Option 1: Redirect middleware (Recommended)**
+#### Option 1: Redirect middleware (Recommended)
 
 ```typescript
 // /frontend/src/middleware.ts
@@ -493,7 +493,7 @@ export const config = {
 };
 ```
 
-**Option 2: Client-side detection**
+#### Option 2: Client-side detection
 
 ```typescript
 // In page component
