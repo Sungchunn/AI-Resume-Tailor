@@ -58,7 +58,7 @@ This plan addresses both issues through a phased implementation approach that mi
 
 ### Current Vulnerabilities
 
-**1. Sequential Integer ID Exposure**
+#### 1. Sequential Integer ID Exposure
 
 - **Attack vector:** An attacker can enumerate resource IDs by incrementing integers
 - **Information leakage:** Total count of resources reveals business metrics
@@ -68,7 +68,7 @@ This plan addresses both issues through a phased implementation approach that mi
   - `GET /api/resume-builds/{id}` - Resume build sessions
   - `GET /api/tailor/{id}` - Tailored resume results
 
-**2. Single Layer of Authorization**
+#### 2. Single Layer of Authorization
 
 - **Current state:** All authorization happens at the FastAPI route handler level
 - **Risk:** A bug in route handler code could expose data across users
