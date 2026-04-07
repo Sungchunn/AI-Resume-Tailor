@@ -123,6 +123,9 @@ async def get_filter_options(
 
 @router.get("", response_model=JobListingListResponse)
 async def list_job_listings(
+    # Dependencies (must be before parameters with defaults)
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
     # Location filters
     location: Annotated[str | None, Query(description="Location filter (comma-separated, deprecated)")] = None,
     # Region filter
@@ -165,9 +168,6 @@ async def list_job_listings(
     # Pagination
     limit: Annotated[int, Query(ge=1, le=100, description="Results per page")] = 20,
     offset: Annotated[int, Query(ge=0, description="Offset for pagination")] = 0,
-    # Dependencies
-    db: DBSessionWithRLS,
-    current_user_id: CurrentUserId,
 ) -> JobListingListResponse:
     """
     List job listings with filtering and pagination.
@@ -231,10 +231,10 @@ async def list_job_listings(
 @router.get("/search", response_model=JobListingListResponse)
 async def search_job_listings(
     q: Annotated[str, Query(min_length=1, description="Search query")],
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
-    offset: Annotated[int, Query(ge=0)] = 0,
     db: DBSessionWithRLS,
     current_user_id: CurrentUserId,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> JobListingListResponse:
     """
     Full-text search for job listings.
@@ -275,10 +275,10 @@ async def search_job_listings(
 
 @router.get("/saved", response_model=JobListingListResponse)
 async def list_saved_jobs(
-    limit: Annotated[int, Query(ge=1, le=100)] = 50,
-    offset: Annotated[int, Query(ge=0)] = 0,
     db: DBSessionWithRLS,
     current_user_id: CurrentUserId,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> JobListingListResponse:
     """Get all saved jobs for the current user."""
     filters = JobListingFilters(
@@ -315,10 +315,10 @@ async def list_saved_jobs(
 
 @router.get("/applied", response_model=JobListingListResponse)
 async def list_applied_jobs(
-    limit: Annotated[int, Query(ge=1, le=100)] = 50,
-    offset: Annotated[int, Query(ge=0)] = 0,
     db: DBSessionWithRLS,
     current_user_id: CurrentUserId,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> JobListingListResponse:
     """Get all jobs the current user has applied to."""
     filters = JobListingFilters(

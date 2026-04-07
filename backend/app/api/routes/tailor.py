@@ -591,14 +591,14 @@ async def update_tailored_resume(
 @router.get("", response_model=list[TailoredResumeListResponse])
 async def list_tailored_resumes(
     response: Response,
+    dbs: DatabaseSessionsWithRLS,
+    current_user_id: CurrentUserId,
     resume_id: str | None = None,
     job_id: str | None = None,  # UUID or integer string
     job_listing_id: int | None = None,
     status_filter: TailoredResumeStatus | None = None,
     skip: int = 0,
     limit: int = 100,
-    dbs: DatabaseSessionsWithRLS,
-    current_user_id: CurrentUserId,
 ) -> list[TailoredResumeListResponse]:
     """List tailored resumes, optionally filtered by resume, job, job listing, or status."""
     pg = dbs["pg"]
