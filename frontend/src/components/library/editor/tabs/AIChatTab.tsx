@@ -42,9 +42,9 @@ interface QuickAction {
 }
 
 interface AIChatTabProps {
-  /** User-created job ID for context - null means no job context */
-  jobId: number | null;
-  /** Scraped job listing ID for context - null means no job context */
+  /** User-created job ID for context - UUID, null means no job context */
+  jobId: string | null;
+  /** Scraped job listing ID for context - integer, null means no job context */
   jobListingId: number | null;
   /** Tailored resume ID for bullet suggestions - only provided in tailor editor */
   tailoredResumeId?: string | null;

@@ -7,8 +7,8 @@ import { motion, AnimatePresence } from 'motion/react';
 
 interface ATSAnalysisContainerProps {
   resumeId: string;
-  jobId?: number;
-  jobListingId?: number;
+  jobId?: string; // UUID for user-created jobs
+  jobListingId?: number; // Integer for scraped job listings
   autoStart?: boolean;
   debounceMs?: number;
 }

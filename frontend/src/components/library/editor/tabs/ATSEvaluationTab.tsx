@@ -25,9 +25,9 @@ import type {
 } from "@/lib/api/types";
 
 interface ATSEvaluationTabProps {
-  /** User-created job ID for ATS analysis - null means no job context */
-  jobId: number | null;
-  /** Scraped job listing ID for ATS analysis - null means no job context */
+  /** User-created job ID for ATS analysis - UUID, null means no job context */
+  jobId: string | null;
+  /** Scraped job listing ID for ATS analysis - integer, null means no job context */
   jobListingId: number | null;
 }
 
@@ -331,7 +331,7 @@ export function ATSEvaluationTab({
     data: userJob,
     isLoading: userJobLoading,
     error: userJobError,
-  } = useJob(jobId ?? 0);
+  } = useJob(jobId ?? "");
   const {
     data: jobListing,
     isLoading: jobListingLoading,

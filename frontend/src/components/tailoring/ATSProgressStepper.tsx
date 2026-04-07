@@ -40,9 +40,9 @@ import type { ATSCompositeScore } from "@/lib/stores/atsProgressStore";
 interface ATSProgressStepperProps {
   /** Resume ID for analysis (MongoDB ObjectId) */
   resumeId?: string;
-  /** Job ID for user-created jobs */
-  jobId?: number;
-  /** Job listing ID for scraped jobs */
+  /** Job ID for user-created jobs (UUID) */
+  jobId?: string;
+  /** Job listing ID for scraped jobs (integer) */
   jobListingId?: number;
   /** Auto-start analysis when mounted with valid IDs */
   autoStart?: boolean;

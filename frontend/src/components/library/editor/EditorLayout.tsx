@@ -25,9 +25,9 @@ interface EditorLayoutProps {
   hasParsedContent?: boolean;
   /** Callback when parsing completes */
   onParseComplete?: () => void;
-  /** User-created job ID for ATS analysis - passed via query param from job board */
-  jobId?: number | null;
-  /** Scraped job listing ID for ATS analysis - passed via query param from job board */
+  /** User-created job ID for ATS analysis - UUID passed via query param from job board */
+  jobId?: string | null;
+  /** Scraped job listing ID for ATS analysis - integer passed via query param from job board */
   jobListingId?: number | null;
   /** Tailored resume ID for bullet suggestions - only provided in tailor editor */
   tailoredResumeId?: string | null;

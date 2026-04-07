@@ -29,8 +29,8 @@ export type ScoreCalculationStatus =
 export interface UseScoreCalculationOptions {
   content: TailoredContent;
   resumeId: string;
-  jobId: number | null;
-  jobListingId?: number | null;
+  jobId: string | null; // UUID for user-created jobs
+  jobListingId?: number | null; // Integer for scraped job listings
   jobDescription?: string | null;
   jobContent?: Record<string, unknown> | null;
   enabled?: boolean;

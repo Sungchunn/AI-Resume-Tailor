@@ -20,9 +20,9 @@ interface ATSReanalyzeModalProps {
   onClose: () => void;
   /** Resume ID for analysis (MongoDB ObjectId) */
   resumeId: string;
-  /** Job ID for user-created jobs */
-  jobId?: number;
-  /** Job listing ID for scraped jobs */
+  /** Job ID for user-created jobs (UUID) */
+  jobId?: string;
+  /** Job listing ID for scraped jobs (integer) */
   jobListingId?: number;
   /** Job title for display */
   jobTitle?: string;

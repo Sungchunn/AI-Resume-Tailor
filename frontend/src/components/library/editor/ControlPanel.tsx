@@ -7,9 +7,9 @@ import { AIChatTab, ATSEvaluationTab, FormattingTab, SectionDraggerTab } from ".
 type ControlPanelTab = "ai" | "ats" | "formatting" | "sections";
 
 interface ControlPanelProps {
-  /** User-created job ID for ATS analysis - null means no job context */
-  jobId: number | null;
-  /** Scraped job listing ID for ATS analysis - null means no job context */
+  /** User-created job ID for ATS analysis - UUID, null means no job context */
+  jobId: string | null;
+  /** Scraped job listing ID for ATS analysis - integer, null means no job context */
   jobListingId: number | null;
   /** Tailored resume ID for bullet suggestions - only provided in tailor editor */
   tailoredResumeId?: string | null;

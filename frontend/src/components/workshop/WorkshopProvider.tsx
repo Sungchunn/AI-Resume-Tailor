@@ -49,7 +49,7 @@ export function WorkshopProvider({ tailoredId, children }: WorkshopProviderProps
   const jobId = (tailoredResume as TailoredResumeFullResponse | undefined)?.job_id ?? null;
   const jobListingId = (tailoredResume as TailoredResumeFullResponse | undefined)?.job_listing_id ?? null;
 
-  const { data: job } = useJob(jobId ?? 0);
+  const { data: job } = useJob(jobId ?? "");
   const { data: jobListing } = useJobListing(jobListingId ?? 0);
 
   // Extract job description and content from whichever source is available

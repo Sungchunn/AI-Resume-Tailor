@@ -33,8 +33,8 @@ export interface TailorEditorContextValue {
   aiAssistantEnabled: boolean;
 
   // Job reference (one will be set based on tailored resume source)
-  jobId: number | null;
-  jobListingId: number | null;
+  jobId: string | null; // UUID for user-created jobs
+  jobListingId: number | null; // Integer for scraped job listings
 
   // Fetched job data (resolved from jobId or jobListingId)
   jobDescription: string | null;
