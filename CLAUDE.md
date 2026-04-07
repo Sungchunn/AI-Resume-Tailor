@@ -239,6 +239,17 @@ stmt = text("SELECT id, email FROM users WHERE email = :email")
 result = await session.execute(stmt, {"email": email})
 ```
 
+**Exception:** PostgreSQL's `SET` and `SET LOCAL` commands do not support parameterized queries. F-strings are acceptable ONLY when:
+
+- The command doesn't support parameters (e.g., `SET LOCAL`)
+- The value is a validated primitive type (`int`, `bool`) from a trusted source (e.g., JWT-extracted user ID)
+
+```python
+# ACCEPTABLE - SET LOCAL doesn't support $1 placeholders
+# user_id is validated int from JWT, not user input
+await session.execute(text(f"SET LOCAL app.current_user_id = '{user_id}'"))
+```
+
 ### 7. Dual-Database Transaction Safety
 
 **ALWAYS handle PostgreSQL rollbacks if the subsequent MongoDB operation fails.**
