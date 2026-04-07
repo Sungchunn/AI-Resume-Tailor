@@ -176,10 +176,9 @@ async def get_db_with_user_context(
     """
     async with AsyncSessionLocal() as session:
         # SET LOCAL scopes the variable to the current transaction
-        await session.execute(
-            text("SET LOCAL app.current_user_id = :user_id"),
-            {"user_id": str(user_id)},
-        )
+        # Note: SET LOCAL does not support parameterized queries in PostgreSQL.
+        # Using f-string is safe here because user_id is a validated int from JWT.
+        await session.execute(text(f"SET LOCAL app.current_user_id = '{user_id}'"))
         try:
             yield session
             await session.commit()
