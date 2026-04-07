@@ -22,8 +22,8 @@ export interface ATSCompositeScore {
 export interface ATSProgressState {
   isAnalyzing: boolean;
   analysisId: string | null;
-  resumeId: number | null;
-  jobId: number | null;
+  resumeId: string | null; // MongoDB ObjectId or job-related ID (string for flexibility)
+  jobId: string | null; // UUID for user-created jobs, or string representation of job listing ID
   stages: Record<number, ATSStageResult>;
   compositeScore: ATSCompositeScore | null;
   currentStage: number;
@@ -37,7 +37,7 @@ export interface ATSProgressState {
   contentStale: boolean;
 
   // Actions
-  startAnalysis: (resumeId: number, jobId: number) => void;
+  startAnalysis: (resumeId: string, jobId: string) => void;
   updateStage: (stage: ATSStageResult) => void;
   setCompositeScore: (score: ATSCompositeScore) => void;
   completeAnalysis: () => void;
