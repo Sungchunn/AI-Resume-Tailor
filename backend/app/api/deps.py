@@ -3,12 +3,13 @@ from typing import Annotated, AsyncGenerator, TypedDict
 from fastapi import Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import decode_token
 from app.db import get_db
 from app.db.mongodb import get_mongodb
+from app.db.session import AsyncSessionLocal
 from app.models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
@@ -75,6 +76,9 @@ async def get_databases(
     """
     Get both PostgreSQL and MongoDB sessions for cross-database operations.
     Use this when you need to query both databases in a single endpoint.
+
+    NOTE: This does NOT set RLS context. Use get_databases_with_rls for
+    endpoints that access RLS-protected tables.
     """
     return {"pg": pg, "mongo": mongo}
 
@@ -157,3 +161,49 @@ async def require_admin(
             detail="Admin access required",
         )
     return current_user
+
+
+async def get_db_with_user_context(
+    user_id: Annotated[int, Depends(get_current_user_id)],
+) -> AsyncGenerator[AsyncSession, None]:
+    """
+    Database session with RLS context set.
+    Use this dependency for all authenticated endpoints.
+
+    This sets the PostgreSQL session variable `app.current_user_id`
+    which RLS policies use to filter rows to only those owned by
+    the authenticated user.
+    """
+    async with AsyncSessionLocal() as session:
+        # SET LOCAL scopes the variable to the current transaction
+        await session.execute(
+            text("SET LOCAL app.current_user_id = :user_id"),
+            {"user_id": str(user_id)},
+        )
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+
+
+async def get_databases_with_rls(
+    pg: Annotated[AsyncSession, Depends(get_db_with_user_context)],
+    mongo: Annotated[AsyncIOMotorDatabase, Depends(get_mongo_db)],
+) -> DatabaseSessions:
+    """
+    Get both PostgreSQL and MongoDB sessions with RLS context set.
+    Use this for cross-database endpoints that access RLS-protected tables
+    (job_descriptions, resume_builds, user_job_interactions).
+    """
+    return {"pg": pg, "mongo": mongo}
+
+
+# Type aliases for cleaner dependency injection
+DBSession = Annotated[AsyncSession, Depends(get_db_session)]
+DBSessionWithRLS = Annotated[AsyncSession, Depends(get_db_with_user_context)]
+CurrentUserId = Annotated[int, Depends(get_current_user_id)]
+DatabaseSessionsWithRLS = Annotated[DatabaseSessions, Depends(get_databases_with_rls)]
