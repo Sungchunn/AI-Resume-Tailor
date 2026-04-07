@@ -53,8 +53,24 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="re-zoo-me API",
-    description="API for AI-powered resume customization",
-    version="0.1.0",
+    description="""API for AI-powered resume customization.
+
+## API Version 2.0.0 - UUID Migration
+
+As of v2.0.0, resource identifiers are transitioning from integer IDs to UUIDs:
+
+- **Preferred format**: UUID string (e.g., `550e8400-e29b-41d4-a716-446655440000`)
+- **Deprecated format**: Integer string (e.g., `123`) - will be removed in a future version
+
+When using deprecated integer IDs, responses include deprecation headers:
+- `Deprecation: true`
+- `Sunset: 2026-07-01`
+
+**Affected resources**: jobs, resume_builds
+
+**Note**: Internal integer IDs (`owner_id`, `user_id`) are no longer exposed in API responses.
+""",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
