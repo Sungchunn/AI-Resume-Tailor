@@ -1,224 +1,295 @@
 # Security Hardening Plan: User Data Isolation
 
 **Scope:** Full implementation (UUIDs + RLS)
+**Status:** Planning
+**Created:** 2026-04-07
 
 ---
 
 ## Executive Summary
 
-Security audit completed. The codebase has strong application-level security but needs two improvements:
+A security audit identified that while the codebase has strong application-level security, two improvements are needed to fully protect user data:
 
 1. **UUID migration** for PostgreSQL user-facing IDs (currently sequential integers)
 2. **Supabase RLS** as defense-in-depth (second layer of protection)
+
+This plan addresses both issues through a phased implementation approach that minimizes disruption to existing functionality while maximizing security improvements.
+
+---
+
+## Table of Contents
+
+| Phase | Document | Description |
+| ----- | -------- | ----------- |
+| Overview | `master-plan.md` (this file) | Executive summary, current status, risk assessment |
+| Phase 1 | `phase-1-uuid-migration.md` | Database schema changes, UUID column addition |
+| Phase 2 | `phase-2-api-update.md` | Backend API refactoring to use UUIDs |
+| Phase 3 | `phase-3-frontend-update.md` | Frontend route and API client updates |
+| Phase 4 | `phase-4-rls-policies.md` | Supabase Row Level Security implementation |
+| Testing | `testing-verification.md` | Comprehensive testing strategy and verification |
 
 ---
 
 ## Current Security Status
 
-| Area | Status | Notes |
+### Secure Areas (No Action Required)
+
+| Area | Status | Implementation Details |
 | ---- | ------ | ----- |
-| Authentication | Secure | JWT-based, user_id from verified tokens only |
-| Ownership verification | Secure | All endpoints check resource.user_id == current_user_id |
-| Response serialization | Secure | Explicit Pydantic schemas, no raw ORM leakage |
-| File storage | Secure | Namespaced as users/{user_id}/resumes/{uuid}_{filename} |
-| MongoDB IDs | Secure | Uses ObjectId (unpredictable) |
-| PostgreSQL IDs | Issue | Sequential integers exposed in API URLs |
-| Supabase RLS | Missing | No row-level security policies configured |
+| Authentication | Secure | JWT-based with RS256 signing, user_id extracted from verified tokens only |
+| Ownership verification | Secure | All CRUD endpoints verify `resource.user_id == current_user_id` before operations |
+| Response serialization | Secure | Explicit Pydantic schemas with field whitelisting, no raw ORM leakage |
+| File storage | Secure | Namespaced paths: `users/{user_id}/resumes/{uuid}_{filename}` |
+| MongoDB IDs | Secure | Uses ObjectId (24-character hex, cryptographically unpredictable) |
+| SQL injection | Secure | SQLAlchemy ORM with parameterized queries throughout |
+| CORS | Secure | Strict origin whitelist, credentials mode properly configured |
+| Rate limiting | Secure | Per-user rate limits on AI endpoints via Redis |
+
+### Areas Requiring Improvement
+
+| Area | Risk Level | Issue | Impact |
+| ---- | ---------- | ----- | ------ |
+| PostgreSQL IDs | MEDIUM | Sequential integers exposed in API URLs | Enumeration attack possible (estimate user count, find valid IDs) |
+| Supabase RLS | LOW | No row-level security policies configured | Single point of failure if app-level auth bypassed |
 
 ---
 
-## Phase 1: Add UUID Columns to PostgreSQL Tables
+## Risk Assessment
 
-### Tables Requiring UUIDs
+### Current Vulnerabilities
 
-| Table | Current ID | Exposed As | Priority |
-| ----- | ---------- | ---------- | -------- |
-| job_descriptions | INTEGER | /jobs/{id} | HIGH |
-| resume_builds | INTEGER | /resume-builds/{id} | HIGH |
-| user_job_interactions | INTEGER | Indirect via job listings | MEDIUM |
+**1. Sequential Integer ID Exposure**
 
-### Tables NOT Requiring UUIDs
+- **Attack vector:** An attacker can enumerate resource IDs by incrementing integers
+- **Information leakage:** Total count of resources reveals business metrics
+- **IDOR potential:** While ownership is checked, predictable IDs make targeting easier
+- **Affected endpoints:**
+  - `GET /api/jobs/{id}` - User's job descriptions
+  - `GET /api/resume-builds/{id}` - Resume build sessions
+  - `GET /api/tailor/{id}` - Tailored resume results
 
-- `resumes`, `tailored_resumes` - Already use MongoDB ObjectId
-- `job_listings` - System-wide, not user-owned
-- `users` - Auth via JWT, IDs not in URLs
+**2. Single Layer of Authorization**
 
-### Migration Steps
+- **Current state:** All authorization happens at the FastAPI route handler level
+- **Risk:** A bug in route handler code could expose data across users
+- **Example scenarios:**
+  - Accidental removal of ownership check in a route
+  - New endpoint added without proper authorization
+  - ORM relationship traversal bypassing intended access controls
 
-1. Create Alembic migration to add `public_id` UUID column:
+### Risk Mitigation Strategy
 
-```python
-# alembic/versions/YYYYMMDD_add_public_id_columns.py
-def upgrade():
-    # job_descriptions
-    op.add_column('job_descriptions',
-        sa.Column('public_id', postgresql.UUID(), nullable=True))
-    op.execute("UPDATE job_descriptions SET public_id = gen_random_uuid() WHERE public_id IS NULL")
-    op.alter_column('job_descriptions', 'public_id', nullable=False)
-    op.create_index('ix_job_descriptions_public_id', 'job_descriptions', ['public_id'], unique=True)
-
-    # resume_builds
-    op.add_column('resume_builds',
-        sa.Column('public_id', postgresql.UUID(), nullable=True))
-    op.execute("UPDATE resume_builds SET public_id = gen_random_uuid() WHERE public_id IS NULL")
-    op.alter_column('resume_builds', 'public_id', nullable=False)
-    op.create_index('ix_resume_builds_public_id', 'resume_builds', ['public_id'], unique=True)
-```
-
-1. Update models to include `public_id` field with default UUID generation
-
-### Phase 1 Files to Modify
-
-- `/backend/app/models/job.py` - Add public_id column
-- `/backend/app/models/resume_build.py` - Add public_id column
-- `/backend/alembic/versions/` - New migration file
+| Risk | Mitigation | Phase |
+| ---- | ---------- | ----- |
+| ID enumeration | Replace integers with UUIDs in public API | Phase 1-2 |
+| Single auth layer | Add RLS as database-level enforcement | Phase 4 |
+| Migration errors | Dual-lookup period with gradual rollout | Phase 2-3 |
+| RLS misconfiguration | Extensive testing before production | Phase 4 |
 
 ---
 
-## Phase 2: Update API to Use UUIDs
+## Tables Analysis
 
-### Strategy: Dual-Lookup During Transition
+### Tables Requiring UUID Addition
 
-1. Add CRUD methods for UUID lookup:
+| Table | Current ID | Public Exposure | Risk Level | Priority |
+| ----- | ---------- | --------------- | ---------- | -------- |
+| `job_descriptions` | `INTEGER` | `/api/jobs/{id}` | HIGH | P0 |
+| `resume_builds` | `INTEGER` | `/api/resume-builds/{id}` | HIGH | P0 |
+| `user_job_interactions` | `INTEGER` | Indirect (linked from job listings) | MEDIUM | P1 |
+| `tailored_resumes` | `VARCHAR` | `/api/tailor/{id}` (uses mongo_id) | LOW | P2 |
 
-```python
-# /backend/app/crud/job.py
-async def get_by_public_id(self, db: AsyncSession, *, public_id: UUID) -> JobDescription | None:
-    result = await db.execute(
-        select(JobDescription).where(JobDescription.public_id == public_id)
-    )
-    return result.scalar_one_or_none()
-```
+### Tables NOT Requiring UUID Changes
 
-1. Update route handlers to accept string IDs and resolve:
-
-```python
-# /backend/app/api/routes/jobs.py
-@router.get("/{job_id}")
-async def get_job(job_id: str, ...):
-    job = await job_crud.get_by_public_id(db, public_id=UUID(job_id))
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    if job.owner_id != current_user_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    return job
-```
-
-1. Update response schemas to return `public_id` as `id`:
-
-```python
-# /backend/app/schemas/job.py
-class JobResponse(BaseModel):
-    id: UUID  # Map from public_id
-    title: str
-    # ...
-```
-
-### Phase 2 Files to Modify
-
-- `/backend/app/crud/job.py` - Add get_by_public_id
-- `/backend/app/crud/resume_build.py` - Add get_by_public_id
-- `/backend/app/api/routes/jobs.py` - Update route handlers
-- `/backend/app/api/routes/resume_builds.py` - Update route handlers
-- `/backend/app/schemas/job.py` - Update response schema
-- `/backend/app/schemas/resume_build.py` - Update response schema
+| Table | Reason |
+| ----- | ------ |
+| `resumes` | Uses MongoDB ObjectId as primary identifier (already secure) |
+| `tailored_resumes` | Primary lookup via `mongo_id` (ObjectId string), not integer ID |
+| `job_listings` | System-wide scraped data, not user-owned, public by design |
+| `users` | Authentication via JWT, IDs never exposed in URLs |
+| `ai_usage_records` | Internal analytics, no public API exposure |
+| `scraper_runs` | Admin-only endpoints, no public API |
 
 ---
 
-## Phase 3: Update Frontend Routes
+## Architecture Overview
 
-1. Update API client to use new UUID-based endpoints
-1. Update Next.js dynamic routes (already accept strings, minimal changes)
+### Current Flow (Integer IDs)
 
-### Phase 3 Files to Modify
-
-- `/frontend/src/lib/api/client.ts` - Update job/resume-build endpoints
-- `/frontend/src/app/(protected)/library/jobs/[id]/page.tsx` - Verify compatibility
-
----
-
-## Phase 4: Enable Supabase Row Level Security
-
-### Challenge
-
-The app uses FastAPI JWT auth, not Supabase Auth. RLS policies need to use a session variable.
-
-### Implementation
-
-1. Enable RLS on tables:
-
-```sql
-ALTER TABLE job_descriptions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE resume_builds ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_job_interactions ENABLE ROW LEVEL SECURITY;
+```text
+┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
+│    Frontend     │      │    Backend      │      │   PostgreSQL    │
+│                 │      │                 │      │                 │
+│ /jobs/123       │─────▶│ GET /api/jobs/  │─────▶│ SELECT * FROM   │
+│                 │      │     {id:int}    │      │ job_descriptions│
+│                 │      │                 │      │ WHERE id = 123  │
+└─────────────────┘      └─────────────────┘      └─────────────────┘
+                               │
+                               ▼
+                         Check: job.owner_id == current_user_id
+                               │
+                               ▼
+                         Return job or 403
 ```
 
-1. Create policies using session variable:
+### Target Flow (UUID + RLS)
 
-```sql
--- Job descriptions: Owner-only access
-CREATE POLICY "job_descriptions_owner_policy"
-ON job_descriptions FOR ALL
-USING (owner_id = current_setting('app.current_user_id', true)::int)
-WITH CHECK (owner_id = current_setting('app.current_user_id', true)::int);
-```
-
-1. Set session variable before queries:
-
-```python
-# /backend/app/db/session.py - In get_db dependency
-async def get_db_with_rls(user_id: int) -> AsyncGenerator[AsyncSession, None]:
-    async with async_session_maker() as session:
-        await session.execute(text(f"SET app.current_user_id = {user_id}"))
-        yield session
-```
-
-### Phase 4 Files to Modify
-
-- `/backend/app/db/session.py` - Add RLS session setup
-- `/backend/app/api/deps.py` - Update get_db dependency
-- `/backend/alembic/versions/` - New migration for RLS policies
-
----
-
-## Verification
-
-### Unit Tests
-
-1. Test UUID generation and uniqueness
-2. Test get_by_public_id CRUD methods
-3. Test RLS blocks unauthorized access (with mocked session variable)
-
-### Integration Tests
-
-1. Test API endpoints with UUID paths return correct data
-2. Test 403 returned when accessing another user's resource
-3. Test RLS policies independently via direct DB queries
-
-### Manual Testing
-
-```bash
-# 1. Run migrations
-cd backend && alembic upgrade head
-
-# 2. Start backend
-poetry run uvicorn app.main:app --reload
-
-# 3. Test job endpoints with new UUIDs
-curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/jobs
-
-# 4. Verify UUID format in response
-# Expected: {"id": "550e8400-e29b-41d4-a716-446655440000", ...}
+```text
+┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
+│    Frontend     │      │    Backend      │      │   PostgreSQL    │
+│                 │      │                 │      │   + RLS         │
+│ /jobs/550e8400- │─────▶│ GET /api/jobs/  │─────▶│ SET app.user_id │
+│ e29b-41d4-a716- │      │   {id:uuid}     │      │ = 42;           │
+│ 446655440000    │      │                 │      │                 │
+│                 │      │                 │      │ SELECT * FROM   │
+│                 │      │                 │      │ job_descriptions│
+│                 │      │                 │      │ WHERE public_id │
+│                 │      │                 │      │ = '550e8400...' │
+└─────────────────┘      └─────────────────┘      │                 │
+                               │                  │ RLS: owner_id   │
+                               │                  │ = app.user_id   │
+                               ▼                  └─────────────────┘
+                         App-level check (defense in depth)
+                               │
+                               ▼
+                         Return job or 403/404
 ```
 
 ---
 
-## Implementation Order
+## Implementation Phases
 
-1. **Documentation** - Write plan to /docs/features/infrastructure/070426_security-hardening/
-2. **Database migration** - Add public_id columns, backfill, add indexes
-3. **CRUD layer** - Add get_by_public_id methods
-4. **Routes/schemas** - Update to use UUIDs
-5. **Frontend** - Update API client
-6. **RLS policies** - Enable and test
-7. **Cleanup** - Remove legacy integer lookups after transition period
+### Phase 1: Database Schema Changes
+
+**Objective:** Add UUID columns to PostgreSQL tables without disrupting existing functionality.
+
+**Key activities:**
+
+- Create Alembic migration for `public_id` columns
+- Backfill existing records with generated UUIDs
+- Add unique indexes for UUID lookups
+- Update SQLAlchemy models
+
+**Detailed plan:** See `phase-1-uuid-migration.md`
+
+---
+
+### Phase 2: Backend API Refactoring
+
+**Objective:** Update API routes and CRUD operations to use UUIDs while maintaining backward compatibility.
+
+**Key activities:**
+
+- Add `get_by_public_id` CRUD methods
+- Update route handlers to accept UUID strings
+- Modify response schemas to return UUIDs
+- Implement dual-lookup transition period
+
+**Detailed plan:** See `phase-2-api-update.md`
+
+---
+
+### Phase 3: Frontend Updates
+
+**Objective:** Update frontend to use UUID-based routes and API calls.
+
+**Key activities:**
+
+- Update API client functions
+- Verify Next.js dynamic route compatibility
+- Update any hardcoded ID references
+- Test all user flows
+
+**Detailed plan:** See `phase-3-frontend-update.md`
+
+---
+
+### Phase 4: Row Level Security
+
+**Objective:** Implement Supabase RLS as a defense-in-depth layer.
+
+**Key activities:**
+
+- Enable RLS on user-owned tables
+- Create policies using session variables
+- Update database session management
+- Test RLS enforcement
+
+**Detailed plan:** See `phase-4-rls-policies.md`
+
+---
+
+## Success Criteria
+
+### Security Requirements
+
+- [ ] No sequential integer IDs exposed in public API responses
+- [ ] All user-owned resources identified by UUID in URLs
+- [ ] RLS policies enforce ownership at database level
+- [ ] Direct database queries without session variable return empty results
+
+### Functional Requirements
+
+- [ ] All existing API endpoints function correctly with UUID parameters
+- [ ] Frontend routes work with UUID-based URLs
+- [ ] No data loss during migration
+- [ ] Backward compatibility maintained during transition period
+
+### Performance Requirements
+
+- [ ] UUID lookups perform within 10% of integer lookups (indexed)
+- [ ] RLS overhead does not exceed 5ms per query
+- [ ] No N+1 queries introduced by changes
+
+---
+
+## Rollback Strategy
+
+### Phase 1 Rollback
+
+If UUID migration causes issues:
+
+1. Revert Alembic migration: `alembic downgrade -1`
+2. Column removal is safe as it's additive-only
+
+### Phase 2-3 Rollback
+
+If API/Frontend changes cause issues:
+
+1. Deploy previous backend version (integer ID routes)
+2. Frontend can continue using integer IDs
+3. Database still has both columns
+
+### Phase 4 Rollback
+
+If RLS causes performance or functionality issues:
+
+1. Disable RLS: `ALTER TABLE ... DISABLE ROW LEVEL SECURITY`
+2. Drop policies: `DROP POLICY ... ON ...`
+3. Revert session variable injection code
+
+---
+
+## Dependencies and Prerequisites
+
+### Technical Prerequisites
+
+- [ ] Alembic migrations are up to date
+- [ ] PostgreSQL 13+ (for `gen_random_uuid()`)
+- [ ] All tests passing before starting
+- [ ] Database backup taken
+
+### Knowledge Prerequisites
+
+- Understanding of SQLAlchemy async patterns
+- Familiarity with Alembic migrations
+- Understanding of PostgreSQL RLS concepts
+
+---
+
+## Related Documentation
+
+- `/docs/architecture/database-rules.md` - Database conventions
+- `/docs/architecture/backend-architecture.md` - API design patterns
+- `/docs/api/jobs.md` - Job endpoints documentation
+- `/docs/api/resume-builds.md` - Resume build endpoints documentation
