@@ -15,7 +15,7 @@ Security: Uses RLS-aware database sessions. PostgreSQL Row Level Security
 policies ensure users can only access their own resume builds at the database level.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUserId, DBSessionWithRLS
