@@ -26,6 +26,9 @@ from app.api.utils.id_resolution import (
 from app.crud import job_crud
 from app.crud.job_listing import job_listing_repository
 from app.crud.mongo import resume_crud, tailored_resume_crud
+
+# Import for type hints in list_tailored_resumes (line 607)
+from app.models.job import JobDescription
 from app.models.mongo.tailored_resume import (
     JobSource,
     TailoredResumeStatus,
