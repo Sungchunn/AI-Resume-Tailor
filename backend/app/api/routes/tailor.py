@@ -4,14 +4,25 @@ Two Copies Architecture:
 - POST /tailor: Generate complete tailored resume (tailored_data)
 - GET /{id}/compare: Fetch both original and tailored for frontend diffing
 - POST /{id}/finalize: Save user's approved version (finalized_data)
+
+Supports dual-lookup for job IDs during migration:
+- UUID format (preferred): 550e8400-e29b-41d4-a716-446655440000
+- Integer format (deprecated): 123
 """
 
 from datetime import datetime
 from typing import Literal
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.api.deps import DatabaseSessions, get_current_user_id, get_databases
+from app.api.utils.id_resolution import (
+    IDResolutionError,
+    add_deprecation_headers,
+    is_uuid_format,
+    resolve_job_id,
+)
 from app.crud import job_crud
 from app.crud.job_listing import job_listing_repository
 from app.crud.mongo import resume_crud, tailored_resume_crud
@@ -70,6 +81,7 @@ def get_tailoring_service() -> TailoringService:
 @router.post("", response_model=TailorResponse, status_code=status.HTTP_201_CREATED)
 async def tailor_resume(
     request: TailorRequest,
+    response: Response,
     dbs: DatabaseSessions = Depends(get_databases),
     current_user_id: int = Depends(get_current_user_id),
 ) -> TailorResponse:
@@ -118,23 +130,31 @@ async def tailor_resume(
     job_source_type: Literal["user_created", "job_listing"]
     job_title: str | None = None
     company_name: str | None = None
+    job_public_id: UUID | None = None  # For response
 
     if request.job_id is not None:
-        # User-created job description
-        job = await job_crud.get(pg, id=request.job_id)
-        if not job:
+        # User-created job description - resolve UUID or integer ID
+        if not is_uuid_format(request.job_id):
+            add_deprecation_headers(response, "job")
+        try:
+            job = await resolve_job_id(
+                pg, request.job_id, current_user_id, crud=job_crud,
+                endpoint="/api/tailor"
+            )
+        except IDResolutionError:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Job description not found",
             )
-        if job.owner_id != current_user_id:
+        except ValueError as e:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to access this job description",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e),
             )
         raw_job = job.raw_content
         job_source_type = "user_created"
-        job_source_id = request.job_id
+        job_source_id = job.id  # Store integer ID in MongoDB for backward compat
+        job_public_id = job.public_id  # Return UUID in response
         job_title = job.title  # type: ignore[assignment]
         company_name = job.company  # type: ignore[assignment]
     else:
@@ -205,7 +225,7 @@ async def tailor_resume(
     return TailorResponse(
         id=str(tailored.id),
         resume_id=str(tailored.resume_id),
-        job_id=request.job_id,
+        job_id=job_public_id,  # Return UUID, not the request string
         job_listing_id=request.job_listing_id,
         tailored_data=tailored.tailored_data,
         status=tailored.status,
@@ -223,6 +243,7 @@ async def tailor_resume(
 @router.post("/quick-match", response_model=QuickMatchResponse)
 async def quick_match(
     request: QuickMatchRequest,
+    response: Response,
     dbs: DatabaseSessions = Depends(get_databases),
     current_user_id: int = Depends(get_current_user_id),
 ) -> QuickMatchResponse:
@@ -249,17 +270,23 @@ async def quick_match(
 
     # Get job content based on which source is provided (PostgreSQL)
     if request.job_id is not None:
-        # User-created job description
-        job = await job_crud.get(pg, id=request.job_id)
-        if not job:
+        # User-created job description - resolve UUID or integer ID
+        if not is_uuid_format(request.job_id):
+            add_deprecation_headers(response, "job")
+        try:
+            job = await resolve_job_id(
+                pg, request.job_id, current_user_id, crud=job_crud,
+                endpoint="/api/tailor/quick-match"
+            )
+        except IDResolutionError:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Job description not found",
             )
-        if job.owner_id != current_user_id:
+        except ValueError as e:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to access this job description",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e),
             )
         raw_job = job.raw_content
     else:
@@ -308,6 +335,7 @@ async def get_tailored_resume(
     - ats_cached_at: When ATS analysis was last cached
     - is_outdated: True if resume content changed since ATS analysis
     """
+    pg = dbs["pg"]
     mongo = dbs["mongo"]
 
     tailored = await tailored_resume_crud.get(mongo, id=tailored_id)
@@ -335,10 +363,10 @@ async def get_tailored_resume(
     original_resume = await resume_crud.get(mongo, id=str(tailored.resume_id))
     if original_resume and original_resume.raw_content:
         resume_content_hash = cache.hash_content(original_resume.raw_content)
-        job_id = tailored.job_source.id
+        job_int_id = tailored.job_source.id
 
         # Look up ATS cache
-        ats_metadata = await cache.get_ats_metadata(resume_content_hash, job_id)
+        ats_metadata = await cache.get_ats_metadata(resume_content_hash, job_int_id)
         if ats_metadata:
             ats_score = ats_metadata.get("final_score")
             cached_at_str = ats_metadata.get("cached_at")
@@ -350,10 +378,17 @@ async def get_tailored_resume(
             if cached_hash and cached_hash != resume_content_hash:
                 is_outdated = True
 
+    # Look up job public_id for user-created jobs
+    job_public_id: UUID | None = None
+    if tailored.job_source.type == "user_created":
+        job = await job_crud.get(pg, id=tailored.job_source.id)
+        if job:
+            job_public_id = job.public_id
+
     return TailoredResumeFullResponse(
         id=str(tailored.id),
         resume_id=str(tailored.resume_id),
-        job_id=tailored.job_source.id if tailored.job_source.type == "user_created" else None,
+        job_id=job_public_id,
         job_listing_id=tailored.job_source.id if tailored.job_source.type == "job_listing" else None,
         tailored_data=tailored.tailored_data,
         finalized_data=tailored.finalized_data,
@@ -428,6 +463,7 @@ async def finalize_tailored_resume(
     (finalized_data) that the user built by accepting some AI changes
     and keeping some originals. This endpoint validates and stores it.
     """
+    pg = dbs["pg"]
     mongo = dbs["mongo"]
 
     # Verify ownership
@@ -461,10 +497,17 @@ async def finalize_tailored_resume(
             detail="Failed to finalize tailored resume",
         )
 
+    # Look up job public_id for user-created jobs
+    job_public_id: UUID | None = None
+    if updated.job_source.type == "user_created":
+        job = await job_crud.get(pg, id=updated.job_source.id)
+        if job:
+            job_public_id = job.public_id
+
     return TailoredResumeFullResponse(
         id=str(updated.id),
         resume_id=str(updated.resume_id),
-        job_id=updated.job_source.id if updated.job_source.type == "user_created" else None,
+        job_id=job_public_id,
         job_listing_id=updated.job_source.id if updated.job_source.type == "job_listing" else None,
         tailored_data=updated.tailored_data,
         finalized_data=updated.finalized_data,
@@ -488,6 +531,7 @@ async def update_tailored_resume(
     current_user_id: int = Depends(get_current_user_id),
 ) -> TailoredResumeFullResponse:
     """Update a tailored resume's content, style settings, or section order."""
+    pg = dbs["pg"]
     mongo = dbs["mongo"]
 
     tailored = await tailored_resume_crud.get(mongo, id=tailored_id)
@@ -518,10 +562,17 @@ async def update_tailored_resume(
             detail="Failed to update tailored resume",
         )
 
+    # Look up job public_id for user-created jobs
+    job_public_id: UUID | None = None
+    if updated.job_source.type == "user_created":
+        job = await job_crud.get(pg, id=updated.job_source.id)
+        if job:
+            job_public_id = job.public_id
+
     return TailoredResumeFullResponse(
         id=str(updated.id),
         resume_id=str(updated.resume_id),
-        job_id=updated.job_source.id if updated.job_source.type == "user_created" else None,
+        job_id=job_public_id,
         job_listing_id=updated.job_source.id if updated.job_source.type == "job_listing" else None,
         tailored_data=updated.tailored_data,
         finalized_data=updated.finalized_data,
@@ -539,8 +590,9 @@ async def update_tailored_resume(
 
 @router.get("", response_model=list[TailoredResumeListResponse])
 async def list_tailored_resumes(
+    response: Response,
     resume_id: str | None = None,
-    job_id: int | None = None,
+    job_id: str | None = None,  # UUID or integer string
     job_listing_id: int | None = None,
     status_filter: TailoredResumeStatus | None = None,
     skip: int = 0,
@@ -551,6 +603,8 @@ async def list_tailored_resumes(
     """List tailored resumes, optionally filtered by resume, job, job listing, or status."""
     pg = dbs["pg"]
     mongo = dbs["mongo"]
+
+    resolved_job: "JobDescription | None" = None
 
     if resume_id:
         # Verify ownership
@@ -563,15 +617,26 @@ async def list_tailored_resumes(
             mongo, resume_id=resume_id, status=status_filter, skip=skip, limit=limit
         )
     elif job_id:
-        # Verify ownership (user-created job descriptions)
-        job = await job_crud.get(pg, id=job_id)
-        if not job or job.owner_id != current_user_id:
+        # Verify ownership (user-created job descriptions) - resolve UUID or integer
+        if not is_uuid_format(job_id):
+            add_deprecation_headers(response, "job")
+        try:
+            resolved_job = await resolve_job_id(
+                pg, job_id, current_user_id, crud=job_crud,
+                endpoint="/api/tailor"
+            )
+        except IDResolutionError:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access this job",
             )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e),
+            )
         tailored_list = await tailored_resume_crud.get_by_job_source(
-            mongo, job_source_type="user_created", job_source_id=job_id, status=status_filter
+            mongo, job_source_type="user_created", job_source_id=resolved_job.id, status=status_filter
         )
     elif job_listing_id:
         # Job listings are system-wide, verify it exists
@@ -590,11 +655,21 @@ async def list_tailored_resumes(
             mongo, user_id=current_user_id, status=status_filter, skip=skip, limit=limit
         )
 
+    # Batch fetch job public_ids for user-created jobs in the response
+    user_job_ids = {
+        t.job_source.id for t in tailored_list
+        if t.job_source.type == "user_created"
+    }
+    job_id_to_public_id: dict[int, UUID] = {}
+    if user_job_ids:
+        jobs = await job_crud.get_by_ids(pg, ids=list(user_job_ids))
+        job_id_to_public_id = {j.id: j.public_id for j in jobs}
+
     return [
         TailoredResumeListResponse(
             id=str(t.id),
             resume_id=str(t.resume_id),
-            job_id=t.job_source.id if t.job_source.type == "user_created" else None,
+            job_id=job_id_to_public_id.get(t.job_source.id) if t.job_source.type == "user_created" else None,
             job_listing_id=t.job_source.id if t.job_source.type == "job_listing" else None,
             status=t.status,
             match_score=t.match_score,

@@ -6,12 +6,22 @@ Provides CRUD operations for resume builds and all related operations:
 - Generate and manage AI suggestions (diffs)
 - Update sections and status
 - Export to various formats
+
+Supports dual-lookup for resource IDs during migration:
+- UUID format (preferred): 550e8400-e29b-41d4-a716-446655440000
+- Integer format (deprecated): 123
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_id, get_db_session
+from app.api.utils.id_resolution import (
+    IDResolutionError,
+    add_deprecation_headers,
+    is_uuid_format,
+    resolve_resume_build_id,
+)
 from app.core.protocols import ResumeBuildStatus
 from app.crud.resume_build import resume_build_repository
 from app.schemas.resume_build import (
@@ -31,6 +41,38 @@ from app.schemas.resume_build import (
 )
 
 router = APIRouter()
+
+
+async def _resolve_build(
+    db: AsyncSession,
+    resume_build_id: str,
+    user_id: int,
+    response: Response | None = None,
+):
+    """
+    Helper to resolve resume build ID and add deprecation headers.
+
+    Returns the SQLAlchemy model for the resume build.
+    """
+    if response and not is_uuid_format(resume_build_id):
+        add_deprecation_headers(response, "resume_build")
+
+    try:
+        resume_build = await resolve_resume_build_id(
+            db, resume_build_id, user_id, repository=resume_build_repository
+        )
+    except IDResolutionError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume build not found",
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+    return resume_build
 
 
 @router.post("", response_model=ResumeBuildResponse, status_code=status.HTTP_201_CREATED)
@@ -103,26 +145,32 @@ async def list_resume_builds(
 
 @router.get("/{resume_build_id}", response_model=ResumeBuildResponse)
 async def get_resume_build(
-    resume_build_id: int,
+    resume_build_id: str,
+    response: Response,
     db: AsyncSession = Depends(get_db_session),
     current_user_id: int = Depends(get_current_user_id),
 ) -> ResumeBuildResponse:
-    """Get a single resume build by ID."""
-    resume_build = await resume_build_repository.get(
-        db, resume_build_id=resume_build_id, user_id=current_user_id
+    """
+    Get a single resume build by ID.
+
+    The resume_build_id can be either:
+    - UUID format (preferred): 550e8400-e29b-41d4-a716-446655440000
+    - Integer format (deprecated): 123
+    """
+    resume_build = await _resolve_build(db, resume_build_id, current_user_id, response)
+
+    # Get the data representation for response
+    resume_build_data = await resume_build_repository.get(
+        db, resume_build_id=resume_build.id, user_id=current_user_id
     )
-    if not resume_build:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resume build not found",
-        )
-    return ResumeBuildResponse.model_validate(resume_build)
+    return ResumeBuildResponse.model_validate(resume_build_data)
 
 
 @router.patch("/{resume_build_id}", response_model=ResumeBuildResponse)
 async def update_resume_build(
-    resume_build_id: int,
+    resume_build_id: str,
     resume_build_in: ResumeBuildUpdate,
+    response: Response,
     db: AsyncSession = Depends(get_db_session),
     current_user_id: int = Depends(get_current_user_id),
 ) -> ResumeBuildResponse:
@@ -131,14 +179,7 @@ async def update_resume_build(
 
     For updating sections or status, use the dedicated endpoints.
     """
-    resume_build = await resume_build_repository.get_model(
-        db, resume_build_id=resume_build_id, user_id=current_user_id
-    )
-    if not resume_build:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resume build not found",
-        )
+    resume_build = await _resolve_build(db, resume_build_id, current_user_id, response)
 
     if resume_build_in.job_title is not None:
         resume_build.job_title = resume_build_in.job_title
@@ -152,21 +193,24 @@ async def update_resume_build(
 
     # Convert to data dict manually for response
     resume_build_data = await resume_build_repository.get(
-        db, resume_build_id=resume_build_id, user_id=current_user_id
+        db, resume_build_id=resume_build.id, user_id=current_user_id
     )
     return ResumeBuildResponse.model_validate(resume_build_data)
 
 
 @router.delete("/{resume_build_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_resume_build(
-    resume_build_id: int,
+    resume_build_id: str,
+    response: Response,
     db: AsyncSession = Depends(get_db_session),
     current_user_id: int = Depends(get_current_user_id),
 ) -> None:
     """Delete a resume build."""
+    resume_build = await _resolve_build(db, resume_build_id, current_user_id, response)
+
     deleted = await resume_build_repository.delete(
         db,
-        resume_build_id=resume_build_id,
+        resume_build_id=resume_build.id,
         user_id=current_user_id,
     )
     if not deleted:
@@ -179,8 +223,9 @@ async def delete_resume_build(
 
 @router.post("/{resume_build_id}/suggest", response_model=SuggestResponse)
 async def generate_suggestions(
-    resume_build_id: int,
+    resume_build_id: str,
     suggest_in: SuggestRequest,
+    response: Response,
     db: AsyncSession = Depends(get_db_session),
     current_user_id: int = Depends(get_current_user_id),
 ) -> SuggestResponse:
@@ -192,8 +237,11 @@ async def generate_suggestions(
     """
     from app.services.job.diff import get_diff_engine
 
+    resume_build_model = await _resolve_build(db, resume_build_id, current_user_id, response)
+
+    # Get data dict for processing
     resume_build = await resume_build_repository.get(
-        db, resume_build_id=resume_build_id, user_id=current_user_id
+        db, resume_build_id=resume_build_model.id, user_id=current_user_id
     )
     if not resume_build:
         raise HTTPException(
@@ -215,7 +263,7 @@ async def generate_suggestions(
     if result["suggestions"]:
         await resume_build_repository.add_pending_diffs(
             db,
-            resume_build_id=resume_build_id,
+            resume_build_id=resume_build_model.id,
             user_id=current_user_id,
             diffs=result["suggestions"],
         )
@@ -223,7 +271,7 @@ async def generate_suggestions(
 
     # Get updated resume build
     updated_resume_build = await resume_build_repository.get(
-        db, resume_build_id=resume_build_id, user_id=current_user_id
+        db, resume_build_id=resume_build_model.id, user_id=current_user_id
     )
 
     return SuggestResponse(
@@ -235,8 +283,9 @@ async def generate_suggestions(
 
 @router.post("/{resume_build_id}/suggest-bullet", response_model=BulletSuggestionResponse)
 async def suggest_bullet(
-    resume_build_id: int,
+    resume_build_id: str,
     request: BulletSuggestionRequest,
+    response: Response,
     db: AsyncSession = Depends(get_db_session),
     current_user_id: int = Depends(get_current_user_id),
 ) -> BulletSuggestionResponse:
@@ -250,9 +299,11 @@ async def suggest_bullet(
     """
     from app.services.job.diff import get_diff_engine
 
-    # Verify resume build exists and user has access
+    resume_build_model = await _resolve_build(db, resume_build_id, current_user_id, response)
+
+    # Get data dict for processing
     resume_build = await resume_build_repository.get(
-        db, resume_build_id=resume_build_id, user_id=current_user_id
+        db, resume_build_id=resume_build_model.id, user_id=current_user_id
     )
     if not resume_build:
         raise HTTPException(
@@ -290,8 +341,9 @@ async def suggest_bullet(
 
 @router.post("/{resume_build_id}/diffs/accept", response_model=DiffActionResponse)
 async def accept_diff(
-    resume_build_id: int,
+    resume_build_id: str,
     action_in: DiffActionRequest,
+    response: Response,
     db: AsyncSession = Depends(get_db_session),
     current_user_id: int = Depends(get_current_user_id),
 ) -> DiffActionResponse:
@@ -300,9 +352,11 @@ async def accept_diff(
 
     The diff is applied to the resume build sections and removed from pending.
     """
+    resume_build_model = await _resolve_build(db, resume_build_id, current_user_id, response)
+
     # Get current resume build to capture the diff before it's removed
     resume_build = await resume_build_repository.get(
-        db, resume_build_id=resume_build_id, user_id=current_user_id
+        db, resume_build_id=resume_build_model.id, user_id=current_user_id
     )
     if not resume_build:
         raise HTTPException(
@@ -321,7 +375,7 @@ async def accept_diff(
 
     updated_resume_build = await resume_build_repository.accept_diff(
         db,
-        resume_build_id=resume_build_id,
+        resume_build_id=resume_build_model.id,
         user_id=current_user_id,
         diff_index=action_in.diff_index,
     )
@@ -336,8 +390,9 @@ async def accept_diff(
 
 @router.post("/{resume_build_id}/diffs/reject", response_model=DiffActionResponse)
 async def reject_diff(
-    resume_build_id: int,
+    resume_build_id: str,
     action_in: DiffActionRequest,
+    response: Response,
     db: AsyncSession = Depends(get_db_session),
     current_user_id: int = Depends(get_current_user_id),
 ) -> DiffActionResponse:
@@ -346,8 +401,10 @@ async def reject_diff(
 
     The diff is removed without being applied.
     """
+    resume_build_model = await _resolve_build(db, resume_build_id, current_user_id, response)
+
     resume_build = await resume_build_repository.get(
-        db, resume_build_id=resume_build_id, user_id=current_user_id
+        db, resume_build_id=resume_build_model.id, user_id=current_user_id
     )
     if not resume_build:
         raise HTTPException(
@@ -364,7 +421,7 @@ async def reject_diff(
 
     updated_resume_build = await resume_build_repository.reject_diff(
         db,
-        resume_build_id=resume_build_id,
+        resume_build_id=resume_build_model.id,
         user_id=current_user_id,
         diff_index=action_in.diff_index,
     )
@@ -379,14 +436,17 @@ async def reject_diff(
 
 @router.post("/{resume_build_id}/diffs/clear", response_model=ResumeBuildResponse)
 async def clear_diffs(
-    resume_build_id: int,
+    resume_build_id: str,
+    response: Response,
     db: AsyncSession = Depends(get_db_session),
     current_user_id: int = Depends(get_current_user_id),
 ) -> ResumeBuildResponse:
     """Clear all pending diff suggestions."""
+    resume_build_model = await _resolve_build(db, resume_build_id, current_user_id, response)
+
     resume_build = await resume_build_repository.clear_pending_diffs(
         db,
-        resume_build_id=resume_build_id,
+        resume_build_id=resume_build_model.id,
         user_id=current_user_id,
     )
     if not resume_build:
@@ -400,8 +460,9 @@ async def clear_diffs(
 
 @router.patch("/{resume_build_id}/sections", response_model=ResumeBuildResponse)
 async def update_sections(
-    resume_build_id: int,
+    resume_build_id: str,
     sections_in: UpdateSectionsRequest,
+    response: Response,
     db: AsyncSession = Depends(get_db_session),
     current_user_id: int = Depends(get_current_user_id),
 ) -> ResumeBuildResponse:
@@ -411,9 +472,11 @@ async def update_sections(
     Sections are merged with existing content. Pass null for a key
     to remove that section.
     """
+    resume_build_model = await _resolve_build(db, resume_build_id, current_user_id, response)
+
     resume_build = await resume_build_repository.update_sections(
         db,
-        resume_build_id=resume_build_id,
+        resume_build_id=resume_build_model.id,
         user_id=current_user_id,
         sections=sections_in.sections,
     )
@@ -428,15 +491,18 @@ async def update_sections(
 
 @router.patch("/{resume_build_id}/status", response_model=ResumeBuildResponse)
 async def update_status(
-    resume_build_id: int,
+    resume_build_id: str,
     status_in: UpdateStatusRequest,
+    response: Response,
     db: AsyncSession = Depends(get_db_session),
     current_user_id: int = Depends(get_current_user_id),
 ) -> ResumeBuildResponse:
     """Update resume build status."""
+    resume_build_model = await _resolve_build(db, resume_build_id, current_user_id, response)
+
     resume_build = await resume_build_repository.update_status(
         db,
-        resume_build_id=resume_build_id,
+        resume_build_id=resume_build_model.id,
         user_id=current_user_id,
         status=status_in.status,
     )
@@ -451,8 +517,9 @@ async def update_status(
 
 @router.post("/{resume_build_id}/export")
 async def export_resume_build(
-    resume_build_id: int,
+    resume_build_id: str,
     export_in: ExportRequest,
+    response: Response,
     db: AsyncSession = Depends(get_db_session),
     current_user_id: int = Depends(get_current_user_id),
 ):
@@ -461,12 +528,14 @@ async def export_resume_build(
 
     Returns the file as a download.
     """
-    from fastapi.responses import Response
+    from fastapi.responses import Response as FileResponse
 
     from app.services.export.service import get_export_service
 
+    resume_build_model = await _resolve_build(db, resume_build_id, current_user_id, response)
+
     resume_build = await resume_build_repository.get(
-        db, resume_build_id=resume_build_id, user_id=current_user_id
+        db, resume_build_id=resume_build_model.id, user_id=current_user_id
     )
     if not resume_build:
         raise HTTPException(
@@ -500,7 +569,7 @@ async def export_resume_build(
     # Update status to exported
     await resume_build_repository.update_status(
         db,
-        resume_build_id=resume_build_id,
+        resume_build_id=resume_build_model.id,
         user_id=current_user_id,
         status=ResumeBuildStatus.EXPORTED,
     )
@@ -513,8 +582,9 @@ async def export_resume_build(
     # Handle PDF result with metadata
     if export_in.format == "pdf":
         from app.services.export.service import PDFResult
+
         if isinstance(result, PDFResult):
-            return Response(
+            return FileResponse(
                 content=result.content,
                 media_type=content_type,
                 headers={
@@ -526,7 +596,7 @@ async def export_resume_build(
 
     # Other formats return bytes or string directly
     content = result if isinstance(result, bytes) else result.encode()
-    return Response(
+    return FileResponse(
         content=content,
         media_type=content_type,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
