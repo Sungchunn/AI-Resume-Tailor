@@ -589,7 +589,7 @@ app.openapi = custom_openapi
 
 When one resource references another (e.g., `resume_builds.job_id`), responses should return the public UUID, not the internal integer.
 
-**Option 1: Computed property in model**
+#### Option 1: Computed property in model
 
 ```python
 # /backend/app/models/resume_build.py
@@ -602,7 +602,7 @@ class ResumeBuild(Base):
         return self.job.public_id if self.job else None
 ```
 
-**Option 2: Schema-level mapping**
+#### Option 2: Schema-level mapping
 
 ```python
 # /backend/app/schemas/resume_build.py
