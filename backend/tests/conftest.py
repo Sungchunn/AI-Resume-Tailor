@@ -1,5 +1,8 @@
 import os
 
+# Disable rate limiting for tests
+os.environ["RATE_LIMIT_ENABLED"] = "false"
+
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from mongomock_motor import AsyncMongoMockClient
@@ -8,10 +11,12 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-# Disable rate limiting for tests
-os.environ["RATE_LIMIT_ENABLED"] = "false"
-
-from app.api.deps import get_current_user_id, get_db_session, get_db_with_user_context, get_mongo_db
+from app.api.deps import (
+    get_current_user_id,
+    get_db_session,
+    get_db_with_user_context,
+    get_mongo_db,
+)
 from app.db.session import Base
 from app.main import app
 from app.models.user import User

@@ -8,16 +8,14 @@ compatible with SQLite. These tests require PostgreSQL to run correctly.
 """
 
 import os
+from uuid import UUID, uuid4
 
 import pytest
 import pytest_asyncio
-from uuid import UUID, uuid4
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.resume_build import resume_build_repository
 from app.models.resume_build import ResumeBuild
-
 
 # Skip all tests if using SQLite (default test setup)
 # ResumeBuild has JSONB and ARRAY columns that don't work with SQLite

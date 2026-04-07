@@ -25,9 +25,7 @@ from sqlalchemy.pool import NullPool
 
 from app.db.session import Base
 from app.models.job import JobDescription
-from app.models.resume_build import ResumeBuild
 from app.models.user import User
-from app.models.user_job_interaction import UserJobInteraction
 
 # Skip all tests if not using PostgreSQL
 pytestmark = pytest.mark.skipif(

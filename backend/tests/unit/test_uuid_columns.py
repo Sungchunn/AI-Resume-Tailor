@@ -9,9 +9,8 @@ These tests verify the column definitions are correct, while integration
 tests (test_uuid_migration.py) verify runtime behavior.
 """
 
-import pytest
 from sqlalchemy import inspect
-from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
+from sqlalchemy.dialects.postgresql import UUID
 
 from app.models.job import JobDescription
 from app.models.resume_build import ResumeBuild
@@ -87,21 +86,21 @@ class TestUUIDColumnType:
         """JobDescription.public_id should be PostgreSQL UUID type."""
         mapper = inspect(JobDescription)
         column = mapper.columns["public_id"]
-        assert isinstance(column.type, PostgresUUID)
+        assert isinstance(column.type, UUID)
         assert column.type.as_uuid is True
 
     def test_resume_build_uuid_type(self):
         """ResumeBuild.public_id should be PostgreSQL UUID type."""
         mapper = inspect(ResumeBuild)
         column = mapper.columns["public_id"]
-        assert isinstance(column.type, PostgresUUID)
+        assert isinstance(column.type, UUID)
         assert column.type.as_uuid is True
 
     def test_user_job_interaction_uuid_type(self):
         """UserJobInteraction.public_id should be PostgreSQL UUID type."""
         mapper = inspect(UserJobInteraction)
         column = mapper.columns["public_id"]
-        assert isinstance(column.type, PostgresUUID)
+        assert isinstance(column.type, UUID)
         assert column.type.as_uuid is True
 
 

@@ -4,10 +4,9 @@ Phase 2 CRUD Tests: Job CRUD Operations with public_id.
 Tests that verify CRUD operations using UUID public_id lookups work correctly.
 """
 
-import pytest
-import pytest_asyncio
 from uuid import UUID, uuid4
 
+import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.job import job_crud

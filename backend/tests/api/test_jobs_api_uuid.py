@@ -5,9 +5,9 @@ Tests that verify API endpoints correctly handle UUID identifiers
 and properly deprecate integer ID usage.
 """
 
-import pytest
 from uuid import UUID, uuid4
 
+import pytest
 from httpx import AsyncClient
 
 

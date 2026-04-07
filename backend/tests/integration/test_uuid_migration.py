@@ -26,7 +26,6 @@ from app.models.job import JobDescription
 from app.models.resume_build import ResumeBuild
 from app.models.user import User
 
-
 # Skip all tests if not using PostgreSQL
 pytestmark = pytest.mark.skipif(
     "postgresql" not in os.environ.get("TEST_DATABASE_URL", ""),
