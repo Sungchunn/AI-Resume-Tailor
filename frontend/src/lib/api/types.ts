@@ -140,7 +140,7 @@ export interface JobUpdate {
 }
 
 export interface JobResponse extends JobBase {
-  id: number;
+  id: string; // UUID format: "550e8400-e29b-41d4-a716-446655440000"
   owner_id: number;
   parsed_content?: Record<string, unknown> | null;
   created_at: string;
@@ -154,15 +154,15 @@ export interface ApiError {
 // Tailor Types
 export interface TailorRequest {
   resume_id: string; // MongoDB ObjectId as string
-  job_id?: number;
-  job_listing_id?: number;
+  job_id?: string; // UUID for user-created jobs
+  job_listing_id?: number; // Integer for scraped job listings
   focus_keywords?: string[]; // User-selected keywords to emphasize
 }
 
 export interface QuickMatchRequest {
   resume_id: string; // MongoDB ObjectId as string
-  job_id?: number;
-  job_listing_id?: number;
+  job_id?: string; // UUID for user-created jobs
+  job_listing_id?: number; // Integer for scraped job listings
 }
 
 export interface Suggestion {
@@ -318,8 +318,8 @@ export interface CustomEntry {
 export interface TailorResponse {
   id: string;
   resume_id: string;
-  job_id: number | null;
-  job_listing_id: number | null;
+  job_id: string | null; // UUID for user-created jobs
+  job_listing_id: number | null; // Integer for scraped job listings
   tailored_data: TailoredContent;
   status: string;
   match_score: number;
@@ -335,8 +335,8 @@ export interface TailorResponse {
 export interface TailoredResumeFullResponse {
   id: string;
   resume_id: string;
-  job_id: number | null;
-  job_listing_id: number | null;
+  job_id: string | null; // UUID for user-created jobs
+  job_listing_id: number | null; // Integer for scraped job listings
   tailored_data: TailoredContent;
   finalized_data: TailoredContent | null;
   status: string;
@@ -370,8 +370,8 @@ export interface QuickMatchResponse {
 export interface TailoredResumeListItem {
   id: string;
   resume_id: string;
-  job_id: number | null;
-  job_listing_id: number | null;
+  job_id: string | null; // UUID for user-created jobs
+  job_listing_id: number | null; // Integer for scraped job listings
   match_score: number | null;
   job_title: string | null;
   company_name: string | null;
@@ -386,8 +386,8 @@ export interface TailoredResumeListItem {
 export interface TailoringCompareResponse {
   id: string;
   resume_id: string;
-  job_id: number | null;
-  job_listing_id: number | null;
+  job_id: string | null; // UUID for user-created jobs
+  job_listing_id: number | null; // Integer for scraped job listings
   /** Original resume blocks (from the source resume) */
   original_blocks: import("@/lib/resume/types").AnyResumeBlock[];
   /** AI-proposed resume blocks (tailored version) */
@@ -592,7 +592,7 @@ export interface ResumeBuildUpdate {
 export type WorkshopUpdate = ResumeBuildUpdate; // Backward compatibility
 
 export interface ResumeBuildResponse {
-  id: number;
+  id: string; // UUID format: "550e8400-e29b-41d4-a716-446655440000"
   user_id: number;
   job_title: string;
   job_company?: string | null;
@@ -1095,8 +1095,8 @@ export interface KeywordWithContext {
 
 export interface ExtractKeywordsRequest {
   job_description: string;
-  job_listing_id?: number | null;
-  job_id?: number | null;
+  job_listing_id?: number | null; // Integer for scraped job listings
+  job_id?: string | null; // UUID for user-created jobs
 }
 
 export interface ExtractKeywordsResponse {
@@ -1107,8 +1107,8 @@ export interface ExtractKeywordsResponse {
 
 // Keyword Overrides (User Edits)
 export interface KeywordOverrideRequest {
-  job_listing_id?: number | null;
-  job_id?: number | null;
+  job_listing_id?: number | null; // Integer for scraped job listings
+  job_id?: string | null; // UUID for user-created jobs
   job_description: string;
   keywords: KeywordWithContext[];
   mark_reviewed?: boolean;
@@ -1208,8 +1208,9 @@ export interface ParseStatusResponse extends ParseTaskResponse {
 // ============================================================================
 
 export interface ATSProgressiveRequest {
-  resume_id?: number;
-  job_id?: number;
+  resume_id?: string; // MongoDB ObjectId
+  job_id?: string; // UUID for user-created jobs
+  job_listing_id?: number; // Integer for scraped job listings
   resume_content?: Record<string, any>;
   job_description?: string;
 }

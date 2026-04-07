@@ -59,7 +59,7 @@ export const queryKeys = {
   jobs: {
     all: ["jobs"] as const,
     list: () => [...queryKeys.jobs.all, "list"] as const,
-    detail: (id: number) => [...queryKeys.jobs.all, "detail", id] as const,
+    detail: (id: string) => [...queryKeys.jobs.all, "detail", id] as const,
   },
   tailored: {
     all: ["tailored"] as const,
@@ -67,14 +67,14 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.tailored.all, "detail", id] as const,
     byResume: (resumeId: string) =>
       [...queryKeys.tailored.all, "resume", resumeId] as const,
-    byJob: (jobId: number) =>
+    byJob: (jobId: string) =>
       [...queryKeys.tailored.all, "job", jobId] as const,
   },
   match: {
     all: ["match"] as const,
     result: (jobDescription: string) =>
       [...queryKeys.match.all, "result", jobDescription] as const,
-    forJob: (jobId: number) => [...queryKeys.match.all, "job", jobId] as const,
+    forJob: (jobId: string) => [...queryKeys.match.all, "job", jobId] as const,
     gaps: (jobDescription: string) =>
       [...queryKeys.match.all, "gaps", jobDescription] as const,
   },
@@ -82,7 +82,7 @@ export const queryKeys = {
     all: ["workshops"] as const,
     list: (status?: WorkshopStatus) =>
       [...queryKeys.workshops.all, "list", status] as const,
-    detail: (id: number) =>
+    detail: (id: string) =>
       [...queryKeys.workshops.all, "detail", id] as const,
   },
   jobListings: {
@@ -277,7 +277,7 @@ export function useJobs() {
   });
 }
 
-export function useJob(id: number) {
+export function useJob(id: string) {
   return useQuery({
     queryKey: queryKeys.jobs.detail(id),
     queryFn: () => jobApi.get(id),
@@ -300,7 +300,7 @@ export function useUpdateJob() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: JobUpdate }) =>
+    mutationFn: ({ id, data }: { id: string; data: JobUpdate }) =>
       jobApi.update(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.detail(id) });
@@ -313,7 +313,7 @@ export function useDeleteJob() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => jobApi.delete(id),
+    mutationFn: (id: string) => jobApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
     },
@@ -364,7 +364,7 @@ export function useTailoredResumesByResume(resumeId: string) {
   });
 }
 
-export function useTailoredResumesByJob(jobId: number) {
+export function useTailoredResumesByJob(jobId: string) {
   return useQuery({
     queryKey: queryKeys.tailored.byJob(jobId),
     queryFn: () => tailorApi.listByJob(jobId),
@@ -379,7 +379,7 @@ export function useTailoredResumesByJob(jobId: number) {
 export function useTailoredResumesByResumeAndJob(
   resumeId: string,
   jobListingId?: number,
-  jobId?: number
+  jobId?: string
 ) {
   const hasJobFilter = !!jobListingId || !!jobId;
   return useQuery({
@@ -467,7 +467,7 @@ export function useMatchMutation() {
   });
 }
 
-export function useMatchForJob(jobId: number) {
+export function useMatchForJob(jobId: string) {
   return useQuery({
     queryKey: queryKeys.match.forJob(jobId),
     queryFn: () => matchApi.getForJob(jobId),
@@ -489,7 +489,7 @@ export function useWorkshops(status?: WorkshopStatus) {
   });
 }
 
-export function useWorkshop(id: number) {
+export function useWorkshop(id: string) {
   return useQuery({
     queryKey: queryKeys.workshops.detail(id),
     queryFn: () => workshopApi.get(id),
@@ -512,7 +512,7 @@ export function useUpdateWorkshop() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: WorkshopUpdate }) =>
+    mutationFn: ({ id, data }: { id: string; data: WorkshopUpdate }) =>
       workshopApi.update(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({
@@ -527,7 +527,7 @@ export function useDeleteWorkshop() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => workshopApi.delete(id),
+    mutationFn: (id: string) => workshopApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.workshops.all });
     },
@@ -542,7 +542,7 @@ export function usePullBlocks() {
       workshopId,
       data,
     }: {
-      workshopId: number;
+      workshopId: string;
       data: PullBlocksRequest;
     }) => workshopApi.pullBlocks(workshopId, data),
     onSuccess: (_, { workshopId }) => {
@@ -561,7 +561,7 @@ export function useRemoveBlockFromWorkshop() {
       workshopId,
       blockId,
     }: {
-      workshopId: number;
+      workshopId: string;
       blockId: number;
     }) => workshopApi.removeBlock(workshopId, blockId),
     onSuccess: (_, { workshopId }) => {
@@ -580,7 +580,7 @@ export function useGenerateSuggestions() {
       workshopId,
       data,
     }: {
-      workshopId: number;
+      workshopId: string;
       data?: SuggestRequest;
     }) => workshopApi.suggest(workshopId, data),
     onSuccess: (_, { workshopId }) => {
@@ -599,7 +599,7 @@ export function useAcceptDiff() {
       workshopId,
       diffIndex,
     }: {
-      workshopId: number;
+      workshopId: string;
       diffIndex: number;
     }) => workshopApi.acceptDiff(workshopId, { diff_index: diffIndex }),
     onSuccess: (_, { workshopId }) => {
@@ -618,7 +618,7 @@ export function useRejectDiff() {
       workshopId,
       diffIndex,
     }: {
-      workshopId: number;
+      workshopId: string;
       diffIndex: number;
     }) => workshopApi.rejectDiff(workshopId, { diff_index: diffIndex }),
     onSuccess: (_, { workshopId }) => {
@@ -633,7 +633,7 @@ export function useClearDiffs() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (workshopId: number) => workshopApi.clearDiffs(workshopId),
+    mutationFn: (workshopId: string) => workshopApi.clearDiffs(workshopId),
     onSuccess: (_, workshopId) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.workshops.detail(workshopId),
@@ -650,7 +650,7 @@ export function useUpdateSections() {
       workshopId,
       data,
     }: {
-      workshopId: number;
+      workshopId: string;
       data: UpdateSectionsRequest;
     }) => workshopApi.updateSections(workshopId, data),
     onSuccess: (_, { workshopId }) => {
@@ -669,7 +669,7 @@ export function useUpdateWorkshopStatus() {
       workshopId,
       data,
     }: {
-      workshopId: number;
+      workshopId: string;
       data: UpdateStatusRequest;
     }) => workshopApi.updateStatus(workshopId, data),
     onSuccess: (_, { workshopId }) => {
@@ -687,7 +687,7 @@ export function useExportWorkshop() {
       workshopId,
       data,
     }: {
-      workshopId: number;
+      workshopId: string;
       data: ExportRequest;
     }) => workshopApi.export(workshopId, data),
   });
@@ -1110,19 +1110,20 @@ export function useATSProgressiveAnalysis() {
   const store = useATSProgressStore();
 
   const startAnalysis = useCallback(
-    (resumeId: string, options: { jobId?: number; jobListingId?: number; forceRefresh?: boolean }) => {
+    (resumeId: string, options: { jobId?: string; jobListingId?: number; forceRefresh?: boolean }) => {
       // Close any existing connection
       store.closeConnection();
 
       // Initialize analysis state (use effective job ID for store)
-      const effectiveJobId = options.jobId || options.jobListingId || 0;
-      store.startAnalysis(effectiveJobId, effectiveJobId);
+      // Convert to string for consistent storage (both UUIDs and job listing IDs as strings)
+      const effectiveJobId = options.jobId || (options.jobListingId?.toString()) || "0";
+      store.startAnalysis(resumeId, effectiveJobId);
 
       // Build query params
       const params = new URLSearchParams();
       params.set("resume_id", resumeId);
       if (options.jobId) {
-        params.set("job_id", options.jobId.toString());
+        params.set("job_id", options.jobId);
       }
       if (options.jobListingId) {
         params.set("job_listing_id", options.jobListingId.toString());

@@ -438,7 +438,7 @@ export const jobApi = {
   list: (skip = 0, limit = 100): Promise<JobResponse[]> =>
     fetchApi(`/api/jobs?skip=${skip}&limit=${limit}`),
 
-  get: (id: number): Promise<JobResponse> =>
+  get: (id: string): Promise<JobResponse> =>
     fetchApi(`/api/jobs/${id}`),
 
   create: (data: JobCreate): Promise<JobResponse> =>
@@ -447,13 +447,13 @@ export const jobApi = {
       body: JSON.stringify(data),
     }),
 
-  update: (id: number, data: JobUpdate): Promise<JobResponse> =>
+  update: (id: string, data: JobUpdate): Promise<JobResponse> =>
     fetchApi(`/api/jobs/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     }),
 
-  delete: (id: number): Promise<void> =>
+  delete: (id: string): Promise<void> =>
     fetchApi(`/api/jobs/${id}`, {
       method: "DELETE",
     }),
@@ -482,17 +482,17 @@ export const tailorApi = {
   listByResume: (resumeId: string): Promise<TailoredResumeListItem[]> =>
     fetchApi(`/api/tailor?resume_id=${resumeId}`),
 
-  listByJob: (jobId: number): Promise<TailoredResumeListItem[]> =>
+  listByJob: (jobId: string): Promise<TailoredResumeListItem[]> =>
     fetchApi(`/api/tailor?job_id=${jobId}`),
 
   listByResumeAndJob: (
     resumeId: string,
     jobListingId?: number,
-    jobId?: number
+    jobId?: string
   ): Promise<TailoredResumeListItem[]> => {
     const params = new URLSearchParams({ resume_id: resumeId });
     if (jobListingId) params.append("job_listing_id", String(jobListingId));
-    if (jobId) params.append("job_id", String(jobId));
+    if (jobId) params.append("job_id", jobId);
     return fetchApi(`/api/tailor?${params.toString()}`);
   },
 
@@ -549,7 +549,7 @@ export const matchApi = {
       body: JSON.stringify(data),
     }),
 
-  getForJob: (jobId: number, limit: number = 20): Promise<MatchResponse> =>
+  getForJob: (jobId: string, limit: number = 20): Promise<MatchResponse> =>
     fetchApi(`/api/v1/match/job/${jobId}?limit=${limit}`),
 };
 
@@ -578,7 +578,7 @@ export const resumeBuildApi = {
     return { workshops: response.resume_builds, total: response.total, limit: response.limit, offset: response.offset };
   },
 
-  get: (id: number): Promise<WorkshopResponse> =>
+  get: (id: string): Promise<WorkshopResponse> =>
     fetchApi(`/api/v1/resume-builds/${id}`),
 
   create: (data: WorkshopCreate): Promise<WorkshopResponse> =>
@@ -587,18 +587,18 @@ export const resumeBuildApi = {
       body: JSON.stringify(data),
     }),
 
-  update: (id: number, data: WorkshopUpdate): Promise<WorkshopResponse> =>
+  update: (id: string, data: WorkshopUpdate): Promise<WorkshopResponse> =>
     fetchApi(`/api/v1/resume-builds/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
 
-  delete: (id: number): Promise<void> =>
+  delete: (id: string): Promise<void> =>
     fetchApi(`/api/v1/resume-builds/${id}`, {
       method: "DELETE",
     }),
 
-  pullBlocks: async (id: number, data: PullBlocksRequest): Promise<PullBlocksResponse> => {
+  pullBlocks: async (id: string, data: PullBlocksRequest): Promise<PullBlocksResponse> => {
     const response = await fetchApi<{ resume_build: WorkshopResponse; newly_pulled: number[]; already_pulled: number[] }>(`/api/v1/resume-builds/${id}/pull`, {
       method: "POST",
       body: JSON.stringify(data),
@@ -607,12 +607,12 @@ export const resumeBuildApi = {
     return { workshop: response.resume_build, newly_pulled: response.newly_pulled, already_pulled: response.already_pulled };
   },
 
-  removeBlock: (resumeBuildId: number, blockId: number): Promise<WorkshopResponse> =>
+  removeBlock: (resumeBuildId: string, blockId: number): Promise<WorkshopResponse> =>
     fetchApi(`/api/v1/resume-builds/${resumeBuildId}/blocks/${blockId}`, {
       method: "DELETE",
     }),
 
-  suggest: async (id: number, data?: SuggestRequest): Promise<SuggestResponse> => {
+  suggest: async (id: string, data?: SuggestRequest): Promise<SuggestResponse> => {
     const response = await fetchApi<{ resume_build: WorkshopResponse; new_suggestions_count: number; gaps_identified: string[] }>(`/api/v1/resume-builds/${id}/suggest`, {
       method: "POST",
       body: JSON.stringify(data || {}),
@@ -621,7 +621,7 @@ export const resumeBuildApi = {
     return { workshop: response.resume_build, new_suggestions_count: response.new_suggestions_count, gaps_identified: response.gaps_identified };
   },
 
-  acceptDiff: async (id: number, data: DiffActionRequest): Promise<DiffActionResponse> => {
+  acceptDiff: async (id: string, data: DiffActionRequest): Promise<DiffActionResponse> => {
     const response = await fetchApi<{ resume_build: WorkshopResponse; action: "accept" | "reject"; applied_diff?: unknown }>(`/api/v1/resume-builds/${id}/diffs/accept`, {
       method: "POST",
       body: JSON.stringify(data),
@@ -630,7 +630,7 @@ export const resumeBuildApi = {
     return { workshop: response.resume_build, action: response.action, applied_diff: response.applied_diff as DiffActionResponse["applied_diff"] };
   },
 
-  rejectDiff: async (id: number, data: DiffActionRequest): Promise<DiffActionResponse> => {
+  rejectDiff: async (id: string, data: DiffActionRequest): Promise<DiffActionResponse> => {
     const response = await fetchApi<{ resume_build: WorkshopResponse; action: "accept" | "reject"; applied_diff?: unknown }>(`/api/v1/resume-builds/${id}/diffs/reject`, {
       method: "POST",
       body: JSON.stringify(data),
@@ -639,24 +639,24 @@ export const resumeBuildApi = {
     return { workshop: response.resume_build, action: response.action, applied_diff: response.applied_diff as DiffActionResponse["applied_diff"] };
   },
 
-  clearDiffs: (id: number): Promise<WorkshopResponse> =>
+  clearDiffs: (id: string): Promise<WorkshopResponse> =>
     fetchApi(`/api/v1/resume-builds/${id}/diffs/clear`, {
       method: "POST",
     }),
 
-  updateSections: (id: number, data: UpdateSectionsRequest): Promise<WorkshopResponse> =>
+  updateSections: (id: string, data: UpdateSectionsRequest): Promise<WorkshopResponse> =>
     fetchApi(`/api/v1/resume-builds/${id}/sections`, {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
 
-  updateStatus: (id: number, data: UpdateStatusRequest): Promise<WorkshopResponse> =>
+  updateStatus: (id: string, data: UpdateStatusRequest): Promise<WorkshopResponse> =>
     fetchApi(`/api/v1/resume-builds/${id}/status`, {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
 
-  export: async (id: number, data: ExportRequest): Promise<Blob> => {
+  export: async (id: string, data: ExportRequest): Promise<Blob> => {
     const response = await fetch(
       `${API_BASE_URL}/api/v1/resume-builds/${id}/export`,
       {
@@ -1055,13 +1055,13 @@ export const atsApi = {
   // Get saved keyword overrides
   getKeywordOverride: (params: {
     job_listing_id?: number;
-    job_id?: number;
+    job_id?: string; // UUID for user-created jobs
     job_description?: string;
   }): Promise<GetKeywordOverrideResponse | null> => {
     const searchParams = new URLSearchParams();
     if (params.job_listing_id)
       searchParams.set("job_listing_id", String(params.job_listing_id));
-    if (params.job_id) searchParams.set("job_id", String(params.job_id));
+    if (params.job_id) searchParams.set("job_id", params.job_id);
     if (params.job_description)
       searchParams.set("job_description", params.job_description);
     return fetchApi(`/api/v1/ats/keywords/override?${searchParams.toString()}`);
