@@ -33,6 +33,7 @@ from typing import (
     Protocol,
     runtime_checkable,
 )
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -141,6 +142,7 @@ class ResumeBuildData(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    public_id: UUID  # Public-facing UUID identifier
     user_id: int
     job_title: str
     job_company: str | None = None

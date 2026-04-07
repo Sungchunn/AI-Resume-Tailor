@@ -8,6 +8,7 @@ related to resume build management.
 import copy
 from datetime import datetime, timezone
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +25,7 @@ def _resume_build_to_data(resume_build: ResumeBuild) -> ResumeBuildData:
     """Convert ResumeBuild model to ResumeBuildData TypedDict."""
     return {
         "id": resume_build.id,
+        "public_id": resume_build.public_id,
         "user_id": resume_build.user_id,
         "job_title": resume_build.job_title,
         "job_company": resume_build.job_company,
@@ -101,6 +103,43 @@ class ResumeBuildRepository:
             select(ResumeBuild).where(
                 and_(
                     ResumeBuild.id == resume_build_id,
+                    ResumeBuild.user_id == user_id,
+                )
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_public_id(
+        self,
+        db: AsyncSession,
+        *,
+        public_id: UUID,
+        user_id: int,
+    ) -> ResumeBuildData | None:
+        """Get resume build by public UUID with user ownership check."""
+        result = await db.execute(
+            select(ResumeBuild).where(
+                and_(
+                    ResumeBuild.public_id == public_id,
+                    ResumeBuild.user_id == user_id,
+                )
+            )
+        )
+        resume_build = result.scalar_one_or_none()
+        return _resume_build_to_data(resume_build) if resume_build else None
+
+    async def get_model_by_public_id(
+        self,
+        db: AsyncSession,
+        *,
+        public_id: UUID,
+        user_id: int,
+    ) -> ResumeBuild | None:
+        """Get raw SQLAlchemy model by public UUID (for internal use)."""
+        result = await db.execute(
+            select(ResumeBuild).where(
+                and_(
+                    ResumeBuild.public_id == public_id,
                     ResumeBuild.user_id == user_id,
                 )
             )

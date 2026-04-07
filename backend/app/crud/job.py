@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,7 +22,29 @@ class JobCRUD:
         return db_obj
 
     async def get(self, db: AsyncSession, *, id: int) -> JobDescription | None:
+        """Get job by integer ID (internal use only)."""
         result = await db.execute(select(JobDescription).where(JobDescription.id == id))
+        return result.scalar_one_or_none()
+
+    async def get_by_public_id(
+        self, db: AsyncSession, *, public_id: UUID
+    ) -> JobDescription | None:
+        """Get job by public UUID (for API endpoints)."""
+        result = await db.execute(
+            select(JobDescription).where(JobDescription.public_id == public_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_public_id_and_owner(
+        self, db: AsyncSession, *, public_id: UUID, owner_id: int
+    ) -> JobDescription | None:
+        """Get job by UUID with ownership verification in single query."""
+        result = await db.execute(
+            select(JobDescription).where(
+                JobDescription.public_id == public_id,
+                JobDescription.owner_id == owner_id,
+            )
+        )
         return result.scalar_one_or_none()
 
     async def get_by_owner(
@@ -32,6 +56,17 @@ class JobCRUD:
             .offset(skip)
             .limit(limit)
             .order_by(JobDescription.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def get_by_ids(
+        self, db: AsyncSession, *, ids: list[int]
+    ) -> list[JobDescription]:
+        """Batch fetch jobs by integer IDs (for response mapping)."""
+        if not ids:
+            return []
+        result = await db.execute(
+            select(JobDescription).where(JobDescription.id.in_(ids))
         )
         return list(result.scalars().all())
 
