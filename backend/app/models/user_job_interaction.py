@@ -4,6 +4,8 @@ UserJobInteraction model for tracking user interactions with job listings.
 Tracks saves, hides, applications, and views for each user-job combination.
 """
 
+import uuid
+
 from sqlalchemy import (
     Boolean,
     Column,
@@ -13,7 +15,9 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    text,
 )
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -31,6 +35,14 @@ class UserJobInteraction(Base):
     __tablename__ = "user_job_interactions"
 
     id = Column(Integer, primary_key=True, index=True)
+    public_id = Column(
+        UUID(as_uuid=True),
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()"),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     job_listing_id = Column(
         Integer, ForeignKey("job_listings.id", ondelete="CASCADE"), nullable=False

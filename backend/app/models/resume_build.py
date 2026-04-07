@@ -10,6 +10,7 @@ Each resume build:
 - Can be exported to PDF/DOCX when complete
 """
 
+import uuid as uuid_module
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
@@ -22,8 +23,9 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    text,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, relationship
 from sqlalchemy.sql import func
 
@@ -57,6 +59,14 @@ class ResumeBuild(Base):
 
     # Identity
     id = Column(Integer, primary_key=True, index=True)
+    public_id = Column(
+        UUID(as_uuid=True),
+        default=uuid_module.uuid4,
+        server_default=text("gen_random_uuid()"),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     # Job information

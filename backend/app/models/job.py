@@ -1,4 +1,7 @@
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Text
+import uuid
+
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Text, text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -9,6 +12,14 @@ class JobDescription(Base):
     __tablename__ = "job_descriptions"
 
     id = Column(Integer, primary_key=True, index=True)
+    public_id = Column(
+        UUID(as_uuid=True),
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()"),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     title = Column(String(255), nullable=False)  # Job title
     company = Column(String(255), nullable=True)
