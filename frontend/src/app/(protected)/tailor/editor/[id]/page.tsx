@@ -60,7 +60,7 @@ export default function TailoredEditorPage({ params }: PageProps) {
   const jobListingId = tailored?.job_listing_id ?? null;
 
   // Fetch job data conditionally
-  const { data: job } = useJob(jobId ?? 0);
+  const { data: job } = useJob(jobId ?? "");
   const { data: jobListing } = useJobListing(jobListingId ?? 0);
 
   // Resolve job description, title, and company from the job data
@@ -78,7 +78,8 @@ export default function TailoredEditorPage({ params }: PageProps) {
   // Get ATS score from the store if it matches this job listing
   const atsCompositeScore = useATSProgressStore((state) => {
     // Check if the stored ATS score is for this job listing
-    if (jobListingId && state.jobId === jobListingId && state.compositeScore) {
+    // Store uses string IDs, convert jobListingId for comparison
+    if (jobListingId && state.jobId === String(jobListingId) && state.compositeScore) {
       return state.compositeScore.finalScore;
     }
     return null;

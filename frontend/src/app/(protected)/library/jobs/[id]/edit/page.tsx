@@ -23,9 +23,8 @@ interface PageProps {
 
 export default function EditJobPage({ params }: PageProps) {
   const { id } = use(params);
-  const jobId = parseInt(id, 10);
   const router = useRouter();
-  const { data: job, isLoading, error } = useJob(jobId);
+  const { data: job, isLoading, error } = useJob(id);
   const updateJob = useUpdateJob();
 
   const {
@@ -55,8 +54,8 @@ export default function EditJobPage({ params }: PageProps) {
         company: data.company || null,
         url: data.url || null,
       };
-      await updateJob.mutateAsync({ id: jobId, data: payload });
-      router.push(`/library/jobs/${jobId}`);
+      await updateJob.mutateAsync({ id, data: payload });
+      router.push(`/library/jobs/${id}`);
     } catch {
       // Error is handled by mutation
     }
@@ -107,7 +106,7 @@ export default function EditJobPage({ params }: PageProps) {
     <div className="max-w-3xl">
       <div className="mb-6">
         <Link
-          href={`/library/jobs/${jobId}`}
+          href={`/library/jobs/${id}`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <svg
@@ -222,7 +221,7 @@ export default function EditJobPage({ params }: PageProps) {
                 ? "Saving..."
                 : "Save Changes"}
             </button>
-            <Link href={`/library/jobs/${jobId}`} className="btn-ghost">
+            <Link href={`/library/jobs/${id}`} className="btn-ghost">
               Cancel
             </Link>
           </div>

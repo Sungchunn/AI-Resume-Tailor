@@ -50,9 +50,8 @@ function AnalyzePageContent() {
   // Get IDs from URL
   const resumeId = searchParams.get("resume_id");
   const jobListingId = searchParams.get("job_listing_id");
-  const jobId = searchParams.get("job_id"); // For user-created jobs
+  const jobId = searchParams.get("job_id"); // UUID for user-created jobs
   const jobListingIdNum = jobListingId ? parseInt(jobListingId, 10) : null;
-  const jobIdNum = jobId ? parseInt(jobId, 10) : null;
 
   // Fetch resume and job listing data
   const {
@@ -102,8 +101,10 @@ function AnalyzePageContent() {
     if (!resumeId || !jobListingIdNum) return;
 
     // Check if the stored analysis is for a different job - need fresh analysis
+    // Note: Store uses strings, convert jobListingIdNum to string for comparison
     const storedJobId = useATSProgressStore.getState().jobId;
-    const isStaleCache = storedJobId !== null && storedJobId !== jobListingIdNum;
+    const currentJobIdStr = String(jobListingIdNum);
+    const isStaleCache = storedJobId !== null && storedJobId !== currentJobIdStr;
 
     if (isStaleCache) {
       // Reset the store and mark local atsComplete as false for new job
@@ -115,7 +116,7 @@ function AnalyzePageContent() {
     const currentState = useATSProgressStore.getState();
     const isCompleteForCurrentJob =
       !currentState.isAnalyzing &&
-      currentState.jobId === jobListingIdNum &&
+      currentState.jobId === currentJobIdStr &&
       currentState.compositeScore !== null &&
       Object.keys(currentState.stages).length === 5;
 
@@ -139,9 +140,9 @@ function AnalyzePageContent() {
     if (jobListingIdNum) {
       // Navigate to keyword review page
       router.push(`/tailor/keywords/${jobListingIdNum}?resume_id=${resumeId}`);
-    } else if (jobIdNum) {
+    } else if (jobId) {
       // For user-created jobs (no keyword extraction), go directly to editor
-      router.push(`/library/resumes/${resumeId}/edit?jobId=${jobIdNum}`);
+      router.push(`/library/resumes/${resumeId}/edit?jobId=${jobId}`);
     }
   };
 
@@ -305,7 +306,7 @@ function AnalyzePageContent() {
       )}
 
       {/* Fallback for user-created jobs (no ATS analysis) */}
-      {!jobListingIdNum && jobIdNum && (
+      {!jobListingIdNum && jobId && (
         <div className="card">
           <div className="flex items-center gap-3">
             <Info className="h-5 w-5 text-primary" />
@@ -376,7 +377,7 @@ function AnalyzePageContent() {
         <div className="text-sm text-muted-foreground">
           {resume && !resume.parsed_verified ? (
             <span>Resume verification required before editing</span>
-          ) : (atsComplete || atsStream.isComplete || (!jobListingIdNum && jobIdNum)) ? (
+          ) : (atsComplete || atsStream.isComplete || (!jobListingIdNum && jobId)) ? (
             <span>
               {jobListingIdNum ? "Review and customize target keywords" : "Open editor with AI assistance"}
             </span>
@@ -389,7 +390,7 @@ function AnalyzePageContent() {
           onClick={handleContinue}
           disabled={
             (resume && !resume.parsed_verified) ||
-            !(atsComplete || atsStream.isComplete || (!jobListingIdNum && jobIdNum))
+            !(atsComplete || atsStream.isComplete || (!jobListingIdNum && jobId))
           }
           className="btn-primary flex items-center gap-2"
         >

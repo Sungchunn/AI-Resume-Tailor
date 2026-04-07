@@ -16,10 +16,10 @@ export default function ResumeEditPage({ params }: PageProps) {
   const searchParams = useSearchParams();
 
   // Get job context from query params (passed when navigating from job board)
-  // jobId = user-created job, jobListingId = scraped job listing
+  // jobId = user-created job (UUID), jobListingId = scraped job listing (integer)
   const jobIdParam = searchParams.get("jobId");
   const jobListingIdParam = searchParams.get("jobListingId");
-  const jobId = jobIdParam ? parseInt(jobIdParam, 10) : null;
+  const jobId = jobIdParam ?? null; // UUID string for user-created jobs
   const jobListingId = jobListingIdParam ? parseInt(jobListingIdParam, 10) : null;
   const { data: resume, isLoading, error, refetch } = useResume(resumeId);
   const updateResume = useUpdateResume();

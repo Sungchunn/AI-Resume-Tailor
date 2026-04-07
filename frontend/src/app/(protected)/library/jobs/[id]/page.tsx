@@ -11,14 +11,13 @@ interface PageProps {
 
 export default function JobDetailPage({ params }: PageProps) {
   const { id } = use(params);
-  const jobId = parseInt(id, 10);
   const router = useRouter();
-  const { data: job, isLoading, error } = useJob(jobId);
+  const { data: job, isLoading, error } = useJob(id);
   const deleteJob = useDeleteJob();
 
   const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this job description?")) {
-      await deleteJob.mutateAsync(jobId);
+      await deleteJob.mutateAsync(id);
       router.push("/library");
     }
   };
@@ -101,7 +100,7 @@ export default function JobDetailPage({ params }: PageProps) {
           </div>
           <div className="flex items-center gap-2">
             <Link
-              href={`/library/jobs/${jobId}/edit`}
+              href={`/library/jobs/${id}/edit`}
               className="btn-primary"
             >
               Edit

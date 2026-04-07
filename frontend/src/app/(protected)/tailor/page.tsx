@@ -26,7 +26,7 @@ function TailorPageContent() {
   const { data: jobListing, isLoading: jobListingLoading, error: jobListingError } = useJobListing(jobListingId ?? 0);
 
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
-  const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
 
   // Only show verified resumes for tailoring
   const verifiedResumes = resumes?.filter((r) => r.parsed_verified) ?? [];
