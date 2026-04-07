@@ -65,9 +65,9 @@ def upgrade():
     op.create_index('ix_resume_builds_public_id', 'resume_builds', ['public_id'], unique=True)
 ```
 
-2. Update models to include `public_id` field with default UUID generation
+1. Update models to include `public_id` field with default UUID generation
 
-### Files to Modify
+### Phase 1 Files to Modify
 
 - `/backend/app/models/job.py` - Add public_id column
 - `/backend/app/models/resume_build.py` - Add public_id column
@@ -90,7 +90,7 @@ async def get_by_public_id(self, db: AsyncSession, *, public_id: UUID) -> JobDes
     return result.scalar_one_or_none()
 ```
 
-2. Update route handlers to accept string IDs and resolve:
+1. Update route handlers to accept string IDs and resolve:
 
 ```python
 # /backend/app/api/routes/jobs.py
@@ -104,7 +104,7 @@ async def get_job(job_id: str, ...):
     return job
 ```
 
-3. Update response schemas to return `public_id` as `id`:
+1. Update response schemas to return `public_id` as `id`:
 
 ```python
 # /backend/app/schemas/job.py
@@ -114,7 +114,7 @@ class JobResponse(BaseModel):
     # ...
 ```
 
-### Files to Modify
+### Phase 2 Files to Modify
 
 - `/backend/app/crud/job.py` - Add get_by_public_id
 - `/backend/app/crud/resume_build.py` - Add get_by_public_id
@@ -128,9 +128,9 @@ class JobResponse(BaseModel):
 ## Phase 3: Update Frontend Routes
 
 1. Update API client to use new UUID-based endpoints
-2. Update Next.js dynamic routes (already accept strings, minimal changes)
+1. Update Next.js dynamic routes (already accept strings, minimal changes)
 
-### Files to Modify
+### Phase 3 Files to Modify
 
 - `/frontend/src/lib/api/client.ts` - Update job/resume-build endpoints
 - `/frontend/src/app/(protected)/library/jobs/[id]/page.tsx` - Verify compatibility
@@ -153,7 +153,7 @@ ALTER TABLE resume_builds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_job_interactions ENABLE ROW LEVEL SECURITY;
 ```
 
-2. Create policies using session variable:
+1. Create policies using session variable:
 
 ```sql
 -- Job descriptions: Owner-only access
@@ -163,7 +163,7 @@ USING (owner_id = current_setting('app.current_user_id', true)::int)
 WITH CHECK (owner_id = current_setting('app.current_user_id', true)::int);
 ```
 
-3. Set session variable before queries:
+1. Set session variable before queries:
 
 ```python
 # /backend/app/db/session.py - In get_db dependency
@@ -173,7 +173,7 @@ async def get_db_with_rls(user_id: int) -> AsyncGenerator[AsyncSession, None]:
         yield session
 ```
 
-### Files to Modify
+### Phase 4 Files to Modify
 
 - `/backend/app/db/session.py` - Add RLS session setup
 - `/backend/app/api/deps.py` - Update get_db dependency
