@@ -7,8 +7,9 @@ for all resume build-related operations.
 
 from datetime import datetime
 from typing import Any
+from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.protocols import DiffOperation, ResumeBuildStatus, SuggestionImpact
 
@@ -47,10 +48,15 @@ class ResumeBuildUpdate(BaseModel):
 
 
 class ResumeBuildResponse(ResumeBuildBase):
-    """Schema for resume build API responses."""
+    """
+    Schema for resume build API responses - uses public_id as 'id'.
 
-    id: str  # MongoDB ObjectId as string
-    user_id: int
+    Security: Never expose internal integer ID or user_id in public responses.
+    """
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    id: UUID = Field(validation_alias="public_id")
     status: str
     sections: dict[str, Any] = Field(default_factory=dict)
     section_order: list[str] = Field(default_factory=list)
@@ -58,8 +64,6 @@ class ResumeBuildResponse(ResumeBuildBase):
     created_at: datetime
     updated_at: datetime | None = None
     exported_at: datetime | None = None
-
-    model_config = {"from_attributes": True}
 
 
 class ResumeBuildListResponse(BaseModel):

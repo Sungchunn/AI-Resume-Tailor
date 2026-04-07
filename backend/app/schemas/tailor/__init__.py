@@ -8,6 +8,7 @@ Two Copies Architecture:
 
 from datetime import datetime
 from typing import Any
+from uuid import UUID
 
 from pydantic import BaseModel, computed_field, model_validator
 
@@ -249,11 +250,16 @@ class ParsedContentSchema(BaseModel):
 
 
 class TailorRequest(BaseModel):
-    """Request to tailor a resume for a job."""
+    """Request to tailor a resume for a job.
+
+    For job_id, accepts either:
+    - UUID string (preferred): "550e8400-e29b-41d4-a716-446655440000"
+    - Integer string (deprecated): "123"
+    """
 
     resume_id: str  # MongoDB ObjectId as string
-    job_id: int | None = None  # Postgres job_descriptions.id
-    job_listing_id: int | None = None  # Postgres job_listings.id
+    job_id: str | None = None  # Postgres job_descriptions.public_id (UUID or int string)
+    job_listing_id: int | None = None  # Postgres job_listings.id (system-wide, not user-owned)
     focus_keywords: list[str] | None = None  # User-selected keywords to emphasize
 
     @model_validator(mode="after")
@@ -267,11 +273,16 @@ class TailorRequest(BaseModel):
 
 
 class QuickMatchRequest(BaseModel):
-    """Request for quick match score without full tailoring."""
+    """Request for quick match score without full tailoring.
+
+    For job_id, accepts either:
+    - UUID string (preferred): "550e8400-e29b-41d4-a716-446655440000"
+    - Integer string (deprecated): "123"
+    """
 
     resume_id: str  # MongoDB ObjectId as string
-    job_id: int | None = None  # Postgres job_descriptions.id
-    job_listing_id: int | None = None  # Postgres job_listings.id
+    job_id: str | None = None  # Postgres job_descriptions.public_id (UUID or int string)
+    job_listing_id: int | None = None  # Postgres job_listings.id (system-wide, not user-owned)
 
     @model_validator(mode="after")
     def validate_job_source(self) -> "QuickMatchRequest":
@@ -325,7 +336,7 @@ class TailorResponse(BaseModel):
 
     id: str  # MongoDB ObjectId as string
     resume_id: str  # MongoDB ObjectId as string
-    job_id: int | None = None  # Postgres job_descriptions.id
+    job_id: UUID | None = None  # Postgres job_descriptions.public_id (UUID)
     job_listing_id: int | None = None  # Postgres job_listings.id
     tailored_data: dict[str, Any]  # Complete tailored resume (ParsedContent structure)
     status: TailoredResumeStatus
@@ -365,7 +376,7 @@ class TailoredResumeListResponse(BaseModel):
 
     id: str  # MongoDB ObjectId as string
     resume_id: str  # MongoDB ObjectId as string
-    job_id: int | None = None  # Postgres job_descriptions.id
+    job_id: UUID | None = None  # Postgres job_descriptions.public_id (UUID)
     job_listing_id: int | None = None  # Postgres job_listings.id
     status: TailoredResumeStatus
     match_score: float | None
@@ -387,7 +398,7 @@ class TailoredResumeFullResponse(BaseModel):
 
     id: str  # MongoDB ObjectId as string
     resume_id: str  # MongoDB ObjectId as string
-    job_id: int | None  # Postgres job_descriptions.id
+    job_id: UUID | None  # Postgres job_descriptions.public_id (UUID)
     job_listing_id: int | None  # Postgres job_listings.id
     tailored_data: dict[str, Any]
     finalized_data: dict[str, Any] | None
