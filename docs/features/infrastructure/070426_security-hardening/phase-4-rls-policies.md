@@ -2,7 +2,7 @@
 
 **Parent:** `master-plan.md`
 **Depends on:** `phase-3-frontend-update.md`
-**Status:** Not Started
+**Status:** Implemented
 
 ---
 
@@ -741,15 +741,15 @@ alembic downgrade -1
 
 ## Completion Checklist
 
-- [ ] Alembic migration created for RLS policies
-- [ ] Database session helper updated with RLS context
-- [ ] FastAPI dependency created for RLS sessions
-- [ ] Route handlers updated to use RLS dependency
-- [ ] Admin/bypass mechanism implemented
+- [x] Alembic migration created for RLS policies
+- [x] Database session helper updated with RLS context
+- [x] FastAPI dependency created for RLS sessions
+- [x] Route handlers updated to use RLS dependency
+- [x] Admin/bypass mechanism implemented (clear_rls_context function)
 - [ ] Performance verified (query plans, benchmarks)
-- [ ] RLS unit tests written and passing
-- [ ] Integration tests verified
-- [ ] Rollback procedure documented and tested
+- [x] RLS unit tests written and passing
+- [x] Integration tests verified
+- [x] Rollback procedure documented and tested
 
 ---
 
