@@ -15,6 +15,9 @@ from uuid import UUID
 from fastapi import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.job import JobDescription
+from app.models.resume_build import ResumeBuild
+
 logger = logging.getLogger("migration.uuid")
 
 
@@ -66,7 +69,7 @@ def add_deprecation_headers(response: Response, resource_type: str) -> None:
     """
     response.headers["Deprecation"] = "true"
     response.headers["Sunset"] = "2026-07-01"
-    response.headers["Link"] = f'</api/docs#uuid-migration>; rel="deprecation"'
+    response.headers["Link"] = '</api/docs#uuid-migration>; rel="deprecation"'
     response.headers["X-Deprecation-Notice"] = (
         f"Integer IDs for {resource_type} are deprecated. Please migrate to UUID format."
     )
@@ -101,8 +104,6 @@ async def resolve_job_id(
     Raises:
         IDResolutionError: If not found or not authorized
     """
-    from app.models.job import JobDescription
-
     parsed_id = parse_resource_id(id_string)
 
     if isinstance(parsed_id, UUID):
@@ -159,8 +160,6 @@ async def resolve_resume_build_id(
     Raises:
         IDResolutionError: If not found or not authorized
     """
-    from app.models.resume_build import ResumeBuild
-
     parsed_id = parse_resource_id(id_string)
 
     if isinstance(parsed_id, UUID):
