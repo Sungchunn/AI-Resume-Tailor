@@ -14,9 +14,9 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Response, status
 
-from app.api.deps import DatabaseSessions, get_current_user_id, get_databases
+from app.api.deps import CurrentUserId, DatabaseSessionsWithRLS
 from app.api.utils.id_resolution import (
     IDResolutionError,
     add_deprecation_headers,
@@ -82,8 +82,8 @@ def get_tailoring_service() -> TailoringService:
 async def tailor_resume(
     request: TailorRequest,
     response: Response,
-    dbs: DatabaseSessions = Depends(get_databases),
-    current_user_id: int = Depends(get_current_user_id),
+    dbs: DatabaseSessionsWithRLS,
+    current_user_id: CurrentUserId,
 ) -> TailorResponse:
     """Tailor a resume for a specific job using AI.
 
@@ -244,8 +244,8 @@ async def tailor_resume(
 async def quick_match(
     request: QuickMatchRequest,
     response: Response,
-    dbs: DatabaseSessions = Depends(get_databases),
-    current_user_id: int = Depends(get_current_user_id),
+    dbs: DatabaseSessionsWithRLS,
+    current_user_id: CurrentUserId,
 ) -> QuickMatchResponse:
     """Get a quick match score between a resume and job without full tailoring.
 
@@ -325,8 +325,8 @@ async def quick_match(
 @router.get("/{tailored_id}", response_model=TailoredResumeFullResponse)
 async def get_tailored_resume(
     tailored_id: str,
-    dbs: DatabaseSessions = Depends(get_databases),
-    current_user_id: int = Depends(get_current_user_id),
+    dbs: DatabaseSessionsWithRLS,
+    current_user_id: CurrentUserId,
 ) -> TailoredResumeFullResponse:
     """Get a tailored resume by ID.
 
@@ -411,8 +411,8 @@ async def get_tailored_resume(
 @router.get("/{tailored_id}/compare", response_model=TailoredResumeCompareResponse)
 async def get_compare_data(
     tailored_id: str,
-    dbs: DatabaseSessions = Depends(get_databases),
-    current_user_id: int = Depends(get_current_user_id),
+    dbs: DatabaseSessionsWithRLS,
+    current_user_id: CurrentUserId,
 ) -> TailoredResumeCompareResponse:
     """Get both original and tailored resume for frontend diffing.
 
@@ -454,8 +454,8 @@ async def get_compare_data(
 async def finalize_tailored_resume(
     tailored_id: str,
     request: TailoredResumeFinalizeRequest,
-    dbs: DatabaseSessions = Depends(get_databases),
-    current_user_id: int = Depends(get_current_user_id),
+    dbs: DatabaseSessionsWithRLS,
+    current_user_id: CurrentUserId,
 ) -> TailoredResumeFullResponse:
     """Finalize a tailored resume with user's approved changes.
 
@@ -527,8 +527,8 @@ async def finalize_tailored_resume(
 async def update_tailored_resume(
     tailored_id: str,
     request: TailoredResumeUpdateRequest,
-    dbs: DatabaseSessions = Depends(get_databases),
-    current_user_id: int = Depends(get_current_user_id),
+    dbs: DatabaseSessionsWithRLS,
+    current_user_id: CurrentUserId,
 ) -> TailoredResumeFullResponse:
     """Update a tailored resume's content, style settings, or section order."""
     pg = dbs["pg"]
@@ -597,8 +597,8 @@ async def list_tailored_resumes(
     status_filter: TailoredResumeStatus | None = None,
     skip: int = 0,
     limit: int = 100,
-    dbs: DatabaseSessions = Depends(get_databases),
-    current_user_id: int = Depends(get_current_user_id),
+    dbs: DatabaseSessionsWithRLS,
+    current_user_id: CurrentUserId,
 ) -> list[TailoredResumeListResponse]:
     """List tailored resumes, optionally filtered by resume, job, job listing, or status."""
     pg = dbs["pg"]
@@ -684,8 +684,8 @@ async def list_tailored_resumes(
 @router.delete("/{tailored_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_tailored_resume(
     tailored_id: str,
-    dbs: DatabaseSessions = Depends(get_databases),
-    current_user_id: int = Depends(get_current_user_id),
+    dbs: DatabaseSessionsWithRLS,
+    current_user_id: CurrentUserId,
 ) -> None:
     """Delete a tailored resume."""
     mongo = dbs["mongo"]
@@ -707,8 +707,8 @@ async def delete_tailored_resume(
 async def analyze_bullets(
     tailored_id: str,
     request: BulletAnalysisRequest,
-    dbs: DatabaseSessions = Depends(get_databases),
-    current_user_id: int = Depends(get_current_user_id),
+    dbs: DatabaseSessionsWithRLS,
+    current_user_id: CurrentUserId,
 ) -> AnalyzeBulletsResponse:
     """
     Analyze bullet points and suggest ATS-optimized improvements.

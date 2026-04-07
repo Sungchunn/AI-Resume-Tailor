@@ -10,12 +10,15 @@ Provides CRUD operations for resume builds and all related operations:
 Supports dual-lookup for resource IDs during migration:
 - UUID format (preferred): 550e8400-e29b-41d4-a716-446655440000
 - Integer format (deprecated): 123
+
+Security: Uses RLS-aware database sessions. PostgreSQL Row Level Security
+policies ensure users can only access their own resume builds at the database level.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user_id, get_db_session
+from app.api.deps import CurrentUserId, DBSessionWithRLS
 from app.api.utils.id_resolution import (
     IDResolutionError,
     add_deprecation_headers,
@@ -78,8 +81,8 @@ async def _resolve_build(
 @router.post("", response_model=ResumeBuildResponse, status_code=status.HTTP_201_CREATED)
 async def create_resume_build(
     resume_build_in: ResumeBuildCreate,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> ResumeBuildResponse:
     """
     Create a new resume build for tailoring a resume to a job.
@@ -100,11 +103,11 @@ async def create_resume_build(
 
 @router.get("", response_model=ResumeBuildListResponse)
 async def list_resume_builds(
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
     status_filter: str | None = Query(None, alias="status", description="Filter by status"),
     limit: int = Query(50, ge=1, le=200, description="Maximum results"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
 ) -> ResumeBuildListResponse:
     """
     List all resume builds for the current user.
@@ -147,8 +150,8 @@ async def list_resume_builds(
 async def get_resume_build(
     resume_build_id: str,
     response: Response,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> ResumeBuildResponse:
     """
     Get a single resume build by ID.
@@ -171,8 +174,8 @@ async def update_resume_build(
     resume_build_id: str,
     resume_build_in: ResumeBuildUpdate,
     response: Response,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> ResumeBuildResponse:
     """
     Update resume build basic information (job title, company, description).
@@ -202,8 +205,8 @@ async def update_resume_build(
 async def delete_resume_build(
     resume_build_id: str,
     response: Response,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> None:
     """Delete a resume build."""
     resume_build = await _resolve_build(db, resume_build_id, current_user_id, response)
@@ -226,8 +229,8 @@ async def generate_suggestions(
     resume_build_id: str,
     suggest_in: SuggestRequest,
     response: Response,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> SuggestResponse:
     """
     Generate AI suggestions for the resume build.
@@ -286,8 +289,8 @@ async def suggest_bullet(
     resume_build_id: str,
     request: BulletSuggestionRequest,
     response: Response,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> BulletSuggestionResponse:
     """
     Generate an AI suggestion for a single bullet point.
@@ -344,8 +347,8 @@ async def accept_diff(
     resume_build_id: str,
     action_in: DiffActionRequest,
     response: Response,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> DiffActionResponse:
     """
     Accept a pending diff suggestion.
@@ -393,8 +396,8 @@ async def reject_diff(
     resume_build_id: str,
     action_in: DiffActionRequest,
     response: Response,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> DiffActionResponse:
     """
     Reject a pending diff suggestion.
@@ -438,8 +441,8 @@ async def reject_diff(
 async def clear_diffs(
     resume_build_id: str,
     response: Response,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> ResumeBuildResponse:
     """Clear all pending diff suggestions."""
     resume_build_model = await _resolve_build(db, resume_build_id, current_user_id, response)
@@ -463,8 +466,8 @@ async def update_sections(
     resume_build_id: str,
     sections_in: UpdateSectionsRequest,
     response: Response,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> ResumeBuildResponse:
     """
     Update resume build sections.
@@ -494,8 +497,8 @@ async def update_status(
     resume_build_id: str,
     status_in: UpdateStatusRequest,
     response: Response,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> ResumeBuildResponse:
     """Update resume build status."""
     resume_build_model = await _resolve_build(db, resume_build_id, current_user_id, response)
@@ -520,8 +523,8 @@ async def export_resume_build(
     resume_build_id: str,
     export_in: ExportRequest,
     response: Response,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ):
     """
     Export resume build content to PDF, DOCX, TXT, or JSON.

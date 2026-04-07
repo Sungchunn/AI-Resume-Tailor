@@ -8,10 +8,9 @@ with job listings populated from external sources (Apify/n8n).
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import get_current_user_id, get_db_session
+from app.api.deps import CurrentUserId, DBSessionWithRLS
 from app.crud import job_listing_repository, user_job_interaction_repository
 from app.schemas.job_listing import (
     ApplicationStatus,
@@ -103,8 +102,8 @@ def _build_listing_response(
 
 @router.get("/filter-options", response_model=JobListingFilterOptionsResponse)
 async def get_filter_options(
-    db: AsyncSession = Depends(get_db_session),
-    _current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    _current_user_id: CurrentUserId,
 ) -> JobListingFilterOptionsResponse:
     """
     Get available filter options based on existing job data.
@@ -167,8 +166,8 @@ async def list_job_listings(
     limit: Annotated[int, Query(ge=1, le=100, description="Results per page")] = 20,
     offset: Annotated[int, Query(ge=0, description="Offset for pagination")] = 0,
     # Dependencies
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> JobListingListResponse:
     """
     List job listings with filtering and pagination.
@@ -234,8 +233,8 @@ async def search_job_listings(
     q: Annotated[str, Query(min_length=1, description="Search query")],
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> JobListingListResponse:
     """
     Full-text search for job listings.
@@ -278,8 +277,8 @@ async def search_job_listings(
 async def list_saved_jobs(
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> JobListingListResponse:
     """Get all saved jobs for the current user."""
     filters = JobListingFilters(
@@ -318,8 +317,8 @@ async def list_saved_jobs(
 async def list_applied_jobs(
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> JobListingListResponse:
     """Get all jobs the current user has applied to."""
     filters = JobListingFilters(
@@ -361,8 +360,8 @@ async def list_applied_jobs(
 
 @router.get("/kanban", response_model=KanbanBoardResponse)
 async def get_kanban_board(
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> KanbanBoardResponse:
     """
     Get the full Kanban board with all applied jobs grouped by status.
@@ -393,8 +392,8 @@ async def get_kanban_board(
 @router.put("/kanban/reorder", response_model=dict)
 async def reorder_kanban_column(
     request: ReorderKanbanRequest,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> dict:
     """
     Reorder jobs within a Kanban column.
@@ -414,8 +413,8 @@ async def reorder_kanban_column(
 @router.get("/{listing_id}", response_model=JobListingResponse)
 async def get_job_listing(
     listing_id: int,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> JobListingResponse:
     """
     Get a single job listing by ID.
@@ -441,8 +440,8 @@ async def get_job_listing(
 async def save_job_listing(
     listing_id: int,
     request: SaveJobRequest,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> JobInteractionActionResponse:
     """Save or unsave a job listing."""
     # Verify listing exists
@@ -469,8 +468,8 @@ async def save_job_listing(
 async def hide_job_listing(
     listing_id: int,
     request: HideJobRequest,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> JobInteractionActionResponse:
     """Hide or unhide a job listing."""
     # Verify listing exists
@@ -497,8 +496,8 @@ async def hide_job_listing(
 async def mark_job_applied(
     listing_id: int,
     request: ApplyJobRequest,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> JobInteractionActionResponse:
     """Mark a job listing as applied or unapplied."""
     # Verify listing exists
@@ -525,8 +524,8 @@ async def mark_job_applied(
 async def update_application_status(
     listing_id: int,
     request: UpdateApplicationStatusRequest,
-    db: AsyncSession = Depends(get_db_session),
-    current_user_id: int = Depends(get_current_user_id),
+    db: DBSessionWithRLS,
+    current_user_id: CurrentUserId,
 ) -> JobInteractionActionResponse:
     """
     Update the application status for a job listing (Kanban column).
