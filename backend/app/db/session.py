@@ -33,6 +33,10 @@ Base = declarative_base()
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Get database session WITHOUT RLS context.
+    Use for unauthenticated endpoints or admin operations.
+    """
     async with AsyncSessionLocal() as session:
         try:
             yield session
