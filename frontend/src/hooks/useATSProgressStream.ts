@@ -21,8 +21,8 @@ import { useATSProgressiveAnalysis } from "@/lib/api";
 
 interface LastAnalysisParams {
   resumeId: string;
-  jobId?: number;
-  jobListingId?: number;
+  jobId?: string; // UUID for user-created jobs
+  jobListingId?: number; // Integer for scraped job listings
 }
 
 // ============================================================================
@@ -69,7 +69,7 @@ export interface UseATSProgressStreamResult {
   /** Total elapsed time across all stages */
   totalElapsedMs: number;
   /** Start analysis with resume ID and job options */
-  start: (resumeId: string, options: { jobId?: number; jobListingId?: number; forceRefresh?: boolean }) => void;
+  start: (resumeId: string, options: { jobId?: string; jobListingId?: number; forceRefresh?: boolean }) => void;
   /** Retry the last analysis */
   retry: () => void;
   /** Abort current analysis */
@@ -144,7 +144,7 @@ export function useATSProgressStream(
   // ============================================================================
 
   const start = useCallback(
-    (resumeId: string, options: { jobId?: number; jobListingId?: number; forceRefresh?: boolean }) => {
+    (resumeId: string, options: { jobId?: string; jobListingId?: number; forceRefresh?: boolean }) => {
       // Store params for retry
       lastParamsRef.current = {
         resumeId,
