@@ -11,7 +11,7 @@ from sqlalchemy.pool import StaticPool
 # Disable rate limiting for tests
 os.environ["RATE_LIMIT_ENABLED"] = "false"
 
-from app.api.deps import get_current_user_id, get_db_session, get_mongo_db
+from app.api.deps import get_current_user_id, get_db_session, get_db_with_user_context, get_mongo_db
 from app.db.session import Base
 from app.main import app
 from app.models.user import User
@@ -113,6 +113,7 @@ async def client(db_session: AsyncSession, mongo_db):
         return mongo_db
 
     app.dependency_overrides[get_db_session] = override_get_db
+    app.dependency_overrides[get_db_with_user_context] = override_get_db  # RLS-aware dependency uses same mock
     app.dependency_overrides[get_current_user_id] = override_get_current_user_id
     app.dependency_overrides[get_mongo_db] = override_get_mongo_db
 
