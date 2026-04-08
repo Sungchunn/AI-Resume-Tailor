@@ -8,7 +8,7 @@
 | Backend | FastAPI + Python | DigitalOcean droplet ($6/mo) | $6/mo |
 | Relational DB | PostgreSQL | Supabase (free tier, 500MB) | $0/mo |
 | Document DB | MongoDB | Atlas (free tier, 512MB) | $0/mo |
-| Cache | Redis | Upstash (free tier, 10k cmd/day) | $0/mo |
+| Cache | Redis | Self-hosted on droplet (or Upstash) | $0/mo |
 | AI | TBD (OpenAI / Gemini) | API keys | Usage-based |
 | **Total** | | | **~$6/mo** |
 
@@ -65,25 +65,43 @@
 
 ---
 
-## Phase 2: Redis (Upstash)
+## Phase 2: Redis (Self-Hosted on Droplet)
+
+**Recommended:** Self-hosted Redis on the same droplet as FastAPI. No external dependencies, no rate limits, better latency.
+
+See: `docs/features/infrastructure/080426_redis-self-hosted-migration/implementation-record.md` for detailed setup.
+
+**Quick setup:**
+
+```bash
+# Install Redis
+sudo apt update && sudo apt install redis-server -y
+
+# Configure memory limit (edit /etc/redis/redis.conf)
+# Add: maxmemory 256mb
+# Add: maxmemory-policy allkeys-lru
+
+# Start and enable
+sudo systemctl enable redis-server
+sudo systemctl start redis-server
+
+# Test
+redis-cli ping  # Should return PONG
+```
+
+**Connection string:** `redis://localhost:6379`
+
+### Alternative: Upstash (Managed Redis)
+
+If you prefer managed Redis, use Upstash:
 
 **Platform:** <https://upstash.com>
 
 1. Sign up / log in
-2. Create a new Redis database
-3. Pick region: Singapore (closest to your DO droplet)
-4. Select the free tier
-5. On the database detail page, copy the connection string:
+2. Create a new Redis database (Singapore region)
+3. Copy connection string: `rediss://default:[PASSWORD]@[ENDPOINT].upstash.io:6379`
 
-   ```text
-   rediss://default:[PASSWORD]@[ENDPOINT].upstash.io:6379
-   ```
-
-6. Also note the REST API URL and token (Upstash offers both standard Redis protocol and HTTP-based access)
-
-**Free tier limits:** 10,000 commands/day, 256MB storage, 1 connection at a time.
-
-**Test it:** Use the Upstash web console to SET/GET a test key.
+**Free tier limits:** 10,000 commands/day, 256MB storage.
 
 ---
 
