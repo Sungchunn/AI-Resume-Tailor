@@ -6,6 +6,7 @@ import type {
   JobCreate,
   JobUpdate,
   JobResponse,
+  JobListResponse,
   TailorRequest,
   TailorResponse,
   QuickMatchRequest,
@@ -435,7 +436,7 @@ export const resumeApi = {
 
 // Job API
 export const jobApi = {
-  list: (skip = 0, limit = 100): Promise<JobResponse[]> =>
+  list: (skip = 0, limit = 100): Promise<JobListResponse> =>
     fetchApi(`/api/jobs?skip=${skip}&limit=${limit}`),
 
   get: (id: string): Promise<JobResponse> =>

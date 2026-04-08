@@ -30,10 +30,11 @@ function TailorPageContent() {
 
   // Only show verified resumes for tailoring
   const verifiedResumes = resumes?.filter((r) => r.parsed_verified) ?? [];
+  const jobItems = jobs?.items ?? [];
   const selectedResume = verifiedResumes.find((r) => r.id === selectedResumeId);
-  const selectedJob = jobs?.find((j) => j.id === selectedJobId);
+  const selectedJob = jobItems.find((j) => j.id === selectedJobId);
   const hasResumes = verifiedResumes.length > 0;
-  const hasJobs = jobs && jobs.length > 0;
+  const hasJobs = jobItems.length > 0;
 
   // Check if we have a valid job listing from URL
   const hasJobListingFromUrl = !!jobListingId && !!jobListing && !jobListingError;
@@ -304,7 +305,7 @@ function TailorPageContent() {
                   </Link>
                 </div>
                 <div className="space-y-2 max-h-100 overflow-y-auto">
-                  {jobs?.map((job) => (
+                  {jobItems.map((job) => (
                     <button
                       key={job.id}
                       onClick={() => setSelectedJobId(job.id)}

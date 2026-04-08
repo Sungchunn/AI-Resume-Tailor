@@ -147,6 +147,13 @@ export interface JobResponse extends JobBase {
   updated_at?: string | null;
 }
 
+export interface JobListResponse {
+  items: JobResponse[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
 export interface ApiError {
   detail: string;
 }
