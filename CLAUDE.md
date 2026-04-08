@@ -504,7 +504,7 @@ Tailwind v3+ provides shorter aliases for many utility classes. Always use the c
 
 ```tsx
 // WRONG - Legacy class names
-<div className="flex-shrink-0 flex-grow">
+<div className="shrink-0 grow">
 
 // CORRECT - Canonical class names
 <div className="shrink-0 grow">
