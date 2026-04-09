@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useBlockEditor } from "@/components/library/editor/BlockEditorContext";
 import {
@@ -12,7 +12,9 @@ import {
   usePendingSuggestions,
   type BulletSuggestion,
 } from "@/lib/stores/bulletSuggestionsStore";
-import { tailorApi } from "@/lib/api/client";
+import { useATSProgressStore } from "@/lib/stores/atsProgressStore";
+import { tailorApi, atsApi } from "@/lib/api/client";
+import { blocksToContent } from "@/lib/tailoring/blocksToContent";
 import type {
   BulletInput,
   BulletEntryContext,
@@ -55,6 +57,11 @@ interface UseBulletAnalysisReturn {
   handleAiReviewReject: () => void;
   aiReviewActive: boolean;
   aiReviewComplete: boolean;
+
+  // ATS re-score state
+  preAnalysisScore: number | null;
+  postScore: number | null;
+  isRescoring: boolean;
 
   // Utilities
   getSuggestionForBullet: (bulletId: string) => BulletSuggestion | undefined;
@@ -196,12 +203,31 @@ export function useBulletAnalysis({
     return map;
   }, [pendingSuggestions]);
 
+  // Store action: capture pre-analysis score
+  const setPreAnalysisScore = useBulletSuggestionsStore(
+    (s) => s.setPreAnalysisScore
+  );
+
+  // ATS re-score state
+  const [postScore, setPostScore] = useState<number | null>(null);
+  const [isRescoring, setIsRescoring] = useState(false);
+
   // Action: analyze bullets
   const analyze = useCallback(async () => {
     if (!atsContext?.analysisComplete) {
       setError("Run ATS analysis first");
       return;
     }
+
+    // Capture current ATS score for delta display
+    const currentScore =
+      useATSProgressStore.getState().compositeScore?.finalScore ?? null;
+    if (currentScore !== null) {
+      setPreAnalysisScore(Math.round(currentScore));
+    }
+
+    // Reset post-score from any previous run
+    setPostScore(null);
 
     setAnalyzing(true);
     setError(null);
@@ -262,6 +288,7 @@ export function useBulletAnalysis({
     setAnalyzing,
     setSuggestions,
     setError,
+    setPreAnalysisScore,
   ]);
 
   // Action: accept suggestion - update the bullet in the editor
@@ -371,6 +398,7 @@ export function useBulletAnalysis({
   // AI review state
   const aiReviewActive = useBulletSuggestionsStore((s) => s.aiReviewActive);
   const aiReviewComplete = useBulletSuggestionsStore((s) => s.aiReviewComplete);
+  const preAnalysisScore = useBulletSuggestionsStore((s) => s.preAnalysisScore);
 
   // AI review: accept current suggestion and advance
   const handleAiReviewAccept = useCallback(async () => {
@@ -425,6 +453,42 @@ export function useBulletAnalysis({
     };
   }, [aiReviewActive, handleAiReviewAccept, handleAiReviewReject]);
 
+  // ATS re-score after AI review completes
+  const acceptedCount = useBulletSuggestionsStore(
+    (s) => s.suggestions.filter((s) => s.status === "accepted").length
+  );
+
+  useEffect(() => {
+    if (!aiReviewComplete || acceptedCount === 0) return;
+
+    const rescore = async () => {
+      setIsRescoring(true);
+      try {
+        if (!tailorContext?.jobDescription) return;
+
+        const content = blocksToContent(blocks);
+
+        const response = await atsApi.analyzeContent({
+          resume_content: content,
+          job_description: tailorContext.jobDescription,
+        });
+
+        setPostScore(Math.round(response.final_score));
+
+        // Mark ATS store as stale so the ATS tab shows re-analyze banner
+        useATSProgressStore.getState().markContentStale();
+      } catch (err) {
+        console.error("ATS re-score failed:", err);
+        // Don't block completion summary — just skip score display
+      } finally {
+        setIsRescoring(false);
+      }
+    };
+
+    rescore();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiReviewComplete, acceptedCount]);
+
   // Utility: get suggestion for specific bullet
   const getSuggestionForBullet = useCallback(
     (bulletId: string) => {
@@ -450,6 +514,9 @@ export function useBulletAnalysis({
     handleAiReviewReject,
     aiReviewActive,
     aiReviewComplete,
+    preAnalysisScore,
+    postScore,
+    isRescoring,
     getSuggestionForBullet,
   };
 }
