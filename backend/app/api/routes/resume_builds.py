@@ -19,7 +19,6 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUserId, DBSessionWithRLS
-from app.services.ai import get_usage_tracker
 from app.api.utils.id_resolution import (
     IDResolutionError,
     add_deprecation_headers,
@@ -43,6 +42,7 @@ from app.schemas.resume_build import (
     UpdateSectionsRequest,
     UpdateStatusRequest,
 )
+from app.services.ai import get_usage_tracker
 
 router = APIRouter()
 
