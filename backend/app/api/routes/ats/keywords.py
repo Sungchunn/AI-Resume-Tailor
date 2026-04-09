@@ -36,7 +36,9 @@ from app.schemas.ats import (
     # New schemas for keyword review
     KeywordWithContext,
 )
-from app.services.job.ats import get_ats_analyzer
+from app.api.deps import resolve_ai_model
+from app.services.ai.client import get_ai_client_for_model
+from app.services.job.ats import create_ats_analyzer, get_ats_analyzer
 from app.services.job.ats.analyzers.keyword.extractor import KeywordExtractor
 
 router = APIRouter()
@@ -57,7 +59,9 @@ async def analyze_keywords(
     - Keywords matched in resume
     - Keywords missing from resume
     """
-    analyzer = get_ats_analyzer()
+    model = await resolve_ai_model(user_id, db, "ats")
+    ai_client = get_ai_client_for_model(model)
+    analyzer = create_ats_analyzer(ai_client=ai_client)
 
     # Get resume content
     if not request.resume_content:
@@ -68,10 +72,24 @@ async def analyze_keywords(
 
     resume_blocks = [{"content": request.resume_content, "id": 0}]
 
-    result = await analyzer.analyze_keywords(
+    result, ai_metrics = await analyzer.analyze_keywords(
         resume_blocks=resume_blocks,
         job_description=request.job_description,
+        return_metrics=True,
     )
+
+    # Log AI usage
+    if ai_metrics:
+        from app.services.ai import get_usage_tracker
+
+        usage_tracker = get_usage_tracker()
+        await usage_tracker.log_generation(
+            db=db,
+            user_id=user_id,
+            endpoint="/ats/keywords",
+            response=ai_metrics,
+        )
+        await db.commit()
 
     return ATSKeywordResponse(
         keyword_coverage=result.keyword_coverage,
@@ -99,7 +117,9 @@ async def analyze_keywords_detailed(
 
     Use this for the ATS Keywords Panel in the resume editor.
     """
-    analyzer = get_ats_analyzer()
+    model = await resolve_ai_model(user_id, db, "ats")
+    ai_client = get_ai_client_for_model(model)
+    analyzer = create_ats_analyzer(ai_client=ai_client)
 
     # Determine resume content source
     if not request.resume_content:
@@ -110,10 +130,24 @@ async def analyze_keywords_detailed(
 
     resume_blocks = [{"content": request.resume_content, "id": 0}]
 
-    result = await analyzer.analyze_keywords_detailed(
+    result, ai_metrics = await analyzer.analyze_keywords_detailed(
         resume_blocks=resume_blocks,
         job_description=request.job_description,
+        return_metrics=True,
     )
+
+    # Log AI usage
+    if ai_metrics:
+        from app.services.ai import get_usage_tracker
+
+        usage_tracker = get_usage_tracker()
+        await usage_tracker.log_generation(
+            db=db,
+            user_id=user_id,
+            endpoint="/ats/keywords/detailed",
+            response=ai_metrics,
+        )
+        await db.commit()
 
     # Convert KeywordDetail dataclasses to response models
     all_keywords = [
@@ -191,7 +225,9 @@ async def analyze_keywords_enhanced(
     - Gap analysis prioritized by importance
     - Actionable suggestions for improvement
     """
-    analyzer = get_ats_analyzer()
+    model = await resolve_ai_model(user_id, db, "ats")
+    ai_client = get_ai_client_for_model(model)
+    analyzer = create_ats_analyzer(ai_client=ai_client)
 
     # Get parsed resume (resume_id lookup removed - use progressive endpoint for DB lookups)
     if request.resume_content:
@@ -203,10 +239,24 @@ async def analyze_keywords_enhanced(
         )
 
     # Perform enhanced keyword analysis
-    result = await analyzer.analyze_keywords_enhanced(
+    result, ai_metrics = await analyzer.analyze_keywords_enhanced(
         parsed_resume=parsed_resume,
         job_description=request.job_description,
+        return_metrics=True,
     )
+
+    # Log AI usage
+    if ai_metrics:
+        from app.services.ai import get_usage_tracker
+
+        usage_tracker = get_usage_tracker()
+        await usage_tracker.log_generation(
+            db=db,
+            user_id=user_id,
+            endpoint="/ats/keywords/enhanced",
+            response=ai_metrics,
+        )
+        await db.commit()
 
     # Convert dataclasses to response models
     all_keywords = [
@@ -315,7 +365,9 @@ async def extract_keywords_with_context(
     Use this before the keyword review step to show users what
     keywords were extracted and where they appear.
     """
-    extractor = KeywordExtractor()
+    model = await resolve_ai_model(user_id, db, "ats")
+    ai_client = get_ai_client_for_model(model)
+    extractor = KeywordExtractor(ai_client=ai_client)
 
     # Extract keywords with context and metrics
     keywords_data, ai_metrics = await extractor.extract_keywords_with_context(
