@@ -426,14 +426,14 @@ export function ATSEvaluationTab({
     runAnalysisRef.current = runAnalysis;
   }, [runAnalysis]);
 
-  // Auto-run analysis when job description is loaded or resume changes
-  // Use ref to avoid effect re-running when runAnalysis callback changes
+  // Auto-run analysis only on first load (when no analysis exists yet).
+  // Subsequent re-analysis is manual via the "Re-analyze" button.
   useEffect(() => {
-    if (jobDescription && jobDescription.length >= 50) {
+    if (jobDescription && jobDescription.length >= 50 && !analysis) {
       const timeoutId = setTimeout(() => runAnalysisRef.current(), 1000);
       return () => clearTimeout(timeoutId);
     }
-  }, [jobDescription, resumeContent]);
+  }, [jobDescription, analysis]);
 
   // Detect content changes after analysis and mark as stale
   useEffect(() => {
