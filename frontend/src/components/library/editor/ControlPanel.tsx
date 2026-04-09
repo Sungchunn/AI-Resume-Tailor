@@ -62,14 +62,20 @@ export function ControlPanel({ jobId, jobListingId, tailoredResumeId }: ControlP
         />
       </div>
 
-      {/* Tab Content */}
+      {/* Tab Content — all tabs stay mounted to preserve state; inactive tabs are hidden */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === "ai" && <AIChatTab jobId={jobId} jobListingId={jobListingId} tailoredResumeId={tailoredResumeId} />}
-        {activeTab === "ats" && (
+        <div className={`h-full ${activeTab === "ai" ? "" : "hidden"}`}>
+          <AIChatTab jobId={jobId} jobListingId={jobListingId} tailoredResumeId={tailoredResumeId} />
+        </div>
+        <div className={`h-full ${activeTab === "ats" ? "" : "hidden"}`}>
           <ATSEvaluationTab jobId={jobId} jobListingId={jobListingId} />
-        )}
-        {activeTab === "formatting" && <FormattingTab />}
-        {activeTab === "sections" && <SectionDraggerTab />}
+        </div>
+        <div className={`h-full ${activeTab === "formatting" ? "" : "hidden"}`}>
+          <FormattingTab />
+        </div>
+        <div className={`h-full ${activeTab === "sections" ? "" : "hidden"}`}>
+          <SectionDraggerTab />
+        </div>
       </div>
     </div>
   );
