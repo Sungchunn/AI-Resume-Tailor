@@ -71,7 +71,7 @@ interface UseBulletAnalysisReturn {
 // Helper Functions
 // ============================================================================
 
-function collectBulletsFromBlocks(blocks: AnyResumeBlock[]): BulletInput[] {
+export function collectBulletsFromBlocks(blocks: AnyResumeBlock[]): BulletInput[] {
   const bullets: BulletInput[] = [];
 
   for (const block of blocks) {
@@ -129,7 +129,7 @@ function collectBulletsFromBlocks(blocks: AnyResumeBlock[]): BulletInput[] {
   return bullets;
 }
 
-function buildImportanceMap(gaps: KeywordGapItem[]): Record<string, string> {
+export function buildImportanceMap(gaps: KeywordGapItem[]): Record<string, string> {
   return gaps.reduce(
     (acc, g) => {
       acc[g.keyword] = g.importance;
@@ -139,7 +139,7 @@ function buildImportanceMap(gaps: KeywordGapItem[]): Record<string, string> {
   );
 }
 
-function findEntryContext(
+export function findEntryContext(
   bullets: BulletInput[],
   bulletId: string
 ): { title: string; company: string; dateRange: string } {
