@@ -225,6 +225,7 @@ export function BulletList({
                   onChange={(e) => updateBullet(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(e, bulletId)}
                   placeholder={placeholder}
+                  data-ai-review-bullet={isAiReviewTarget ? "true" : undefined}
                   className="flex-1 px-3 py-2 text-sm border border-border rounded-md
                     focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
                     hover:border-input transition-colors"

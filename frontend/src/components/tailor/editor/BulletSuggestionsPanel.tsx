@@ -247,8 +247,8 @@ export function BulletSuggestionsPanel({
         {/* Current suggestion card */}
         <BulletSuggestionCard
           suggestion={currentSuggestion}
-          onAccept={() => handleAiReviewAccept(currentSuggestion.id)}
-          onReject={() => handleAiReviewReject(currentSuggestion.id)}
+          onAccept={() => handleAiReviewAccept()}
+          onReject={() => handleAiReviewReject()}
           isFirst={true}
         />
 
