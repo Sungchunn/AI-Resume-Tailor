@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user_id, get_db, get_mongo_db
+from app.api.deps import get_current_user_id, get_db, get_mongo_db, resolve_ai_model
 from app.crud.mongo import keyword_override_crud
 from app.models.mongo.keyword_override import (
     KeywordEntry,
@@ -36,7 +36,6 @@ from app.schemas.ats import (
     # New schemas for keyword review
     KeywordWithContext,
 )
-from app.api.deps import resolve_ai_model
 from app.services.ai.client import get_ai_client_for_model
 from app.services.job.ats import create_ats_analyzer, get_ats_analyzer
 from app.services.job.ats.analyzers.keyword.extractor import KeywordExtractor

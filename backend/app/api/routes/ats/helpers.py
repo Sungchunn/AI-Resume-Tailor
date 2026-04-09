@@ -8,6 +8,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import resolve_ai_model
 from app.api.routes.ats.content_quality import analyze_content_quality
 
 # Import endpoint functions from stage modules
@@ -22,7 +23,6 @@ from app.schemas.ats import (
     KnockoutCheckRequest,
     RoleProximityRequest,
 )
-from app.api.deps import resolve_ai_model
 from app.services.ai.client import get_ai_client_for_model
 from app.services.ai.response import AIResponse
 from app.services.job.ats import create_ats_analyzer
