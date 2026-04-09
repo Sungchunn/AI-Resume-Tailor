@@ -45,6 +45,7 @@ import type {
   ScraperRequestRejectRequest,
   GenerateAboutMeRequest,
   UpdateProfileRequest,
+  AIPreferencesUpdate,
 } from "./types";
 
 // Query Keys
@@ -115,6 +116,7 @@ export const queryKeys = {
   profile: {
     all: ["profile"] as const,
     aboutMe: () => [...queryKeys.profile.all, "aboutMe"] as const,
+    aiPreferences: () => [...queryKeys.profile.all, "aiPreferences"] as const,
   },
   aiUsage: {
     all: ["aiUsage"] as const,
@@ -1038,6 +1040,28 @@ export function useUpdateProfile() {
     onSuccess: () => {
       // Invalidate profile queries to show updated data
       queryClient.invalidateQueries({ queryKey: queryKeys.profile.all });
+    },
+  });
+}
+
+// AI Model Preferences Hooks
+export function useAIPreferences() {
+  return useQuery({
+    queryKey: queryKeys.profile.aiPreferences(),
+    queryFn: () => profileApi.getAIPreferences(),
+  });
+}
+
+export function useUpdateAIPreferences() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: AIPreferencesUpdate) =>
+      profileApi.updateAIPreferences(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.profile.aiPreferences(),
+      });
     },
   });
 }

@@ -96,6 +96,8 @@ import type {
   UserUsageResponse,
   TimeSeriesResponse,
   PricingConfigResponse,
+  AIPreferencesResponse,
+  AIPreferencesUpdate,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -350,6 +352,17 @@ export const profileApi = {
   updateProfile: (data: UpdateProfileRequest): Promise<ProfileResponse> =>
     fetchApi("/api/v1/profile", {
       method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  getAIPreferences: (): Promise<AIPreferencesResponse> =>
+    fetchApi("/api/v1/profile/ai-preferences"),
+
+  updateAIPreferences: (
+    data: AIPreferencesUpdate
+  ): Promise<AIPreferencesResponse> =>
+    fetchApi("/api/v1/profile/ai-preferences", {
+      method: "PUT",
       body: JSON.stringify(data),
     }),
 };

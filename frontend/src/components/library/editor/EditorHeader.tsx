@@ -2,6 +2,7 @@
 
 import { ArrowLeft, Save, Download, Undo2, Redo2 } from "lucide-react";
 import Link from "next/link";
+import { AIModelSelector } from "./AIModelSelector";
 import { useBlockEditor } from "./BlockEditorContext";
 import { ParseResumeButton } from "./ParseResumeButton";
 
@@ -100,6 +101,9 @@ export function EditorHeader({
             <Redo2 className="w-4 h-4" />
           </button>
         </div>
+
+        {/* AI Model Selector */}
+        <AIModelSelector />
 
         {/* Parse Button */}
         {hasRawContent && (

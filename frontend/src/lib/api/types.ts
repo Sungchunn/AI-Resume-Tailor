@@ -64,6 +64,23 @@ export interface ProfileResponse {
   timezone?: string | null;
 }
 
+// AI Model Preferences
+export interface AIModel {
+  id: string;
+  name: string;
+  description: string;
+  provider: string;
+}
+
+export interface AIPreferencesResponse {
+  preferred_model: string | null;
+  available_models: AIModel[];
+}
+
+export interface AIPreferencesUpdate {
+  preferred_model: string | null;
+}
+
 export interface Token {
   access_token: string;
   refresh_token: string;
