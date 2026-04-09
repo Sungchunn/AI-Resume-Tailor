@@ -9,6 +9,7 @@ import { bulletsToStrings, stringsToBullets } from "@/lib/resume/bulletHelpers";
 interface ProjectsEditorProps {
   content: ProjectEntry[];
   onChange: (content: ProjectEntry[]) => void;
+  blockId?: string;
 }
 
 /**
@@ -16,7 +17,7 @@ interface ProjectsEditorProps {
  *
  * Each entry has: name, description, technologies, URL, dates, bullets.
  */
-export function ProjectsEditor({ content, onChange }: ProjectsEditorProps) {
+export function ProjectsEditor({ content, onChange, blockId }: ProjectsEditorProps) {
   const createDefaultEntry = useCallback(
     (): ProjectEntry => ({
       id: nanoid(),
@@ -39,7 +40,7 @@ export function ProjectsEditor({ content, onChange }: ProjectsEditorProps) {
   const renderEntry = useCallback(
     (
       entry: ProjectEntry,
-      _index: number,
+      index: number,
       onUpdate: (updates: Partial<ProjectEntry>) => void
     ) => (
       <div className="space-y-4">
@@ -104,10 +105,12 @@ export function ProjectsEditor({ content, onChange }: ProjectsEditorProps) {
           placeholder="Highlight a key achievement..."
           hint="Optional - Add notable accomplishments or metrics"
           maxBullets={5}
+          blockId={blockId}
+          entryIndex={index}
         />
       </div>
     ),
-    []
+    [blockId]
   );
 
   return (

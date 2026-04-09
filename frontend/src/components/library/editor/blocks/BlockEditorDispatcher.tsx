@@ -64,6 +64,7 @@ export function BlockEditorDispatcher({ block }: BlockEditorDispatcherProps) {
         <ExperienceEditor
           content={block.content}
           onChange={handleChange}
+          blockId={block.id}
         />
       );
 
@@ -96,6 +97,7 @@ export function BlockEditorDispatcher({ block }: BlockEditorDispatcherProps) {
         <ProjectsEditor
           content={block.content}
           onChange={handleChange}
+          blockId={block.id}
         />
       );
 

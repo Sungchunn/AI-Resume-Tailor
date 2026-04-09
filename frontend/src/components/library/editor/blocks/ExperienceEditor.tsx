@@ -13,6 +13,7 @@ import {
 interface ExperienceEditorProps {
   content: ExperienceEntry[];
   onChange: (content: ExperienceEntry[]) => void;
+  blockId?: string;
 }
 
 /**
@@ -20,7 +21,7 @@ interface ExperienceEditorProps {
  *
  * Each entry has: title, company, location, dates, and bullet points.
  */
-export function ExperienceEditor({ content, onChange }: ExperienceEditorProps) {
+export function ExperienceEditor({ content, onChange, blockId }: ExperienceEditorProps) {
   const createDefaultEntry = useCallback(
     (): ExperienceEntry => ({
       id: nanoid(),
@@ -45,7 +46,7 @@ export function ExperienceEditor({ content, onChange }: ExperienceEditorProps) {
   const renderEntry = useCallback(
     (
       entry: ExperienceEntry,
-      _index: number,
+      index: number,
       onUpdate: (updates: Partial<ExperienceEntry>) => void
     ) => (
       <div className="space-y-4">
@@ -97,10 +98,12 @@ export function ExperienceEditor({ content, onChange }: ExperienceEditorProps) {
           placeholder="Describe an achievement or responsibility..."
           hint="Start each bullet with an action verb (Led, Developed, Improved...)"
           maxBullets={8}
+          blockId={blockId}
+          entryIndex={index}
         />
       </div>
     ),
-    []
+    [blockId]
   );
 
   return (

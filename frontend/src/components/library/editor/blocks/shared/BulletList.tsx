@@ -1,8 +1,11 @@
 "use client";
 
-import { useCallback, useRef, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, type KeyboardEvent } from "react";
 import { Plus, X, GripVertical, Sparkles } from "lucide-react";
 import { nanoid } from "nanoid";
+import { cn } from "@/lib/utils";
+import { useCurrentAiReviewSuggestion } from "@/lib/stores/bulletSuggestionsStore";
+import { AiReviewDiffOverlay } from "@/components/tailor/editor/AiReviewDiffOverlay";
 
 interface BulletListProps {
   label?: string;
@@ -36,6 +39,10 @@ export function BulletList({
   blockId,
   entryIndex,
 }: BulletListProps) {
+  // AI review overlay
+  const aiReviewSuggestion = useCurrentAiReviewSuggestion();
+  const aiReviewTargetRef = useRef<HTMLDivElement>(null);
+
   // Use Map for refs keyed by stable IDs instead of array indices
   const inputRefs = useRef<Map<string, HTMLInputElement | null>>(new Map());
   // Stable IDs for each bullet - survives additions/removals
@@ -140,6 +147,17 @@ export function BulletList({
     [onChange, maxBullets, removeBullet]
   );
 
+  // Auto-scroll when this BulletList contains the AI review target
+  const aiReviewTargetBulletId = aiReviewSuggestion?.bulletId ?? null;
+  useEffect(() => {
+    if (aiReviewTargetBulletId && aiReviewTargetRef.current) {
+      aiReviewTargetRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [aiReviewTargetBulletId]);
+
   const canAddMore = bullets.length < maxBullets;
 
   return (
@@ -162,53 +180,70 @@ export function BulletList({
           const hasSuggestion = suggestionBulletId
             ? suggestionIndicators?.get(suggestionBulletId) ?? false
             : false;
+          const isAiReviewTarget =
+            aiReviewSuggestion &&
+            suggestionBulletId &&
+            aiReviewSuggestion.bulletId === suggestionBulletId;
 
           return (
-            <div key={bulletId} className="flex items-start gap-2 group relative">
-              {/* AI Suggestion Indicator */}
-              {hasSuggestion && suggestionBulletId && (
+            <div key={bulletId}>
+              <div
+                ref={isAiReviewTarget ? aiReviewTargetRef : undefined}
+                className={cn(
+                  "flex items-start gap-2 group relative",
+                  isAiReviewTarget && "ring-2 ring-blue-500 ring-offset-2 rounded-md"
+                )}
+              >
+                {/* AI Suggestion Indicator */}
+                {hasSuggestion && suggestionBulletId && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onIndicatorClick?.(suggestionBulletId);
+                    }}
+                    className="absolute -left-6 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-600 transition-colors"
+                    title="AI suggestion available"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                  </button>
+                )}
+                <div className="pt-2.5 text-muted-foreground/60 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity">
+                  <GripVertical className="w-4 h-4" />
+                </div>
+                <span className="pt-2.5 text-muted-foreground/60 select-none">•</span>
+                <input
+                  ref={(el) => {
+                    if (el) {
+                      inputRefs.current.set(bulletId, el);
+                    } else {
+                      inputRefs.current.delete(bulletId);
+                    }
+                  }}
+                  type="text"
+                  value={bullet}
+                  onChange={(e) => updateBullet(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, bulletId)}
+                  placeholder={placeholder}
+                  className="flex-1 px-3 py-2 text-sm border border-border rounded-md
+                    focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
+                    hover:border-input transition-colors"
+                />
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onIndicatorClick?.(suggestionBulletId);
-                  }}
-                  className="absolute -left-6 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-600 transition-colors"
-                  title="AI suggestion available"
+                  onClick={() => removeBullet(index)}
+                  className="p-2 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 rounded-md
+                    opacity-0 group-hover:opacity-100 transition-all"
+                  aria-label="Remove bullet"
                 >
-                  <Sparkles className="h-4 w-4" />
+                  <X className="w-4 h-4" />
                 </button>
-              )}
-              <div className="pt-2.5 text-muted-foreground/60 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity">
-                <GripVertical className="w-4 h-4" />
               </div>
-              <span className="pt-2.5 text-muted-foreground/60 select-none">•</span>
-              <input
-                ref={(el) => {
-                  if (el) {
-                    inputRefs.current.set(bulletId, el);
-                  } else {
-                    inputRefs.current.delete(bulletId);
-                  }
-                }}
-                type="text"
-                value={bullet}
-                onChange={(e) => updateBullet(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, bulletId)}
-                placeholder={placeholder}
-                className="flex-1 px-3 py-2 text-sm border border-border rounded-md
-                  focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
-                  hover:border-input transition-colors"
-              />
-              <button
-                type="button"
-                onClick={() => removeBullet(index)}
-                className="p-2 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 rounded-md
-                  opacity-0 group-hover:opacity-100 transition-all"
-                aria-label="Remove bullet"
-              >
-                <X className="w-4 h-4" />
-              </button>
+
+              {/* AI review diff overlay */}
+              {isAiReviewTarget && (
+                <AiReviewDiffOverlay suggestion={aiReviewSuggestion} />
+              )}
             </div>
           );
         })}
