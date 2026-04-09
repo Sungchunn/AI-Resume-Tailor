@@ -9,6 +9,11 @@ import {
 
 import { useBulletAnalysis } from "@/hooks/useBulletAnalysis";
 import { useATSReadiness } from "@/components/tailor/editor/TailorEditorContext";
+import {
+  useBulletSuggestionsStore,
+  useCurrentAiReviewSuggestion,
+  useAiReviewProgress,
+} from "@/lib/stores/bulletSuggestionsStore";
 import { BulletSuggestionCard } from "./BulletSuggestionCard";
 
 // ============================================================================
@@ -48,7 +53,17 @@ export function BulletSuggestionsPanel({
     rejectSuggestion,
     acceptAll,
     rejectAll,
+    handleAiReviewAccept,
+    handleAiReviewReject,
   } = useBulletAnalysis({ tailoredResumeId });
+
+  // AI review state
+  const aiReviewActive = useBulletSuggestionsStore((s) => s.aiReviewActive);
+  const aiReviewComplete = useBulletSuggestionsStore((s) => s.aiReviewComplete);
+  const exitAiReview = useBulletSuggestionsStore((s) => s.exitAiReview);
+  const preAnalysisScore = useBulletSuggestionsStore((s) => s.preAnalysisScore);
+  const currentSuggestion = useCurrentAiReviewSuggestion();
+  const progress = useAiReviewProgress();
 
   // State 1: ATS Required
   if (!atsReady) {
@@ -163,7 +178,109 @@ export function BulletSuggestionsPanel({
     );
   }
 
-  // State 6: Results
+  // State 6a: AI Review Complete (summary)
+  if (aiReviewComplete && lastAnalyzedAt) {
+    const { acceptedCount, rejectedCount } = progress;
+
+    return (
+      <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="h-5 w-5 text-green-500" />
+          <span className="font-medium">Review complete</span>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="bg-green-500/10 rounded-lg p-3 text-center">
+            <div className="text-lg font-bold text-green-600 dark:text-green-400">
+              {acceptedCount}
+            </div>
+            <div className="text-xs text-muted-foreground">Accepted</div>
+          </div>
+          <div className="bg-muted rounded-lg p-3 text-center">
+            <div className="text-lg font-bold">{rejectedCount}</div>
+            <div className="text-xs text-muted-foreground">Skipped</div>
+          </div>
+        </div>
+
+        {/* Score delta placeholder — wired up in Phase 5 */}
+        {preAnalysisScore !== null && (
+          <div className="text-xs text-muted-foreground text-center">
+            Pre-review ATS score: {preAnalysisScore}%
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={analyze}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+        >
+          <Sparkles className="h-4 w-4" />
+          Analyze Again
+        </button>
+      </div>
+    );
+  }
+
+  // State 6b: AI Review Active (sequential review)
+  if (aiReviewActive && currentSuggestion) {
+    return (
+      <div className="space-y-3">
+        {/* Progress bar */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Reviewing suggestions</span>
+            <span>
+              {progress.current} of {progress.total}
+            </span>
+          </div>
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-blue-500 rounded-full transition-all duration-300"
+              style={{
+                width: `${(progress.reviewed / progress.total) * 100}%`,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Current suggestion card */}
+        <BulletSuggestionCard
+          suggestion={currentSuggestion}
+          onAccept={() => handleAiReviewAccept(currentSuggestion.id)}
+          onReject={() => handleAiReviewReject(currentSuggestion.id)}
+          isFirst={true}
+        />
+
+        {/* Keyboard hints */}
+        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">
+              Enter
+            </kbd>{" "}
+            accept
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">
+              Esc
+            </kbd>{" "}
+            skip
+          </span>
+        </div>
+
+        {/* Exit AI review button */}
+        <button
+          type="button"
+          onClick={exitAiReview}
+          className="w-full px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+        >
+          Exit review (show all cards)
+        </button>
+      </div>
+    );
+  }
+
+  // State 6c: Results (card view — existing behavior)
   // Convert Map to array for rendering
   const entriesArray = Array.from(suggestionsByEntry.entries());
 
