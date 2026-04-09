@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 import { useBlockEditor } from "@/components/library/editor/BlockEditorContext";
 import {
@@ -51,8 +51,10 @@ interface UseBulletAnalysisReturn {
   rejectAll: () => void;
 
   // AI review actions
-  handleAiReviewAccept: (id: string) => Promise<void>;
-  handleAiReviewReject: (id: string) => void;
+  handleAiReviewAccept: () => Promise<void>;
+  handleAiReviewReject: () => void;
+  aiReviewActive: boolean;
+  aiReviewComplete: boolean;
 
   // Utilities
   getSuggestionForBullet: (bulletId: string) => BulletSuggestion | undefined;
@@ -366,23 +368,62 @@ export function useBulletAnalysis({
     storeRejectAll();
   }, [storeRejectAll]);
 
-  // AI review: accept and advance
-  const handleAiReviewAccept = useCallback(
-    async (id: string) => {
-      await acceptSuggestion(id);
-      advanceNext();
-    },
-    [acceptSuggestion, advanceNext]
-  );
+  // AI review state
+  const aiReviewActive = useBulletSuggestionsStore((s) => s.aiReviewActive);
+  const aiReviewComplete = useBulletSuggestionsStore((s) => s.aiReviewComplete);
 
-  // AI review: reject and advance
-  const handleAiReviewReject = useCallback(
-    (id: string) => {
-      rejectSuggestion(id);
-      advanceNext();
-    },
-    [rejectSuggestion, advanceNext]
-  );
+  // AI review: accept current suggestion and advance
+  const handleAiReviewAccept = useCallback(async () => {
+    const current = useBulletSuggestionsStore.getState();
+    const pending = current.suggestions.filter((s) => s.status === "pending");
+    const suggestion = pending[current.aiReviewIndex];
+    if (!suggestion) return;
+
+    await acceptSuggestion(suggestion.id);
+    advanceNext();
+  }, [acceptSuggestion, advanceNext]);
+
+  // AI review: reject current suggestion and advance
+  const handleAiReviewReject = useCallback(() => {
+    const current = useBulletSuggestionsStore.getState();
+    const pending = current.suggestions.filter((s) => s.status === "pending");
+    const suggestion = pending[current.aiReviewIndex];
+    if (!suggestion) return;
+
+    rejectSuggestion(suggestion.id);
+    advanceNext();
+  }, [rejectSuggestion, advanceNext]);
+
+  // Global keyboard handler for AI review mode
+  useEffect(() => {
+    if (!aiReviewActive) return;
+
+    const handleKeyDown = (e: globalThis.KeyboardEvent) => {
+      // Don't capture if user is typing in an unrelated input
+      const target = e.target as HTMLElement;
+      const isInUnrelatedInput =
+        target.tagName === "INPUT" &&
+        !target.closest("[data-ai-review-bullet]");
+
+      if (isInUnrelatedInput || target.tagName === "TEXTAREA") return;
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        handleAiReviewAccept();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        handleAiReviewReject();
+      }
+    };
+
+    // Use capture phase to intercept before BulletList's own Enter handler
+    document.addEventListener("keydown", handleKeyDown, { capture: true });
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, { capture: true });
+    };
+  }, [aiReviewActive, handleAiReviewAccept, handleAiReviewReject]);
 
   // Utility: get suggestion for specific bullet
   const getSuggestionForBullet = useCallback(
@@ -407,6 +448,8 @@ export function useBulletAnalysis({
     rejectAll,
     handleAiReviewAccept,
     handleAiReviewReject,
+    aiReviewActive,
+    aiReviewComplete,
     getSuggestionForBullet,
   };
 }
