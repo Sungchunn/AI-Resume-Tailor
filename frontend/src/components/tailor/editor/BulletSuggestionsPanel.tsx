@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Loader2,
+  TrendingUp,
 } from "lucide-react";
 
 import { useBulletAnalysis } from "@/hooks/useBulletAnalysis";
@@ -55,13 +56,15 @@ export function BulletSuggestionsPanel({
     rejectAll,
     handleAiReviewAccept,
     handleAiReviewReject,
+    preAnalysisScore: hookPreScore,
+    postScore,
+    isRescoring,
   } = useBulletAnalysis({ tailoredResumeId });
 
   // AI review state
   const aiReviewActive = useBulletSuggestionsStore((s) => s.aiReviewActive);
   const aiReviewComplete = useBulletSuggestionsStore((s) => s.aiReviewComplete);
   const exitAiReview = useBulletSuggestionsStore((s) => s.exitAiReview);
-  const preAnalysisScore = useBulletSuggestionsStore((s) => s.preAnalysisScore);
   const currentSuggestion = useCurrentAiReviewSuggestion();
   const progress = useAiReviewProgress();
 
@@ -203,12 +206,41 @@ export function BulletSuggestionsPanel({
           </div>
         </div>
 
-        {/* Score delta placeholder — wired up in Phase 5 */}
-        {preAnalysisScore !== null && (
-          <div className="text-xs text-muted-foreground text-center">
-            Pre-review ATS score: {preAnalysisScore}%
+        {/* ATS score delta */}
+        {isRescoring ? (
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Re-calculating ATS score...
           </div>
-        )}
+        ) : postScore !== null && hookPreScore !== null ? (
+          <div className="flex items-center justify-center gap-2 text-sm">
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">ATS:</span>
+            <span className="text-muted-foreground">{hookPreScore}%</span>
+            <span className="text-muted-foreground">&rarr;</span>
+            <span
+              className={`font-bold ${postScore > hookPreScore ? "text-green-600 dark:text-green-400" : "text-foreground"}`}
+            >
+              {postScore}%
+            </span>
+            {postScore !== hookPreScore && (
+              <span
+                className={
+                  postScore > hookPreScore
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-red-600 dark:text-red-400"
+                }
+              >
+                ({postScore > hookPreScore ? "+" : ""}
+                {postScore - hookPreScore}%)
+              </span>
+            )}
+          </div>
+        ) : hookPreScore !== null && acceptedCount > 0 ? (
+          <div className="text-xs text-muted-foreground text-center">
+            Pre-review ATS score: {hookPreScore}%
+          </div>
+        ) : null}
 
         <button
           type="button"
