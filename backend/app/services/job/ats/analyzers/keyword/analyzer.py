@@ -50,8 +50,8 @@ class KeywordAnalyzer:
     - Stage 2: Enhanced keyword scoring with placement, density, recency, importance
     """
 
-    def __init__(self):
-        self._extractor = KeywordExtractor()
+    def __init__(self, ai_client=None):
+        self._extractor = KeywordExtractor(ai_client=ai_client)
 
     @property
     def _ai_client(self):
@@ -128,7 +128,8 @@ class KeywordAnalyzer:
         self,
         resume_blocks: list[ExperienceBlockData],
         job_description: str,
-    ) -> ATSReportData:
+        return_metrics: bool = False,
+    ) -> ATSReportData | tuple[ATSReportData, AIResponse | None]:
         """
         Analyze keyword coverage.
 
@@ -144,7 +145,13 @@ class KeywordAnalyzer:
             ATSReportData with keyword analysis
         """
         # Extract keywords from job description
-        job_keywords = await self._extractor.extract_keywords(job_description)
+        ai_metrics = None
+        if return_metrics:
+            job_keywords, ai_metrics = await self._extractor.extract_keywords(
+                job_description, return_metrics=True
+            )
+        else:
+            job_keywords = await self._extractor.extract_keywords(job_description)
 
         # Build text content for comparison
         resume_text = " ".join(
@@ -184,7 +191,7 @@ class KeywordAnalyzer:
                 "Consider whether this role is a good fit or if you have transferable skills."
             )
 
-        return ATSReportData(
+        result = ATSReportData(
             format_score=100,  # Not calculating format here, just keywords
             keyword_coverage=round(keyword_coverage, 2),
             matched_keywords=matched_keywords,
@@ -194,11 +201,14 @@ class KeywordAnalyzer:
             suggestions=suggestions,
         )
 
+        return (result, ai_metrics) if return_metrics else result
+
     async def analyze_keywords_detailed(
         self,
         resume_blocks: list[ExperienceBlockData],
         job_description: str,
-    ) -> DetailedKeywordAnalysis:
+        return_metrics: bool = False,
+    ) -> DetailedKeywordAnalysis | tuple[DetailedKeywordAnalysis, AIResponse | None]:
         """
         Perform detailed keyword analysis with importance levels.
 
@@ -210,9 +220,15 @@ class KeywordAnalyzer:
             DetailedKeywordAnalysis with importance-grouped keywords
         """
         # Extract keywords with importance
-        keywords_with_importance = await self._extractor.extract_keywords_with_importance(
-            job_description
-        )
+        ai_metrics = None
+        if return_metrics:
+            keywords_with_importance, ai_metrics = await self._extractor.extract_keywords_with_importance(
+                job_description, return_metrics=True
+            )
+        else:
+            keywords_with_importance = await self._extractor.extract_keywords_with_importance(
+                job_description
+            )
 
         # Build text content for comparison
         resume_text = " ".join(
@@ -303,7 +319,7 @@ class KeywordAnalyzer:
                 "Consider if you have transferable skills or if this role is a good fit."
             )
 
-        return DetailedKeywordAnalysis(
+        result = DetailedKeywordAnalysis(
             coverage_score=round(coverage_score, 2),
             required_coverage=round(required_coverage, 2),
             preferred_coverage=round(preferred_coverage, 2),
@@ -319,6 +335,8 @@ class KeywordAnalyzer:
             suggestions=suggestions,
             warnings=warnings,
         )
+
+        return (result, ai_metrics) if return_metrics else result
 
     async def analyze_keywords_enhanced(
         self,

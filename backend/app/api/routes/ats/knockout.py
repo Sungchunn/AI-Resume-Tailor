@@ -7,7 +7,7 @@ Identifies binary disqualifiers that would cause automatic rejection.
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user_id, get_db
+from app.api.deps import get_current_user_id, get_db, resolve_ai_model
 from app.crud.job import JobCRUD
 from app.schemas.ats import (
     KnockoutCheckRequest,
@@ -15,7 +15,7 @@ from app.schemas.ats import (
     KnockoutRiskResponse,
 )
 from app.services.ai import get_usage_tracker
-from app.services.ai.client import get_ai_client
+from app.services.ai.client import get_ai_client_for_model
 from app.services.ai.response import AccumulatedMetrics
 from app.services.core.cache import get_cache_service
 from app.services.job.analyzer import JobAnalyzer
@@ -55,7 +55,8 @@ async def perform_knockout_check(
     - `severity: warning` - May affect application, worth addressing
     """
     analyzer = get_ats_analyzer()
-    ai_client = get_ai_client()
+    model = await resolve_ai_model(user_id, db, "ats")
+    ai_client = get_ai_client_for_model(model)
     cache = get_cache_service()
     resume_parser = ResumeParser(ai_client, cache)
     job_analyzer = JobAnalyzer(ai_client, cache)

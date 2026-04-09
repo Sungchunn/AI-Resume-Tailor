@@ -47,8 +47,9 @@ class ATSAnalyzer:
     for tests that only use non-AI analyzers (e.g., structure tests).
     """
 
-    def __init__(self):
+    def __init__(self, ai_client=None):
         # Lazy initialization - set to None and create on first access
+        self._ai_client = ai_client
         self._structure_analyzer_instance: StructureAnalyzer | None = None
         self._knockout_analyzer_instance: KnockoutAnalyzer | None = None
         self._keyword_analyzer_instance: KeywordAnalyzer | None = None
@@ -70,7 +71,7 @@ class ATSAnalyzer:
     @property
     def _keyword_analyzer(self) -> KeywordAnalyzer:
         if self._keyword_analyzer_instance is None:
-            self._keyword_analyzer_instance = KeywordAnalyzer()
+            self._keyword_analyzer_instance = KeywordAnalyzer(ai_client=self._ai_client)
         return self._keyword_analyzer_instance
 
     @property
@@ -150,38 +151,44 @@ class ATSAnalyzer:
         self,
         resume_blocks: list[ExperienceBlockData],
         job_description: str,
-    ) -> ATSReportData:
+        return_metrics: bool = False,
+    ) -> ATSReportData | tuple[ATSReportData, AIResponse | None]:
         """
         Analyze keyword coverage.
 
         Args:
             resume_blocks: Blocks currently in the resume
             job_description: Target job requirements
+            return_metrics: If True, return (result, AIResponse) tuple
 
         Returns:
-            ATSReportData with keyword analysis
+            ATSReportData with keyword analysis.
+            If return_metrics=True, returns (ATSReportData, AIResponse | None).
         """
         return await self._keyword_analyzer.analyze_keywords(
-            resume_blocks, job_description
+            resume_blocks, job_description, return_metrics=return_metrics
         )
 
     async def analyze_keywords_detailed(
         self,
         resume_blocks: list[ExperienceBlockData],
         job_description: str,
-    ) -> DetailedKeywordAnalysis:
+        return_metrics: bool = False,
+    ) -> DetailedKeywordAnalysis | tuple[DetailedKeywordAnalysis, AIResponse | None]:
         """
         Perform detailed keyword analysis with importance levels.
 
         Args:
             resume_blocks: Blocks currently in the resume
             job_description: Target job requirements
+            return_metrics: If True, return (result, AIResponse) tuple
 
         Returns:
-            DetailedKeywordAnalysis with importance-grouped keywords
+            DetailedKeywordAnalysis with importance-grouped keywords.
+            If return_metrics=True, returns (DetailedKeywordAnalysis, AIResponse | None).
         """
         return await self._keyword_analyzer.analyze_keywords_detailed(
-            resume_blocks, job_description
+            resume_blocks, job_description, return_metrics=return_metrics
         )
 
     async def analyze_keywords_enhanced(
@@ -267,5 +274,16 @@ class ATSAnalyzer:
 
 @lru_cache
 def get_ats_analyzer() -> ATSAnalyzer:
-    """Get a singleton ATSAnalyzer instance."""
+    """Get a singleton ATSAnalyzer instance (uses default AI model)."""
     return ATSAnalyzer()
+
+
+def create_ats_analyzer(ai_client=None) -> ATSAnalyzer:
+    """Create an ATSAnalyzer with a specific AI client.
+
+    Use this when the user has selected a non-default model.
+    Returns the singleton if no client is specified.
+    """
+    if ai_client is None:
+        return get_ats_analyzer()
+    return ATSAnalyzer(ai_client=ai_client)

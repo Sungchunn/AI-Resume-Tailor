@@ -32,8 +32,8 @@ class KeywordExtractor:
     before any actual API calls are made.
     """
 
-    def __init__(self):
-        self._ai_client_instance = None
+    def __init__(self, ai_client=None):
+        self._ai_client_instance = ai_client
 
     @property
     def _ai_client(self):

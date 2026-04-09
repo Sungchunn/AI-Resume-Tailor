@@ -41,7 +41,7 @@ from .constants import (
     KnockoutSeverity,
     TrajectoryType,
 )
-from .facade import ATSAnalyzer, get_ats_analyzer
+from .facade import ATSAnalyzer, create_ats_analyzer, get_ats_analyzer
 from .models import (
     ActionVerbAnalysis,
     BlockTypeAnalysis,
@@ -71,6 +71,7 @@ __all__ = [
     # Main exports
     "ATSAnalyzer",
     "get_ats_analyzer",
+    "create_ats_analyzer",
     # Knockout models
     "KnockoutRisk",
     "KnockoutCheckResult",

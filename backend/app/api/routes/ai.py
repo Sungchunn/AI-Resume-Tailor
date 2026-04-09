@@ -6,15 +6,15 @@ import re
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user_id, get_db
+from app.api.deps import get_current_user_id, get_db, resolve_ai_model
 from app.schemas.ai import (
     ChatRequest,
     ChatResponse,
     ImproveSectionRequest,
     ImproveSectionResponse,
 )
-from app.services import get_ai_client
 from app.services.ai import get_usage_tracker
+from app.services.ai.client import get_ai_client_for_model
 
 router = APIRouter()
 
@@ -96,7 +96,8 @@ async def improve_section(
     This endpoint takes a section's current content and an instruction,
     then returns an AI-improved version of that section.
     """
-    ai_client = get_ai_client()
+    model = await resolve_ai_model(current_user_id, db, "general")
+    ai_client = get_ai_client_for_model(model)
     usage_tracker = get_usage_tracker()
 
     # Build the user prompt
@@ -160,7 +161,8 @@ async def chat(
     Supports multi-turn conversations about resume improvements,
     with optional section context for targeted advice.
     """
-    ai_client = get_ai_client()
+    model = await resolve_ai_model(current_user_id, db, "general")
+    ai_client = get_ai_client_for_model(model)
     usage_tracker = get_usage_tracker()
 
     # Build conversation context

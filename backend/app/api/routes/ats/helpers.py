@@ -22,8 +22,10 @@ from app.schemas.ats import (
     KnockoutCheckRequest,
     RoleProximityRequest,
 )
+from app.api.deps import resolve_ai_model
+from app.services.ai.client import get_ai_client_for_model
 from app.services.ai.response import AIResponse
-from app.services.job.ats import get_ats_analyzer
+from app.services.job.ats import create_ats_analyzer
 
 
 async def execute_knockout_check(
@@ -99,7 +101,9 @@ async def execute_keyword_analysis(
     Returns:
         Tuple of (EnhancedKeywordAnalysis result, AIResponse metrics or None)
     """
-    analyzer = get_ats_analyzer()
+    model = await resolve_ai_model(user_id, db, "ats")
+    ai_client = get_ai_client_for_model(model)
+    analyzer = create_ats_analyzer(ai_client=ai_client)
 
     # Perform enhanced keyword analysis with metrics
     result, ai_metrics = await analyzer.analyze_keywords_enhanced(

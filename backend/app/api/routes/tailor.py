@@ -16,7 +16,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Response, status
 
-from app.api.deps import CurrentUserId, DatabaseSessionsWithRLS
+from app.api.deps import CurrentUserId, DatabaseSessionsWithRLS, resolve_ai_model
 from app.api.utils.id_resolution import (
     IDResolutionError,
     add_deprecation_headers,
@@ -62,23 +62,24 @@ from app.services import (
     ResumeParser,
     TailoringService,
     TailoringValidationError,
-    get_ai_client,
     get_cache_service,
 )
 from app.services.ai import get_usage_tracker
-from app.services.ai.client import AIServiceError
+from app.services.ai.client import AIServiceError, get_ai_client_for_model
 from app.services.job.diff import BulletAnalyzer
 
 router = APIRouter()
 
 
-def get_tailoring_service() -> TailoringService:
+def get_tailoring_service(ai_client=None) -> TailoringService:
     """Get the tailoring service with dependencies."""
-    ai_client = get_ai_client()
+    from app.services.ai.client import get_ai_client
+
+    client = ai_client or get_ai_client()
     cache = get_cache_service()
-    resume_parser = ResumeParser(ai_client, cache)
-    job_analyzer = JobAnalyzer(ai_client, cache)
-    return TailoringService(ai_client, cache, resume_parser, job_analyzer)
+    resume_parser = ResumeParser(client, cache)
+    job_analyzer = JobAnalyzer(client, cache)
+    return TailoringService(client, cache, resume_parser, job_analyzer)
 
 
 @router.post("", response_model=TailorResponse, status_code=status.HTTP_201_CREATED)
@@ -175,7 +176,9 @@ async def tailor_resume(
         company_name = job_listing.company_name  # type: ignore[assignment]
 
     # Run tailoring - now returns complete tailored document
-    service = get_tailoring_service()
+    model = await resolve_ai_model(current_user_id, pg, "general")
+    ai_client = get_ai_client_for_model(model)
+    service = get_tailoring_service(ai_client=ai_client)
     try:
         result = await service.tailor(
             resume_id=request.resume_id,
@@ -303,7 +306,9 @@ async def quick_match(
         raw_job = job_listing.job_description
 
     # Get quick match
-    service = get_tailoring_service()
+    model = await resolve_ai_model(current_user_id, pg, "general")
+    ai_client = get_ai_client_for_model(model)
+    service = get_tailoring_service(ai_client=ai_client)
     result = await service.get_quick_match_score(
         raw_resume=resume.raw_content,
         raw_job=raw_job,
@@ -754,7 +759,8 @@ async def analyze_bullets(
         )
 
     # 4. Run bullet analysis
-    ai_client = get_ai_client()
+    model = await resolve_ai_model(current_user_id, pg, "general")
+    ai_client = get_ai_client_for_model(model)
     usage_tracker = get_usage_tracker()
     analyzer = BulletAnalyzer(ai_client)
 
