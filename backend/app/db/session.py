@@ -19,6 +19,15 @@ engine = create_async_engine(
     echo=settings.environment == "development",
     future=True,
     poolclass=NullPool,
+    connect_args={
+        # Disable SQLAlchemy's adapter-level prepared-statement LRU cache.
+        "prepared_statement_cache_size": 0,
+        # Force anonymous (unnamed) prepared statements.  asyncpg's default
+        # (name=None) auto-generates names like __asyncpg_stmt_N__ which
+        # collide when PgBouncer rotates server connections.  Returning ''
+        # tells asyncpg to use the unnamed-statement protocol instead.
+        "prepared_statement_name_func": lambda: "",
+    },
 )
 
 AsyncSessionLocal = async_sessionmaker(

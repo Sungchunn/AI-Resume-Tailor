@@ -44,7 +44,10 @@ def mask_uri_credentials(uri: str) -> str:
 
 def get_pg_sync_url() -> str:
     """Get synchronous PostgreSQL URL for migration."""
-    # Convert async URL to sync
+    # Prefer explicit sync URL if available
+    if settings.database_url_sync:
+        return settings.database_url_sync
+    # Fallback: convert async URL to sync
     url = settings.database_url
     if "+asyncpg" in url:
         url = url.replace("+asyncpg", "")
