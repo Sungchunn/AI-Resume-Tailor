@@ -50,6 +50,10 @@ interface UseBulletAnalysisReturn {
   acceptAll: () => Promise<void>;
   rejectAll: () => void;
 
+  // AI review actions
+  handleAiReviewAccept: (id: string) => Promise<void>;
+  handleAiReviewReject: (id: string) => void;
+
   // Utilities
   getSuggestionForBullet: (bulletId: string) => BulletSuggestion | undefined;
 }
@@ -162,6 +166,7 @@ export function useBulletAnalysis({
   const storeReject = useBulletSuggestionsStore((s) => s.rejectSuggestion);
   const storeAcceptAll = useBulletSuggestionsStore((s) => s.acceptAll);
   const storeRejectAll = useBulletSuggestionsStore((s) => s.rejectAll);
+  const advanceNext = useBulletSuggestionsStore((s) => s.advanceNext);
 
   // Editor context for updating bullets
   const { state, updateBlock, getBlockById, save } = useBlockEditor();
@@ -361,6 +366,24 @@ export function useBulletAnalysis({
     storeRejectAll();
   }, [storeRejectAll]);
 
+  // AI review: accept and advance
+  const handleAiReviewAccept = useCallback(
+    async (id: string) => {
+      await acceptSuggestion(id);
+      advanceNext();
+    },
+    [acceptSuggestion, advanceNext]
+  );
+
+  // AI review: reject and advance
+  const handleAiReviewReject = useCallback(
+    (id: string) => {
+      rejectSuggestion(id);
+      advanceNext();
+    },
+    [rejectSuggestion, advanceNext]
+  );
+
   // Utility: get suggestion for specific bullet
   const getSuggestionForBullet = useCallback(
     (bulletId: string) => {
@@ -382,6 +405,8 @@ export function useBulletAnalysis({
     rejectSuggestion,
     acceptAll,
     rejectAll,
+    handleAiReviewAccept,
+    handleAiReviewReject,
     getSuggestionForBullet,
   };
 }
