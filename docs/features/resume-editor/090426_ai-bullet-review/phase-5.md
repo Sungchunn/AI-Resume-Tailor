@@ -1,10 +1,10 @@
 # Phase 5: ATS Re-scoring Feedback Loop
 
-**Goal:** After copilot review completes, automatically re-score the resume and show the score improvement. In the ATS tab, replace auto-scoring with a manual "Re-analyze" button.
+**Goal:** After AI review completes, automatically re-score the resume and show the score improvement. In the ATS tab, replace auto-scoring with a manual "Re-analyze" button.
 
 ---
 
-## 5A: Auto Re-score After Copilot Review
+## 5A: Auto Re-score After AI Review
 
 **File:** `frontend/src/hooks/useBulletAnalysis.ts`
 
@@ -24,12 +24,12 @@ const analyze = useCallback(async () => {
 }, [...]);
 ```
 
-### Trigger Re-score on Copilot Complete
+### Trigger Re-score on AI Review Complete
 
-Watch for `copilotComplete` and re-score if any suggestions were accepted:
+Watch for `aiReviewComplete` and re-score if any suggestions were accepted:
 
 ```typescript
-const copilotComplete = useBulletSuggestionsStore(s => s.copilotComplete);
+const aiReviewComplete = useBulletSuggestionsStore(s => s.aiReviewComplete);
 const acceptedCount = useBulletSuggestionsStore(
   s => s.suggestions.filter(s => s.status === "accepted").length
 );
@@ -37,7 +37,7 @@ const [postScore, setPostScore] = useState<number | null>(null);
 const [isRescoring, setIsRescoring] = useState(false);
 
 useEffect(() => {
-  if (!copilotComplete || acceptedCount === 0) return;
+  if (!aiReviewComplete || acceptedCount === 0) return;
 
   const rescore = async () => {
     setIsRescoring(true);
@@ -69,7 +69,7 @@ useEffect(() => {
   };
 
   rescore();
-}, [copilotComplete, acceptedCount]);
+}, [aiReviewComplete, acceptedCount]);
 ```
 
 ### Expose Re-score State
@@ -157,7 +157,7 @@ Find and disable any `useEffect` that auto-triggers ATS analysis when the tab op
 
 **File:** `frontend/src/components/tailor/editor/BulletSuggestionsPanel.tsx`
 
-In the copilot complete view, show the score change:
+In the AI review complete view, show the score change:
 
 ```typescript
 const { preAnalysisScore, postScore, isRescoring } = useBulletAnalysis({...});
@@ -195,7 +195,7 @@ const { preAnalysisScore, postScore, isRescoring } = useBulletAnalysis({...});
 ### 5A: Auto Re-score
 
 - [ ] Pre-analysis score is captured before bullet analysis starts
-- [ ] After copilot review completes with accepted suggestions, re-score triggers
+- [ ] After AI review completes with accepted suggestions, re-score triggers
 - [ ] Score delta shows in completion summary (e.g., "62% -> 78% (+16%)")
 - [ ] If no suggestions accepted, re-score is skipped
 - [ ] Re-score failure shows gracefully (no score displayed, no crash)

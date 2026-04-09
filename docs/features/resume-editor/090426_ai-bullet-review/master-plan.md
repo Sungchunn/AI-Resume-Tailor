@@ -1,10 +1,10 @@
-# Copilot-Style Line-by-Line AI Bullet Editing with ATS Feedback Loop
+# AI Review: Line-by-Line Bullet Editing with ATS Feedback Loop
 
 ## Context
 
-The `060426_ai-bullet-editing` feature is **fully implemented** as a panel-based card system. Backend endpoint (`POST /v1/tailor/{id}/analyze-bullets`), `BulletAnalyzer` service, Zustand store, and UI components all exist and work. However, the user experience is "review all cards at once" rather than the intended copilot-style "step through suggestions one at a time."
+The `060426_ai-bullet-editing` feature is **fully implemented** as a panel-based card system. Backend endpoint (`POST /v1/tailor/{id}/analyze-bullets`), `BulletAnalyzer` service, Zustand store, and UI components all exist and work. However, the user experience is "review all cards at once" rather than the intended sequential "step through suggestions one at a time."
 
-The user previously tried to implement a copilot-style flow but it never worked behaviorally. The goal is to transform the existing batch-card UI into a sequential copilot review flow where:
+The user previously tried to implement a sequential review flow but it never worked behaviorally. The goal is to transform the existing batch-card UI into a sequential AI review flow where:
 
 1. Suggestions are presented ONE AT A TIME
 2. The target bullet is highlighted inline with a diff overlay
@@ -15,7 +15,7 @@ The user previously tried to implement a copilot-style flow but it never worked 
 
 - `bulletSuggestionsStore.ts` - Zustand store with suggestions, accept/reject actions
 - `useBulletAnalysis.ts` - Hook for analysis trigger and accept/reject logic
-- `BulletSuggestionsPanel.tsx` - Panel UI (will be modified for copilot mode)
+- `BulletSuggestionsPanel.tsx` - Panel UI (will be modified for AI review mode)
 - `BulletSuggestionCard.tsx` - Card component (will be adapted)
 - `BulletList.tsx` - Bullet rendering with suggestion indicators
 - `atsProgressStore.ts` - Has `contentStale` and `analyzedContentHash`
@@ -28,11 +28,11 @@ The user previously tried to implement a copilot-style flow but it never worked 
 
 | Decision | Choice | Rationale |
 | -------- | ------ | --------- |
-| Diff location | **Inline on bullet row** | Diff overlay appears below targeted bullet in editor. Most copilot-like experience. |
-| ATS re-score timing | **After copilot review completes** | Single API call after all suggestions reviewed. Shows before/after delta. |
+| Diff location | **Inline on bullet row** | Diff overlay appears below targeted bullet in editor. Sequential review experience. |
+| ATS re-score timing | **After AI review completes** | Single API call after all suggestions reviewed. Shows before/after delta. |
 | ATS tab re-scoring | **Manual trigger button** | User clicks "Re-analyze" button. No auto-scoring on tab open. Controls AI costs. |
-| Copilot entry | **Automatic after analysis** | Suggestions auto-enter copilot mode. User can exit to see all cards. |
-| Keyboard capture | **Global listener in copilot mode** | Enter=accept, Esc=skip. Prevents BulletList Enter from creating new bullets. |
+| AI review entry | **Automatic after analysis** | Suggestions auto-enter AI review mode. User can exit to see all cards. |
+| Keyboard capture | **Global listener in AI review mode** | Enter=accept, Esc=skip. Prevents BulletList Enter from creating new bullets. |
 
 ---
 
@@ -40,10 +40,10 @@ The user previously tried to implement a copilot-style flow but it never worked 
 
 | Phase | Focus | Details |
 | ----- | ----- | ------- |
-| 1 | Store: Copilot mode state | [phase-1.md](./phase-1.md) |
-| 2 | Panel: Sequential copilot UI | [phase-2.md](./phase-2.md) |
+| 1 | Store: AI review mode state | [phase-1.md](./phase-1.md) |
+| 2 | Panel: Sequential AI review UI | [phase-2.md](./phase-2.md) |
 | 3 | Inline: Diff overlay on BulletList | [phase-3.md](./phase-3.md) |
-| 4 | Keyboard: Global handler for copilot | [phase-4.md](./phase-4.md) |
+| 4 | Keyboard: Global handler for AI review | [phase-4.md](./phase-4.md) |
 | 5 | ATS: Re-scoring feedback loop | [phase-5.md](./phase-5.md) |
 
 ---
@@ -52,19 +52,19 @@ The user previously tried to implement a copilot-style flow but it never worked 
 
 | File | Changes |
 | ---- | ------- |
-| `frontend/src/lib/stores/bulletSuggestionsStore.ts` | Add copilot mode state + navigation actions |
-| `frontend/src/hooks/useBulletAnalysis.ts` | Add copilot keyboard handler, ATS re-score logic |
-| `frontend/src/components/tailor/editor/BulletSuggestionsPanel.tsx` | Copilot sequential view + completion summary |
+| `frontend/src/lib/stores/bulletSuggestionsStore.ts` | Add AI review mode state + navigation actions |
+| `frontend/src/hooks/useBulletAnalysis.ts` | Add AI review keyboard handler, ATS re-score logic |
+| `frontend/src/components/tailor/editor/BulletSuggestionsPanel.tsx` | AI review sequential view + completion summary |
 | `frontend/src/components/library/editor/blocks/shared/BulletList.tsx` | Inline diff overlay + visual highlight |
-| `frontend/src/components/library/editor/blocks/ExperienceEditor.tsx` | Pass copilot suggestion to BulletList |
-| `frontend/src/components/library/editor/blocks/ProjectsEditor.tsx` | Pass copilot suggestion to BulletList |
+| `frontend/src/components/library/editor/blocks/ExperienceEditor.tsx` | Pass AI review suggestion to BulletList |
+| `frontend/src/components/library/editor/blocks/ProjectsEditor.tsx` | Pass AI review suggestion to BulletList |
 | `frontend/src/components/library/editor/tabs/ATSEvaluationTab.tsx` | Add manual "Re-analyze" button, remove auto-score trigger |
 
 ## Files to Create
 
 | File | Purpose |
 | ---- | ------- |
-| `frontend/src/components/tailor/editor/CopilotDiffOverlay.tsx` | Inline diff display below targeted bullet |
+| `frontend/src/components/tailor/editor/AiReviewDiffOverlay.tsx` | Inline diff display below targeted bullet |
 
 ---
 
@@ -74,7 +74,7 @@ The user previously tried to implement a copilot-style flow but it never worked 
 User clicks "Analyze Bullets"
   -> Capture preAnalysisScore from atsProgressStore
   -> Backend returns suggestions
-  -> Enter copilot mode (sequential review)
+  -> Enter AI review mode (sequential review)
   -> User reviews each: Enter=accept, Esc=skip
   -> After all reviewed:
     -> If acceptedCount > 0:
@@ -93,7 +93,7 @@ User clicks "Analyze Bullets"
 
 1. Navigate to `/tailor/editor/{id}`, run ATS analysis
 2. Click "Analyze Bullets" in AI tab
-3. Verify copilot mode starts automatically with first suggestion focused
+3. Verify AI review mode starts automatically with first suggestion focused
 4. Verify the target bullet in the editor has a blue highlight + diff overlay below it
 5. Press Enter -> bullet text updates, advances to next suggestion
 6. Press Esc -> bullet unchanged, advances to next
@@ -104,9 +104,9 @@ User clicks "Analyze Bullets"
 ### Edge Cases
 
 - Resume with 0 bullets -> "No bullets found" message
-- All bullets already good -> "Your bullets look great!" (no copilot)
-- Only 1 suggestion -> copilot still works, completes immediately after review
-- User exits copilot early -> remaining suggestions stay as pending cards
+- All bullets already good -> "Your bullets look great!" (no AI review)
+- Only 1 suggestion -> AI review still works, completes immediately after review
+- User exits AI review early -> remaining suggestions stay as pending cards
 - ATS re-score fails -> show error toast, still show accepted count
 
 ### Test Commands

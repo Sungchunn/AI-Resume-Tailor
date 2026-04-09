@@ -1,6 +1,6 @@
-# Phase 2: Copilot Review UI in BulletSuggestionsPanel
+# Phase 2: AI Review UI in BulletSuggestionsPanel
 
-**Goal:** Transform the suggestions panel to show a focused sequential review when copilot mode is active, with progress tracking and a completion summary.
+**Goal:** Transform the suggestions panel to show a focused sequential review when AI review mode is active, with progress tracking and a completion summary.
 
 ---
 
@@ -10,14 +10,14 @@
 
 Add a new render state between the existing "State 5: No suggestions" and "State 6: Results":
 
-**State 6a: Copilot Active** (sequential review)
+**State 6a: AI Review Active** (sequential review)
 **State 6b: Cards View** (fallback, existing behavior)
-**State 7: Copilot Complete** (summary with score delta)
+**State 7: AI Review Complete** (summary with score delta)
 
-### Copilot Active View
+### AI Review Active View
 
 ```typescript
-// When copilotActive is true, show sequential review:
+// When aiReviewActive is true, show sequential review:
 <div className="space-y-3">
   {/* Progress bar */}
   <div className="space-y-2">
@@ -37,8 +37,8 @@ Add a new render state between the existing "State 5: No suggestions" and "State
   {currentSuggestion && (
     <BulletSuggestionCard
       suggestion={currentSuggestion}
-      onAccept={() => handleCopilotAccept(currentSuggestion.id)}
-      onReject={() => handleCopilotReject(currentSuggestion.id)}
+      onAccept={() => handleAiReviewAccept(currentSuggestion.id)}
+      onReject={() => handleAiReviewReject(currentSuggestion.id)}
       isFirst={true}
     />
   )}
@@ -53,17 +53,17 @@ Add a new render state between the existing "State 5: No suggestions" and "State
     </span>
   </div>
 
-  {/* Exit copilot button */}
-  <button onClick={exitCopilot} className="...">
+  {/* Exit AI review button */}
+  <button onClick={exitAiReview} className="...">
     Exit review (show all cards)
   </button>
 </div>
 ```
 
-### Copilot Complete View
+### AI Review Complete View
 
 ```typescript
-// When copilotComplete is true, show summary:
+// When aiReviewComplete is true, show summary:
 <div className="space-y-4">
   <div className="flex items-center gap-2">
     <CheckCircle2 className="h-5 w-5 text-green-500" />
@@ -112,32 +112,32 @@ Add to `BulletSuggestionsPanel`:
 
 ```typescript
 import {
-  useCurrentCopilotSuggestion,
-  useCopilotProgress,
+  useCurrentAiReviewSuggestion,
+  useAiReviewProgress,
 } from "@/lib/stores/bulletSuggestionsStore";
 
 // In component:
-const currentSuggestion = useCurrentCopilotSuggestion();
-const progress = useCopilotProgress();
-const copilotActive = useBulletSuggestionsStore(s => s.copilotActive);
-const copilotComplete = useBulletSuggestionsStore(s => s.copilotComplete);
-const exitCopilot = useBulletSuggestionsStore(s => s.exitCopilot);
+const currentSuggestion = useCurrentAiReviewSuggestion();
+const progress = useAiReviewProgress();
+const aiReviewActive = useBulletSuggestionsStore(s => s.aiReviewActive);
+const aiReviewComplete = useBulletSuggestionsStore(s => s.aiReviewComplete);
+const exitAiReview = useBulletSuggestionsStore(s => s.exitAiReview);
 const preAnalysisScore = useBulletSuggestionsStore(s => s.preAnalysisScore);
 ```
 
 ---
 
-## 2.3 Accept/Reject in Copilot Mode
+## 2.3 Accept/Reject in AI Review Mode
 
-In `useBulletAnalysis` hook, add copilot-specific accept/reject that advances:
+In `useBulletAnalysis` hook, add AI review-specific accept/reject that advances:
 
 ```typescript
-const handleCopilotAccept = useCallback(async (id: string) => {
+const handleAiReviewAccept = useCallback(async (id: string) => {
   await acceptSuggestion(id);  // existing: update block + save
   advanceNext();               // new: move to next pending
 }, [acceptSuggestion, advanceNext]);
 
-const handleCopilotReject = useCallback((id: string) => {
+const handleAiReviewReject = useCallback((id: string) => {
   rejectSuggestion(id);       // existing: mark as rejected
   advanceNext();               // new: move to next pending
 }, [rejectSuggestion, advanceNext]);
@@ -147,7 +147,7 @@ const handleCopilotReject = useCallback((id: string) => {
 
 ## Verification
 
-- [ ] After analysis returns suggestions, panel enters copilot view (not cards)
+- [ ] After analysis returns suggestions, panel enters AI review view (not cards)
 - [ ] Progress bar shows "1 of N" and updates as suggestions are reviewed
 - [ ] Only ONE suggestion card is visible at a time
 - [ ] "Exit review" button switches to all-cards view
