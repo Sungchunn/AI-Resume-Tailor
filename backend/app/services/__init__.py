@@ -14,7 +14,7 @@ All services are re-exported here for backward compatibility.
 """
 
 # AI services
-from app.services.ai.client import AIClient, get_ai_client
+from app.services.ai.client import AIClient, get_ai_client, get_ai_client_for_model
 from app.services.ai.embedding import (
     EMBEDDING_DIMENSIONS,
     EmbeddingService,
@@ -82,6 +82,7 @@ __all__ = [
     # AI
     "AIClient",
     "get_ai_client",
+    "get_ai_client_for_model",
     "EmbeddingService",
     "EmbeddingTaskType",
     "get_embedding_service",

@@ -31,6 +31,7 @@ class User(Base):
 
     # User preferences
     timezone = Column(String(100), nullable=True, default="UTC")  # IANA timezone string
+    preferred_ai_model = Column(String(50), nullable=True)  # NULL = use endpoint default
 
     # Relationships
     resumes = relationship("Resume", back_populates="owner", cascade="all, delete-orphan")

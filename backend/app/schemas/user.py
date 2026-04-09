@@ -74,3 +74,32 @@ class GoogleAuthResponse(BaseModel):
     account_linked: bool = Field(
         description="True if Google was linked to existing email account"
     )
+
+
+# AI Preferences
+
+
+class AIModelInfo(BaseModel):
+    """Information about an available AI model."""
+
+    id: str
+    name: str
+    description: str
+    provider: str
+
+
+class AIPreferencesResponse(BaseModel):
+    """Response for user AI preferences."""
+
+    preferred_model: str | None = Field(
+        description="User's preferred model ID, null means endpoint defaults apply"
+    )
+    available_models: list[AIModelInfo]
+
+
+class AIPreferencesUpdate(BaseModel):
+    """Request to update user AI preferences."""
+
+    preferred_model: str | None = Field(
+        description="Model ID to set, or null to reset to defaults"
+    )

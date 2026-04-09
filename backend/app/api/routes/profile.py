@@ -9,17 +9,19 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user_id, get_db_session, get_mongo_db
+from app.api.deps import get_current_user_id, get_db_session, get_mongo_db, resolve_ai_model
 from app.crud.mongo.resume import resume_crud
 from app.models import User
+from app.core.ai_models import AVAILABLE_AI_MODELS, is_valid_model
 from app.schemas.profile import (
     AboutMeResponse,
     GenerateAboutMeRequest,
     ProfileResponse,
     UpdateProfileRequest,
 )
-from app.services import get_ai_client
+from app.schemas.user import AIModelInfo, AIPreferencesResponse, AIPreferencesUpdate
 from app.services.ai import get_usage_tracker
+from app.services.ai.client import get_ai_client_for_model
 
 router = APIRouter()
 
@@ -122,7 +124,8 @@ async def generate_about_me(
         )
 
     # Generate the about me blurb
-    ai_client = get_ai_client()
+    model = await resolve_ai_model(current_user_id, db, "general")
+    ai_client = get_ai_client_for_model(model)
     usage_tracker = get_usage_tracker()
 
     user_prompt = f"""Please write a personal "About Me" paragraph based on this resume:
@@ -210,4 +213,66 @@ async def update_profile(
         headline=user.headline,
         about_me=user.about_me,
         timezone=user.timezone,
+    )
+
+
+# ============================================================
+# AI Model Preferences
+# ============================================================
+
+
+@router.get("/ai-preferences", response_model=AIPreferencesResponse)
+async def get_ai_preferences(
+    current_user_id: Annotated[int, Depends(get_current_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> AIPreferencesResponse:
+    """Get the user's AI model preference and available models."""
+    user = await db.get(User, current_user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    available = [AIModelInfo(**m) for m in AVAILABLE_AI_MODELS]
+
+    return AIPreferencesResponse(
+        preferred_model=user.preferred_ai_model,
+        available_models=available,
+    )
+
+
+@router.put("/ai-preferences", response_model=AIPreferencesResponse)
+async def update_ai_preferences(
+    request: AIPreferencesUpdate,
+    current_user_id: Annotated[int, Depends(get_current_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> AIPreferencesResponse:
+    """Update the user's AI model preference.
+
+    Set preferred_model to null to reset to endpoint defaults.
+    """
+    user = await db.get(User, current_user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    if request.preferred_model is not None and not is_valid_model(
+        request.preferred_model
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid model: {request.preferred_model}",
+        )
+
+    user.preferred_ai_model = request.preferred_model
+    await db.commit()
+
+    available = [AIModelInfo(**m) for m in AVAILABLE_AI_MODELS]
+
+    return AIPreferencesResponse(
+        preferred_model=user.preferred_ai_model,
+        available_models=available,
     )

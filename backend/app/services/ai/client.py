@@ -291,3 +291,49 @@ def get_ai_client() -> AIClient:
         raise AIServiceError(
             f"Unknown AI provider: {provider}. Use 'gemini' or 'openai'."
         )
+
+
+# Cache of model-specific clients (keyed by model ID)
+_model_clients: dict[str, AIClient] = {}
+
+
+def get_ai_client_for_model(model: str) -> AIClient:
+    """Get an AI client for a specific model, cached per model ID.
+
+    Falls back to the default singleton if the model matches the configured default.
+    """
+    from app.core.ai_models import is_valid_model
+
+    if not is_valid_model(model):
+        raise AIServiceError(f"Unknown AI model: {model}")
+
+    settings = get_settings()
+
+    # If requesting the default model, return the singleton
+    if model == settings.openai_model:
+        return get_ai_client()
+
+    if model in _model_clients:
+        return _model_clients[model]
+
+    provider = settings.ai_provider.lower()
+    if provider == "openai":
+        if not settings.openai_api_key:
+            raise AIServiceError(
+                "OpenAI API key not configured. Set OPENAI_API_KEY in environment."
+            )
+        client = OpenAIClient(api_key=settings.openai_api_key, model=model)
+    elif provider == "gemini":
+        if not settings.gemini_api_key:
+            raise AIServiceError(
+                "Gemini API key not configured. Set GEMINI_API_KEY in environment."
+            )
+        client = GeminiAIClient(api_key=settings.gemini_api_key, model=model)
+    else:
+        raise AIServiceError(
+            f"Unknown AI provider: {provider}. Use 'gemini' or 'openai'."
+        )
+
+    _model_clients[model] = client
+    logger.info(f"Created AI client for model: {model}")
+    return client

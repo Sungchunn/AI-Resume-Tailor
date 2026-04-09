@@ -201,6 +201,28 @@ async def get_databases_with_rls(
     return {"pg": pg, "mongo": mongo}
 
 
+async def resolve_ai_model(
+    user_id: int,
+    db: AsyncSession,
+    category: str = "general",
+) -> str:
+    """Resolve the AI model for a user and endpoint category.
+
+    Priority: user preference > endpoint category default.
+    """
+    from app.core.ai_models import get_default_model, is_valid_model
+
+    result = await db.execute(
+        select(User.preferred_ai_model).where(User.id == user_id)
+    )
+    preferred = result.scalar_one_or_none()
+
+    if preferred and is_valid_model(preferred):
+        return preferred
+
+    return get_default_model(category)
+
+
 # Type aliases for cleaner dependency injection
 DBSession = Annotated[AsyncSession, Depends(get_db_session)]
 DBSessionWithRLS = Annotated[AsyncSession, Depends(get_db_with_user_context)]
