@@ -29,6 +29,11 @@ export interface BulletSuggestionsState {
   lastAnalyzedAt: Date | null;
   error: string | null;
   boundResumeId: string | null;
+  // AI review mode
+  aiReviewActive: boolean;
+  aiReviewIndex: number;
+  aiReviewComplete: boolean;
+  preAnalysisScore: number | null;
 }
 
 export interface BulletSuggestionsActions {
@@ -41,6 +46,11 @@ export interface BulletSuggestionsActions {
   acceptAll: () => void;
   rejectAll: () => void;
   bindToResume: (resumeId: string) => void;
+  // AI review actions
+  startAiReview: () => void;
+  exitAiReview: () => void;
+  advanceNext: () => void;
+  setPreAnalysisScore: (score: number) => void;
 }
 
 export type BulletSuggestionsStore = BulletSuggestionsState &
@@ -58,6 +68,10 @@ export const useBulletSuggestionsStore = create<BulletSuggestionsStore>(
     lastAnalyzedAt: null,
     error: null,
     boundResumeId: null,
+    aiReviewActive: false,
+    aiReviewIndex: 0,
+    aiReviewComplete: false,
+    preAnalysisScore: null,
 
     // Analysis lifecycle
     setAnalyzing: (isAnalyzing) => set({ isAnalyzing, error: null }),
@@ -69,6 +83,10 @@ export const useBulletSuggestionsStore = create<BulletSuggestionsStore>(
         boundResumeId: resumeId,
         error: null,
         isAnalyzing: false,
+        // Auto-enter AI review mode if there are suggestions
+        aiReviewActive: suggestions.length > 0,
+        aiReviewIndex: 0,
+        aiReviewComplete: false,
       }),
 
     setError: (error) => set({ error, isAnalyzing: false }),
@@ -78,6 +96,10 @@ export const useBulletSuggestionsStore = create<BulletSuggestionsStore>(
         suggestions: [],
         lastAnalyzedAt: null,
         error: null,
+        aiReviewActive: false,
+        aiReviewIndex: 0,
+        aiReviewComplete: false,
+        preAnalysisScore: null,
       }),
 
     // Individual actions
@@ -122,6 +144,34 @@ export const useBulletSuggestionsStore = create<BulletSuggestionsStore>(
         });
       }
     },
+
+    // AI review actions
+    startAiReview: () =>
+      set({
+        aiReviewActive: true,
+        aiReviewIndex: 0,
+        aiReviewComplete: false,
+      }),
+
+    exitAiReview: () =>
+      set({
+        aiReviewActive: false,
+        aiReviewIndex: 0,
+        aiReviewComplete: false,
+      }),
+
+    advanceNext: () => {
+      const { suggestions, aiReviewIndex } = get();
+      const pending = suggestions.filter((s) => s.status === "pending");
+
+      if (aiReviewIndex >= pending.length - 1) {
+        set({ aiReviewComplete: true, aiReviewActive: false });
+      } else {
+        set({ aiReviewIndex: aiReviewIndex + 1 });
+      }
+    },
+
+    setPreAnalysisScore: (score) => set({ preAnalysisScore: score }),
   })
 );
 
@@ -172,6 +222,40 @@ export const useSuggestionStats = () =>
       (s) => s.impact === "high" && s.status === "pending"
     ).length,
   }));
+
+/**
+ * Get the current suggestion in AI review mode.
+ * Returns null when AI review is inactive or all suggestions reviewed.
+ */
+export const useCurrentAiReviewSuggestion = () =>
+  useBulletSuggestionsStore((state) => {
+    if (!state.aiReviewActive) return null;
+    const pending = state.suggestions.filter((s) => s.status === "pending");
+    return pending[state.aiReviewIndex] ?? null;
+  });
+
+/**
+ * Get AI review progress: { current, total, acceptedCount, rejectedCount }
+ */
+export const useAiReviewProgress = () =>
+  useBulletSuggestionsStore((state) => {
+    const total = state.suggestions.length;
+    const accepted = state.suggestions.filter(
+      (s) => s.status === "accepted"
+    ).length;
+    const rejected = state.suggestions.filter(
+      (s) => s.status === "rejected"
+    ).length;
+    const reviewed = accepted + rejected;
+
+    return {
+      current: reviewed + 1,
+      total,
+      acceptedCount: accepted,
+      rejectedCount: rejected,
+      reviewed,
+    };
+  });
 
 // ============================================================================
 // Utilities
