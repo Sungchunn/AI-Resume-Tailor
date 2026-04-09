@@ -12,6 +12,7 @@ from app.core.protocols import (
     ExperienceBlockData,
     WorkshopData,
 )
+from app.services.ai.response import AIResponse
 
 from .operations import DiffOperations
 from .suggestions import SuggestionGenerator
@@ -42,7 +43,8 @@ class DiffEngine:
         available_blocks: list[ExperienceBlockData],
         max_suggestions: int = 10,
         focus_sections: list[str] | None = None,
-    ) -> dict[str, Any]:
+        return_metrics: bool = False,
+    ) -> dict[str, Any] | tuple[dict[str, Any], AIResponse | None]:
         """
         Generate diff suggestions for a workshop.
 
@@ -55,12 +57,14 @@ class DiffEngine:
             available_blocks: User's Vault blocks to draw from
             max_suggestions: Maximum suggestions to generate
             focus_sections: Optional sections to focus on
+            return_metrics: If True, return (result, AIResponse) tuple
 
         Returns:
-            Dict with "suggestions" and "gaps" keys
+            Dict with "suggestions" and "gaps" keys, or (dict, AIResponse | None) tuple
         """
         return await self._suggestions.generate_suggestions(
-            workshop, job_description, available_blocks, max_suggestions, focus_sections
+            workshop, job_description, available_blocks, max_suggestions, focus_sections,
+            return_metrics=return_metrics,
         )
 
     async def suggest_single_bullet(
@@ -68,7 +72,8 @@ class DiffEngine:
         bullet_text: str,
         entry_context: dict[str, str],
         job_description: str,
-    ) -> dict[str, Any]:
+        return_metrics: bool = False,
+    ) -> dict[str, Any] | tuple[dict[str, Any], AIResponse | None]:
         """
         Generate a suggestion for a single bullet point.
 
@@ -79,12 +84,15 @@ class DiffEngine:
             bullet_text: The current bullet point text
             entry_context: Context about the experience entry (title, company, date_range)
             job_description: Target job requirements
+            return_metrics: If True, return (result, AIResponse) tuple
 
         Returns:
-            Dict with original, suggested, reason, and impact fields
+            Dict with original, suggested, reason, and impact fields,
+            or (dict, AIResponse | None) tuple
         """
         return await self._suggestions.suggest_single_bullet(
-            bullet_text, entry_context, job_description
+            bullet_text, entry_context, job_description,
+            return_metrics=return_metrics,
         )
 
     # ============================================================

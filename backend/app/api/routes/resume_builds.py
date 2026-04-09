@@ -19,6 +19,7 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUserId, DBSessionWithRLS
+from app.services.ai import get_usage_tracker
 from app.api.utils.id_resolution import (
     IDResolutionError,
     add_deprecation_headers,
@@ -254,12 +255,14 @@ async def generate_suggestions(
 
     # Generate suggestions based on resume content
     diff_engine = get_diff_engine()
-    result = await diff_engine.generate_suggestions(
+    usage_tracker = get_usage_tracker()
+    result, ai_response = await diff_engine.generate_suggestions(
         workshop=resume_build,
         job_description=resume_build.get("job_description", ""),
         available_blocks=[],  # No vault blocks, use resume content directly
         max_suggestions=suggest_in.max_suggestions,
         focus_sections=suggest_in.focus_sections,
+        return_metrics=True,
     )
 
     # Add suggestions to resume build
@@ -269,6 +272,15 @@ async def generate_suggestions(
             resume_build_id=resume_build_model.id,
             user_id=current_user_id,
             diffs=result["suggestions"],
+        )
+        await db.commit()
+
+    if ai_response:
+        await usage_tracker.log_generation(
+            db=db,
+            user_id=current_user_id,
+            endpoint=f"/resume-builds/{resume_build_id}/suggest",
+            response=ai_response,
         )
         await db.commit()
 
@@ -324,7 +336,8 @@ async def suggest_bullet(
 
     # Generate suggestion
     diff_engine = get_diff_engine()
-    result = await diff_engine.suggest_single_bullet(
+    usage_tracker = get_usage_tracker()
+    result, ai_response = await diff_engine.suggest_single_bullet(
         bullet_text=request.bullet_text,
         entry_context={
             "title": request.entry_context.title,
@@ -332,7 +345,17 @@ async def suggest_bullet(
             "date_range": request.entry_context.date_range,
         },
         job_description=job_description,
+        return_metrics=True,
     )
+
+    if ai_response:
+        await usage_tracker.log_generation(
+            db=db,
+            user_id=current_user_id,
+            endpoint=f"/resume-builds/{resume_build_id}/suggest-bullet",
+            response=ai_response,
+        )
+        await db.commit()
 
     return BulletSuggestionResponse(
         original=result["original"],
