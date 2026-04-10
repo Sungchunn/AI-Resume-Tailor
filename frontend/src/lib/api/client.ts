@@ -1099,6 +1099,22 @@ export const atsApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  // Analyze bullets for AI improvement suggestions (library editor mode)
+  analyzeBullets: (
+    resumeId: string,
+    jobId: string | null,
+    jobListingId: number | null,
+    data: BulletAnalysisRequest
+  ): Promise<AnalyzeBulletsResponse> => {
+    const params = new URLSearchParams({ resume_id: resumeId });
+    if (jobId) params.set("job_id", jobId);
+    if (jobListingId) params.set("job_listing_id", String(jobListingId));
+    return fetchApi(`/api/v1/ats/analyze-bullets?${params.toString()}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
 };
 
 // AI Chat API (Resume Section Improvements)
