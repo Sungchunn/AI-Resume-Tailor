@@ -16,13 +16,19 @@ import {
   useAiReviewProgress,
 } from "@/lib/stores/bulletSuggestionsStore";
 import { BulletSuggestionCard } from "./BulletSuggestionCard";
+import type { ATSKeywordDetailedResponse } from "@/lib/api/types";
 
 // ============================================================================
 // Types
 // ============================================================================
 
 interface BulletSuggestionsPanelProps {
-  tailoredResumeId: string;
+  tailoredResumeId?: string;
+  resumeId?: string;
+  jobId?: string | null;
+  jobListingId?: number | null;
+  atsReady?: boolean;
+  atsData?: ATSKeywordDetailedResponse | null;
 }
 
 // ============================================================================
@@ -39,8 +45,15 @@ function Skeleton({ className = "" }: { className?: string }) {
 
 export function BulletSuggestionsPanel({
   tailoredResumeId,
+  resumeId,
+  jobId,
+  jobListingId,
+  atsReady: atsReadyProp,
+  atsData,
 }: BulletSuggestionsPanelProps) {
-  const { isReady: atsReady } = useATSReadiness();
+  // ATS readiness: use prop if provided (library mode), otherwise context (tailor mode)
+  const { isReady: atsReadyFromContext } = useATSReadiness();
+  const atsReady = atsReadyProp ?? atsReadyFromContext;
 
   const {
     pendingSuggestions,
@@ -59,7 +72,7 @@ export function BulletSuggestionsPanel({
     preAnalysisScore: hookPreScore,
     postScore,
     isRescoring,
-  } = useBulletAnalysis({ tailoredResumeId });
+  } = useBulletAnalysis({ tailoredResumeId, resumeId, jobId, jobListingId, atsData });
 
   // AI review state
   const aiReviewActive = useBulletSuggestionsStore((s) => s.aiReviewActive);
