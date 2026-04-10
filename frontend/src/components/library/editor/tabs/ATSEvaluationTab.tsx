@@ -313,6 +313,9 @@ export function ATSEvaluationTab({
   const setAnalyzedContentHash = useATSProgressStore(
     (s) => s.setAnalyzedContentHash
   );
+  const setKeywordAnalysisResult = useATSProgressStore(
+    (s) => s.setKeywordAnalysisResult
+  );
   const markContentStale = useATSProgressStore((s) => s.markContentStale);
   const clearStaleFlag = useATSProgressStore((s) => s.clearStaleFlag);
 
@@ -409,6 +412,8 @@ export function ATSEvaluationTab({
           // Store the content hash at analysis time for staleness detection
           const currentHash = generateContentHash(blocks);
           setAnalyzedContentHash(currentHash);
+          // Share keyword result with other tabs (e.g. bullet suggestions in library mode)
+          setKeywordAnalysisResult(data);
         },
         onError: (err) => {
           setAnalysisError(
@@ -418,7 +423,7 @@ export function ATSEvaluationTab({
         },
       }
     );
-  }, [jobDescription, resumeContent, analysisMutation, blocks, setAnalyzedContentHash]);
+  }, [jobDescription, resumeContent, analysisMutation, blocks, setAnalyzedContentHash, setKeywordAnalysisResult]);
 
   // Keep runAnalysis ref in sync for effect
   const runAnalysisRef = useRef(runAnalysis);

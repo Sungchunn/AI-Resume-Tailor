@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { ATSKeywordDetailedResponse } from '@/lib/api/types';
 
 export interface ATSStageResult {
   stage: number;
@@ -36,6 +37,9 @@ export interface ATSProgressState {
   analyzedContentHash: string | null;
   contentStale: boolean;
 
+  // Keyword analysis result (shared across tabs for library-mode bullet suggestions)
+  keywordAnalysisResult: ATSKeywordDetailedResponse | null;
+
   // Actions
   startAnalysis: (resumeId: string, jobId: string) => void;
   updateStage: (stage: ATSStageResult) => void;
@@ -49,6 +53,9 @@ export interface ATSProgressState {
   setAnalyzedContentHash: (hash: string) => void;
   markContentStale: () => void;
   clearStaleFlag: () => void;
+
+  // Keyword analysis actions
+  setKeywordAnalysisResult: (result: ATSKeywordDetailedResponse | null) => void;
 }
 
 export const useATSProgressStore = create<ATSProgressState>()(
@@ -69,6 +76,9 @@ export const useATSProgressStore = create<ATSProgressState>()(
       // Content tracking initial state
       analyzedContentHash: null,
       contentStale: false,
+
+      // Keyword analysis result
+      keywordAnalysisResult: null,
 
       startAnalysis: (resumeId, jobId) => {
         set({
@@ -152,6 +162,11 @@ export const useATSProgressStore = create<ATSProgressState>()(
 
       clearStaleFlag: () => {
         set({ contentStale: false });
+      },
+
+      // Keyword analysis actions
+      setKeywordAnalysisResult: (result) => {
+        set({ keywordAnalysisResult: result });
       },
     }),
     {
