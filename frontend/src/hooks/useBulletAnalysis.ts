@@ -16,6 +16,7 @@ import { useATSProgressStore } from "@/lib/stores/atsProgressStore";
 import { tailorApi, atsApi } from "@/lib/api/client";
 import { blocksToContent } from "@/lib/tailoring/blocksToContent";
 import type {
+  ATSKeywordDetailedResponse,
   BulletInput,
   BulletEntryContext,
 } from "@/lib/api/types";
@@ -30,7 +31,11 @@ import type {
 // ============================================================================
 
 interface UseBulletAnalysisOptions {
-  tailoredResumeId: string;
+  tailoredResumeId?: string;       // Tailor mode (existing)
+  resumeId?: string;               // Library mode
+  jobId?: string | null;           // Library mode
+  jobListingId?: number | null;    // Library mode
+  atsData?: ATSKeywordDetailedResponse | null; // Library mode — from shared store
 }
 
 interface UseBulletAnalysisReturn {
@@ -160,7 +165,13 @@ export function findEntryContext(
 
 export function useBulletAnalysis({
   tailoredResumeId,
+  resumeId,
+  jobId,
+  jobListingId,
+  atsData,
 }: UseBulletAnalysisOptions): UseBulletAnalysisReturn {
+  // Determine mode: tailor (has tailoredResumeId) or library (has resumeId)
+  const isLibraryMode = !tailoredResumeId && !!resumeId;
   // Store state
   const suggestions = useBulletSuggestionsStore((s) => s.suggestions);
   const isAnalyzing = useBulletSuggestionsStore((s) => s.isAnalyzing);
@@ -214,9 +225,17 @@ export function useBulletAnalysis({
 
   // Action: analyze bullets
   const analyze = useCallback(async () => {
-    if (!atsContext?.analysisComplete) {
-      setError("Run ATS analysis first");
-      return;
+    // ATS readiness check: tailor mode uses context, library mode uses atsData prop
+    if (isLibraryMode) {
+      if (!atsData) {
+        setError("Run ATS analysis first");
+        return;
+      }
+    } else {
+      if (!atsContext?.analysisComplete) {
+        setError("Run ATS analysis first");
+        return;
+      }
     }
 
     // Capture current ATS score for delta display
@@ -242,23 +261,63 @@ export function useBulletAnalysis({
         return;
       }
 
-      // Call API
-      const response = await tailorApi.analyzeBullets(tailoredResumeId, {
-        bullets,
-        ats_context: {
-          keyword_gaps: atsContext.keywordGaps.map((g) => ({
-            keyword: g.keyword,
-            importance: g.importance,
-          })),
-          importance_map: buildImportanceMap(atsContext.keywordGaps),
-          bullets_needing_metrics:
-            atsContext.contentQualityHints.bulletsNeedingMetrics,
-          bullets_with_weak_verbs:
-            atsContext.contentQualityHints.bulletsWithWeakVerbs,
-        },
-      });
+      // Build ATS context and call appropriate API
+      let response;
+
+      if (isLibraryMode && resumeId && atsData) {
+        // Library mode: derive keyword gaps from ATSKeywordDetailedResponse
+        const keywordGaps = atsData.all_keywords
+          .filter((k) => !k.found_in_resume)
+          .map((k) => ({
+            keyword: k.keyword,
+            importance: k.importance as "required" | "strongly_preferred" | "preferred" | "nice_to_have",
+          }));
+        const importanceMap = keywordGaps.reduce(
+          (acc, g) => {
+            acc[g.keyword] = g.importance;
+            return acc;
+          },
+          {} as Record<string, string>
+        );
+
+        response = await atsApi.analyzeBullets(
+          resumeId,
+          jobId ?? null,
+          jobListingId ?? null,
+          {
+            bullets,
+            ats_context: {
+              keyword_gaps: keywordGaps,
+              importance_map: importanceMap,
+              bullets_needing_metrics: [],
+              bullets_with_weak_verbs: [],
+            },
+          }
+        );
+      } else if (tailoredResumeId && atsContext) {
+        // Tailor mode: use tailor context and tailor API
+        response = await tailorApi.analyzeBullets(tailoredResumeId, {
+          bullets,
+          ats_context: {
+            keyword_gaps: atsContext.keywordGaps.map((g) => ({
+              keyword: g.keyword,
+              importance: g.importance,
+            })),
+            importance_map: buildImportanceMap(atsContext.keywordGaps),
+            bullets_needing_metrics:
+              atsContext.contentQualityHints.bulletsNeedingMetrics,
+            bullets_with_weak_verbs:
+              atsContext.contentQualityHints.bulletsWithWeakVerbs,
+          },
+        });
+      } else {
+        setError("Missing context for analysis");
+        setAnalyzing(false);
+        return;
+      }
 
       // Transform to store format
+      const storeKey = tailoredResumeId || resumeId || "";
       const storeSuggestions: BulletSuggestion[] = response.suggestions.map(
         (s) => ({
           id: crypto.randomUUID(),
@@ -274,7 +333,7 @@ export function useBulletAnalysis({
         })
       );
 
-      setSuggestions(storeSuggestions, tailoredResumeId);
+      setSuggestions(storeSuggestions, storeKey);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Analysis failed";
       setError(message);
@@ -282,9 +341,14 @@ export function useBulletAnalysis({
       setAnalyzing(false);
     }
   }, [
+    isLibraryMode,
     atsContext,
+    atsData,
     blocks,
     tailoredResumeId,
+    resumeId,
+    jobId,
+    jobListingId,
     setAnalyzing,
     setSuggestions,
     setError,
@@ -460,6 +524,11 @@ export function useBulletAnalysis({
 
   useEffect(() => {
     if (!aiReviewComplete || acceptedCount === 0) return;
+    // Skip auto-rescore in library mode — user can re-run ATS from the ATS tab
+    if (isLibraryMode) {
+      useATSProgressStore.getState().markContentStale();
+      return;
+    }
 
     const rescore = async () => {
       setIsRescoring(true);
@@ -487,7 +556,7 @@ export function useBulletAnalysis({
 
     rescore();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiReviewComplete, acceptedCount]);
+  }, [aiReviewComplete, acceptedCount, isLibraryMode]);
 
   // Utility: get suggestion for specific bullet
   const getSuggestionForBullet = useCallback(
