@@ -24,6 +24,7 @@ import type { ChatMessage, AISectionType, AIChatResponse } from "@/lib/api/types
 import { useTailorEditorContextSafe } from "@/components/tailor/editor/TailorEditorContext";
 import { BulletSuggestionsPanel } from "@/components/tailor/editor/BulletSuggestionsPanel";
 import { SkillSuggestionsPanel } from "@/components/tailor/editor/SkillSuggestionsPanel";
+import { useATSProgressStore } from "@/lib/stores/atsProgressStore";
 
 interface DisplayMessage {
   id: string;
@@ -42,6 +43,8 @@ interface QuickAction {
 }
 
 interface AIChatTabProps {
+  /** Resume MongoDB ObjectId - needed for library-mode bullet suggestions */
+  resumeId: string;
   /** User-created job ID for context - UUID, null means no job context */
   jobId: string | null;
   /** Scraped job listing ID for context - integer, null means no job context */
@@ -87,7 +90,7 @@ const QUICK_ACTIONS: QuickAction[] = [
  * - Apply/reject suggested improvements
  * - Job context integration for targeted suggestions
  */
-export function AIChatTab({ jobId, jobListingId, tailoredResumeId }: AIChatTabProps) {
+export function AIChatTab({ resumeId, jobId, jobListingId, tailoredResumeId }: AIChatTabProps) {
   const { state, updateBlock, getBlockById, setActiveBlock } = useBlockEditor();
   const { blocks, activeBlockId } = state;
 
@@ -100,6 +103,9 @@ export function AIChatTab({ jobId, jobListingId, tailoredResumeId }: AIChatTabPr
 
   // Has job context if either job ID is provided
   const hasJobContext = jobId !== null || jobListingId !== null;
+
+  // Keyword analysis result from shared store (for library-mode bullet suggestions)
+  const atsKeywordResult = useATSProgressStore((s) => s.keywordAnalysisResult);
 
   // Chat state
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
@@ -295,11 +301,24 @@ export function AIChatTab({ jobId, jobListingId, tailoredResumeId }: AIChatTabPr
         )}
       </div>
 
-      {/* Bullet & Skill Suggestions Panels (tailor mode only) */}
+      {/* Bullet & Skill Suggestions Panels (tailor mode) */}
       {isTailorMode && tailoredResumeId && (
         <div className="px-4 py-3 border-b border-border space-y-4">
           <BulletSuggestionsPanel tailoredResumeId={tailoredResumeId} />
           <SkillSuggestionsPanel />
+        </div>
+      )}
+
+      {/* Bullet Suggestions Panel (library mode with job + ATS complete) */}
+      {!isTailorMode && hasJobContext && atsKeywordResult && (
+        <div className="px-4 py-3 border-b border-border space-y-4">
+          <BulletSuggestionsPanel
+            resumeId={resumeId}
+            jobId={jobId}
+            jobListingId={jobListingId}
+            atsReady={true}
+            atsData={atsKeywordResult}
+          />
         </div>
       )}
 

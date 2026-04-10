@@ -7,6 +7,8 @@ import { AIChatTab, ATSEvaluationTab, FormattingTab, SectionDraggerTab } from ".
 type ControlPanelTab = "ai" | "ats" | "formatting" | "sections";
 
 interface ControlPanelProps {
+  /** Resume MongoDB ObjectId - needed for library-mode bullet suggestions */
+  resumeId: string;
   /** User-created job ID for ATS analysis - UUID, null means no job context */
   jobId: string | null;
   /** Scraped job listing ID for ATS analysis - integer, null means no job context */
@@ -24,7 +26,7 @@ interface ControlPanelProps {
  * 3. Formatting - Style, font, and spacing controls
  * 4. Sections - Drag-and-drop section ordering
  */
-export function ControlPanel({ jobId, jobListingId, tailoredResumeId }: ControlPanelProps) {
+export function ControlPanel({ resumeId, jobId, jobListingId, tailoredResumeId }: ControlPanelProps) {
   const [activeTab, setActiveTab] = useState<ControlPanelTab>("formatting");
 
   // Has job context if either job ID is provided
@@ -65,7 +67,7 @@ export function ControlPanel({ jobId, jobListingId, tailoredResumeId }: ControlP
       {/* Tab Content — all tabs stay mounted to preserve state; inactive tabs are hidden */}
       <div className="flex-1 overflow-hidden">
         <div className={`h-full ${activeTab === "ai" ? "" : "hidden"}`}>
-          <AIChatTab jobId={jobId} jobListingId={jobListingId} tailoredResumeId={tailoredResumeId} />
+          <AIChatTab resumeId={resumeId} jobId={jobId} jobListingId={jobListingId} tailoredResumeId={tailoredResumeId} />
         </div>
         <div className={`h-full ${activeTab === "ats" ? "" : "hidden"}`}>
           <ATSEvaluationTab jobId={jobId} jobListingId={jobListingId} />

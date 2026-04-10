@@ -311,7 +311,7 @@ export function EditorLayout({
               <Separator className="w-1.5 bg-muted hover:bg-primary/20 transition-colors cursor-col-resize" />
 
               <Panel defaultSize="27%" minSize="20%" maxSize="40%">
-                <ControlPanel jobId={jobId} jobListingId={jobListingId} tailoredResumeId={tailoredResumeId} />
+                <ControlPanel resumeId={resumeId} jobId={jobId} jobListingId={jobListingId} tailoredResumeId={tailoredResumeId} />
               </Panel>
             </>
           )}
