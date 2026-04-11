@@ -139,6 +139,7 @@ class JobListingRepository:
         filters: JobListingFilters,
         user_id: int | None = None,
         slim: bool = True,
+        known_total: int | None = None,
     ) -> tuple[list[JobListing], int]:
         """
         List job listings with filtering and pagination.
@@ -147,6 +148,11 @@ class JobListingRepository:
         list view are loaded; large TOAST columns are skipped to keep the
         response payload small. Callers must not access deferred columns on
         the returned ORM instances when ``slim`` is True.
+
+        When ``known_total`` is supplied the ``SELECT COUNT(*)`` query is
+        skipped entirely and the supplied value is returned as the total.
+        Phase 4 of the job-listings caching plan uses this path to reuse a
+        count that was cached under the filter-key when paginating.
 
         Returns tuple of (listings, total_count).
         """
@@ -358,9 +364,13 @@ class JobListingRepository:
             query = query.where(and_(*conditions))
             count_query = count_query.where(and_(*conditions))
 
-        # Get total count
-        total_result = await db.execute(count_query)
-        total = total_result.scalar() or 0
+        # Get total count — skipped when the caller already has a cached value
+        # for the same filter key (Phase 4 count-cache path).
+        if known_total is not None:
+            total = known_total
+        else:
+            total_result = await db.execute(count_query)
+            total = total_result.scalar() or 0
 
         # Apply sorting
         sort_column = self._get_sort_column(filters.sort_by)
