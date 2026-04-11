@@ -14,7 +14,7 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from fastapi_cache import FastAPICache
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUserId, DBSessionWithRLS
+from app.api.deps import CurrentUserId, DBSession, DBSessionWithRLS
 from app.crud import job_listing_repository, user_job_interaction_repository
 from app.schemas.job_listing import (
     ApplicationStatus,
@@ -237,14 +237,18 @@ def _build_listing_response(
 @router.get("/filter-options", response_model=JobListingFilterOptionsResponse)
 async def get_filter_options(
     response: Response,
-    db: DBSessionWithRLS,
-    _current_user_id: CurrentUserId,
+    db: DBSession,
 ) -> JobListingFilterOptionsResponse:
     """
     Get available filter options based on existing job data.
 
     Returns distinct countries, regions, and seniority levels
-    with counts for each value.
+    with counts for each value. This endpoint is unauthenticated so
+    Cloudflare can edge-cache the response — Cloudflare skips caching any
+    request that carries an Authorization header. Rate-limited per IP
+    under the default bucket in ``RateLimitMiddleware``. The underlying
+    ``job_listings`` table is not RLS-protected, so no user context is
+    required.
     """
     response.headers["Cache-Control"] = (
         "public, max-age=60, stale-while-revalidate=30"
