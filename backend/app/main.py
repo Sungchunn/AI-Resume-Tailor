@@ -4,6 +4,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.inmemory import InMemoryBackend
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.exc import TimeoutError as SQLTimeoutError
@@ -28,6 +30,11 @@ async def lifespan(app: FastAPI):
 
     # Startup: Initialize Redis connection
     await connect_redis()
+
+    # Startup: Initialize in-process FastAPI cache.
+    # Per-worker cache (1-2 workers on the 1 GB droplet); see
+    # /docs/architecture/backend-architecture.md for the multi-worker caveat.
+    FastAPICache.init(InMemoryBackend(), prefix="rb-cache")
 
     # Startup: Initialize scheduler
     scheduler = get_scheduler_service()
