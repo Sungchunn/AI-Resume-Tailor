@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUserId, DBSession, DBSessionWithRLS
 from app.crud import job_listing_repository, user_job_interaction_repository
+from app.services.scraping.schedule_utils import get_cache_ttl_seconds
 from app.schemas.job_listing import (
     ApplicationStatus,
     ApplyJobRequest,
@@ -70,6 +71,20 @@ def _public_list_cache_key(filters: "JobListingFilters") -> str:
     return f"{FastAPICache.get_prefix()}:job-listings:public:{digest}"
 
 
+def _public_count_cache_key(filters: "JobListingFilters") -> str:
+    """Cache key for the count portion of a list query.
+
+    Excludes pagination (``limit``, ``offset``) on top of the per-user
+    filters so pages 2+ reuse page 1's count under the same filter set.
+    """
+    public_bits = filters.model_dump(
+        exclude={"is_saved", "is_hidden", "applied", "limit", "offset"}
+    )
+    raw = repr(sorted(public_bits.items(), key=lambda kv: kv[0]))
+    digest = hashlib.md5(raw.encode()).hexdigest()  # noqa: S324
+    return f"{FastAPICache.get_prefix()}:job-listings:public-count:{digest}"
+
+
 async def _fetch_public_listings(
     db: AsyncSession,
     filters: "JobListingFilters",
@@ -78,32 +93,73 @@ async def _fetch_public_listings(
 
     Returns slim list items with default (False/None) interaction fields.
     Callers must merge in per-user interaction state after retrieval.
+
+    Row payloads are cached per ``(filters + limit + offset)`` while counts
+    are cached separately per ``filters`` alone — so paginating under the
+    same filter set reuses the first page's count and avoids re-running
+    ``SELECT COUNT(*)`` on every next-page click.
     """
-    cache_key = _public_list_cache_key(filters)
+    rows_key = _public_list_cache_key(filters)
+    count_key = _public_count_cache_key(filters)
     backend = FastAPICache.get_backend()
     coder = FastAPICache.get_coder()
 
     try:
-        cached = await backend.get(cache_key)
+        cached_rows = await backend.get(rows_key)
     except Exception:
-        logger.warning("rb-cache: backend get failed for %s", cache_key, exc_info=True)
-        cached = None
+        logger.warning("rb-cache: backend get failed for %s", rows_key, exc_info=True)
+        cached_rows = None
 
-    if cached is not None:
-        logger.debug("rb-cache: HIT %s", cache_key)
-        return coder.decode(cached)
+    if cached_rows is not None:
+        logger.debug("rb-cache: HIT %s", rows_key)
+        return coder.decode(cached_rows)
 
-    logger.debug("rb-cache: MISS %s", cache_key)
+    logger.debug("rb-cache: MISS %s", rows_key)
+
+    # Row miss — try to reuse a cached count under the filter-only key before
+    # falling back to the full COUNT + SELECT repo path.
+    cached_total: int | None = None
+    try:
+        cached_count_raw = await backend.get(count_key)
+    except Exception:
+        logger.warning(
+            "rb-cache: backend get failed for %s", count_key, exc_info=True
+        )
+        cached_count_raw = None
+
+    if cached_count_raw is not None:
+        try:
+            cached_total = coder.decode(cached_count_raw)
+            logger.debug("rb-cache: HIT %s", count_key)
+        except Exception:
+            logger.warning(
+                "rb-cache: failed to decode count cache %s",
+                count_key,
+                exc_info=True,
+            )
+            cached_total = None
+    else:
+        logger.debug("rb-cache: MISS %s", count_key)
+
     listings, total = await job_listing_repository.list(
-        db, filters=filters, user_id=None
+        db, filters=filters, user_id=None, known_total=cached_total
     )
     items = [_build_list_item_response(listing) for listing in listings]
     payload = (items, total)
 
+    ttl = get_cache_ttl_seconds()
     try:
-        await backend.set(cache_key, coder.encode(payload), expire=120)
+        await backend.set(rows_key, coder.encode(payload), expire=ttl)
     except Exception:
-        logger.warning("rb-cache: backend set failed for %s", cache_key, exc_info=True)
+        logger.warning("rb-cache: backend set failed for %s", rows_key, exc_info=True)
+
+    if cached_total is None:
+        try:
+            await backend.set(count_key, coder.encode(total), expire=ttl)
+        except Exception:
+            logger.warning(
+                "rb-cache: backend set failed for %s", count_key, exc_info=True
+            )
 
     return payload
 
@@ -251,7 +307,7 @@ async def get_filter_options(
     required.
     """
     response.headers["Cache-Control"] = (
-        "public, max-age=60, stale-while-revalidate=30"
+        "public, max-age=300, stale-while-revalidate=86400"
     )
 
     cache_key = _filter_options_cache_key()
@@ -280,7 +336,9 @@ async def get_filter_options(
     )
 
     try:
-        await backend.set(cache_key, coder.encode(payload), expire=300)
+        await backend.set(
+            cache_key, coder.encode(payload), expire=get_cache_ttl_seconds()
+        )
     except Exception:
         logger.warning(
             "rb-cache: backend set failed for %s", cache_key, exc_info=True
