@@ -39,7 +39,9 @@ from app.schemas.scraper import (
 )
 from app.services.core.cache import get_cache_service
 from app.services.scraping.apify_client import ApifyClientError, get_apify_client
+from app.services.scraping.cache_warm import warm_default_job_listing_cache
 from app.services.scraping.cost_tracker import get_cost_tracker
+from app.services.scraping.schedule_utils import set_cached_schedule
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +126,15 @@ class SchedulerService:
             logger.info(
                 f"Scraper job registered at "
                 f"{self.settings.scraper_schedule_hour:02d}:{self.settings.scraper_schedule_minute:02d} UTC"
+            )
+
+            # Seed the schedule-aware cache TTL helper. The preset-based
+            # schedule (see reconfigure_from_db) will overwrite this once
+            # DB-driven settings load.
+            set_cached_schedule(
+                self.settings.scraper_schedule_hour,
+                self.settings.scraper_schedule_minute,
+                "UTC",
             )
 
         # Register the daily cleanup job if enabled
@@ -275,6 +286,14 @@ class SchedulerService:
                 id="preset_linkedin_scraper",
                 name="Preset LinkedIn Job Scraper",
                 replace_existing=True,
+            )
+
+            # Refresh the schedule-aware cache TTL helper so any cache
+            # writes after this call use the new fire time.
+            set_cached_schedule(
+                settings.schedule_hour,
+                settings.schedule_minute,
+                settings.schedule_timezone,
             )
 
             # Update next_run_at in database for monitoring/display
@@ -455,14 +474,16 @@ class SchedulerService:
             total_errors += len(db_errors)
 
             # Invalidate the in-process job-listings cache so the next request
-            # surfaces freshly scraped rows. See
-            # /docs/features/infrastructure/110426_jobs-page-caching/phase-2-inmemory-cache.md
+            # surfaces freshly scraped rows, then warm the default view so the
+            # first user after the scrape does not eat a cold query. See
+            # /docs/features/infrastructure/110426_jobs-page-caching/phase-4-query-optimization.md
             try:
                 await FastAPICache.clear()
                 logger.info("rb-cache: cleared after scraper run")
+                await warm_default_job_listing_cache()
             except Exception as cache_err:
                 logger.warning(
-                    f"rb-cache: clear failed after scraper run: {cache_err}",
+                    f"rb-cache: clear/warm failed after scraper run: {cache_err}",
                     exc_info=True,
                 )
 
@@ -820,14 +841,16 @@ class SchedulerService:
             total_errors += len(db_errors)
 
             # Invalidate the in-process job-listings cache so the next request
-            # surfaces freshly scraped rows. See
-            # /docs/features/infrastructure/110426_jobs-page-caching/phase-2-inmemory-cache.md
+            # surfaces freshly scraped rows, then warm the default view so the
+            # first user after the scrape does not eat a cold query. See
+            # /docs/features/infrastructure/110426_jobs-page-caching/phase-4-query-optimization.md
             try:
                 await FastAPICache.clear()
                 logger.info("rb-cache: cleared after scraper run")
+                await warm_default_job_listing_cache()
             except Exception as cache_err:
                 logger.warning(
-                    f"rb-cache: clear failed after scraper run: {cache_err}",
+                    f"rb-cache: clear/warm failed after scraper run: {cache_err}",
                     exc_info=True,
                 )
 
