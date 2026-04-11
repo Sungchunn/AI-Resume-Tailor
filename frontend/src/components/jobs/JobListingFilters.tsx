@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import type { JobListingFilters as Filters, JobListingSortBy, FilterOption } from "@/lib/api/types";
+import { useState } from "react";
+import type { JobListingFilters as Filters, JobListingSortBy } from "@/lib/api/types";
 import { ChevronDownIcon } from "@/components/icons";
-import { jobListingApi } from "@/lib/api/client";
+import { useFilterOptions } from "@/lib/api/hooks";
 
 interface JobListingFiltersProps {
   filters: Filters;
@@ -30,24 +30,7 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
   const [showSeniority, setShowSeniority] = useState(false);
   const [showCountry, setShowCountry] = useState(false);
   const [showCity, setShowCity] = useState(false);
-  const [filterOptions, setFilterOptions] = useState<{
-    countries: FilterOption[];
-    seniorities: FilterOption[];
-    cities: FilterOption[];
-  } | null>(null);
-
-  // Load filter options on mount
-  useEffect(() => {
-    const loadFilterOptions = async () => {
-      try {
-        const options = await jobListingApi.getFilterOptions();
-        setFilterOptions(options);
-      } catch (error) {
-        console.error("Failed to load filter options:", error);
-      }
-    };
-    loadFilterOptions();
-  }, []);
+  const { data: filterOptions } = useFilterOptions();
 
   // Handler functions (unchanged API calls)
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {

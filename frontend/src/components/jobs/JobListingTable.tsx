@@ -2,16 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { JobListingResponse } from "@/lib/api/types";
+import type { JobListingListItem } from "@/lib/api/types";
 import { useSaveJobListing } from "@/lib/api/hooks";
 import { LinkedInIcon, ExternalLinkIcon, BookmarkIcon } from "@/components/icons";
 import { formatRelativeDate } from "@/lib/utils/date";
 
 interface JobListingTableProps {
-  listings: JobListingResponse[];
+  listings: JobListingListItem[];
 }
 
-function SaveButton({ listing }: { listing: JobListingResponse }) {
+function SaveButton({ listing }: { listing: JobListingListItem }) {
   const saveMutation = useSaveJobListing();
   const [showError, setShowError] = useState(false);
 

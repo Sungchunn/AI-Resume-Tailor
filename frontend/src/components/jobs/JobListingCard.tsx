@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { JobListingResponse } from "@/lib/api/types";
+import type { JobListingListItem } from "@/lib/api/types";
 import { useSaveJobListing, useHideJobListing } from "@/lib/api/hooks";
 import {
   BookmarkIcon,
@@ -11,7 +11,7 @@ import {
 } from "@/components/icons";
 
 interface JobListingCardProps {
-  listing: JobListingResponse;
+  listing: JobListingListItem;
 }
 
 export function JobListingCard({ listing }: JobListingCardProps) {
@@ -140,11 +140,6 @@ export function JobListingCard({ listing }: JobListingCardProps) {
           </span>
         )}
       </div>
-
-      {/* Description preview */}
-      <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
-        {listing.job_description.substring(0, 200)}...
-      </p>
 
       {/* Footer */}
       <div className="flex items-center justify-between mt-4 pt-3 border-t border-border dark:border-zinc-700">
