@@ -1,0 +1,173 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'deploy/docker-compose.prod.yml'
+      - '.github/workflows/cd.yml'
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    name: Build & Push Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+      image_digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/sungchunn/resume-builder-api
+          tags: |
+            type=raw,value=latest
+            type=sha,format=long
+
+      - name: Build & push
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: backend
+          file: backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  migrate:
+    name: Run Alembic Migrations
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    timeout-minutes: 10
+
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run alembic upgrade head
+        env:
+          IMAGE: ghcr.io/sungchunn/resume-builder-api:sha-${{ github.sha }}
+        run: |
+          docker run --rm \
+            -e DATABASE_URL='${{ secrets.PROD_DATABASE_URL }}' \
+            -e DATABASE_URL_SYNC='${{ secrets.PROD_DATABASE_URL_SYNC }}' \
+            -e MONGODB_URI='${{ secrets.PROD_MONGODB_URI }}' \
+            -e JWT_SECRET_KEY='${{ secrets.PROD_JWT_SECRET_KEY }}' \
+            -e OPENAI_API_KEY='${{ secrets.PROD_OPENAI_API_KEY }}' \
+            -e REDIS_URL='redis://localhost:6379' \
+            -e ENVIRONMENT='production' \
+            "$IMAGE" \
+            alembic upgrade head
+
+  deploy:
+    name: Deploy to Droplet
+    runs-on: ubuntu-latest
+    needs: migrate
+    timeout-minutes: 10
+
+    steps:
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USERNAME }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          script: |
+            set -euo pipefail
+
+            cd /home/deploy/app
+            git fetch origin
+            git reset --hard origin/main
+
+            cd deploy
+            echo '${{ secrets.GHCR_PAT }}' | docker login ghcr.io \
+              -u '${{ secrets.GHCR_USERNAME }}' --password-stdin
+
+            docker compose -f docker-compose.prod.yml pull api
+            docker compose -f docker-compose.prod.yml up -d api
+            docker image prune -f
+
+            echo "=========================================="
+            echo "POST-DEPLOYMENT HEALTH CHECK"
+            echo "=========================================="
+            echo "Waiting 20 seconds for app to start..."
+            sleep 20
+
+            HEALTH_URL="http://localhost:8000/health"
+            MAX_ATTEMPTS=5
+            RETRY_DELAY=3
+
+            for i in $(seq 1 $MAX_ATTEMPTS); do
+              echo ""
+              echo "Attempt $i/$MAX_ATTEMPTS: Checking $HEALTH_URL"
+              HTTP_STATUS=$(curl -s -o /tmp/health_response.json -w "%{http_code}" "$HEALTH_URL" 2>/dev/null || echo "000")
+
+              if [ "$HTTP_STATUS" = "200" ]; then
+                echo "✓ Health check PASSED (HTTP $HTTP_STATUS)"
+                echo ""
+                echo "Response:"
+                cat /tmp/health_response.json | jq . 2>/dev/null || cat /tmp/health_response.json
+                echo ""
+                echo "=========================================="
+                echo "DEPLOYMENT SUCCESSFUL"
+                echo "=========================================="
+                exit 0
+              fi
+
+              echo "✗ Health check returned HTTP $HTTP_STATUS"
+              if [ -f /tmp/health_response.json ]; then
+                echo "Response body:"
+                cat /tmp/health_response.json | jq . 2>/dev/null || cat /tmp/health_response.json
+              fi
+
+              if [ $i -lt $MAX_ATTEMPTS ]; then
+                echo "Retrying in ${RETRY_DELAY}s..."
+                sleep $RETRY_DELAY
+              fi
+            done
+
+            echo ""
+            echo "=========================================="
+            echo "DEPLOYMENT FAILED"
+            echo "=========================================="
+            echo "Health check failed after $MAX_ATTEMPTS attempts"
+            echo ""
+            echo "Recent container logs (last 50 lines):"
+            echo "------------------------------------------"
+            docker compose -f docker-compose.prod.yml logs --tail 50 api
+            echo ""
+            echo "Container status:"
+            echo "------------------------------------------"
+            docker compose -f docker-compose.prod.yml ps
+            exit 1
