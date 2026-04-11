@@ -6,9 +6,37 @@ The Job Listings API provides access to scraped job listings from external sourc
 
 **Base Path:** `/api/job-listings`
 
-**Authentication:** All endpoints require authentication.
+**Authentication:** All endpoints require authentication **except**
+`GET /api/job-listings/filter-options`, which is public so Cloudflare
+can edge-cache it.
 
 > **Note:** This API is for browsing scraped job listings. For managing user-created job postings, see [Jobs API](jobs.md).
+
+## Caching
+
+All `GET` endpoints emit a `Cache-Control` header so Cloudflare and
+browsers can absorb repeat reads. The rule is:
+
+| Endpoint | Auth | `Cache-Control` |
+| -------- | ---- | --------------- |
+| `GET /filter-options` | None | `public, max-age=60, stale-while-revalidate=30` |
+| `GET /` (list) | Required | `private, max-age=60, stale-while-revalidate=30` |
+| `GET /search` | Required | `private, max-age=60, stale-while-revalidate=30` |
+| `GET /{listing_id}` | Required | `private, max-age=60, stale-while-revalidate=30` |
+| `GET /saved` | Required | `private, no-store` |
+| `GET /applied` | Required | `private, no-store` |
+| `GET /kanban` | Required | `private, no-store` |
+
+Rule of thumb: any response that merges user-interaction fields
+(`is_saved`, `is_hidden`, `applied_at`, `application_status`) is
+`private` — never `public` — so users on the same Cloudflare POP cannot
+see each other's interaction state. Endpoints that only exist because
+of a user filter (`/saved`, `/applied`, `/kanban`) use `no-store`.
+
+Behind the scenes, `/filter-options` is also kept in a 5-minute
+in-process cache inside the FastAPI worker (see Phase 2 of
+`/docs/features/infrastructure/110426_jobs-page-caching/`). That cache
+is invalidated whenever the scraper finishes a run.
 
 ---
 
@@ -21,6 +49,11 @@ Get available filter values based on existing job data.
 ```http
 GET /api/job-listings/filter-options
 ```
+
+**Authentication:** None. Rate-limited per IP under the default bucket
+in `RateLimitMiddleware`. Served with
+`Cache-Control: public, max-age=60, stale-while-revalidate=30` so
+Cloudflare can cache the response at the edge.
 
 **Response (200 OK):**
 
