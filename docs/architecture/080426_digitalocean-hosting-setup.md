@@ -1,6 +1,6 @@
 # DigitalOcean Hosting Setup
 
-**Last Updated:** 2026-04-08
+**Last Updated:** 2026-04-12
 **Server:** Resume-Tailor (DigitalOcean Droplet)
 **IP:** 188.166.180.93
 
@@ -20,20 +20,17 @@ Internet
 │  │  - Listens on :80 (redirects to HTTPS)              │   │
 │  │  - Listens on :443 (SSL via Let's Encrypt)          │   │
 │  └──────────────────────┬──────────────────────────────┘   │
-│                         │ proxy_pass                        │
+│                         │ proxy_pass 127.0.0.1:8000         │
 │                         ▼                                   │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │  PM2 (process manager)                              │   │
-│  │  └─ fastapi process                                 │   │
-│  │      └─ Uvicorn (ASGI server, 2 workers)            │   │
-│  │          └─ FastAPI application                     │   │
-│  │              - Listens on 127.0.0.1:8000            │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                         │                                   │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  Redis (localhost:6379)                             │   │
-│  │  - Self-hosted, systemd managed                     │   │
-│  │  - 256MB max memory, LRU eviction                   │   │
+│  │  Docker Compose (deploy/docker-compose.prod.yml)    │   │
+│  │  ├─ resume-api container                            │   │
+│  │  │   - ghcr.io/sungchunn/resume-builder-api:latest  │   │
+│  │  │   - FastAPI / Uvicorn on 127.0.0.1:8000          │   │
+│  │  │   - env_file: /home/deploy/app/deploy/.env       │   │
+│  │  └─ resume-redis container                          │   │
+│  │      - redis:7-alpine, 128mb, allkeys-lru           │   │
+│  │      - appendonly yes, volume: redis_data           │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
@@ -53,38 +50,36 @@ Internet
 | Layer | Technology | Managed By | Listens On |
 | ----- | ---------- | ---------- | ---------- |
 | Reverse Proxy | Nginx 1.x | systemd | 0.0.0.0:80, 0.0.0.0:443 |
-| Process Manager | PM2 | pm2 startup | N/A |
-| ASGI Server | Uvicorn | PM2 | 127.0.0.1:8000 |
-| Application | FastAPI (Python 3.12) | Uvicorn | N/A |
-| Cache | Redis 7.0.15 | systemd | 127.0.0.1:6379 |
+| Container Runtime | Docker Engine + Compose v2 | systemd (`docker.service`) | N/A |
+| API Container | `resume-api` (FastAPI, Uvicorn) | Docker Compose | 127.0.0.1:8000 |
+| Cache Container | `resume-redis` (Redis 7) | Docker Compose | container DNS `redis:6379` |
 | SSL Certificates | Let's Encrypt (Certbot) | cron (auto-renew) | N/A |
+
+> **No Python / Poetry / pm2 on the droplet.** All build steps happen in GitHub Actions; the droplet only pulls pre-built images from GHCR.
 
 ---
 
 ## Directory Structure
 
 ```text
-/home/deploy/app/                    # Main application directory
-├── .git/                            # Git repository
-├── backend/                         # FastAPI backend
-│   ├── .env                         # Production environment variables
-│   ├── .env.example                 # Template for .env
-│   ├── app/                         # Application source code
-│   │   └── main.py                  # FastAPI entry point
-│   ├── alembic/                     # Database migrations
-│   ├── alembic.ini                  # Alembic configuration
-│   ├── pyproject.toml               # Poetry dependencies
-│   ├── poetry.lock                  # Locked dependencies
-│   └── tests/                       # Test suite
-├── frontend/                        # Next.js frontend (deployed to Vercel)
-├── docs/                            # Documentation
-├── logs/                            # Application logs
-│   ├── fastapi-out.log              # stdout logs
-│   └── fastapi-error.log            # stderr logs
-├── ecosystem.config.js              # PM2 configuration
-├── CLAUDE.md                        # AI assistant guidelines
-└── README.md                        # Project readme
+/home/deploy/app/                    # Git checkout (source of truth for deploy/.env)
+├── .git/
+├── backend/                         # Source tree (not executed on droplet)
+│   └── Dockerfile                   # Built in CI, not on the droplet
+├── frontend/                        # Source tree (deployed to Vercel, not used here)
+├── deploy/
+│   ├── docker-compose.prod.yml      # Production compose: api + redis
+│   └── .env                         # Production secrets (gitignored, hand-seeded)
+├── docs/
+├── CLAUDE.md
+└── README.md
 ```
+
+**Key differences from local dev:**
+
+- Secrets live at `deploy/.env`, **not** `backend/.env`. The image has no bundled `.env`; `docker-compose.prod.yml` injects it via `env_file:`.
+- No `logs/`, `ecosystem.config.js`, Poetry virtualenv, or `.venv` on the droplet.
+- `git pull` only updates `deploy/docker-compose.prod.yml`; the API code comes from the GHCR image.
 
 ---
 
@@ -96,15 +91,10 @@ Internet
 **Config location:** `/etc/nginx/sites-available/`
 
 ```bash
-# Service management
 sudo systemctl status nginx
-sudo systemctl restart nginx
 sudo systemctl reload nginx      # Reload config without downtime
+sudo nginx -t                    # Test config before reload
 
-# Test config before reload
-sudo nginx -t
-
-# View logs
 sudo tail -f /var/log/nginx/access.log
 sudo tail -f /var/log/nginx/error.log
 ```
@@ -112,103 +102,99 @@ sudo tail -f /var/log/nginx/error.log
 **What it does:**
 
 - Terminates SSL (HTTPS) using Let's Encrypt certificates
-- Redirects HTTP (port 80) to HTTPS (port 443)
-- Proxies requests to Uvicorn on `127.0.0.1:8000`
-- Adds security headers (X-Frame-Options, X-Content-Type-Options)
-- Handles file upload size limit (10MB)
+- Redirects HTTP → HTTPS
+- Proxies requests to the `resume-api` container on `127.0.0.1:8000`
+- Adds security headers and 10MB upload limit
 
-### 2. PM2 (Process Manager)
+### 2. Docker Compose (API + Redis)
 
-**Managed by:** PM2 startup script (runs as root)
-**Config location:** `/home/deploy/app/ecosystem.config.js`
+**Managed by:** Docker Engine (`docker.service`, systemd-managed)
+**Config location:** `/home/deploy/app/deploy/docker-compose.prod.yml`
 
 ```bash
-# Process management
-pm2 status                       # View all processes
-pm2 show fastapi                 # Detailed process info
-pm2 restart fastapi              # Restart application
-pm2 stop fastapi                 # Stop application
-pm2 delete fastapi               # Remove from PM2
+cd /home/deploy/app/deploy
 
-# Logs
-pm2 logs fastapi                 # Stream logs
-pm2 logs fastapi --lines 100    # Last 100 lines
-pm2 flush                        # Clear all logs
+# Status & logs
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs -f api
+docker compose -f docker-compose.prod.yml logs --tail 100 api
+docker compose -f docker-compose.prod.yml logs redis
 
-# Save/restore process list
-pm2 save                         # Save current processes
-pm2 resurrect                    # Restore saved processes
+# Lifecycle
+docker compose -f docker-compose.prod.yml pull api       # Fetch latest image from GHCR
+docker compose -f docker-compose.prod.yml up -d api      # Recreate api container
+docker compose -f docker-compose.prod.yml restart api    # Restart in place
+docker compose -f docker-compose.prod.yml down           # Stop everything
+docker compose -f docker-compose.prod.yml up -d          # Start everything
 
-# Startup configuration
-pm2 startup                      # Generate startup script
-pm2 unstartup                    # Remove startup script
+# Image housekeeping
+docker image prune -f                                    # Remove dangling images
+docker image ls ghcr.io/sungchunn/resume-builder-api     # List pinned tags
 ```
 
-**What it does:**
+**What Compose provides:**
 
-- Keeps Uvicorn running continuously
-- Auto-restarts on crash (max 10 restarts)
-- Auto-restarts if memory exceeds 800MB
-- Logs stdout/stderr to `/home/deploy/app/logs/`
-- Preserves process list across server reboots
+- Restart policy `unless-stopped` on both containers (survives reboot via Docker Engine)
+- Healthchecks: API hits `/health`, Redis uses `redis-cli ping`
+- `api` depends on `redis` being `service_healthy`
+- JSON log rotation: 10MB × 3 files for api, 5MB × 2 for redis
+- Redis data persists on a named volume (`redis_data`)
 
-### 3. Uvicorn (ASGI Server)
+### 3. API Container (`resume-api`)
 
-**Managed by:** PM2
-**Executable:** `/root/.cache/pypoetry/virtualenvs/ai-resume-tailor-backend-sS6T8uKZ-py3.12/bin/uvicorn`
+**Image:** `ghcr.io/sungchunn/resume-builder-api:latest`
+**Built in:** `.github/workflows/cd.yml` (job `build-and-push`)
+**Port binding:** `127.0.0.1:8000:8000` (only reachable via Nginx)
 
 ```bash
-# PM2 runs this command:
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+# Exec into the running container
+docker exec -it resume-api sh
+
+# Inspect environment
+docker inspect resume-api --format '{{json .Config.Env}}'
+
+# Container-only health check (same command Compose runs)
+docker exec resume-api curl -fsS http://localhost:8000/health
 ```
 
-**What it does:**
+Uvicorn is the entrypoint inside the image. Worker count and command-line args are baked into the Dockerfile; override via a compose `command:` block if needed.
 
-- Runs the FastAPI application
-- Spawns 2 worker processes for concurrency
-- Binds to all interfaces on port 8000 (only accessible via Nginx)
+### 4. Redis Container (`resume-redis`)
 
-### 4. Redis (Cache)
-
-**Managed by:** systemd
-**Config location:** `/etc/redis/redis.conf`
+**Image:** `redis:7-alpine`
+**Binding:** Container-internal only (`redis:6379` via Compose network). Not published to the host.
 
 ```bash
-# Service management
-sudo systemctl status redis-server
-sudo systemctl restart redis-server
-
 # CLI access
-redis-cli ping                   # Test connection
-redis-cli DBSIZE                 # Count keys
-redis-cli INFO memory            # Memory stats
-redis-cli MONITOR                # Watch live commands
-
-# Flush data (use with caution)
-redis-cli FLUSHALL               # Clear all data
+docker exec -it resume-redis redis-cli ping
+docker exec -it resume-redis redis-cli DBSIZE
+docker exec -it resume-redis redis-cli INFO memory
+docker exec -it resume-redis redis-cli MONITOR
 ```
 
-**Configuration:**
+**Configuration (set via `command:` in compose):**
 
 | Setting | Value | Purpose |
 | ------- | ----- | ------- |
-| bind | 127.0.0.1 -::1 | Localhost only (security) |
-| maxmemory | 256mb | Memory limit |
-| maxmemory-policy | allkeys-lru | Evict least-recently-used when full |
+| `--appendonly` | `yes` | AOF persistence |
+| `--maxmemory` | `128mb` | Fit the 1GB droplet |
+| `--maxmemory-policy` | `allkeys-lru` | Evict LRU when full |
 
 ---
 
 ## Environment Variables
 
-**Location:** `/home/deploy/app/backend/.env`
+**Location:** `/home/deploy/app/deploy/.env`
+
+This file is referenced by `docker-compose.prod.yml` via `env_file: .env` and injected into the `resume-api` container at start time. The image itself never contains secrets.
 
 | Variable | Purpose | Example Value |
 | -------- | ------- | ------------- |
-| `DATABASE_URL` | PostgreSQL (Supabase) connection | `postgresql+asyncpg://...` |
+| `DATABASE_URL` | PostgreSQL (Supabase) async connection | `postgresql+asyncpg://...` |
 | `DATABASE_URL_SYNC` | Sync URL for Alembic migrations | `postgresql://...` |
 | `MONGODB_URI` | MongoDB Atlas connection | `mongodb+srv://...` |
 | `MONGODB_DATABASE` | MongoDB database name | `resume_tailor` |
-| `REDIS_URL` | Redis connection | `redis://localhost:6379` |
+| `REDIS_URL` | **`redis://redis:6379`** (container DNS, not `localhost`) | `redis://redis:6379` |
 | `JWT_SECRET_KEY` | JWT signing secret | (keep secret) |
 | `JWT_ALGORITHM` | JWT algorithm | `HS256` |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Token expiry | `30` |
@@ -226,36 +212,61 @@ redis-cli FLUSHALL               # Clear all data
 | `SCRAPER_ENABLED` | Enable job scraper | `true` |
 | `ADMIN_EMAILS` | Admin user emails | `email@example.com` |
 
+> **Critical:** `REDIS_URL` **must** use the container DNS name `redis`, not `localhost` or `127.0.0.1`. Inside the `resume-api` container, `localhost` resolves to the container itself, not the Redis service. A misconfigured `REDIS_URL` starts cleanly but every cache operation will fail at runtime.
+
 ---
 
-## PM2 Ecosystem Configuration
+## Production Docker Compose
 
-**Location:** `/home/deploy/app/ecosystem.config.js`
+**Location:** `/home/deploy/app/deploy/docker-compose.prod.yml`
 
-```javascript
-module.exports = {
-  apps: [{
-    name: "fastapi",
-    script: "/root/.cache/pypoetry/virtualenvs/ai-resume-tailor-backend-sS6T8uKZ-py3.12/bin/uvicorn",
-    args: "app.main:app --host 0.0.0.0 --port 8000 --workers 2",
-    cwd: "/home/deploy/app/backend",
-    interpreter: "none",
-    env: {
-      PATH: "/root/.cache/pypoetry/virtualenvs/ai-resume-tailor-backend-sS6T8uKZ-py3.12/bin:/usr/local/bin:/usr/bin:/bin",
-      CORS_ORIGINS: "http://localhost:3000,https://re-zoo-me.com,https://www.re-zoo-me.com,https://ai-resume-tailor-sigma.vercel.app",
-      GOOGLE_CLIENT_ID: "...",
-      GOOGLE_OAUTH_ENABLED: "true"
-    },
-    max_restarts: 10,
-    min_uptime: "10s",
-    max_memory_restart: "800M",
-    error_file: "/home/deploy/app/logs/fastapi-error.log",
-    out_file: "/home/deploy/app/logs/fastapi-out.log",
-    log_date_format: "YYYY-MM-DD HH:mm:ss Z",
-    merge_logs: true
-  }]
-}
+```yaml
+services:
+  api:
+    image: ghcr.io/sungchunn/resume-builder-api:latest
+    container_name: resume-api
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    image: redis:7-alpine
+    container_name: resume-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+volumes:
+  redis_data:
 ```
+
+The file in the repo (`deploy/docker-compose.prod.yml`) is the source of truth — the droplet's copy is updated via `git pull` on every deploy.
 
 ---
 
@@ -314,6 +325,8 @@ server {
 }
 ```
 
+The API port `127.0.0.1:8000` is the same regardless of whether the API is containerized or not, so Nginx config did not change during the Docker cutover.
+
 ---
 
 ## SSL Certificates (Let's Encrypt)
@@ -322,71 +335,60 @@ server {
 **Managed by:** Certbot with auto-renewal
 
 ```bash
-# Check certificate status
-sudo certbot certificates
-
-# Test renewal
-sudo certbot renew --dry-run
-
-# Force renewal
-sudo certbot renew --force-renewal
-
-# View renewal timer
+sudo certbot certificates          # Check status
+sudo certbot renew --dry-run       # Test renewal
+sudo certbot renew --force-renewal # Force renewal
 systemctl list-timers | grep certbot
-```
-
----
-
-## Poetry & Python Environment
-
-**Python version:** 3.12.3
-**Poetry location:** `/root/.local/bin/poetry` (symlink to `/root/.local/share/pypoetry/venv/bin/poetry`)
-**Virtual environment:** `/root/.cache/pypoetry/virtualenvs/ai-resume-tailor-backend-sS6T8uKZ-py3.12/`
-
-```bash
-# Add Poetry to PATH (required for manual commands)
-export PATH="/root/.local/bin:$PATH"
-
-# Install dependencies
-cd /home/deploy/app/backend
-poetry install --no-interaction
-
-# Run database migrations
-poetry run alembic upgrade head
-
-# Activate virtual environment manually
-source /root/.cache/pypoetry/virtualenvs/ai-resume-tailor-backend-sS6T8uKZ-py3.12/bin/activate
 ```
 
 ---
 
 ## Deployment Process
 
-Deployments are automated via GitHub Actions (`.github/workflows/deploy-backend.yml`).
+Deployments are automated via GitHub Actions. Two workflows cover the backend:
 
-**Trigger:** Push to `main` branch with changes in `backend/` directory
+- **`.github/workflows/ci.yml`** — runs on every PR touching `backend/**`. Lint (`ruff`) + full `pytest` suite against real Postgres 16 (pgvector) and MongoDB 7 service containers.
+- **`.github/workflows/cd.yml`** — runs on push to `main` touching `backend/**`, `deploy/docker-compose.prod.yml`, or the workflow itself. Three sequential jobs:
 
-**Steps:**
+**Job 1: `build-and-push`**
 
-1. GitHub Actions SSHs into the droplet
-2. Pulls latest code from `origin/main`
-3. Installs dependencies via Poetry
-4. Runs Alembic migrations
-5. Restarts PM2 process
-6. Runs health check (`/health` endpoint)
+- Checks out the repo on a GHA runner
+- Sets up Buildx, logs in to GHCR
+- Builds `backend/Dockerfile` with GHA layer cache (`cache-from: type=gha, cache-to: type=gha,mode=max`)
+- Pushes to `ghcr.io/sungchunn/resume-builder-api` tagged `:latest` and `:sha-<commit-sha>`
+
+**Job 2: `migrate`** (depends on build-and-push)
+
+- Logs in to GHCR from the runner
+- `docker run --rm` the just-built image with production env vars injected (`PROD_DATABASE_URL`, `PROD_DATABASE_URL_SYNC`, `PROD_MONGODB_URI`, `PROD_JWT_SECRET_KEY`, `PROD_OPENAI_API_KEY`, `ENVIRONMENT=production`, `REDIS_URL=redis://localhost:6379` placeholder to satisfy settings import)
+- Runs `alembic upgrade head` against Supabase directly from the runner. No droplet involvement.
+
+**Job 3: `deploy`** (depends on migrate)
+
+- SSHes to the droplet (`DO_HOST`, `DO_USERNAME`, `DO_SSH_KEY`)
+- `cd /home/deploy/app && git fetch origin && git reset --hard origin/main` to pick up any `deploy/docker-compose.prod.yml` changes
+- `docker login ghcr.io` with `GHCR_USERNAME` + `GHCR_PAT`
+- `docker compose -f docker-compose.prod.yml pull api` → `up -d api`
+- `docker image prune -f`
+- 5-attempt `/health` check against `http://localhost:8000/health` with 3s backoff; fails loudly (with `docker compose logs --tail 50 api` and `ps` output) if any attempt returns non-200
+
+**Required GitHub secrets:** `PROD_DATABASE_URL`, `PROD_DATABASE_URL_SYNC`, `PROD_MONGODB_URI`, `PROD_JWT_SECRET_KEY`, `PROD_OPENAI_API_KEY`, `GHCR_USERNAME`, `GHCR_PAT`, `DO_HOST`, `DO_USERNAME`, `DO_SSH_KEY`.
 
 ```bash
-# Manual deployment (if needed)
+# Manual deployment on the droplet (rarely needed)
 cd /home/deploy/app
-git fetch origin
-git reset --hard origin/main
-cd backend
-export PATH="/root/.local/bin:$PATH"
-poetry install --no-interaction
-poetry run alembic upgrade head
-pm2 restart fastapi
-pm2 save
+git fetch origin && git reset --hard origin/main
+cd deploy
+echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+docker compose -f docker-compose.prod.yml pull api
+docker compose -f docker-compose.prod.yml up -d api
+docker image prune -f
+curl -fsS http://localhost:8000/health
 ```
+
+**Rollback:** edit `deploy/docker-compose.prod.yml` on the droplet to pin `image:` to a previous `sha-<commit>` tag, then `docker compose pull api && up -d api`. A `workflow_dispatch` one-click rollback is tracked as a follow-up in the feature master plan.
+
+See `/docs/features/infrastructure/110426_docker-cicd-pipeline/` for phase-by-phase rationale and verification steps.
 
 ---
 
@@ -395,7 +397,10 @@ pm2 save
 **Endpoint:** `GET /health`
 
 ```bash
-# Local check
+# From inside the container
+docker exec resume-api curl -fsS http://localhost:8000/health
+
+# From the droplet host (via the published port)
 curl http://localhost:8000/health
 
 # External check
@@ -412,49 +417,58 @@ curl https://re-zoo-me.com/health
 
 ## Log Locations
 
-| Log | Location | Command |
-| --- | -------- | ------- |
-| FastAPI stdout | `/home/deploy/app/logs/fastapi-out.log` | `pm2 logs fastapi` |
-| FastAPI stderr | `/home/deploy/app/logs/fastapi-error.log` | `pm2 logs fastapi` |
-| Nginx access | `/var/log/nginx/access.log` | `sudo tail -f /var/log/nginx/access.log` |
-| Nginx error | `/var/log/nginx/error.log` | `sudo tail -f /var/log/nginx/error.log` |
-| Redis | `/var/log/redis/redis-server.log` | `sudo tail -f /var/log/redis/redis-server.log` |
-| System | `/var/log/syslog` | `sudo tail -f /var/log/syslog` |
+| Log | Location / Command |
+| --- | ------------------ |
+| FastAPI stdout + stderr | `docker compose -f /home/deploy/app/deploy/docker-compose.prod.yml logs -f api` |
+| FastAPI rotated JSON logs | `/var/lib/docker/containers/<container-id>/*-json.log` (Docker-managed, rotated) |
+| Redis | `docker compose -f /home/deploy/app/deploy/docker-compose.prod.yml logs -f redis` |
+| Nginx access | `/var/log/nginx/access.log` — `sudo tail -f /var/log/nginx/access.log` |
+| Nginx error | `/var/log/nginx/error.log` — `sudo tail -f /var/log/nginx/error.log` |
+| System | `/var/log/syslog` — `sudo tail -f /var/log/syslog` |
+| Docker daemon | `sudo journalctl -u docker.service -f` |
 
 ---
 
 ## Quick Reference Commands
 
 ```bash
-# Application
-pm2 status                           # Check all processes
-pm2 restart fastapi                  # Restart backend
-pm2 logs fastapi --lines 50         # View recent logs
-curl http://localhost:8000/health   # Health check
+# Application (run from /home/deploy/app/deploy)
+docker compose -f docker-compose.prod.yml ps             # Status
+docker compose -f docker-compose.prod.yml logs -f api    # Stream logs
+docker compose -f docker-compose.prod.yml restart api    # Restart container
+docker compose -f docker-compose.prod.yml pull api && \
+  docker compose -f docker-compose.prod.yml up -d api    # Pull latest image and recreate
+curl http://localhost:8000/health                        # Health check
 
 # Nginx
-sudo systemctl status nginx          # Check Nginx status
-sudo nginx -t && sudo systemctl reload nginx  # Reload config
+sudo systemctl status nginx
+sudo nginx -t && sudo systemctl reload nginx
 
-# Redis
-redis-cli ping                       # Test Redis
-redis-cli INFO memory               # Memory usage
-sudo systemctl restart redis-server # Restart Redis
+# Redis (inside the container)
+docker exec -it resume-redis redis-cli ping
+docker exec -it resume-redis redis-cli INFO memory
 
 # SSL
-sudo certbot certificates            # Check SSL status
-sudo certbot renew --dry-run        # Test renewal
+sudo certbot certificates
+sudo certbot renew --dry-run
 
-# Database migrations
-cd /home/deploy/app/backend
-export PATH="/root/.local/bin:$PATH"
-poetry run alembic upgrade head      # Run migrations
-poetry run alembic history          # View migration history
+# Migrations (normally run automatically in cd.yml; manual run from laptop)
+docker run --rm \
+  -e DATABASE_URL="$PROD_DATABASE_URL" \
+  -e DATABASE_URL_SYNC="$PROD_DATABASE_URL_SYNC" \
+  -e MONGODB_URI="$PROD_MONGODB_URI" \
+  -e JWT_SECRET_KEY="$PROD_JWT_SECRET_KEY" \
+  -e OPENAI_API_KEY="$PROD_OPENAI_API_KEY" \
+  -e REDIS_URL='redis://localhost:6379' \
+  -e ENVIRONMENT='production' \
+  ghcr.io/sungchunn/resume-builder-api:latest \
+  alembic upgrade head
 
 # System
-htop                                 # Resource usage
-df -h                                # Disk usage
-free -m                              # Memory usage
+htop
+df -h
+free -m
+docker system df                                         # Docker disk usage
 ```
 
 ---
@@ -467,6 +481,7 @@ free -m                              # Memory usage
 | MongoDB Atlas | Document database | <https://cloud.mongodb.com> |
 | Vercel | Frontend hosting | <https://vercel.com/dashboard> |
 | DigitalOcean | Droplet hosting | <https://cloud.digitalocean.com> |
+| GHCR | Container registry for `resume-builder-api` | <https://github.com/Sungchunn?tab=packages> |
 | OpenAI | AI API | <https://platform.openai.com> |
 | Apify | Job scraping | <https://console.apify.com> |
 | Let's Encrypt | SSL certificates | (auto-managed) |
@@ -478,22 +493,36 @@ free -m                              # Memory usage
 ### Backend not responding
 
 ```bash
-pm2 status                          # Check if running
-pm2 logs fastapi --lines 100       # Check for errors
-pm2 restart fastapi                 # Restart
+cd /home/deploy/app/deploy
+docker compose -f docker-compose.prod.yml ps                    # Is api (healthy)?
+docker compose -f docker-compose.prod.yml logs --tail 100 api   # Recent errors
+docker compose -f docker-compose.prod.yml restart api
 ```
 
 ### 502 Bad Gateway
 
 ```bash
-# Check if Uvicorn is running
-pm2 status
-curl http://localhost:8000/health   # Direct check
+docker compose -f /home/deploy/app/deploy/docker-compose.prod.yml ps
+curl http://localhost:8000/health   # Direct check, bypassing Nginx
 
-# Check Nginx config
 sudo nginx -t
 sudo systemctl reload nginx
 ```
+
+### Cache errors / Redis connection refused from the API
+
+Almost always a `REDIS_URL` misconfiguration. Inside the `resume-api` container, Redis is reachable at `redis://redis:6379`, **not** `localhost`.
+
+```bash
+# Verify what the container sees
+docker exec resume-api printenv REDIS_URL
+
+# Verify the redis container is up and healthy
+docker compose -f /home/deploy/app/deploy/docker-compose.prod.yml ps redis
+docker exec resume-redis redis-cli ping
+```
+
+Fix by editing `/home/deploy/app/deploy/.env`, then `docker compose up -d api` to recreate with the new env.
 
 ### SSL certificate expired
 
@@ -502,18 +531,28 @@ sudo certbot renew --force-renewal
 sudo systemctl reload nginx
 ```
 
-### Redis connection error
+### Image won't pull (GHCR auth)
 
 ```bash
-redis-cli ping                      # Should return PONG
-sudo systemctl status redis-server
-sudo systemctl restart redis-server
+# Re-login with the PAT stored in the GHA secret GHCR_PAT
+echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+docker compose -f /home/deploy/app/deploy/docker-compose.prod.yml pull api
 ```
 
 ### Out of memory
 
 ```bash
-free -m                             # Check memory
-pm2 monit                           # Monitor processes
-# Consider upgrading droplet or reducing workers
+free -m
+docker stats --no-stream           # Per-container memory
+# Consider upgrading droplet, reducing Uvicorn workers, or lowering redis maxmemory
+```
+
+### Rollback to a previous image
+
+```bash
+cd /home/deploy/app/deploy
+# Edit docker-compose.prod.yml: change image tag from :latest to :sha-<previous-commit>
+docker compose -f docker-compose.prod.yml pull api
+docker compose -f docker-compose.prod.yml up -d api
+curl -fsS http://localhost:8000/health
 ```
