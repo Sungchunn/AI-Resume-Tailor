@@ -23,20 +23,34 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from app.db.session import Base
 from app.models.job import JobDescription
 from app.models.user import User
 
-# Skip all tests if not using PostgreSQL
+# Skip all tests unless PostgreSQL is configured AND the test runner has
+# explicitly opted in to a DB with RLS policies applied. The CI service
+# container used by ci.yml only runs `metadata.create_all`, which creates
+# tables but not the alembic-managed RLS policies / session variables these
+# tests depend on. Set TEST_RLS_ENABLED=true against a DB that has had
+# `alembic upgrade head` run on it to enable these tests.
 pytestmark = pytest.mark.skipif(
-    "postgresql" not in os.environ.get("TEST_DATABASE_URL", ""),
-    reason="RLS tests require PostgreSQL database",
+    "postgresql" not in os.environ.get("TEST_DATABASE_URL", "")
+    or os.environ.get("TEST_RLS_ENABLED", "").lower() != "true",
+    reason=(
+        "RLS tests require PostgreSQL with RLS policies applied via alembic "
+        "migrations; set TEST_RLS_ENABLED=true against a migrated DB to run"
+    ),
 )
 
 
 @pytest_asyncio.fixture
 async def pg_engine():
-    """Create a PostgreSQL engine for RLS testing."""
+    """Create a PostgreSQL engine for RLS testing.
+
+    Schema creation is owned by the module-level setup in conftest.py.
+    This fixture only ensures rows inserted during a test are cleaned
+    up before and after, so RLS tests don't leak state to sibling tests
+    that share the same database.
+    """
     database_url = os.environ.get("TEST_DATABASE_URL")
     if not database_url or "postgresql" not in database_url:
         pytest.skip("PostgreSQL database required for RLS tests")
@@ -46,15 +60,18 @@ async def pg_engine():
         poolclass=NullPool,
     )
 
-    # Create all tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    async def _truncate_touched_tables():
+        async with engine.begin() as conn:
+            await conn.execute(
+                text(
+                    "TRUNCATE TABLE user_job_interactions, job_descriptions, "
+                    "users RESTART IDENTITY CASCADE"
+                )
+            )
 
+    await _truncate_touched_tables()
     yield engine
-
-    # Cleanup
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+    await _truncate_touched_tables()
 
     await engine.dispose()
 

@@ -165,6 +165,21 @@ class TestResumeBuildCRUDOwnership:
 
     async def test_list_only_returns_own_builds(self, db_session: AsyncSession):
         """list_builds should only return builds owned by the user."""
+        from app.models.user import User as _User
+
+        # Create a second user so the user_id=2 build satisfies the FK.
+        db_session.add(
+            _User(
+                id=2,
+                email="user2@example.com",
+                hashed_password="hashed",
+                full_name="User Two",
+                is_active=True,
+                is_admin=False,
+            )
+        )
+        await db_session.flush()
+
         # Create builds for different users
         build1 = ResumeBuild(job_title="User 1 Build", user_id=1, status="draft")
         build2 = ResumeBuild(job_title="User 2 Build", user_id=2, status="draft")
