@@ -23,6 +23,7 @@ from typing import Any
 import httpx
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from fastapi_cache import FastAPICache
 
 from app.core.config import Settings, get_settings
 from app.crud.job_listing import job_listing_repository
@@ -453,6 +454,18 @@ class SchedulerService:
             total_created, total_updated, db_errors = await self._batch_upsert_jobs(all_jobs)
             total_errors += len(db_errors)
 
+            # Invalidate the in-process job-listings cache so the next request
+            # surfaces freshly scraped rows. See
+            # /docs/features/infrastructure/110426_jobs-page-caching/phase-2-inmemory-cache.md
+            try:
+                await FastAPICache.clear()
+                logger.info("rb-cache: cleared after scraper run")
+            except Exception as cache_err:
+                logger.warning(
+                    f"rb-cache: clear failed after scraper run: {cache_err}",
+                    exc_info=True,
+                )
+
         # Determine overall status
         completed_at = datetime.now(timezone.utc)
         duration = (completed_at - started_at).total_seconds()
@@ -805,6 +818,18 @@ class SchedulerService:
         if all_jobs:
             total_created, total_updated, db_errors = await self._batch_upsert_jobs(all_jobs)
             total_errors += len(db_errors)
+
+            # Invalidate the in-process job-listings cache so the next request
+            # surfaces freshly scraped rows. See
+            # /docs/features/infrastructure/110426_jobs-page-caching/phase-2-inmemory-cache.md
+            try:
+                await FastAPICache.clear()
+                logger.info("rb-cache: cleared after scraper run")
+            except Exception as cache_err:
+                logger.warning(
+                    f"rb-cache: clear failed after scraper run: {cache_err}",
+                    exc_info=True,
+                )
 
         # Determine overall status
         completed_at = datetime.now(timezone.utc)
