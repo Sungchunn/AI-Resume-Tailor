@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import Integer, and_, cast, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import load_only, selectinload
 
 from app.models.job_listing import JobListing
 from app.models.user_job_interaction import UserJobInteraction
@@ -108,19 +108,51 @@ class JobListingRepository:
         )
         return result.scalar_one_or_none()
 
+    # Columns loaded for list views. Excludes large TOAST columns
+    # (job_description, job_description_html, company_description) and unused
+    # JSON arrays so Postgres can skip the out-of-line reads entirely.
+    _LIST_LOAD_COLUMNS = (
+        JobListing.id,
+        JobListing.external_job_id,
+        JobListing.job_title,
+        JobListing.company_name,
+        JobListing.company_logo,
+        JobListing.location,
+        JobListing.is_remote,
+        JobListing.salary_min,
+        JobListing.salary_max,
+        JobListing.salary_currency,
+        JobListing.salary_period,
+        JobListing.date_posted,
+        JobListing.seniority,
+        JobListing.job_url,
+        JobListing.source_platform,
+        JobListing.scraped_at,
+        JobListing.is_active,
+        JobListing.created_at,
+    )
+
     async def list(
         self,
         db: AsyncSession,
         *,
         filters: JobListingFilters,
         user_id: int | None = None,
+        slim: bool = True,
     ) -> tuple[list[JobListing], int]:
         """
         List job listings with filtering and pagination.
 
+        When ``slim`` is True (default) only the columns required for the
+        list view are loaded; large TOAST columns are skipped to keep the
+        response payload small. Callers must not access deferred columns on
+        the returned ORM instances when ``slim`` is True.
+
         Returns tuple of (listings, total_count).
         """
         query = select(JobListing)
+        if slim:
+            query = query.options(load_only(*self._LIST_LOAD_COLUMNS))
         count_query = select(func.count(JobListing.id))
 
         # Build filter conditions
