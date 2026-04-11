@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    name: Lint & Test (real DBs)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U test -d test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd="mongosh --quiet --eval 'db.runCommand({ping:1}).ok' | grep 1"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      # pytest targets — read by the refactored conftest.py
+      TEST_DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
+      TEST_MONGODB_URI: mongodb://localhost:27017/test
+
+      # app settings validators still load at import time, so these must
+      # be present even though tests will override the sessions.
+      DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
+      DATABASE_URL_SYNC: postgresql+psycopg2://test:test@localhost:5432/test
+      MONGODB_URI: mongodb://localhost:27017/test
+      JWT_SECRET_KEY: test-secret-key
+      OPENAI_API_KEY: test-openai-key
+      REDIS_URL: redis://localhost:6379
+      ENVIRONMENT: test
+      RATE_LIMIT_ENABLED: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install Poetry
+        run: pipx install poetry==1.8.2
+
+      - name: Configure Poetry
+        run: |
+          poetry config virtualenvs.create true
+          poetry config virtualenvs.in-project true
+
+      - name: Cache Poetry virtualenv
+        uses: actions/cache@v5
+        with:
+          path: backend/.venv
+          key: venv-${{ runner.os }}-py311-${{ hashFiles('backend/poetry.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-py311-
+
+      - name: Install dependencies
+        run: poetry install --no-interaction --no-ansi
+
+      - name: Ruff format check
+        run: poetry run ruff format --check .
+
+      - name: Ruff lint
+        run: poetry run ruff check . --output-format=github
+
+      - name: Wait for pgvector extension availability
+        run: |
+          until docker exec "$(docker ps --filter ancestor=pgvector/pgvector:pg16 -q)" \
+            psql -U test -d test -c 'SELECT 1' > /dev/null 2>&1; do
+            echo "Waiting for Postgres..."
+            sleep 2
+          done
+          echo "Postgres ready."
+
+      - name: Run pytest
+        run: poetry run pytest -v --tb=short --maxfail=20
