@@ -1,7 +1,7 @@
 # Phase 1 — Multi-Stage Dockerfile + Production Compose
 
 **Parent:** [master-plan.md](./master-plan.md)
-**Status:** Planning
+**Status:** Implemented (commit `7ddfbd4`)
 **Goal:** Produce a reproducible, slim backend image and a droplet compose file that owns both `api` and `redis` without touching CI.
 
 ---

@@ -1,7 +1,7 @@
 # Phase 3 — CI Workflow (`ci.yml`)
 
 **Parent:** [master-plan.md](./master-plan.md)
-**Status:** Planning
+**Status:** Implemented (commit `898d8b0`)
 **Goal:** Run ruff + the full pytest suite against real ephemeral Postgres 16 (pgvector) and MongoDB 7 on every pull request touching `backend/**`.
 
 ---

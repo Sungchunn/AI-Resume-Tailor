@@ -1,7 +1,7 @@
 # Phase 4 — CD Workflow (`cd.yml`)
 
 **Parent:** [master-plan.md](./master-plan.md)
-**Status:** Planning
+**Status:** Implemented (commit `d359339`)
 **Goal:** On push to `main` with `backend/**` changes, build the backend image, push it to private GHCR, run `alembic upgrade head` against Supabase, then SSH into the droplet to `docker compose pull && up -d`.
 
 ---
