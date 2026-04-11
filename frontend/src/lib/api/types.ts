@@ -786,6 +786,43 @@ export interface JobListingListResponse {
   offset: number;
 }
 
+/**
+ * Slim list-item shape returned by `/job-listings`, `/job-listings/saved`,
+ * `/job-listings/applied`, and `/job-listings/search`. Excludes large TOAST
+ * columns (`job_description`, `company_description`, etc.) so the payload
+ * stays small. Use {@link JobListingResponse} for the detail view.
+ */
+export interface JobListingListItem {
+  id: number;
+  external_job_id: string;
+  job_title: string;
+  company_name: string;
+  company_logo: string | null;
+  location: string | null;
+  is_remote: boolean | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_currency: string;
+  salary_period: string | null;
+  date_posted: string | null;
+  seniority: string | null;
+  job_url: string;
+  source_platform: string | null;
+  scraped_at: string | null;
+  // User interaction
+  is_saved: boolean;
+  is_hidden: boolean;
+  applied_at: string | null;
+  application_status: ApplicationStatus | null;
+}
+
+export interface JobListingListItemResponse {
+  listings: JobListingListItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export interface JobListingFilters {
   location?: string;  // Deprecated - use city filter instead
   region?: string;
