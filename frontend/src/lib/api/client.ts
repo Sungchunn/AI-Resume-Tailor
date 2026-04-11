@@ -47,7 +47,7 @@ import type {
   WorkshopStatus,
   DocumentExtractionResponse,
   JobListingResponse,
-  JobListingListResponse,
+  JobListingListItemResponse,
   JobListingFilters,
   SaveJobRequest,
   HideJobRequest,
@@ -718,7 +718,7 @@ export const uploadApi = {
 
 // Job Listings API (system-wide jobs from external sources)
 export const jobListingApi = {
-  list: (filters: JobListingFilters = {}): Promise<JobListingListResponse> => {
+  list: (filters: JobListingFilters = {}): Promise<JobListingListItemResponse> => {
     const searchParams = new URLSearchParams();
 
     if (filters.location) searchParams.append("location", filters.location);
@@ -754,16 +754,16 @@ export const jobListingApi = {
   getFilterOptions: (): Promise<JobListingFilterOptionsResponse> =>
     fetchApi("/api/job-listings/filter-options"),
 
-  search: (q: string, limit = 20, offset = 0): Promise<JobListingListResponse> =>
+  search: (q: string, limit = 20, offset = 0): Promise<JobListingListItemResponse> =>
     fetchApi(`/api/job-listings/search?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`),
 
   get: (id: number): Promise<JobListingResponse> =>
     fetchApi(`/api/job-listings/${id}`),
 
-  getSaved: (limit = 50, offset = 0): Promise<JobListingListResponse> =>
+  getSaved: (limit = 50, offset = 0): Promise<JobListingListItemResponse> =>
     fetchApi(`/api/job-listings/saved?limit=${limit}&offset=${offset}`),
 
-  getApplied: (limit = 50, offset = 0): Promise<JobListingListResponse> =>
+  getApplied: (limit = 50, offset = 0): Promise<JobListingListItemResponse> =>
     fetchApi(`/api/job-listings/applied?limit=${limit}&offset=${offset}`),
 
   save: (id: number, save = true): Promise<JobInteractionActionResponse> =>

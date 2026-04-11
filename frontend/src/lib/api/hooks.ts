@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import {
   resumeApi,
   jobApi,
@@ -97,6 +97,7 @@ export const queryKeys = {
     search: (query: string) =>
       [...queryKeys.jobListings.all, "search", query] as const,
     kanban: () => [...queryKeys.jobListings.all, "kanban"] as const,
+    filterOptions: () => [...queryKeys.jobListings.all, "filterOptions"] as const,
   },
   scraperPresets: {
     all: ["scraperPresets"] as const,
@@ -707,6 +708,15 @@ export function useJobListings(filters?: JobListingFilters) {
   return useQuery({
     queryKey: queryKeys.jobListings.list(filters),
     queryFn: () => jobListingApi.list(filters),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useFilterOptions() {
+  return useQuery({
+    queryKey: queryKeys.jobListings.filterOptions(),
+    queryFn: () => jobListingApi.getFilterOptions(),
+    staleTime: 60 * 60 * 1000, // 1 hour — filter options change infrequently
   });
 }
 
