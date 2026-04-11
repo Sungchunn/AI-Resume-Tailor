@@ -1,0 +1,37 @@
+# Secrets — never ship
+.env
+.env.*
+!.env.example
+
+# Python build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtualenvs and tool caches
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Tests and docs are not needed in the runtime image
+tests/
+docs/
+*.md
+README.md
+
+# Archived migrations (kept on disk for history, not needed in prod)
+alembic/versions_archived/
+
+# VCS
+.git/
+.gitignore
+
+# Docker meta
+Dockerfile
+.dockerignore
+docker-compose*.yml
