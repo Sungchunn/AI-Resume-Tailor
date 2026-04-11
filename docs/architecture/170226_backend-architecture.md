@@ -568,17 +568,22 @@ The `/api/job-listings` browse endpoints use an in-process cache (via `fastapi-c
 
 **What is cached:**
 
-- `/job-listings/filter-options` — full response, 5 min TTL. The endpoint is identical for every authenticated user, so a single cache entry serves them all.
-- `/job-listings` (list) — only the **public portion** (slim list items + total count), 2 min TTL. The cache entry is shared across users; per-user interaction state (`is_saved`, `is_hidden`, `applied_at`, `application_status`) is fetched and merged in a separate uncached batch query against `user_job_interactions`. Requests that filter by `is_saved` / `is_hidden` / `applied` bypass the cache because the WHERE clause depends on the user.
+- `/job-listings/filter-options` — full response. Single entry keyed by a fixed string; the endpoint is identical for every authenticated user.
+- `/job-listings` (list) — the **public portion** only (slim list items + total count). Rows are cached under a key that includes `(filters + limit + offset)`; counts are cached under a **separate** key that excludes `limit`/`offset`, so pagination under the same filter set reuses the first page's count and skips `SELECT COUNT(*)` entirely (see `_public_list_cache_key` / `_public_count_cache_key` in `backend/app/api/routes/job_listings.py`). The cache entry is shared across users; per-user interaction state (`is_saved`, `is_hidden`, `applied_at`, `application_status`) is fetched and merged in a separate uncached batch query against `user_job_interactions`. Requests that filter by `is_saved` / `is_hidden` / `applied` bypass the cache because the WHERE clause depends on the user.
 
 **Cache key derivation:**
 
-- Filter-options: a custom key builder strips the `AsyncSession` and current user from the kwargs hash so all callers collide on the same key.
-- Public list: keyed off `JobListingFilters.model_dump(exclude={"is_saved", "is_hidden", "applied"})`, ensuring the entry is user-agnostic.
+- Filter-options: a fixed string key; all callers collide on the same entry.
+- Public list rows: `JobListingFilters.model_dump(exclude={"is_saved", "is_hidden", "applied"})`.
+- Public list count: same as rows **plus** `{"limit", "offset"}` excluded.
 
-**Invalidation:**
+**TTL:**
 
-- The scraper scheduler calls `FastAPICache.clear()` after every successful batch upsert (`backend/app/services/scraping/scheduler.py`). New scraped rows surface on the next request.
+Every cache write (rows, count, filter-options) uses `get_cache_ttl_seconds()` from `backend/app/services/scraping/schedule_utils.py`, which returns the number of seconds until the next scheduled scraper fire time (clamped to `[60 s, 24 h]`). The scheduler seeds the helper from `SchedulerService.start()` and refreshes it on every `reconfigure_from_db()` call. This guarantees a cache entry written at time `T` expires at or before `next_scrape(T)`, so staleness is bounded by the scrape interval even if the post-scrape `FastAPICache.clear()` call silently fails.
+
+**Invalidation and warming:**
+
+- After every successful batch upsert the scraper scheduler calls `FastAPICache.clear()` followed by `warm_default_job_listing_cache()` (`backend/app/services/scraping/cache_warm.py`), which repopulates filter-options, the default unfiltered list view for pages 1–3, and page 1 for the top 5 countries. The first user through the door after a scrape hits an already-warm cache.
 - User-interaction mutations (save / hide / mark applied) do **not** need to invalidate the public cache because interaction state is merged post-cache.
 
 **Multi-worker caveat:**

@@ -15,6 +15,7 @@ This plan explains the root causes, the three-phase execution, and links to the 
 - [Phase 1 — Payload Trimming & React Query Persistence](./phase-1-payload-and-query.md)
 - [Phase 2 — In-Process Backend Cache](./phase-2-inmemory-cache.md)
 - [Phase 3 — HTTP Cache-Control + Cloudflare](./phase-3-http-headers.md)
+- [Phase 4 — Next-Page Query Optimization & Daily-Refresh Caching](./phase-4-query-optimization.md)
 
 ## Root causes (verified against the codebase)
 
@@ -37,6 +38,7 @@ Ordered by impact.
 | 1 | Backend payload trimming + frontend React Query persistence via `localStorage` | Response size 60–90% smaller; FCP < 1 s on warm cache | [phase-1](./phase-1-payload-and-query.md) |
 | 2 | In-process FastAPI cache (no Redis) with public/user-interaction split | Filter-options drops from 4 GROUP BYs to a dict lookup; shared public list cache across users | [phase-2](./phase-2-inmemory-cache.md) |
 | 3 | `Cache-Control` headers + Cloudflare edge caching of public endpoints | Near-instant `filter-options` globally; sub-500 ms back/forward nav | [phase-3](./phase-3-http-headers.md) |
+| 4 | Split count/row cache keys, scraper-anchored TTLs, partial index for default sort, post-scrape cache warming | Next-page clicks run one indexed `SELECT` instead of `COUNT + SELECT`; first request after scrape served from memory | [phase-4](./phase-4-query-optimization.md) |
 
 Each phase is independently shippable. Ship Phase 1 first, measure, then decide whether Phases 2 and 3 are still needed.
 

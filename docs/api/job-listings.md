@@ -19,7 +19,7 @@ browsers can absorb repeat reads. The rule is:
 
 | Endpoint | Auth | `Cache-Control` |
 | -------- | ---- | --------------- |
-| `GET /filter-options` | None | `public, max-age=60, stale-while-revalidate=30` |
+| `GET /filter-options` | None | `public, max-age=300, stale-while-revalidate=86400` |
 | `GET /` (list) | Required | `private, max-age=60, stale-while-revalidate=30` |
 | `GET /search` | Required | `private, max-age=60, stale-while-revalidate=30` |
 | `GET /{listing_id}` | Required | `private, max-age=60, stale-while-revalidate=30` |
@@ -33,10 +33,15 @@ Rule of thumb: any response that merges user-interaction fields
 see each other's interaction state. Endpoints that only exist because
 of a user filter (`/saved`, `/applied`, `/kanban`) use `no-store`.
 
-Behind the scenes, `/filter-options` is also kept in a 5-minute
-in-process cache inside the FastAPI worker (see Phase 2 of
-`/docs/features/infrastructure/110426_jobs-page-caching/`). That cache
-is invalidated whenever the scraper finishes a run.
+Behind the scenes, `/filter-options` and the public portion of `/` are
+kept in an in-process cache inside the FastAPI worker. Each entry
+expires at or before the next scheduled scraper fire time (see Phase 4
+of `/docs/features/infrastructure/110426_jobs-page-caching/`), and the
+scheduler actively clears and **re-warms** the default view (pages 1–3
+plus page 1 of the top 5 countries) after every successful scrape. The
+public list cache also splits row payloads from count payloads so
+pagination under the same filter set reuses the first page's total and
+skips `SELECT COUNT(*)` on every next-page click.
 
 ---
 
@@ -52,8 +57,9 @@ GET /api/job-listings/filter-options
 
 **Authentication:** None. Rate-limited per IP under the default bucket
 in `RateLimitMiddleware`. Served with
-`Cache-Control: public, max-age=60, stale-while-revalidate=30` so
-Cloudflare can cache the response at the edge.
+`Cache-Control: public, max-age=300, stale-while-revalidate=86400` so
+Cloudflare can cache the response at the edge for up to 5 minutes and
+serve stale for up to 24 hours while revalidating.
 
 **Response (200 OK):**
 
