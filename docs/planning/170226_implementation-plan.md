@@ -166,16 +166,20 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
   - Plain text
 - [x] Error handling and loading states
 - [ ] Responsive design polish
-- [ ] Set up deployment:
-  - Frontend to Vercel
-  - Backend to Render/Railway
-  - Database to managed PostgreSQL
-- [ ] Environment variable management for production
+- [x] Set up deployment:
+  - Frontend → Vercel
+  - Backend → DigitalOcean Droplet via Docker Compose (`deploy/docker-compose.prod.yml`)
+  - Database → Supabase Postgres (pgvector) + MongoDB Atlas
+  - Container registry → private GHCR (`ghcr.io/sungchunn/resume-builder-api`)
+  - CI/CD → `.github/workflows/ci.yml` (ruff + pytest vs real Postgres 16 / Mongo 7) and `.github/workflows/cd.yml` (build → migrate → deploy)
+  - See `/docs/features/infrastructure/110426_docker-cicd-pipeline/` for the cutover feature
+  - See `/docs/architecture/080426_digitalocean-hosting-setup.md` for droplet operational docs
+- [x] Environment variable management for production (injected via `deploy/.env` — image is never baked with secrets)
 - [ ] Basic analytics/monitoring
 
 ### Phase 4 Deliverables
 
-- Deployed, production-ready application
+- Deployed, production-ready application running containerized on a DigitalOcean droplet
 - Users can sign up, save work, and export resumes
 
 ---
