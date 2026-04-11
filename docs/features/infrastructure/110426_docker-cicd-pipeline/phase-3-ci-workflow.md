@@ -175,6 +175,8 @@ Delete the hand-picked file list from `deploy-backend.yml:49-61`. Run everything
 
 `--maxfail=20` prevents a single broken fixture from flooding the log with 200 cascade failures while still catching multi-test regressions.
 
+**RLS suite is intentionally skipped here.** `backend/tests/test_rls_policies.py` is gated on `TEST_RLS_ENABLED=true` because it asserts on alembic-managed RLS policies and session variables that the ephemeral CI Postgres container — which only runs `metadata.create_all` — does not have. The env block above does not set that flag. Expect the skip count to include every test in that file; that is correct behaviour, not a regression. RLS coverage is the job of a migrated Postgres (run manually against a staging DB when touching RLS code).
+
 ### 3.5 Env-var rationale
 
 Three groups of env vars are passed into the test step:
@@ -215,7 +217,7 @@ Confirm the pre-existing `deploy-backend.yml` still runs and passes on the same 
 
 ## Edge cases and gotchas
 
-1. **`pgvector` extension creation race.** The `CREATE EXTENSION vector` statement now lives in the session-scoped pytest fixture (Phase 2), not in the workflow. If a future PR moves it back into the workflow, it MUST run after Postgres reports healthy or it will fail with `could not connect`.
+1. **`pgvector` extension creation race.** The `CREATE EXTENSION vector` statement now lives in a module-level one-shot inside `backend/tests/conftest.py` (Phase 2), not in the workflow. If a future PR moves it back into the workflow, it MUST run after Postgres reports healthy or it will fail with `could not connect`. The "Wait for pgvector extension availability" step below exists specifically to guarantee the service container is accepting connections before pytest imports conftest and triggers `asyncio.run(_setup_postgres_schema())`.
 2. **Mongo health-cmd shell quoting.** The grep approach works because `mongosh --quiet` only prints the command result. Some earlier images print a banner even with `--quiet` — if the health check starts failing, replace with `mongosh --quiet --norc --eval ...`.
 3. **Poetry pipx install on GHA.** `pipx install poetry==1.8.2` is preferred over `pip install poetry` because pipx isolates Poetry from the test venv. GHA ubuntu-latest has pipx pre-installed as of 2026.
 4. **`actions/cache@v5` v `@v4`.** Both work; v5 has better cross-platform support. If CI cost becomes a concern, switch to `cache: 'poetry'` on `actions/setup-python` — it's slightly less flexible (key is fixed) but requires no separate cache step.

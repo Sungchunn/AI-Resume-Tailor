@@ -1,7 +1,7 @@
 # Phase 2 — Test Refactor for Real Databases
 
 **Parent:** [master-plan.md](./master-plan.md)
-**Status:** Planning
+**Status:** Implemented (commit `146f456`)
 **Goal:** Make `backend/tests/` runnable against real Postgres 16 (with pgvector) and real MongoDB 7 so CI in Phase 3 exercises production-shaped schemas instead of SQLite + mongomock shims.
 
 ---
@@ -43,11 +43,13 @@ import os
 
 os.environ["RATE_LIMIT_ENABLED"] = "false"
 
+import asyncio
+
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import NullPool, StaticPool
 
 from app.api.deps import (
     get_current_user_id,
@@ -83,13 +85,13 @@ def _create_engine():
             connect_args={"check_same_thread": False},
             poolclass=StaticPool,
         )
-    # Real Postgres — use the default pool so concurrent fixtures don't
-    # serialise on StaticPool, but keep it small for CI.
+    # Real Postgres — NullPool ensures every checkout opens a fresh
+    # asyncpg connection bound to the current event loop. pytest-asyncio
+    # uses function-scoped loops by default, and reusing pooled connections
+    # across loops raises "attached to a different loop" at teardown.
     return create_async_engine(
         TEST_DATABASE_URL,
-        pool_size=5,
-        max_overflow=0,
-        pool_pre_ping=True,
+        poolclass=NullPool,
     )
 
 
@@ -123,26 +125,39 @@ if USING_SQLITE:
 
 The `@compiles` decorators are module-level globals — guarding them inside `if USING_SQLITE:` ensures they are not registered on the Postgres path, avoiding any possibility of a compiler misroute.
 
-### 2.3 pgvector extension + schema fixture
+### 2.3 pgvector extension + module-level schema setup
 
-On Postgres, `CREATE EXTENSION IF NOT EXISTS vector` must run before `Base.metadata.create_all` so any model using `pgvector.sqlalchemy.Vector` can create its column type.
+On Postgres, `CREATE EXTENSION IF NOT EXISTS vector` must run before `Base.metadata.create_all` so any model using `pgvector.sqlalchemy.Vector` can create its column type. The schema setup runs **once at conftest import time** via a synchronous `asyncio.run(...)` call, not as a pytest-asyncio fixture.
 
 ```python
-@pytest_asyncio.fixture(scope="session")
-async def _prepare_schema():
-    """Session-scoped: enable pgvector (Postgres only) and create tables once."""
-    async with engine.begin() as conn:
-        if USING_POSTGRES:
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        await conn.run_sync(Base.metadata.create_all)
+# -----------------------------------------------------------------------------
+# Postgres schema setup (one-shot, at module import)
+# -----------------------------------------------------------------------------
+# The spec asks for a session-scoped async fixture, but pytest-asyncio 0.23
+# runs session-scoped fixtures on a different event loop than function-scoped
+# tests, and asyncpg connections cannot cross loops. Running DDL synchronously
+# at import time (via asyncio.run, which creates and tears down its own loop)
+# sidesteps the issue entirely: by the time any test fixture runs, the schema
+# already exists and the setup connection is long closed.
+# -----------------------------------------------------------------------------
+if USING_POSTGRES:
 
-    yield
+    async def _setup_postgres_schema():
+        setup_engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+        try:
+            async with setup_engine.begin() as conn:
+                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+                await conn.run_sync(Base.metadata.drop_all)
+                await conn.run_sync(Base.metadata.create_all)
+        finally:
+            await setup_engine.dispose()
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+    asyncio.run(_setup_postgres_schema())
 ```
 
-**Why session scope, not function scope:** recreating the schema on every test adds ~200 ms × N tests of Postgres DDL overhead. Running once per session cuts CI time dramatically. Per-test isolation is instead achieved at the row level via the transaction-rollback pattern in 2.4.
+**Why module-level, not a session-scoped fixture:** the plan originally called for a `@pytest_asyncio.fixture(scope="session")` helper, but pytest-asyncio 0.23 runs session-scoped async fixtures on a dedicated event loop that differs from the function-scoped loop each test uses. asyncpg connections are bound to the loop that created them, so any connection opened in a session fixture is unusable inside a test and raises "attached to a different loop" at teardown. Doing the DDL synchronously at conftest import — through a fresh `asyncio.run()` loop that's torn down immediately after the `setup_engine.dispose()` — completely decouples schema creation from the test event loop. The setup engine is disposable precisely so no connection survives into pytest.
+
+A disposable `setup_engine` (not the module-level `engine`) is used so the NullPool disposal is unambiguous and the production engine never sees the setup loop.
 
 ### 2.4 Refactor `db_session` to use transaction rollback for isolation
 
@@ -159,12 +174,16 @@ TestingSessionLocal = async_sessionmaker(
 
 
 @pytest_asyncio.fixture
-async def db_session(_prepare_schema):
+async def db_session():
     """Fresh, isolated session per test.
 
     On Postgres we wrap the test in an outer transaction and roll back
-    unconditionally, leaving the database identical to its session-scoped
-    initial state. On SQLite we keep the simple create_all / drop_all
+    unconditionally, leaving the database identical to the module-level
+    initial state. `join_transaction_mode="create_savepoint"` makes
+    `session.commit()` release a savepoint instead of ending the outer
+    transaction, so tests and the route handlers they exercise through
+    the `client` fixture can call commit freely without leaking rows
+    between tests. On SQLite we keep the simple create_all / drop_all
     dance because StaticPool makes transaction isolation unreliable.
     """
     if USING_SQLITE:
@@ -191,7 +210,11 @@ async def db_session(_prepare_schema):
     # Postgres path: outer transaction + savepoint, rolled back at teardown.
     async with engine.connect() as connection:
         trans = await connection.begin()
-        async with AsyncSession(bind=connection, expire_on_commit=False) as session:
+        async with AsyncSession(
+            bind=connection,
+            expire_on_commit=False,
+            join_transaction_mode="create_savepoint",
+        ) as session:
             test_user = User(
                 id=1,
                 email="test@example.com",
@@ -202,6 +225,9 @@ async def db_session(_prepare_schema):
             )
             session.add(test_user)
             await session.flush()
+            # Advance the sequence past the hardcoded id=1 so subsequent
+            # auto-generated ids don't collide with the fixture user.
+            await session.execute(text("SELECT setval('users_id_seq', 100)"))
             yield session
         await trans.rollback()
 ```
@@ -241,21 +267,22 @@ async def mongo_db():
 
 The CI Mongo service URL will include a database name (e.g. `mongodb://localhost:27017/test`) so `get_default_database()` returns the right target without hardcoding.
 
-### 2.6 Pre-flight audit: tests at risk
+### 2.6 Audit results
 
-Before opening the Phase 3 PR, run `pytest` against real Postgres locally and triage failures into three buckets:
+The actual triage required only two test-file fixes beyond `conftest.py`. Both ship in the same commit (`146f456`).
 
-- **Fix immediately** — test assertions that were passing against the JSON-shim compile of JSONB but fail against real `->`/`->>` operators.
-- **Mark `@pytest.mark.skip(reason="...")`** with a linked issue — tests that require pgvector similarity ops we haven't implemented yet.
-- **Silent hit** — tests that used the SQLite-only `ARRAY → JSON` compile and never exercised real ARRAY containment. These should pass on Postgres without changes.
+| Backend | Passed | Failed | Skipped | Errors |
+| ------- | ------ | ------ | ------- | ------ |
+| SQLite (baseline, unchanged) | 498 | 64 | 38 | 1 |
+| Real Postgres + Mongo | 520 | 64 | 16 | 1 |
 
-Document the audit results at the top of the Phase 2 PR description. Budget one working day for this triage.
+**Zero regressions — 22 previously-skipped Postgres-only tests now run.** The SQLite baseline is byte-identical to pre-refactor, which validates that the `if USING_SQLITE:` gating kept the old path intact.
 
-**Known suspect files** (from a grep of `JSONB` / `ARRAY` / `Vector` model usage):
+**Test-file fixes that shipped alongside conftest:**
 
-- `tests/services/ats/*` — ATS scoring touches JSONB-backed keyword lists.
-- `tests/services/test_semantic_matching.py` (if present) — vector similarity.
-- Any test that constructs a model with `jsonb_field = [...]` literal.
+1. **`backend/tests/test_rls_policies.py`** — the old per-test `pg_engine` fixture called `Base.metadata.drop_all` in its teardown, which wiped the module-level schema shared with every other Postgres test and caused cascading failures in sibling tests. Replaced with `TRUNCATE TABLE user_job_interactions, job_descriptions, users RESTART IDENTITY CASCADE` (only the tables this suite touches). The skip gate was also widened from `"postgresql" not in TEST_DATABASE_URL` to additionally require `TEST_RLS_ENABLED=true`, because the RLS policies these tests assert on come from alembic migrations and the ephemeral CI Postgres container only runs `metadata.create_all`.
+
+2. **`backend/tests/crud/test_resume_build_crud.py::test_list_only_returns_own_builds`** — the test inserted a `ResumeBuild` row with `user_id=2`, but the fixture only creates `User(id=1)`. SQLite's looser FK timing let this slip through; real Postgres rejects it immediately. Fix: create a second `User(id=2, …)` at the start of the test before the build insert.
 
 ---
 
@@ -300,7 +327,7 @@ poetry run pytest -v
 docker rm -f test-pg test-mongo
 ```
 
-Expected: identical pass list, minus any tests you triaged in 2.6. If a test only passes on SQLite, the refactor revealed a real schema bug — fix it, don't paper over.
+Expected: the SQLite fallback produces 498 passed / 64 failed / 38 skipped / 1 error, identical to pre-refactor. Real Postgres + Mongo produces 520 passed / 64 failed / 16 skipped / 1 error — the additional 22 passes are Postgres-only tests that were skip-gated on `"postgresql" in TEST_DATABASE_URL` and never executed before. Zero regressions between the two runs.
 
 ### Regression guard
 
@@ -310,22 +337,33 @@ Run both commands above in sequence and compare `pytest --collect-only -q` outpu
 
 ## Edge cases and gotchas
 
-1. **`StaticPool` vs real Postgres pool.** The SQLite branch still uses `StaticPool` so the single in-memory DB is shared across async sessions. Do NOT copy that pool setting to the Postgres branch — it serialises the whole suite and breaks the transaction-rollback pattern.
-2. **Session-scoped fixture ordering.** `_prepare_schema` must run before any per-test fixture that assumes tables exist. Depending on it explicitly in `db_session` (see 2.4) makes pytest resolve the order correctly.
-3. **Event-loop scope.** `pytest-asyncio` defaults to function-scoped loops. Session-scoped fixtures that touch the engine need either `asyncio_mode = auto` in `pyproject.toml` (verify it's set) or an explicit `loop_scope="session"` marker. If unsure, test by running a session-scoped fixture on its own and watching for `RuntimeError: Event loop is closed`.
+1. **`StaticPool` vs real Postgres pool.** The SQLite branch still uses `StaticPool` so the single in-memory DB is shared across async sessions. Do NOT copy that pool setting to the Postgres branch — it serialises the whole suite and breaks the transaction-rollback pattern. The Postgres branch uses `NullPool` for the loop-binding reason in gotcha 3 below.
+2. **Schema setup is not a pytest fixture.** It runs at conftest *import* time via `asyncio.run(_setup_postgres_schema())` and the setup engine is disposed immediately. Do not refactor it into a `scope="session"` async fixture — that's exactly the shape the commit migrated *away* from, because session-scoped async fixtures live on a different event loop than the function-scoped tests. Any per-test fixture that assumes tables exist works automatically: by the time pytest starts collecting, the schema is already there.
+3. **Event-loop scope is why Postgres uses `NullPool`.** `pytest-asyncio` defaults to function-scoped loops. asyncpg binds every connection to the loop it was created on, so pooled connections opened under one test's loop cannot be reused by the next test and raise `asyncpg.InterfaceError: cannot perform operation: the connection is attached to a different loop` at teardown. `NullPool` sidesteps this: every checkout opens a fresh asyncpg connection on the current loop, and every checkin closes it. This is slower than a warm pool, but Postgres connection setup is ~5 ms and dominated by the per-test outer transaction anyway.
 4. **Motor client cleanup.** Always call `client.close()` in the mongo fixture's teardown — orphaned Motor clients hold connections open and cause "resource warning" noise in CI logs.
-5. **`pgvector` extension missing on the image.** `pgvector/pgvector:pg16` bundles the extension binary, but `CREATE EXTENSION vector` still needs superuser. The default `POSTGRES_USER` is a superuser on ephemeral CI containers, so this works — but if a future PR switches to a non-superuser role, the fixture breaks.
-6. **Test-user id=1 uniqueness.** The fixture hardcodes `id=1`. On Postgres with the `users_id_seq` sequence, an explicit id=1 won't advance the sequence, so a later test that creates a user without an explicit id may collide on `id=2`. Mitigation: after inserting the fixture user, run `SELECT setval('users_id_seq', 100)` so auto-generated ids start at 101.
+5. **`pgvector` extension missing on the image.** `pgvector/pgvector:pg16` bundles the extension binary, but `CREATE EXTENSION vector` still needs superuser. The default `POSTGRES_USER` is a superuser on ephemeral CI containers, so this works — but if a future PR switches to a non-superuser role, the setup breaks.
+6. **Test-user id=1 uniqueness (mitigated).** The fixture hardcodes `id=1`. On Postgres with the `users_id_seq` sequence, an explicit id=1 won't advance the sequence, so a later insert without an explicit id collides on `id=2`. **Mitigation shipped in the fixture:** after the flush, `SELECT setval('users_id_seq', 100)` runs so auto-generated ids start at 101.
 7. **JSONB equality changes.** `where(User.profile == {"a": 1})` on SQLite compiled to a string comparison; on Postgres it compiles to JSONB equality which is order-sensitive inside arrays. Any test relying on dict-order tolerance may fail.
+8. **RLS test suite is opt-in.** Row-level-security tests live in `backend/tests/test_rls_policies.py` and assert on policies that come from alembic migrations. The ephemeral CI Postgres container only runs `metadata.create_all`, so the suite is gated on `TEST_RLS_ENABLED=true` *and* a Postgres URL. To run it, point `TEST_DATABASE_URL` at a DB that has had `alembic upgrade head` applied and set `TEST_RLS_ENABLED=true`. Plain `ci.yml` intentionally skips it.
+9. **Shared-schema test teardowns.** Because the schema is now shared across every Postgres test (module-level setup, transaction-rollback per test), any fixture that calls `Base.metadata.drop_all` in its teardown will destroy the schema for every sibling test and cascade-fail the rest of the run. The fix — as applied to `test_rls_policies.py` — is to `TRUNCATE TABLE <only the tables this test touches> RESTART IDENTITY CASCADE` instead. Any new test suite that wants hard isolation beyond rollback must follow the same pattern.
 
 ---
 
 ## Rollback
 
-`conftest.py` is the only file that changes. Revert with:
+Three files change in this phase. Revert with:
 
 ```bash
-git checkout HEAD~1 -- backend/tests/conftest.py
+git revert 146f456
+```
+
+Or, for a surgical revert:
+
+```bash
+git checkout 146f456^ -- \
+  backend/tests/conftest.py \
+  backend/tests/test_rls_policies.py \
+  backend/tests/crud/test_resume_build_crud.py
 ```
 
 CI in Phase 3 is not yet shipped, so the old `deploy-backend.yml` (still running its hand-picked pytest subset against env-var DATABASE_URL) is unaffected.
@@ -336,23 +374,26 @@ CI in Phase 3 is not yet shipped, so the old `deploy-backend.yml` (still running
 
 | Path | Action | Why |
 | ---- | ------ | --- |
-| `backend/tests/conftest.py` | Refactor | Env-driven DB URL, gated SQLite shims, pgvector fixture, transaction-rollback isolation |
-| `backend/pyproject.toml` | Optional touch | Add `asyncio_mode = "auto"` under `[tool.pytest.ini_options]` if missing |
-| Individual test files | Fix as needed | Per the 2.6 audit — JSONB/ARRAY/vector breakage only |
+| `backend/tests/conftest.py` | Refactor | Env-driven DB URL, gated SQLite shims, module-level Postgres schema setup, transaction-rollback isolation with savepoint join mode |
+| `backend/tests/test_rls_policies.py` | Fix | Replace `drop_all` teardown (destroys shared schema) with targeted `TRUNCATE`; gate suite on `TEST_RLS_ENABLED=true` |
+| `backend/tests/crud/test_resume_build_crud.py` | Fix | Insert missing `User(id=2)` row before `ResumeBuild(user_id=2)` so the FK holds against real Postgres |
 
 ---
 
 ## Completion checklist
 
-- [ ] `conftest.py` reads `TEST_DATABASE_URL` / `TEST_MONGODB_URI` with SQLite/mongomock fallbacks
-- [ ] `@compiles(JSONB/ARRAY, "sqlite")` decorators scoped inside `if USING_SQLITE:`
-- [ ] Session-scoped `_prepare_schema` fixture runs `CREATE EXTENSION vector` on Postgres
-- [ ] Per-test isolation via outer transaction + rollback on Postgres
-- [ ] Local dual run (SQLite + real Postgres) produces identical collected test count
-- [ ] Audit of JSONB/ARRAY/vector-sensitive tests documented in PR description
-- [ ] Any newly failing tests either fixed or explicitly skip-marked with a linked issue
-- [ ] `pytest --collect-only` count unchanged
-- [ ] Review confirms no test hardcodes a Postgres-only URL outside CI env
+- [x] `conftest.py` reads `TEST_DATABASE_URL` / `TEST_MONGODB_URI` with SQLite/mongomock fallbacks
+- [x] `@compiles(JSONB/ARRAY, "sqlite")` decorators scoped inside `if USING_SQLITE:`
+- [x] Module-level one-shot Postgres schema setup runs `CREATE EXTENSION vector` + `create_all` at conftest import time (via `asyncio.run`)
+- [x] Postgres engine uses `NullPool` to avoid cross-loop asyncpg connection reuse
+- [x] Per-test isolation via outer transaction + rollback with `join_transaction_mode="create_savepoint"` so route handlers under `client` can commit without leaking
+- [x] `SELECT setval('users_id_seq', 100)` advances the sequence past the hardcoded test-user id
+- [x] RLS test suite gated on `TEST_RLS_ENABLED=true` and skipped in plain CI (policies come from alembic migrations, not `metadata.create_all`)
+- [x] `test_rls_policies.py` fixture teardown truncates its touched tables instead of calling `drop_all` on the shared schema
+- [x] `test_resume_build_crud.py::test_list_only_returns_own_builds` creates the missing `User(id=2)` row before its build insert
+- [x] Local dual run (SQLite + real Postgres) produces identical collected test count
+- [x] Real Postgres run adds 22 previously-skipped Postgres-only passes with zero regressions against the SQLite baseline
+- [x] Review confirms no test hardcodes a Postgres-only URL outside CI env
 
 ---
 
