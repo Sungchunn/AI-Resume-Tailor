@@ -2028,6 +2028,13 @@ flowchart TB
 
 ## 10. Deployment Architecture
 
+The deployment model splits cleanly into two environments:
+
+- **10.1 Local Development Stack** — single-machine Docker Compose with every dependency (Postgres, MongoDB, Redis, MinIO) running as a sibling container. Defined in the repo-root `docker-compose.yml`.
+- **10.2 Production Deployment** — GitHub Actions builds a single backend image and pushes it to GHCR; the DigitalOcean droplet runs only `api` + `redis` containers via `deploy/docker-compose.prod.yml`. Postgres and MongoDB are external managed services (Supabase, MongoDB Atlas). The frontend is hosted on Vercel and is out of scope here.
+
+### 10.1 Local Development Stack
+
 ```mermaid
 flowchart TB
     subgraph External["External Traffic"]
@@ -2035,7 +2042,7 @@ flowchart TB
         N8N["n8n Webhooks"]
     end
 
-    subgraph Docker["Docker Compose Stack"]
+    subgraph Docker["Docker Compose Stack (local dev)"]
         subgraph Frontend_C["Frontend Container"]
             NextJS["Next.js<br/>Port 3000"]
         end
@@ -2073,7 +2080,7 @@ flowchart TB
     APScheduler --> Apify
 ```
 
-### Container Configuration
+#### Local Container Configuration
 
 | Service | Image | Port | Volume |
 | ------- | ----- | ------ | ------ |
@@ -2084,7 +2091,7 @@ flowchart TB
 | redis | redis:7-alpine | 6379 | redisdata |
 | minio | minio/minio | 9000, 9001 | miniodata |
 
-### Environment Variables (Required)
+#### Local Environment Variables (Required)
 
 ```bash
 # Database
@@ -2116,6 +2123,74 @@ MINIO_ENDPOINT=minio:9000
 MINIO_ACCESS_KEY=<access-key>
 MINIO_SECRET_KEY=<secret-key>
 ```
+
+### 10.2 Production Deployment
+
+Production uses a pre-built container image flow: no Python toolchain, Poetry, or source build runs on the droplet. The pipeline was cut over on 2026-04-11 (see `/docs/features/infrastructure/110426_docker-cicd-pipeline/`).
+
+```mermaid
+flowchart TB
+    subgraph GHA["GitHub Actions"]
+        CI["ci.yml<br/>(PR: ruff + pytest<br/>vs real Postgres 16 + Mongo 7)"]
+        CD["cd.yml<br/>(push to main)"]
+        Build["build-and-push<br/>(Buildx → GHCR)"]
+        Migrate["migrate<br/>(docker run alembic upgrade head<br/>→ Supabase)"]
+        Deploy["deploy<br/>(SSH → docker compose pull && up -d)"]
+    end
+
+    subgraph GHCR["ghcr.io/sungchunn/resume-builder-api"]
+        Image["image :latest<br/>image :sha-&lt;commit&gt;"]
+    end
+
+    subgraph Droplet["DigitalOcean Droplet (1 GB)"]
+        Nginx["Nginx<br/>(SSL, 443 → 127.0.0.1:8000)"]
+        subgraph Compose["deploy/docker-compose.prod.yml"]
+            API["resume-api<br/>(FastAPI + Uvicorn)"]
+            RedisC["resume-redis<br/>(redis:7-alpine,<br/>128mb, allkeys-lru)"]
+        end
+    end
+
+    subgraph Managed["Managed Services"]
+        Supabase["Supabase Postgres<br/>(pgvector)"]
+        Atlas["MongoDB Atlas"]
+        OpenAI["OpenAI API"]
+    end
+
+    CD --> Build --> Image
+    Build --> Migrate --> Supabase
+    Migrate --> Deploy
+    Deploy -. pulls .-> Image
+    Deploy --> API
+
+    Nginx --> API
+    API --> RedisC
+    API --> Supabase
+    API --> Atlas
+    API --> OpenAI
+```
+
+**Pipeline (runs on push to `main` touching `backend/**`, `deploy/docker-compose.prod.yml`, or `cd.yml`):**
+
+1. **`build-and-push`** — Buildx builds `backend/Dockerfile` with GHA layer cache, pushes `:latest` and `:sha-<commit>` tags to GHCR (private).
+2. **`migrate`** — `docker run --rm` the new image from the runner with production env vars injected, executing `alembic upgrade head` directly against Supabase. The droplet is never involved in migrations.
+3. **`deploy`** — SSHes to the droplet, `git pull` (to refresh `deploy/docker-compose.prod.yml`), `docker login ghcr.io`, `docker compose pull api && up -d api`, `docker image prune -f`, then a 5-attempt `/health` check.
+
+**Production container configuration (droplet only):**
+
+| Service | Image | Port | Volume |
+| ------- | ----- | ---- | ------ |
+| resume-api | `ghcr.io/sungchunn/resume-builder-api:latest` | `127.0.0.1:8000` | — |
+| resume-redis | `redis:7-alpine` (128mb, `allkeys-lru`) | (container-only) | `redis_data` |
+
+**Key invariants:**
+
+- `.env` is never baked into the image. `deploy/docker-compose.prod.yml` injects it via `env_file:` from `/home/deploy/app/deploy/.env`.
+- Inside the `resume-api` container, `REDIS_URL` **must** be `redis://redis:6379` (Compose DNS), not `localhost`. A wrong value starts cleanly but every cache operation fails at runtime.
+- The migrate job passes `REDIS_URL=redis://localhost:6379` as a placeholder only to satisfy the settings import; migrations never touch Redis.
+- `MONGODB_URI`, `JWT_SECRET_KEY`, and `OPENAI_API_KEY` are required at import time (via `pydantic-settings` validators in `app/core/config.py`), so the migrate job must pass them even though alembic itself doesn't use them.
+- Rollback: edit `deploy/docker-compose.prod.yml` on the droplet to pin `image:` to a previous `sha-<commit>` tag, then `docker compose pull api && up -d api`.
+
+See `/docs/architecture/080426_digitalocean-hosting-setup.md` for the droplet-side operational details (Nginx config, logs, troubleshooting).
 
 ---
 
