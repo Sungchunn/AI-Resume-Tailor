@@ -562,6 +562,31 @@ flowchart TD
     end
 ```
 
+### In-Process Job-Listings Cache
+
+The `/api/job-listings` browse endpoints use an in-process cache (via `fastapi-cache2` with `InMemoryBackend`) instead of Redis. The droplet is RAM-constrained (1 GB total, shared with Postgres, Mongo, Redis, frontend), and Redis is already carrying AI parsing, rate limiting, and scraper locks — adding another large dataset would push it over budget.
+
+**What is cached:**
+
+- `/job-listings/filter-options` — full response, 5 min TTL. The endpoint is identical for every authenticated user, so a single cache entry serves them all.
+- `/job-listings` (list) — only the **public portion** (slim list items + total count), 2 min TTL. The cache entry is shared across users; per-user interaction state (`is_saved`, `is_hidden`, `applied_at`, `application_status`) is fetched and merged in a separate uncached batch query against `user_job_interactions`. Requests that filter by `is_saved` / `is_hidden` / `applied` bypass the cache because the WHERE clause depends on the user.
+
+**Cache key derivation:**
+
+- Filter-options: a custom key builder strips the `AsyncSession` and current user from the kwargs hash so all callers collide on the same key.
+- Public list: keyed off `JobListingFilters.model_dump(exclude={"is_saved", "is_hidden", "applied"})`, ensuring the entry is user-agnostic.
+
+**Invalidation:**
+
+- The scraper scheduler calls `FastAPICache.clear()` after every successful batch upsert (`backend/app/services/scraping/scheduler.py`). New scraped rows surface on the next request.
+- User-interaction mutations (save / hide / mark applied) do **not** need to invalidate the public cache because interaction state is merged post-cache.
+
+**Multi-worker caveat:**
+
+Each Uvicorn worker keeps its own copy of the cache — there is no cross-worker sharing. On the current 1–2 worker droplet this duplication is negligible (target ≤ 20 MB per worker). If we ever scale horizontally to many workers or to multiple containers, the cache will need to move to Redis or be replaced with edge caching (see Phase 3 of `/docs/features/infrastructure/110426_jobs-page-caching/`).
+
+Initialization happens in `app.main.lifespan` immediately after the Redis connection is established, before the scheduler starts.
+
 ### Service Singleton Pattern
 
 ```python
