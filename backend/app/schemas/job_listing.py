@@ -9,7 +9,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.utils.validators import OptionalHttpUrl
 
@@ -170,6 +170,50 @@ class JobListingListResponse(BaseModel):
     """Schema for paginated job listing list response."""
 
     listings: list[JobListingResponse]
+    total: int
+    limit: int
+    offset: int
+
+
+class JobListingListItem(BaseModel):
+    """Slim schema for list views — excludes large TOAST columns.
+
+    Skips ``job_description``, ``job_description_html``, ``company_description``,
+    ``benefits``, ``emails``, and ``job_type`` to keep list payloads small.
+    Use :class:`JobListingResponse` for the detail view where the full record
+    is required.
+    """
+
+    id: int
+    external_job_id: str
+    job_title: str
+    company_name: str
+    company_logo: str | None = None
+    location: str | None = None
+    is_remote: bool | None = None
+    salary_min: int | None = None
+    salary_max: int | None = None
+    salary_currency: str = "USD"
+    salary_period: str | None = None
+    date_posted: datetime | None = None
+    seniority: str | None = None
+    job_url: str
+    source_platform: str | None = None
+    scraped_at: datetime | None = None
+
+    # User interaction (needed for list UI badges)
+    is_saved: bool = False
+    is_hidden: bool = False
+    applied_at: datetime | None = None
+    application_status: ApplicationStatus | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class JobListingListItemResponse(BaseModel):
+    """Paginated list response using the slim list-item schema."""
+
+    listings: list[JobListingListItem]
     total: int
     limit: int
     offset: int
