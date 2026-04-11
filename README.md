@@ -13,14 +13,19 @@ An AI-powered application that tailors resumes to specific job descriptions.
 ## Project Structure
 
 ```text
-├── /frontend          # Next.js application
-├── /backend           # FastAPI application
-├── /scripts           # Automation scripts
-├── /docs              # Documentation
-│   ├── /planning      # Project plans
-│   ├── /features      # Feature docs
-│   └── /architecture  # System design
-└── docker-compose.yml # Local development
+├── /frontend                      # Next.js application
+├── /backend                       # FastAPI application (built as a container in CI)
+├── /deploy
+│   └── docker-compose.prod.yml    # Production compose (api + redis, GHCR image)
+├── /scripts                       # Automation scripts
+├── /docs                          # Documentation
+│   ├── /planning                  # Project plans
+│   ├── /features                  # Feature docs
+│   └── /architecture              # System design
+├── docker-compose.yml             # Local development (full stack)
+└── .github/workflows
+    ├── ci.yml                     # PR: ruff + pytest vs real Postgres + Mongo
+    └── cd.yml                     # Push to main: build → migrate → deploy
 ```
 
 ## Getting Started
@@ -111,11 +116,34 @@ poetry run alembic history                # View migration history
 poetry run alembic current                # Show current revision
 ```
 
+> Production migrations run automatically in the `migrate` job of `.github/workflows/cd.yml` — `docker run --rm ... alembic upgrade head` executes from the GitHub Actions runner directly against Supabase. The droplet has no Python or Poetry installed.
+
 ### Type Sync
 
 ```bash
 ./scripts/generate-client.sh  # Generate TS types from OpenAPI
 ```
+
+## Deployment Pipeline
+
+Backend deployment is fully automated via GitHub Actions. See `/docs/features/infrastructure/110426_docker-cicd-pipeline/` for the full cutover rationale, and `/docs/architecture/080426_digitalocean-hosting-setup.md` for droplet operations.
+
+**`ci.yml`** — runs on every PR touching `backend/**`. Lint (`ruff`) plus the full `pytest` suite against ephemeral Postgres 16 (with `pgvector`) and MongoDB 7 service containers.
+
+**`cd.yml`** — runs on push to `main` touching `backend/**`, `deploy/docker-compose.prod.yml`, or the workflow itself. Three sequential jobs:
+
+1. **`build-and-push`** — Buildx builds `backend/Dockerfile` with GHA layer cache and pushes `:latest` + `:sha-<commit>` tags to `ghcr.io/sungchunn/resume-builder-api` (private).
+2. **`migrate`** — `docker run --rm` the fresh image from the runner with production env vars injected, executing `alembic upgrade head` against Supabase.
+3. **`deploy`** — SSHes to the DigitalOcean droplet, `git pull`s the repo (to refresh `deploy/docker-compose.prod.yml`), `docker compose pull api && up -d api`, then runs a 5-attempt `/health` check.
+
+### Local Dev vs Production Compose
+
+| File | Purpose | Services |
+| ---- | ------- | -------- |
+| `docker-compose.yml` (repo root) | Local development, full stack on one machine | `frontend`, `backend`, `postgres` (pgvector), `mongodb`, `redis`, `minio` |
+| `deploy/docker-compose.prod.yml` | Production droplet | `resume-api` (GHCR image) + `resume-redis` — Postgres/MongoDB are **external** managed services (Supabase, Atlas) |
+
+Production secrets live in `/home/deploy/app/deploy/.env` on the droplet; the image itself never contains secrets.
 
 ## Documentation
 
