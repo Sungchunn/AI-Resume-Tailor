@@ -8,11 +8,10 @@ with job listings populated from external sources (Apify/n8n).
 import hashlib
 import logging
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, Request, Response, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
 from fastapi_cache import FastAPICache
-from fastapi_cache.decorator import cache
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUserId, DBSessionWithRLS
@@ -47,37 +46,16 @@ router = APIRouter()
 # In-process cache helpers (Phase 2 — see
 # /docs/features/infrastructure/110426_jobs-page-caching/phase-2-inmemory-cache.md)
 #
-# fastapi-cache2's default key builder hashes every kwarg, including the
-# AsyncSession instance — its repr changes per request, which would defeat
-# caching. These helpers strip out per-request and per-user kwargs.
+# Manual get/set against the FastAPICache backend. fastapi-cache's @cache
+# decorator unconditionally rewrites the Cache-Control header on hits and
+# misses, which conflicts with the Phase 3 `stale-while-revalidate` / `public`
+# directives we want to emit — so we bypass it here and manage keys ourselves.
 # ----------------------------------------------------------------------------
 
 
-_NON_CACHE_KWARGS = {"db", "current_user_id", "_current_user_id"}
-
-
-def _public_route_key_builder(
-    func,
-    namespace: str = "",
-    *,
-    request: Request | None = None,
-    response: Response | None = None,
-    args: tuple[Any, ...],
-    kwargs: dict[str, Any],
-) -> str:
-    """Key builder for routes whose response is identical across users.
-
-    Drops non-deterministic kwargs (db session) and per-user identifiers so
-    that all callers share the same cache entry.
-    """
-    filtered = {
-        key: value
-        for key, value in kwargs.items()
-        if key not in _NON_CACHE_KWARGS and not isinstance(value, AsyncSession)
-    }
-    raw = f"{func.__module__}:{func.__name__}:{sorted(filtered.items(), key=lambda kv: kv[0])}"
-    digest = hashlib.md5(raw.encode()).hexdigest()  # noqa: S324
-    return f"{namespace}:{digest}"
+def _filter_options_cache_key() -> str:
+    """Fixed cache key for the public filter-options response."""
+    return f"{FastAPICache.get_prefix()}:job-listings:filter-options"
 
 
 def _public_list_cache_key(filters: "JobListingFilters") -> str:
@@ -257,8 +235,8 @@ def _build_listing_response(
 
 
 @router.get("/filter-options", response_model=JobListingFilterOptionsResponse)
-@cache(expire=300, key_builder=_public_route_key_builder)
 async def get_filter_options(
+    response: Response,
     db: DBSessionWithRLS,
     _current_user_id: CurrentUserId,
 ) -> JobListingFilterOptionsResponse:
@@ -268,19 +246,49 @@ async def get_filter_options(
     Returns distinct countries, regions, and seniority levels
     with counts for each value.
     """
-    options = await job_listing_repository.get_filter_options(db, active_only=True)
+    response.headers["Cache-Control"] = (
+        "public, max-age=60, stale-while-revalidate=30"
+    )
 
-    return JobListingFilterOptionsResponse(
+    cache_key = _filter_options_cache_key()
+    backend = FastAPICache.get_backend()
+    coder = FastAPICache.get_coder()
+
+    try:
+        cached = await backend.get(cache_key)
+    except Exception:
+        logger.warning(
+            "rb-cache: backend get failed for %s", cache_key, exc_info=True
+        )
+        cached = None
+
+    if cached is not None:
+        logger.debug("rb-cache: HIT %s", cache_key)
+        return coder.decode_as_type(cached, type_=JobListingFilterOptionsResponse)
+
+    logger.debug("rb-cache: MISS %s", cache_key)
+    options = await job_listing_repository.get_filter_options(db, active_only=True)
+    payload = JobListingFilterOptionsResponse(
         countries=[FilterOption(**c) for c in options["countries"]],
         regions=[FilterOption(**r) for r in options["regions"]],
         seniorities=[FilterOption(**s) for s in options["seniorities"]],
         cities=[FilterOption(**c) for c in options["cities"]],
     )
 
+    try:
+        await backend.set(cache_key, coder.encode(payload), expire=300)
+    except Exception:
+        logger.warning(
+            "rb-cache: backend set failed for %s", cache_key, exc_info=True
+        )
+
+    return payload
+
 
 @router.get("", response_model=JobListingListItemResponse)
 async def list_job_listings(
     # Dependencies (must be before parameters with defaults)
+    response: Response,
     db: DBSessionWithRLS,
     current_user_id: CurrentUserId,
     # Location filters
@@ -333,6 +341,10 @@ async def list_job_listings(
     and full-text search. User interaction filters (saved, hidden, applied)
     are also available.
     """
+    response.headers["Cache-Control"] = (
+        "private, max-age=60, stale-while-revalidate=30"
+    )
+
     filters = JobListingFilters(
         location=location,
         region=region,
@@ -399,6 +411,7 @@ async def list_job_listings(
 @router.get("/search", response_model=JobListingListItemResponse)
 async def search_job_listings(
     q: Annotated[str, Query(min_length=1, description="Search query")],
+    response: Response,
     db: DBSessionWithRLS,
     current_user_id: CurrentUserId,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
@@ -409,6 +422,10 @@ async def search_job_listings(
 
     Searches across job title, company name, and job description.
     """
+    response.headers["Cache-Control"] = (
+        "private, max-age=60, stale-while-revalidate=30"
+    )
+
     filters = JobListingFilters(
         search=q,
         limit=limit,
@@ -443,12 +460,15 @@ async def search_job_listings(
 
 @router.get("/saved", response_model=JobListingListItemResponse)
 async def list_saved_jobs(
+    response: Response,
     db: DBSessionWithRLS,
     current_user_id: CurrentUserId,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> JobListingListItemResponse:
     """Get all saved jobs for the current user."""
+    response.headers["Cache-Control"] = "private, no-store"
+
     filters = JobListingFilters(
         is_saved=True,
         limit=limit,
@@ -483,12 +503,15 @@ async def list_saved_jobs(
 
 @router.get("/applied", response_model=JobListingListItemResponse)
 async def list_applied_jobs(
+    response: Response,
     db: DBSessionWithRLS,
     current_user_id: CurrentUserId,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> JobListingListItemResponse:
     """Get all jobs the current user has applied to."""
+    response.headers["Cache-Control"] = "private, no-store"
+
     filters = JobListingFilters(
         applied=True,
         limit=limit,
@@ -528,6 +551,7 @@ async def list_applied_jobs(
 
 @router.get("/kanban", response_model=KanbanBoardResponse)
 async def get_kanban_board(
+    response: Response,
     db: DBSessionWithRLS,
     current_user_id: CurrentUserId,
 ) -> KanbanBoardResponse:
@@ -537,6 +561,8 @@ async def get_kanban_board(
     Returns jobs organized into columns: applied, interview, accepted, rejected, ghosted.
     Each column's jobs are ordered by their column_position.
     """
+    response.headers["Cache-Control"] = "private, no-store"
+
     board_data = await user_job_interaction_repository.get_kanban_board(
         db, user_id=current_user_id
     )
@@ -581,6 +607,7 @@ async def reorder_kanban_column(
 @router.get("/{listing_id}", response_model=JobListingResponse)
 async def get_job_listing(
     listing_id: int,
+    response: Response,
     db: DBSessionWithRLS,
     current_user_id: CurrentUserId,
 ) -> JobListingResponse:
@@ -589,6 +616,10 @@ async def get_job_listing(
 
     Also records that the user viewed this listing.
     """
+    response.headers["Cache-Control"] = (
+        "private, max-age=60, stale-while-revalidate=30"
+    )
+
     listing = await job_listing_repository.get(db, id=listing_id)
     if not listing:
         raise HTTPException(
