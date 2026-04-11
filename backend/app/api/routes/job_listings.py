@@ -5,10 +5,15 @@ These endpoints allow authenticated users to browse, search, and interact
 with job listings populated from external sources (Apify/n8n).
 """
 
+import hashlib
+import logging
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
+from fastapi_cache import FastAPICache
+from fastapi_cache.decorator import cache
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUserId, DBSessionWithRLS
 from app.crud import job_listing_repository, user_job_interaction_repository
@@ -33,7 +38,96 @@ from app.schemas.job_listing import (
     UserJobInteractionResponse,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+
+# ----------------------------------------------------------------------------
+# In-process cache helpers (Phase 2 — see
+# /docs/features/infrastructure/110426_jobs-page-caching/phase-2-inmemory-cache.md)
+#
+# fastapi-cache2's default key builder hashes every kwarg, including the
+# AsyncSession instance — its repr changes per request, which would defeat
+# caching. These helpers strip out per-request and per-user kwargs.
+# ----------------------------------------------------------------------------
+
+
+_NON_CACHE_KWARGS = {"db", "current_user_id", "_current_user_id"}
+
+
+def _public_route_key_builder(
+    func,
+    namespace: str = "",
+    *,
+    request: Request | None = None,
+    response: Response | None = None,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> str:
+    """Key builder for routes whose response is identical across users.
+
+    Drops non-deterministic kwargs (db session) and per-user identifiers so
+    that all callers share the same cache entry.
+    """
+    filtered = {
+        key: value
+        for key, value in kwargs.items()
+        if key not in _NON_CACHE_KWARGS and not isinstance(value, AsyncSession)
+    }
+    raw = f"{func.__module__}:{func.__name__}:{sorted(filtered.items(), key=lambda kv: kv[0])}"
+    digest = hashlib.md5(raw.encode()).hexdigest()  # noqa: S324
+    return f"{namespace}:{digest}"
+
+
+def _public_list_cache_key(filters: "JobListingFilters") -> str:
+    """Build a cache key for the public portion of the list endpoint.
+
+    Excludes user-interaction filters (``is_saved``, ``is_hidden``, ``applied``)
+    so the entry can be shared across users.
+    """
+    public_bits = filters.model_dump(exclude={"is_saved", "is_hidden", "applied"})
+    raw = repr(sorted(public_bits.items(), key=lambda kv: kv[0]))
+    digest = hashlib.md5(raw.encode()).hexdigest()  # noqa: S324
+    return f"{FastAPICache.get_prefix()}:job-listings:public:{digest}"
+
+
+async def _fetch_public_listings(
+    db: AsyncSession,
+    filters: "JobListingFilters",
+) -> tuple[list["JobListingListItem"], int]:
+    """Fetch and cache the public portion of a list query.
+
+    Returns slim list items with default (False/None) interaction fields.
+    Callers must merge in per-user interaction state after retrieval.
+    """
+    cache_key = _public_list_cache_key(filters)
+    backend = FastAPICache.get_backend()
+    coder = FastAPICache.get_coder()
+
+    try:
+        cached = await backend.get(cache_key)
+    except Exception:
+        logger.warning("rb-cache: backend get failed for %s", cache_key, exc_info=True)
+        cached = None
+
+    if cached is not None:
+        logger.debug("rb-cache: HIT %s", cache_key)
+        return coder.decode(cached)
+
+    logger.debug("rb-cache: MISS %s", cache_key)
+    listings, total = await job_listing_repository.list(
+        db, filters=filters, user_id=None
+    )
+    items = [_build_list_item_response(listing) for listing in listings]
+    payload = (items, total)
+
+    try:
+        await backend.set(cache_key, coder.encode(payload), expire=120)
+    except Exception:
+        logger.warning("rb-cache: backend set failed for %s", cache_key, exc_info=True)
+
+    return payload
 
 
 def _build_list_item_response(
@@ -74,6 +168,27 @@ def _build_list_item_response(
         response_data["application_status"] = interaction.application_status
 
     return JobListingListItem(**response_data)
+
+
+def _merge_interaction_into_item(
+    item: JobListingListItem,
+    interaction=None,
+) -> JobListingListItem:
+    """Return a copy of a cached list item with per-user interaction merged in.
+
+    The cached entry is shared across users so we never mutate it; ``model_copy``
+    produces a shallow clone with only the interaction fields overridden.
+    """
+    if interaction is None:
+        return item
+    return item.model_copy(
+        update={
+            "is_saved": interaction.is_saved,
+            "is_hidden": interaction.is_hidden,
+            "applied_at": interaction.applied_at,
+            "application_status": interaction.application_status,
+        }
+    )
 
 
 def _build_listing_response(
@@ -142,6 +257,7 @@ def _build_listing_response(
 
 
 @router.get("/filter-options", response_model=JobListingFilterOptionsResponse)
+@cache(expire=300, key_builder=_public_route_key_builder)
 async def get_filter_options(
     db: DBSessionWithRLS,
     _current_user_id: CurrentUserId,
@@ -245,21 +361,32 @@ async def list_job_listings(
         offset=offset,
     )
 
-    listings, total = await job_listing_repository.list(
-        db, filters=filters, user_id=current_user_id
-    )
+    has_user_filter = is_saved is not None or is_hidden is not None or applied is not None
 
-    # Batch fetch all interactions in a single query (fixes N+1)
-    listing_ids = [listing.id for listing in listings]
-    interactions_map = await user_job_interaction_repository.get_batch(
-        db, user_id=current_user_id, job_listing_ids=listing_ids
-    )
-
-    # Build responses using the pre-fetched interactions
-    response_listings = [
-        _build_list_item_response(listing, interactions_map.get(listing.id))
-        for listing in listings
-    ]
+    if has_user_filter:
+        # User-interaction filters change the WHERE clause via a UserJobInteraction
+        # join — bypass the public cache and fall through to the per-user query.
+        listings, total = await job_listing_repository.list(
+            db, filters=filters, user_id=current_user_id
+        )
+        listing_ids = [listing.id for listing in listings]
+        interactions_map = await user_job_interaction_repository.get_batch(
+            db, user_id=current_user_id, job_listing_ids=listing_ids
+        )
+        response_listings = [
+            _build_list_item_response(listing, interactions_map.get(listing.id))
+            for listing in listings
+        ]
+    else:
+        public_items, total = await _fetch_public_listings(db, filters)
+        listing_ids = [item.id for item in public_items]
+        interactions_map = await user_job_interaction_repository.get_batch(
+            db, user_id=current_user_id, job_listing_ids=listing_ids
+        )
+        response_listings = [
+            _merge_interaction_into_item(item, interactions_map.get(item.id))
+            for item in public_items
+        ]
 
     return JobListingListItemResponse(
         listings=response_listings,
