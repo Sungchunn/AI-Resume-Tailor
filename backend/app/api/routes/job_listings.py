@@ -20,7 +20,8 @@ from app.schemas.job_listing import (
     JobInteractionActionResponse,
     JobListingFilterOptionsResponse,
     JobListingFilters,
-    JobListingListResponse,
+    JobListingListItem,
+    JobListingListItemResponse,
     JobListingResponse,
     KanbanBoardResponse,
     KanbanColumnResponse,
@@ -33,6 +34,46 @@ from app.schemas.job_listing import (
 )
 
 router = APIRouter()
+
+
+def _build_list_item_response(
+    listing,
+    interaction=None,
+) -> JobListingListItem:
+    """Build a slim list-item response. Only touches columns loaded by the
+    slim list query — accessing TOAST columns here would force a lazy load
+    and break in async sessions.
+    """
+    response_data = {
+        "id": listing.id,
+        "external_job_id": listing.external_job_id,
+        "job_title": listing.job_title,
+        "company_name": listing.company_name,
+        "company_logo": listing.company_logo,
+        "location": listing.location,
+        "is_remote": listing.is_remote,
+        "salary_min": listing.salary_min,
+        "salary_max": listing.salary_max,
+        "salary_currency": listing.salary_currency,
+        "salary_period": listing.salary_period,
+        "date_posted": listing.date_posted,
+        "seniority": listing.seniority,
+        "job_url": listing.job_url,
+        "source_platform": listing.source_platform,
+        "scraped_at": listing.scraped_at,
+        "is_saved": False,
+        "is_hidden": False,
+        "applied_at": None,
+        "application_status": None,
+    }
+
+    if interaction:
+        response_data["is_saved"] = interaction.is_saved
+        response_data["is_hidden"] = interaction.is_hidden
+        response_data["applied_at"] = interaction.applied_at
+        response_data["application_status"] = interaction.application_status
+
+    return JobListingListItem(**response_data)
 
 
 def _build_listing_response(
@@ -121,7 +162,7 @@ async def get_filter_options(
     )
 
 
-@router.get("", response_model=JobListingListResponse)
+@router.get("", response_model=JobListingListItemResponse)
 async def list_job_listings(
     # Dependencies (must be before parameters with defaults)
     db: DBSessionWithRLS,
@@ -168,7 +209,7 @@ async def list_job_listings(
     # Pagination
     limit: Annotated[int, Query(ge=1, le=100, description="Results per page")] = 20,
     offset: Annotated[int, Query(ge=0, description="Offset for pagination")] = 0,
-) -> JobListingListResponse:
+) -> JobListingListItemResponse:
     """
     List job listings with filtering and pagination.
 
@@ -216,11 +257,11 @@ async def list_job_listings(
 
     # Build responses using the pre-fetched interactions
     response_listings = [
-        _build_listing_response(listing, interactions_map.get(listing.id))
+        _build_list_item_response(listing, interactions_map.get(listing.id))
         for listing in listings
     ]
 
-    return JobListingListResponse(
+    return JobListingListItemResponse(
         listings=response_listings,
         total=total,
         limit=limit,
@@ -228,14 +269,14 @@ async def list_job_listings(
     )
 
 
-@router.get("/search", response_model=JobListingListResponse)
+@router.get("/search", response_model=JobListingListItemResponse)
 async def search_job_listings(
     q: Annotated[str, Query(min_length=1, description="Search query")],
     db: DBSessionWithRLS,
     current_user_id: CurrentUserId,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
-) -> JobListingListResponse:
+) -> JobListingListItemResponse:
     """
     Full-text search for job listings.
 
@@ -261,11 +302,11 @@ async def search_job_listings(
     )
 
     response_listings = [
-        _build_listing_response(listing, interactions_map.get(listing.id))
+        _build_list_item_response(listing, interactions_map.get(listing.id))
         for listing in listings
     ]
 
-    return JobListingListResponse(
+    return JobListingListItemResponse(
         listings=response_listings,
         total=total,
         limit=limit,
@@ -273,13 +314,13 @@ async def search_job_listings(
     )
 
 
-@router.get("/saved", response_model=JobListingListResponse)
+@router.get("/saved", response_model=JobListingListItemResponse)
 async def list_saved_jobs(
     db: DBSessionWithRLS,
     current_user_id: CurrentUserId,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
-) -> JobListingListResponse:
+) -> JobListingListItemResponse:
     """Get all saved jobs for the current user."""
     filters = JobListingFilters(
         is_saved=True,
@@ -301,11 +342,11 @@ async def list_saved_jobs(
     )
 
     response_listings = [
-        _build_listing_response(listing, interactions_map.get(listing.id))
+        _build_list_item_response(listing, interactions_map.get(listing.id))
         for listing in listings
     ]
 
-    return JobListingListResponse(
+    return JobListingListItemResponse(
         listings=response_listings,
         total=total,
         limit=limit,
@@ -313,13 +354,13 @@ async def list_saved_jobs(
     )
 
 
-@router.get("/applied", response_model=JobListingListResponse)
+@router.get("/applied", response_model=JobListingListItemResponse)
 async def list_applied_jobs(
     db: DBSessionWithRLS,
     current_user_id: CurrentUserId,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
-) -> JobListingListResponse:
+) -> JobListingListItemResponse:
     """Get all jobs the current user has applied to."""
     filters = JobListingFilters(
         applied=True,
@@ -341,11 +382,11 @@ async def list_applied_jobs(
     )
 
     response_listings = [
-        _build_listing_response(listing, interactions_map.get(listing.id))
+        _build_list_item_response(listing, interactions_map.get(listing.id))
         for listing in listings
     ]
 
-    return JobListingListResponse(
+    return JobListingListItemResponse(
         listings=response_listings,
         total=total,
         limit=limit,
