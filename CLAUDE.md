@@ -387,8 +387,11 @@ When making architectural changes (modifying system design, changing design patt
 - `backend-architecture.md` - Backend service structure, API design patterns, request/response flows
 - `database-rules.md` - Database conventions, schema design patterns, relationship patterns
 - `ai-integration.md` - AI/ML integration design, model usage patterns, prompt strategies
+- `editor-guide.md` - Editor routes, entry points, feature gating, and naming conventions for all 3 editor contexts
 
-**Note:** Architecture docs in `/docs/architecture/` use date prefixes to track when design decisions were made and help maintain chronological context of architectural evolution.
+**Editor changes:** When modifying editor behavior, routes, feature gating, entry points, or adding new editor contexts, you MUST update `editor-guide.md`. The editor is the core of this webapp — this doc is the canonical reference for how the 3 editors differ.
+
+**Note:** Architecture docs in `/docs/architecture/` use date prefixes to track when design decisions were made and help maintain chronological context of architectural evolution. Exception: `editor-guide.md` is a permanent living reference with no date prefix.
 
 ### 13. Frontend Page Layout Standards
 
