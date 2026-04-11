@@ -16,7 +16,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUserId, DBSession, DBSessionWithRLS
 from app.crud import job_listing_repository, user_job_interaction_repository
-from app.services.scraping.schedule_utils import get_cache_ttl_seconds
 from app.schemas.job_listing import (
     ApplicationStatus,
     ApplyJobRequest,
@@ -37,6 +36,7 @@ from app.schemas.job_listing import (
     UpdateApplicationStatusRequest,
     UserJobInteractionResponse,
 )
+from app.services.scraping.schedule_utils import get_cache_ttl_seconds
 
 logger = logging.getLogger(__name__)
 
