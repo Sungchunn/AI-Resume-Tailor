@@ -412,7 +412,7 @@ curl -fsS http://localhost:8000/health
 
 **Rollback:** edit `deploy/docker-compose.prod.yml` on the droplet to pin `image:` to a previous `sha-<commit>` tag, then `docker compose pull api && up -d api`. A `workflow_dispatch` one-click rollback is tracked as a follow-up in the feature master plan.
 
-See `/docs/features/infrastructure/110426_docker-cicd-pipeline/` for phase-by-phase rationale and verification steps.
+See `/docs/features/infrastructure/260411_docker-cicd-pipeline/` for phase-by-phase rationale and verification steps.
 
 ---
 

@@ -2126,7 +2126,7 @@ MINIO_SECRET_KEY=<secret-key>
 
 ### 10.2 Production Deployment
 
-Production uses a pre-built container image flow: no Python toolchain, Poetry, or source build runs on the droplet. The pipeline was cut over on 2026-04-11 (see `/docs/features/infrastructure/110426_docker-cicd-pipeline/`).
+Production uses a pre-built container image flow: no Python toolchain, Poetry, or source build runs on the droplet. The pipeline was cut over on 2026-04-11 (see `/docs/features/infrastructure/260411_docker-cicd-pipeline/`).
 
 ```mermaid
 flowchart TB

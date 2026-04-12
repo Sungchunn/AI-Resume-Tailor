@@ -36,7 +36,7 @@ of a user filter (`/saved`, `/applied`, `/kanban`) use `no-store`.
 Behind the scenes, `/filter-options` and the public portion of `/` are
 kept in an in-process cache inside the FastAPI worker. Each entry
 expires at or before the next scheduled scraper fire time (see Phase 4
-of `/docs/features/infrastructure/110426_jobs-page-caching/`), and the
+of `/docs/features/infrastructure/260411_jobs-page-caching/`), and the
 scheduler actively clears and **re-warms** the default view (pages 1–3
 plus page 1 of the top 5 countries) after every successful scrape. The
 public list cache also splits row payloads from count payloads so

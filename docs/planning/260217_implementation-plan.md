@@ -1,0 +1,209 @@
+# AI Resume Tailor - Implementation Plan
+
+## Project Vision
+
+An AI-powered application that tailors resumes to specific job descriptions, helping users optimize their applications for ATS systems and human reviewers.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+| ----- | ---------- |
+| Frontend | Next.js 15 + Bun |
+| Backend | FastAPI + Python 3.11 |
+| Backend Package Manager | **Poetry** |
+| Database | PostgreSQL + Redis |
+| Local Dev | Docker Compose |
+
+---
+
+## Phase 0: Project Setup & Infrastructure
+
+**Goal:** Establish the monorepo structure, Docker environment, and basic configuration.
+
+### Phase 0 Tasks
+
+- [x] Create folder structure (`/frontend`, `/backend`, `/scripts`, `/docs`)
+- [x] Set up `.gitignore` with comprehensive patterns
+- [x] Create `docker-compose.yml` for local development
+  - PostgreSQL database
+  - Redis cache
+  - Backend service
+- [x] Initialize FastAPI backend with basic health endpoint
+- [x] Initialize Next.js 15 frontend with Bun
+- [x] Create `.env.example` files for both frontend and backend
+- [x] Set up Poetry for backend dependency management
+- [x] Set up the type-sync script (`/scripts/generate-client.sh`)
+- [ ] Write initial `README.md`
+
+### Phase 0 Deliverables
+
+- Working `docker-compose up` that starts all services
+- Frontend accessible at `localhost:3000`
+- Backend accessible at `localhost:8000`
+- OpenAPI docs at `localhost:8000/docs`
+
+---
+
+## Phase 1: Core Backend API
+
+**Goal:** Build the essential API endpoints for resume and job management.
+
+### Phase 1 Tasks
+
+- [x] Set up database models with SQLAlchemy/SQLModel
+  - User model
+  - Resume model
+  - JobDescription model
+  - TailoredResume model
+- [x] Implement Alembic migrations
+- [x] Create CRUD endpoints:
+  - `POST /api/resumes` - Upload/create resume
+  - `GET /api/resumes/{id}` - Retrieve resume
+  - `POST /api/jobs` - Add job description
+  - `GET /api/jobs/{id}` - Retrieve job
+- [x] Add input validation with Pydantic models
+- [x] Set up basic error handling
+- [x] Add API tests with pytest
+
+### Phase 1 Deliverables
+
+- Functional REST API for resume/job CRUD
+- Database migrations working
+- API documentation auto-generated
+
+---
+
+## Phase 2: Frontend Foundation
+
+**Goal:** Build the core UI components and pages.
+
+### Phase 2 Tasks
+
+- [x] Set up project structure (app router)
+- [x] Configure Tailwind CSS v4 with @tailwindcss/postcss
+- [x] Create layout components
+  - Header/Navigation
+  - Footer
+  - Sidebar (dashboard)
+- [x] Build core pages:
+  - Landing page
+  - Dashboard
+  - Resume upload/editor page
+  - Job description input page
+  - Resume detail/edit pages
+  - Job detail/edit pages
+- [x] Integrate generated API client from type-sync
+- [x] Add form handling (React Hook Form + Zod validation)
+- [x] Set up state management (TanStack Query)
+
+### Phase 2 Deliverables
+
+- Navigable UI with all core pages
+- Forms connected to backend API
+- Type-safe API calls
+
+---
+
+## Phase 3: AI Integration
+
+**Goal:** Implement the AI-powered resume tailoring feature.
+
+### Phase 3 Tasks
+
+- [x] Research and select AI provider (OpenAI, Anthropic, etc.)
+  - Selected Google Gemini as the AI provider
+- [x] Create AI service layer in backend
+  - Created `/backend/app/services/` with AI client, cache, parsers
+- [x] Implement resume parsing:
+  - Extract sections (experience, skills, education)
+  - Normalize data structure
+- [x] Implement job description analysis:
+  - Extract key requirements
+  - Identify keywords and skills
+- [x] Build tailoring algorithm:
+  - Match resume content to job requirements
+  - Generate tailored suggestions
+  - Rewrite bullet points for relevance
+- [x] Create tailoring endpoint:
+  - `POST /api/tailor` - Generate tailored resume
+  - `POST /api/tailor/quick-match` - Quick match analysis
+  - `GET /api/tailor/{id}` - Get tailored resume
+  - `GET /api/tailor` - List tailored resumes
+  - `DELETE /api/tailor/{id}` - Delete tailored resume
+- [x] Add AI response caching with Redis
+- [x] Build frontend UI for:
+  - Viewing AI suggestions
+  - Accepting/rejecting changes
+  - Downloading tailored resume
+
+### Phase 3 Deliverables
+
+- Working AI tailoring pipeline
+- User can upload resume, paste job, get tailored output
+- Caching reduces redundant API calls
+
+---
+
+## Phase 4: Polish & Deployment
+
+**Goal:** Production-ready application with authentication and deployment.
+
+### Phase 4 Tasks
+
+- [x] Add authentication:
+  - JWT-based auth
+  - Sign up / Login pages
+  - Protected routes
+- [x] Implement user dashboard:
+  - Saved resumes
+  - Job history
+  - Tailored resume history
+- [x] Add export options:
+  - PDF download
+  - Word document
+  - Plain text
+- [x] Error handling and loading states
+- [ ] Responsive design polish
+- [x] Set up deployment:
+  - Frontend → Vercel
+  - Backend → DigitalOcean Droplet via Docker Compose (`deploy/docker-compose.prod.yml`)
+  - Database → Supabase Postgres (pgvector) + MongoDB Atlas
+  - Container registry → private GHCR (`ghcr.io/sungchunn/resume-builder-api`)
+  - CI/CD → `.github/workflows/ci.yml` (ruff + pytest vs real Postgres 16 / Mongo 7) and `.github/workflows/cd.yml` (build → migrate → deploy)
+  - See `/docs/features/infrastructure/260411_docker-cicd-pipeline/` for the cutover feature
+  - See `/docs/architecture/digitalocean-hosting-setup.md` for droplet operational docs
+- [x] Environment variable management for production (injected via `deploy/.env` — image is never baked with secrets)
+- [ ] Basic analytics/monitoring
+
+### Phase 4 Deliverables
+
+- Deployed, production-ready application running containerized on a DigitalOcean droplet
+- Users can sign up, save work, and export resumes
+
+---
+
+## Future Enhancements (Post-MVP)
+
+- Resume templates and themes
+- LinkedIn import
+- Multiple resume versions per job
+- Interview preparation suggestions
+- Cover letter generation
+- Chrome extension for quick job capture
+- Team/organization features
+
+---
+
+## Session Context Protocol
+
+When starting a new session after context clear:
+
+1. **Read first:** `CLAUDE.md` and this plan
+2. **Check phase:** Identify current phase from task completion
+3. **Read feature docs:** Check `/docs/features/` for active work
+4. **Verify state:** Run `git status` and `docker-compose ps`
+5. **Continue:** Pick up from documented progress
+
+This prevents context rot and ensures continuity across sessions.

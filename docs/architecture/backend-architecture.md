@@ -588,7 +588,7 @@ Every cache write (rows, count, filter-options) uses `get_cache_ttl_seconds()` f
 
 **Multi-worker caveat:**
 
-Each Uvicorn worker keeps its own copy of the cache — there is no cross-worker sharing. On the current 1–2 worker droplet this duplication is negligible (target ≤ 20 MB per worker). If we ever scale horizontally to many workers or to multiple containers, the cache will need to move to Redis or be replaced with edge caching (see Phase 3 of `/docs/features/infrastructure/110426_jobs-page-caching/`).
+Each Uvicorn worker keeps its own copy of the cache — there is no cross-worker sharing. On the current 1–2 worker droplet this duplication is negligible (target ≤ 20 MB per worker). If we ever scale horizontally to many workers or to multiple containers, the cache will need to move to Redis or be replaced with edge caching (see Phase 3 of `/docs/features/infrastructure/260411_jobs-page-caching/`).
 
 Initialization happens in `app.main.lifespan` immediately after the Redis connection is established, before the scheduler starts.
 

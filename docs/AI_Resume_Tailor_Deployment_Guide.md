@@ -69,7 +69,7 @@
 
 **Recommended:** Self-hosted Redis on the same droplet as FastAPI. No external dependencies, no rate limits, better latency.
 
-See: `docs/features/infrastructure/080426_redis-self-hosted-migration/implementation-record.md` for detailed setup.
+See: `docs/features/infrastructure/260408_redis-self-hosted-migration/implementation-record.md` for detailed setup.
 
 **Quick setup:**
 
