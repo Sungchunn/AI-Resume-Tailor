@@ -55,10 +55,10 @@ Keep the root directory clean - only `README.md` and `CLAUDE.md` at project root
 │
 ├── /features                  # Feature-specific documentation
 │   ├── /group-name/               # Group directory (no date prefix)
-│   │   └── /DDMMYY_feature-name/      # Feature subdirectory with date
+│   │   └── /YYMMDD_feature-name/      # Feature subdirectory with date
 │   │       ├── master-plan.md             # Entry point
 │   │       └── phase-*.md                 # Phase breakdowns
-│   └── DDMMYY_standalone.md       # Single-doc features (rare)
+│   └── YYMMDD_standalone.md       # Single-doc features (rare)
 │
 ├── /architecture              # System design and technical decisions
 │   ├── system-architecture.md     # Overall system design
@@ -67,8 +67,8 @@ Keep the root directory clean - only `README.md` and `CLAUDE.md` at project root
 │   └── ai-integration.md          # AI/ML integration design
 │
 ├── /testing                   # E2E and integration test documentation
-│   ├── DDMMYY_playwright-infrastructure.md  # Playwright setup and patterns
-│   └── DDMMYY_<feature>-tests.md            # Feature-specific test plans
+│   ├── YYMMDD_playwright-infrastructure.md  # Playwright setup and patterns
+│   └── YYMMDD_<feature>-tests.md            # Feature-specific test plans
 │
 └── /api                       # API reference documentation
     ├── overview.md                # API introduction
@@ -92,37 +92,37 @@ Features are organized into logical groups. Group directories do NOT have date p
 ```text
 /docs/features/
 ├── ai-usage/                              # AI usage tracking & analytics
-│   ├── 120326_ai-usage-dashboard/
-│   └── 200326_ai-usage-tailor-flow/
+│   ├── 260312_ai-usage-dashboard/
+│   └── 260320_ai-usage-tailor-flow/
 │
 ├── ats/                                   # ATS scoring & keyword analysis
-│   ├── 030326_ats-scoring/
-│   ├── 120326_ats-router-modularization/
-│   ├── 120326_keyword-modularization/
-│   ├── 190326_keyword-analysis-improvements/
-│   └── 200326_keyword-review-workflow/
+│   ├── 260303_ats-scoring/
+│   ├── 260312_ats-router-modularization/
+│   ├── 260312_keyword-modularization/
+│   ├── 260319_keyword-analysis-improvements/
+│   └── 260320_keyword-review-workflow/
 │
 ├── infrastructure/                        # Backend/database maintenance
-│   ├── 090326_backend-parser-expansion.md
-│   ├── 090326_scraper-requests/
-│   └── 120326_database-cleanup/
+│   ├── 260309_backend-parser-expansion.md
+│   ├── 260309_scraper-requests/
+│   └── 260312_database-cleanup/
 │
 ├── resume-editor/                         # Editor page (/library/[id]/edit)
-│   ├── 250226_resume-workshop/
-│   ├── 060326_editor-panel-consolidation/
+│   ├── 260225_resume-workshop/
+│   ├── 260306_editor-panel-consolidation/
 │   └── ... (25+ features)
 │
 ├── tailor-flow/                           # Tailoring workflow
-│   ├── 050326_tailor-flow-redesign/
-│   └── 120326_parse-once-tailor-many/
+│   ├── 260305_tailor-flow-redesign/
+│   └── 260312_parse-once-tailor-many/
 │
 ├── ui/                                    # Global UI & layout
-│   ├── 100326_l-shape-layout/
-│   └── 100326_library-redesign/
+│   ├── 260310_l-shape-layout/
+│   └── 260310_library-redesign/
 │
 └── upload/                                # Resume upload experience
-    ├── 060326_pdf-upload-loading-states/
-    └── 100326_resume-upload-modal/
+    ├── 260306_pdf-upload-loading-states/
+    └── 260310_resume-upload-modal/
 ```
 
 #### Group Directory Reference
@@ -140,7 +140,7 @@ Features are organized into logical groups. Group directories do NOT have date p
 #### Rules for Feature Organization
 
 1. **Group directories have NO date prefix** - e.g., `resume-editor/`, not `220326_resume-editor/`
-2. **Feature subdirectories MUST have date prefix** - Format: `DDMMYY_feature-name/`
+2. **Feature subdirectories MUST have date prefix** - Format: `YYMMDD_feature-name/`
 3. **Choose the most specific group** - A feature affecting the editor goes in `resume-editor/`, not `ui/`
 4. **Each feature follows standard conventions** - Must contain a `master-plan.md` entry point and phase docs as needed
 5. **Chronological ordering** - Date prefix enables natural sorting by implementation date
@@ -159,12 +159,12 @@ New groups must be added to this reference table and documented with clear purpo
 
 All documentation files in `/docs/planning` and `/docs/features` MUST include a **date prefix** for tracking.
 
-**Format:** `DDMMYY_name.md`
+**Format:** `YYMMDD_name.md`
 
 ```text
-180226_api-design.md           # Created Feb 18, 2026
-150126_auth-implementation.md  # Created Jan 15, 2026
-010326_deployment-guide.md     # Created Mar 1, 2026
+260218_api-design.md           # Created Feb 18, 2026
+260115_auth-implementation.md  # Created Jan 15, 2026
+260301_deployment-guide.md     # Created Mar 1, 2026
 ```
 
 Rules:
@@ -531,7 +531,7 @@ Tailwind v3+ provides shorter aliases for many utility classes. Always use the c
 
 When implementing Playwright tests for a feature:
 
-1. **Create test plan doc:** `/docs/testing/DDMMYY_<feature>-tests.md`
+1. **Create test plan doc:** `/docs/testing/YYMMDD_<feature>-tests.md`
 2. **Reference infrastructure:** Link to `playwright-infrastructure.md` for patterns
 3. **Include prerequisites:** List required `data-testid` attributes to add
 4. **Define test scope:** Tables of pages and behaviors to validate
@@ -692,7 +692,7 @@ test-results/
 
 ## Project Phases
 
-See `/docs/planning/170226_implementation-plan.md` for the full breakdown.
+See `/docs/planning/260217_implementation-plan.md` for the full breakdown.
 
 Development is split into phases:
 
