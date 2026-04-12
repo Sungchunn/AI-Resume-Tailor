@@ -44,6 +44,9 @@ import { useBlockPagination } from "./useBlockPagination";
 import { MeasurementContainer } from "./MeasurementContainer";
 import { PreviewPage } from "./PreviewPage";
 import { InlineEditProvider } from "../editor/inline";
+import { SuggestionPortalLayer } from "./SuggestionPortalLayer";
+import { BulletSuggestionDropdown } from "./BulletSuggestionDropdown";
+import { useIsInlineReviewActive } from "@/lib/stores/inlineSuggestionQueueStore";
 
 /**
  * Ref handle exposed by PaginatedResumePreview for external access
@@ -57,6 +60,10 @@ export interface PaginatedResumePreviewHandle {
   getPageCount: () => number;
   /** Check if measurements are ready and pagination is complete */
   isReady: () => boolean;
+  /** Get the portal layer target for rendering suggestion dropdown */
+  getPortalTarget: () => HTMLDivElement | null;
+  /** Get the container element for coordinate calculations */
+  getContainerElement: () => HTMLDivElement | null;
 }
 
 export interface PaginatedResumePreviewProps extends ResumePreviewProps {
@@ -66,6 +73,8 @@ export interface PaginatedResumePreviewProps extends ResumePreviewProps {
   onInlineEditCommit?: (elementId: string, value: string) => void;
   /** Whether inline editing is enabled */
   enableInlineEdit?: boolean;
+  /** Ref to the scroll container wrapping this preview, used for scroll-aware dropdown positioning */
+  scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 /**
@@ -96,11 +105,13 @@ export const PaginatedResumePreview = forwardRef<
     pageGap = 24,
     onInlineEditCommit,
     enableInlineEdit = false,
+    scrollContainerRef,
   },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pagesWrapperRef = useRef<HTMLDivElement>(null);
+  const portalLayerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const [autoScale, setAutoScale] = useState(1);
 
@@ -173,7 +184,6 @@ export const PaginatedResumePreview = forwardRef<
   // 7. Expose handle via useImperativeHandle
   useImperativeHandle(ref, () => ({
     getPageElements: () => {
-      // Return pages in order
       const elements: HTMLDivElement[] = [];
       for (let i = 1; i <= totalPages; i++) {
         const el = pageRefs.current.get(i);
@@ -184,6 +194,8 @@ export const PaginatedResumePreview = forwardRef<
     getScale: () => scale,
     getPageCount: () => totalPages,
     isReady: () => isReady,
+    getPortalTarget: () => portalLayerRef.current,
+    getContainerElement: () => containerRef.current,
   }));
 
   // Movement constraint callbacks for PreviewPage
@@ -204,6 +216,8 @@ export const PaginatedResumePreview = forwardRef<
     ? scaledPageHeight * totalPages + scaledGap * Math.max(0, totalPages - 1)
     : scaledPageHeight; // Single skeleton page height when loading
 
+  const isInlineReviewActive = useIsInlineReviewActive();
+
   // Handle inline edit commit
   const handleInlineEditCommit = useCallback(
     (elementId: string, value: string) => {
@@ -217,7 +231,7 @@ export const PaginatedResumePreview = forwardRef<
     <div
       ref={containerRef}
       className={`paginated-preview-container flex flex-col items-center w-full ${className ?? ""}`}
-      style={{ minHeight: totalHeight }}
+      style={{ minHeight: totalHeight, position: "relative" }}
     >
       {/* Hidden measurement container */}
       <MeasurementContainer
@@ -284,6 +298,18 @@ export const PaginatedResumePreview = forwardRef<
         </div>
       )}
 
+      {/* Portal target for suggestion dropdown — outside page DOM for export safety */}
+      <SuggestionPortalLayer ref={portalLayerRef} />
+
+      {/* Inline suggestion dropdown */}
+      {isInlineReviewActive && (
+        <BulletSuggestionDropdown
+          portalTarget={portalLayerRef.current}
+          containerRef={containerRef.current}
+          blocks={blocks}
+          scrollContainerRef={scrollContainerRef?.current}
+        />
+      )}
     </div>
   );
 

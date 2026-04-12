@@ -311,7 +311,11 @@ function EducationEntryPreview({
           <span className="font-medium text-muted-foreground">Relevant Courses: </span>
           <ul className="list-disc ml-4 mt-0.5 space-y-0.5">
             {entry.relevantCourses.map((course, courseIndex) => (
-              <li key={course.id} className="text-muted-foreground">
+              <li
+                key={course.id}
+                className="text-muted-foreground"
+                data-bullet-element-id={createIndexedElementId(blockId, entry.id, "relevantCourses", courseIndex)}
+              >
                 <InlineRichText
                   elementId={createIndexedElementId(blockId, entry.id, "relevantCourses", courseIndex)}
                   value={course.text}

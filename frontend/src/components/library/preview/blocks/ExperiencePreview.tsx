@@ -198,11 +198,12 @@ function ExperienceEntryPreview({
         )}
         {entry.bullets && entry.bullets.length > 0 && (
           <ul className="list-disc ml-4 mt-1 space-y-0.5">
-            {entry.bullets.map((bullet) => {
+            {entry.bullets.map((bullet, bulletIndex) => {
               if (!bullet.text?.trim()) return null;
               return (
                 <li
                   key={bullet.id}
+                  data-bullet-element-id={blockId ? createIndexedElementId(blockId, entry.id, "bullets", bulletIndex) : undefined}
                   style={{
                     fontSize: style.bodyFontSize,
                     lineHeight: style.lineHeight,
@@ -275,6 +276,7 @@ function ExperienceEntryPreview({
           {entry.bullets.map((bullet, bulletIndex) => (
             <li
               key={bullet.id}
+              data-bullet-element-id={createIndexedElementId(blockId, entry.id, "bullets", bulletIndex)}
               style={{
                 fontSize: style.bodyFontSize,
                 lineHeight: style.lineHeight,
