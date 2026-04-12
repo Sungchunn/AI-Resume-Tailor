@@ -15,23 +15,23 @@ Internet
 ┌─────────────────────────────────────────────────────────────┐
 │  DigitalOcean Droplet (Ubuntu 24.04, 1GB RAM, Singapore)    │
 │                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  Nginx (reverse proxy + SSL termination)            │   │
-│  │  - Listens on :80 (redirects to HTTPS)              │   │
-│  │  - Listens on :443 (SSL via Let's Encrypt)          │   │
-│  └──────────────────────┬──────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  Nginx (reverse proxy + SSL termination)            │    │
+│  │  - Listens on :80 (redirects to HTTPS)              │    │
+│  │  - Listens on :443 (SSL via Let's Encrypt)          │    │
+│  └──────────────────────┬──────────────────────────────┘    │
 │                         │ proxy_pass 127.0.0.1:8000         │
 │                         ▼                                   │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  Docker Compose (deploy/docker-compose.prod.yml)    │   │
-│  │  ├─ resume-api container                            │   │
-│  │  │   - ghcr.io/sungchunn/resume-builder-api:latest  │   │
-│  │  │   - FastAPI / Uvicorn on 127.0.0.1:8000          │   │
-│  │  │   - env_file: /home/deploy/app/deploy/.env       │   │
-│  │  └─ resume-redis container                          │   │
-│  │      - redis:7-alpine, 128mb, allkeys-lru           │   │
-│  │      - appendonly yes, volume: redis_data           │   │
-│  └─────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  Docker Compose (deploy/docker-compose.prod.yml)    │    │
+│  │  ├─ resume-api container                            │    │
+│  │  │   - ghcr.io/sungchunn/resume-builder-api:latest  │    │
+│  │  │   - FastAPI / Uvicorn on 127.0.0.1:8000          │    │
+│  │  │   - env_file: /home/deploy/app/deploy/.env       │    │
+│  │  └─ resume-redis container                          │    │
+│  │      - redis:7-alpine, 128mb, allkeys-lru           │    │
+│  │      - appendonly yes, volume: redis_data           │    │
+│  └─────────────────────────────────────────────────────┘    │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
            │                    │                    │
