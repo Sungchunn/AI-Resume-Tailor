@@ -20,12 +20,15 @@ engine = create_async_engine(
     future=True,
     poolclass=NullPool,
     connect_args={
+        # Disable asyncpg's built-in statement cache (default: 100).
+        # Required when behind Supavisor/PgBouncer — without this,
+        # asyncpg skips mark_unprepared() on unnamed statements,
+        # causing "prepared statement does not exist" after connection rotation.
+        "statement_cache_size": 0,
         # Disable SQLAlchemy's adapter-level prepared-statement LRU cache.
         "prepared_statement_cache_size": 0,
-        # Force anonymous (unnamed) prepared statements.  asyncpg's default
-        # (name=None) auto-generates names like __asyncpg_stmt_N__ which
-        # collide when PgBouncer rotates server connections.  Returning ''
-        # tells asyncpg to use the unnamed-statement protocol instead.
+        # Force unnamed statements so PostgreSQL never stores named
+        # statements that become stale after pooler connection rotation.
         "prepared_statement_name_func": lambda: "",
     },
 )
