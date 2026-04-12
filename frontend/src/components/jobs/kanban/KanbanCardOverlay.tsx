@@ -1,9 +1,9 @@
 "use client";
 
-import type { JobListingResponse } from "@/lib/api/types";
+import type { KanbanJobItem } from "@/lib/api/types";
 
 interface KanbanCardOverlayProps {
-  job: JobListingResponse;
+  job: KanbanJobItem;
 }
 
 export function KanbanCardOverlay({ job }: KanbanCardOverlayProps) {

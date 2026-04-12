@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates, arrayMove } from "@dnd-kit/sortable";
 import { useQueryClient } from "@tanstack/react-query";
-import type { ApplicationStatus, JobListingResponse, KanbanBoardResponse } from "@/lib/api/types";
+import type { ApplicationStatus, KanbanJobItem, KanbanBoardResponse } from "@/lib/api/types";
 import { useKanbanBoard, useUpdateApplicationStatus, useReorderKanbanColumn, queryKeys } from "@/lib/api/hooks";
 import { APPLICATION_STATUSES } from "./types";
 import { KanbanColumn } from "./KanbanColumn";
@@ -28,7 +28,7 @@ export function KanbanBoard() {
   const reorderMutation = useReorderKanbanColumn();
 
   // Track which job is being dragged
-  const [activeJob, setActiveJob] = useState<JobListingResponse | null>(null);
+  const [activeJob, setActiveJob] = useState<KanbanJobItem | null>(null);
 
   // DnD sensors
   const sensors = useSensors(
@@ -43,7 +43,7 @@ export function KanbanBoard() {
   );
 
   // Find job by ID across all columns
-  const findJob = useCallback((id: number): JobListingResponse | undefined => {
+  const findJob = useCallback((id: number): KanbanJobItem | undefined => {
     if (!data) return undefined;
     for (const status of APPLICATION_STATUSES) {
       const job = data.columns[status]?.jobs.find((j) => j.id === id);

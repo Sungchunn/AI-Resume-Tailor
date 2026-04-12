@@ -3,13 +3,13 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Send, Calendar, CheckCircle, XCircle, Ghost } from "lucide-react";
-import type { ApplicationStatus, JobListingResponse } from "@/lib/api/types";
+import type { ApplicationStatus, KanbanJobItem } from "@/lib/api/types";
 import { STATUS_CONFIG } from "./types";
 import { KanbanCard } from "./KanbanCard";
 
 interface KanbanColumnProps {
   status: ApplicationStatus;
-  jobs: JobListingResponse[];
+  jobs: KanbanJobItem[];
 }
 
 const ICONS: Record<string, React.ElementType> = {

@@ -4,11 +4,11 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
-import type { JobListingResponse } from "@/lib/api/types";
+import type { KanbanJobItem } from "@/lib/api/types";
 import { isStagnant, formatStatusAge } from "./types";
 
 interface KanbanCardProps {
-  job: JobListingResponse;
+  job: KanbanJobItem;
 }
 
 export function KanbanCard({ job }: KanbanCardProps) {
