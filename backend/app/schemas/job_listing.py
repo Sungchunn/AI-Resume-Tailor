@@ -210,6 +210,22 @@ class JobListingListItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class KanbanJobItem(BaseModel):
+    """Minimal schema for kanban board cards."""
+
+    id: int
+    job_title: str
+    company_name: str
+    company_logo: str | None = None
+    location: str | None = None
+    application_status: ApplicationStatus | None = None
+    status_changed_at: datetime | None = None
+    applied_at: datetime | None = None
+    column_position: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class JobListingListItemResponse(BaseModel):
     """Paginated list response using the slim list-item schema."""
 
@@ -372,7 +388,7 @@ class ReorderKanbanRequest(BaseModel):
 class KanbanColumnResponse(BaseModel):
     """Response for a single Kanban column."""
     status: str
-    jobs: list[JobListingResponse]
+    jobs: list[KanbanJobItem]
     total: int
 
 
