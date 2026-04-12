@@ -157,7 +157,7 @@ New groups must be added to this reference table and documented with clear purpo
 
 #### File Naming Convention
 
-All documentation files in `/docs/planning`, `/docs/features`, and `/docs/architecture` MUST include a **date prefix** for tracking.
+All documentation files in `/docs/planning` and `/docs/features` MUST include a **date prefix** for tracking.
 
 **Format:** `DDMMYY_name.md`
 
@@ -176,6 +176,7 @@ Rules:
 **Exceptions (no date prefix):**
 
 - `/docs/api/*` - Permanent API reference docs
+- `/docs/architecture/*` - Permanent living references (updated in place, not point-in-time snapshots)
 - `/docs/PROJECT_MASTER_PLAN.md` - Project vision doc
 - `/docs/features/<group>/` - Group directories (e.g., `resume-editor/`, `ats/`)
 - Proposal/decision docs within feature subdirs (e.g., `ats-scoring-proposal.md`)
@@ -391,7 +392,7 @@ When making architectural changes (modifying system design, changing design patt
 
 **Editor changes:** When modifying editor behavior, routes, feature gating, entry points, or adding new editor contexts, you MUST update `editor-guide.md`. The editor is the core of this webapp — this doc is the canonical reference for how the 3 editors differ.
 
-**Note:** Architecture docs in `/docs/architecture/` use date prefixes to track when design decisions were made and help maintain chronological context of architectural evolution. Exception: `editor-guide.md` is a permanent living reference with no date prefix.
+**Note:** Architecture docs in `/docs/architecture/` are permanent living references and do NOT use date prefixes. They are updated in place as the system evolves.
 
 ### 13. Frontend Page Layout Standards
 
