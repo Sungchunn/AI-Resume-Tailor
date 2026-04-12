@@ -29,6 +29,7 @@ from app.schemas.job_listing import (
     JobListingResponse,
     KanbanBoardResponse,
     KanbanColumnResponse,
+    KanbanJobItem,
     ReorderKanbanRequest,
     SaveJobRequest,
     SortBy,
@@ -288,6 +289,21 @@ def _build_listing_response(
         response_data["column_position"] = interaction.column_position or 0
 
     return JobListingResponse(**response_data)
+
+
+def _build_kanban_item(listing, interaction) -> KanbanJobItem:
+    """Build a slim KanbanJobItem for kanban board cards."""
+    return KanbanJobItem(
+        id=listing.id,
+        job_title=listing.job_title,
+        company_name=listing.company_name,
+        company_logo=listing.company_logo,
+        location=listing.location,
+        application_status=interaction.application_status,
+        status_changed_at=interaction.status_changed_at,
+        applied_at=interaction.applied_at,
+        column_position=interaction.column_position or 0,
+    )
 
 
 @router.get("/filter-options", response_model=JobListingFilterOptionsResponse)
@@ -633,7 +649,7 @@ async def get_kanban_board(
     for app_status in ApplicationStatus:
         items = board_data.get(app_status.value, [])
         jobs = [
-            _build_listing_response(listing, interaction)
+            _build_kanban_item(listing, interaction)
             for interaction, listing in items
         ]
         columns[app_status.value] = KanbanColumnResponse(
