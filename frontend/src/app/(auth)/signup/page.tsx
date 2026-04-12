@@ -35,7 +35,7 @@ export default function SignupPage() {
       await register({
         email,
         password,
-        full_name: fullName || undefined,
+        full_name: fullName,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create account");
@@ -106,13 +106,14 @@ export default function SignupPage() {
           <div className="space-y-4">
             <div>
               <label htmlFor="fullName" className="label">
-                Full name (optional)
+                Full name
               </label>
               <input
                 id="fullName"
                 name="fullName"
                 type="text"
                 autoComplete="name"
+                required
                 className="input"
                 placeholder="John Doe"
                 value={fullName}
