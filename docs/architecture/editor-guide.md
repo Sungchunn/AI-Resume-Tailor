@@ -14,7 +14,6 @@ The editor is a coordinated system, not a collection of independent components. 
 graph TB
     subgraph "Page Layer"
         LP["Library Page<br/>/library/resumes/[id]/edit"]
-        TP["Tailor Page<br/>/tailor/editor/[id]"]
         WP["Workshop Page<br/>/workshop/[id]"]
     end
 
@@ -44,7 +43,6 @@ graph TB
     end
 
     LP --> BEP
-    TP --> TEP --> BEP
     WP --> WSP
 
     BEP --> EL
@@ -166,43 +164,13 @@ BlockEditorProvider → EditorLayout (with jobId/jobListingId props)
 
 ---
 
-### 1.3 Tailor Editor
+### 1.3 Tailor Editor (Disabled)
 
-**Purpose:** Edit a tailored copy of a resume with full AI assistance. The job context is embedded in the tailored resume's MongoDB document, not passed via query params.
+**Status:** Route removed. The ad-hoc tailor editor has been disabled. Its use case (pasting an external job description to tailor a resume) will merge with the Workshop Editor into a single ad-hoc editor in the future.
 
-**Route:** `/tailor/editor/[id]`
+**Former Route:** `/tailor/editor/[id]` (deleted)
 
-**Page file:** `frontend/src/app/(protected)/tailor/editor/[id]/page.tsx`
-
-**Entry Points:**
-
-| Source Page | Action | Navigation |
-| ----- | ----- | ----- |
-| Tailored resume summary (`/tailor/[id]`) | "Edit" button | `/tailor/verify/[id]` (redirects to `/tailor/editor/[id]`) |
-| Deprecated `/tailor/verify/[id]` | Auto-redirect | `/tailor/editor/[id]` |
-| Deprecated `/tailor/review/[id]` | Auto-redirect | `/tailor/editor/[id]` |
-
-**Job Context:** Yes — embedded in the tailored resume MongoDB document via `job_source` field. Resolved from either `job_listing_id` (scraped) or `job_id` (user-created).
-
-**Provider Stack:**
-
-```text
-TailorEditorProvider → BlockEditorProvider → EditorLayout
-```
-
-`TailorEditorProvider` injects job context (ID, description, title, company) and ATS analysis results from `useATSProgressStore`.
-
-**Enabled Features:**
-
-- Everything from Job-Linked Editor, plus:
-- Skill suggestions panel (missing keywords from job posting)
-- `TailorFlowStepper` progress indicator in header
-- ATS composite score display in header
-
-**Data Handling:**
-
-- On load: converts `TailoredContent` (tailored_data/finalized_data) to `ParsedContent` via `tailoredContentToParsedContent`, then to blocks via `parsedContentToBlocks`
-- On save: converts blocks back via `blocksToParsedContent` then `parsedContentToTailoredContent` for storage. Uses custom `onSave` callback that calls `useUpdateTailoredResume` instead of the default resume API.
+**Infrastructure retained:** `TailorEditorProvider` and `TailorEditorContext` are still used by the Job-Linked Editor (via `useTailorEditorContextSafe` in `AIChatTab.tsx` and `SkillSuggestionsPanel.tsx`). These will be reused when the merged ad-hoc editor is built.
 
 ---
 
@@ -252,7 +220,7 @@ Use these canonical names in code comments, commit messages, and documentation t
 | ----- | ----- | ----- | ----- |
 | From library/profile | **Resume Editor** | No | `/library/resumes/[id]/edit` |
 | From job listing flow | **Job-Linked Editor** | Yes | `/library/resumes/[id]/edit?jobListingId=X` |
-| From tailor flow | **Tailor Editor** | Yes | `/tailor/editor/[id]` |
+| ~~From tailor flow~~ | ~~**Tailor Editor**~~ | ~~Yes~~ | ~~`/tailor/editor/[id]`~~ (disabled) |
 | From workshop flow | **Workshop Editor** | Yes | `/workshop/[id]` |
 
 **Do not use** "Library editor" — it is ambiguous (could mean Resume Editor or Job-Linked Editor).
@@ -263,29 +231,26 @@ Use these canonical names in code comments, commit messages, and documentation t
 
 The `hasJobContext` flag is the primary gate. It is `true` when a `jobListingId`, `jobId`, or embedded job source is present. The `isTailorMode` flag (from `useTailorEditorContextSafe`) is the secondary gate for tailor-specific features.
 
-| Feature | Resume Editor | Job-Linked Editor | Tailor Editor | Workshop Editor |
-| ----- | ----- | ----- | ----- | ----- |
-| Block editing / formatting | Yes | Yes | Yes | No (form-based) |
-| Inline WYSIWYG editing | Yes | Yes | Yes | No |
-| Section drag-and-drop | Yes | Yes | Yes | No |
-| Undo/redo | Yes | Yes | Yes | Yes |
-| Auto-save | Yes | Yes | Yes | Yes |
-| PDF export | Yes | Yes | Yes | No |
-| ATS tab | No | Yes | Yes | No |
-| AI bullet suggestions | No | Yes | Yes | No |
-| Inline suggestion dropdown | No | Yes | Yes | No |
-| AI model selector | No | Yes | Yes | No |
-| AI chat job indicator | No | Yes | Yes | No |
-| Skill suggestions panel | No | No | Yes | No |
-| Tailor flow stepper | No | No | Yes | No |
-| ATS score in header | No | No | Yes | No |
-| Real-time match score | No | No | No | Yes |
+| Feature | Resume Editor | Job-Linked Editor | Workshop Editor |
+| ----- | ----- | ----- | ----- |
+| Block editing / formatting | Yes | Yes | No (form-based) |
+| Inline WYSIWYG editing | Yes | Yes | No |
+| Section drag-and-drop | Yes | Yes | No |
+| Undo/redo | Yes | Yes | Yes |
+| Auto-save | Yes | Yes | Yes |
+| PDF export | Yes | Yes | No |
+| ATS tab | No | Yes | No |
+| AI bullet suggestions | No | Yes | No |
+| Inline suggestion dropdown | No | Yes | No |
+| AI model selector | No | Yes | No |
+| AI chat job indicator | No | Yes | No |
+| Real-time match score | No | No | Yes |
 
 ---
 
 ## 4. Shared Architecture
 
-All three block editors (Resume, Job-Linked, Tailor) share the same core component stack. The Workshop editor is separate.
+Both block editors (Resume, Job-Linked) share the same core component stack. The Workshop editor is separate.
 
 ### 4.1 Component Stack
 
@@ -307,11 +272,6 @@ Resume Editor:
 Job-Linked Editor (same page, query params enable features):
   BlockEditorProvider
     └── EditorLayout (jobId/jobListingId passed as props)
-
-Tailor Editor:
-  TailorEditorProvider (injects job context + ATS context)
-    └── BlockEditorProvider (custom onSave for tailored content)
-        └── EditorLayout (tailoredResumeId passed as prop)
 
 Workshop Editor (separate stack):
   WorkshopProvider
