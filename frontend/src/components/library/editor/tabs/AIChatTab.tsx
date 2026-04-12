@@ -22,7 +22,7 @@ import { BLOCK_TYPE_INFO } from "@/lib/resume/defaults";
 import type { AnyResumeBlock } from "@/lib/resume/types";
 import type { ChatMessage, AISectionType, AIChatResponse } from "@/lib/api/types";
 import { useTailorEditorContextSafe } from "@/components/tailor/editor/TailorEditorContext";
-import { BulletSuggestionsPanel } from "@/components/tailor/editor/BulletSuggestionsPanel";
+import { SuggestionProgressPanel } from "./SuggestionProgressPanel";
 import { SkillSuggestionsPanel } from "@/components/tailor/editor/SkillSuggestionsPanel";
 import { useATSProgressStore } from "@/lib/stores/atsProgressStore";
 
@@ -304,7 +304,7 @@ export function AIChatTab({ resumeId, jobId, jobListingId, tailoredResumeId }: A
       {/* Bullet & Skill Suggestions Panels (tailor mode) */}
       {isTailorMode && tailoredResumeId && (
         <div className="px-4 py-3 border-b border-border space-y-4">
-          <BulletSuggestionsPanel tailoredResumeId={tailoredResumeId} />
+          <SuggestionProgressPanel tailoredResumeId={tailoredResumeId} />
           <SkillSuggestionsPanel />
         </div>
       )}
@@ -312,7 +312,7 @@ export function AIChatTab({ resumeId, jobId, jobListingId, tailoredResumeId }: A
       {/* Bullet Suggestions Panel (library mode with job + ATS complete) */}
       {!isTailorMode && hasJobContext && atsKeywordResult && (
         <div className="px-4 py-3 border-b border-border space-y-4">
-          <BulletSuggestionsPanel
+          <SuggestionProgressPanel
             resumeId={resumeId}
             jobId={jobId}
             jobListingId={jobListingId}
