@@ -108,7 +108,10 @@ export async function exportToPdfFromPages(
         // Exclude print-hidden elements
         filter: (node) => {
           if (node instanceof HTMLElement) {
-            return node.dataset.printHidden !== "true";
+            return (
+              node.dataset.printHidden !== "true" &&
+              node.dataset.noExport !== "true"
+            );
           }
           return true;
         },
