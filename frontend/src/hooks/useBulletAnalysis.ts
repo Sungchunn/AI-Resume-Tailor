@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useBlockEditor } from "@/components/library/editor/BlockEditorContext";
+import { useIsInlineReviewActive } from "@/lib/stores/inlineSuggestionQueueStore";
 import {
   useTailorEditorContextSafe,
   type KeywordGapItem,
@@ -463,6 +464,7 @@ export function useBulletAnalysis({
   const aiReviewActive = useBulletSuggestionsStore((s) => s.aiReviewActive);
   const aiReviewComplete = useBulletSuggestionsStore((s) => s.aiReviewComplete);
   const preAnalysisScore = useBulletSuggestionsStore((s) => s.preAnalysisScore);
+  const isInlineReviewActive = useIsInlineReviewActive();
 
   // AI review: accept current suggestion and advance
   const handleAiReviewAccept = useCallback(async () => {
@@ -486,9 +488,10 @@ export function useBulletAnalysis({
     advanceNext();
   }, [rejectSuggestion, advanceNext]);
 
-  // Global keyboard handler for AI review mode
+  // Global keyboard handler for AI review mode (legacy panel-based review)
+  // Disabled when inline review queue is active to avoid double-handling
   useEffect(() => {
-    if (!aiReviewActive) return;
+    if (!aiReviewActive || isInlineReviewActive) return;
 
     const handleKeyDown = (e: globalThis.KeyboardEvent) => {
       // Don't capture if user is typing in an unrelated input
@@ -515,7 +518,7 @@ export function useBulletAnalysis({
     return () => {
       document.removeEventListener("keydown", handleKeyDown, { capture: true });
     };
-  }, [aiReviewActive, handleAiReviewAccept, handleAiReviewReject]);
+  }, [aiReviewActive, isInlineReviewActive, handleAiReviewAccept, handleAiReviewReject]);
 
   // ATS re-score after AI review completes
   const acceptedCount = useBulletSuggestionsStore(

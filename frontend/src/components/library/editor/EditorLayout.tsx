@@ -13,6 +13,8 @@ import {
 } from "../preview";
 import type { PaginatedResumePreviewHandle } from "../preview/PaginatedResumePreview";
 import ExportDialog from "@/components/export/ExportDialog";
+import { useInlineSuggestionKeyboard } from "@/hooks/useInlineSuggestionKeyboard";
+import { useInlineSuggestionQueueStore } from "@/lib/stores/inlineSuggestionQueueStore";
 
 interface EditorLayoutProps {
   /** Resume ID */
@@ -84,6 +86,10 @@ export function EditorLayout({
 
   // Preview ref for paginated preview
   const previewRef = useRef<PaginatedResumePreviewHandle>(null);
+  const previewScrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Inline suggestion keyboard shortcuts
+  useInlineSuggestionKeyboard();
 
   // Page count from paginated preview (used for overflow warning)
   const pageCount = previewRef.current?.getPageCount() ?? 1;
@@ -247,8 +253,8 @@ export function EditorLayout({
         hasParsedContent={hasParsedContent}
         onParseComplete={onParseComplete}
         onExport={() => {
-          // Clear active block selection so highlight rings don't appear in PDF export
           setActiveBlock(null);
+          useInlineSuggestionQueueStore.getState().dismissActive();
           setShowExportDialog(true);
         }}
       />
@@ -258,7 +264,7 @@ export function EditorLayout({
         <Group orientation="horizontal" className="h-full">
           {/* Left Panel: Preview */}
           <Panel defaultSize={isPreviewFullscreen ? "100%" : "73%"} minSize="40%">
-            <div className="h-full overflow-auto bg-muted p-4 flex flex-col items-center">
+            <div ref={previewScrollContainerRef} className="h-full overflow-auto bg-muted p-4 flex flex-col items-center">
               {isPreviewFullscreen && (
                 <div className="mb-4 w-full flex justify-end">
                   <button
@@ -300,6 +306,7 @@ export function EditorLayout({
                 pageGap={24}
                 enableInlineEdit={true}
                 onInlineEditCommit={handleInlineEditCommit}
+                scrollContainerRef={previewScrollContainerRef}
               />
             </div>
           </Panel>
