@@ -164,3 +164,6 @@ The CD workflow only triggers on changes to `backend/**`, `deploy/docker-compose
   - `docker logs resume-api --tail 20` shows healthy startup
 - **Supabase:** Monitor query performance dashboard for changes in role-settings query frequency/timing
 - **Future secret rotation:** Update GitHub Secret, push any backend change (or re-run workflow manually) — no SSH needed
+
+
+
