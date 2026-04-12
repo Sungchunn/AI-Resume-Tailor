@@ -108,9 +108,15 @@ Features are organized into logical groups. Group directories do NOT have date p
 │   └── 260312_database-cleanup/
 │
 ├── resume-editor/                         # Editor page (/library/[id]/edit)
-│   ├── 260225_resume-workshop/
-│   ├── 260306_editor-panel-consolidation/
-│   └── ... (25+ features)
+│   ├── ai-suggestions/                        # AI bullet suggestion attempts
+│   ├── fit-to-page/                           # Fit-to-one-page features
+│   ├── inline-editing/                        # Inline text editing in preview
+│   ├── pagination-and-preview/                # Pagination, preview, PDF export
+│   ├── save-and-sync/                         # Saving, conflict handling
+│   ├── sections-and-layout/                   # Section management, panel layout
+│   ├── bug-fixes/                             # Standalone bug fixes
+│   ├── workshop/                              # Workshop editor (separate arch)
+│   └── ats-integration/                       # ATS panel in editor
 │
 ├── tailor-flow/                           # Tailoring workflow
 │   ├── 260305_tailor-flow-redesign/
@@ -611,6 +617,59 @@ Playwright config is designed for GitHub Actions compatibility:
     path: frontend/blob-report/
     retention-days: 1
 ```
+
+### 17. Feature Plan Subdirectory Organization
+
+**Organize feature plan directories by feature area, not flat.**
+
+When a group directory under `docs/features/` accumulates 5+ plan folders, group related plans into subdirectories by feature area. Subdirectory names have NO date prefix (like group directories).
+
+```text
+docs/features/resume-editor/
+├── ai-suggestions/              # Grouped by feature area
+│   ├── AI_SUGGESTION_ATTEMPTS.md    # Attempt history (if multiple attempts)
+│   ├── 260307_inline-suggestions/
+│   └── 260412_inline-bullet-suggestions/
+├── fit-to-page/
+│   ├── 260307_fit-to-page/
+│   └── 260331_fit-to-page-optimization/
+├── 260316_standalone-plan/      # Small standalone plans stay at top level
+└── 260227_one-off-doc.md
+```
+
+| Rule | Description |
+| ----- | ----- |
+| Subdirectory threshold | Group when 5+ plans target the same feature area |
+| Naming | No date prefix on subdirectory names (e.g., `ai-suggestions/`, not `260412_ai-suggestions/`) |
+| Standalone plans | Plans that don't fit any group stay at the top level |
+| Uncategorized | Don't force a plan into a category -- leave at top level if unclear |
+
+### 18. Feature Plan Hygiene
+
+**Check for prior attempts before creating a new plan.**
+
+When creating a new implementation plan for a feature that has prior attempts:
+
+1. Check `docs/features/{group}/` for existing plans targeting the same feature
+2. If prior attempts exist, read their `master-plan.md` to understand what was tried
+3. Reference prior attempts in the new plan (what was tried, why it didn't work)
+4. After implementation, audit for dead code left by superseded plans
+5. Update or create `{feature-area}/ATTEMPT_HISTORY.md` tracking the evolution
+
+Do NOT create a new plan in isolation when prior attempts exist.
+
+### 19. Dead Code Audit After Feature Supersession
+
+**Audit for orphaned code when a feature supersedes prior implementations.**
+
+After completing a feature that replaces or supersedes prior implementations:
+
+1. Grep for imports of files created by prior attempts
+2. Remove orphaned files with zero imports (outside their own tests/barrels)
+3. For mixed files (some exports used, some not): remove dead exports, add `// DEPRECATED` comments with attempt reference
+4. Do NOT delete stores or shared modules -- only deprecate unused fields
+5. Document removals in the retrospective (`ATTEMPT_HISTORY.md`)
+6. Verify the build passes after removal (`bun run build`)
 
 ---
 
