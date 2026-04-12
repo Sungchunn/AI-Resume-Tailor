@@ -29,7 +29,9 @@ export interface BulletSuggestionsState {
   lastAnalyzedAt: Date | null;
   error: string | null;
   boundResumeId: string | null;
-  // AI review mode
+  // DEPRECATED: AI review mode fields from attempt 3 (260409_ai-bullet-review).
+  // Replaced by inlineSuggestionQueueStore in attempt 5 (260412_inline-bullet-suggestions).
+  // Still wired into BulletList.tsx and useBulletAnalysis.ts — remove after those are migrated.
   aiReviewActive: boolean;
   aiReviewIndex: number;
   aiReviewComplete: boolean;
@@ -46,7 +48,7 @@ export interface BulletSuggestionsActions {
   acceptAll: () => void;
   rejectAll: () => void;
   bindToResume: (resumeId: string) => void;
-  // AI review actions
+  // DEPRECATED: AI review actions from attempt 3. See inlineSuggestionQueueStore.
   startAiReview: () => void;
   exitAiReview: () => void;
   advanceNext: () => void;
@@ -224,8 +226,8 @@ export const useSuggestionStats = () =>
   }));
 
 /**
- * Get the current suggestion in AI review mode.
- * Returns null when AI review is inactive or all suggestions reviewed.
+ * DEPRECATED: From attempt 3 (260409_ai-bullet-review). Use inlineSuggestionQueueStore instead.
+ * Still used by BulletList.tsx for AiReviewDiffOverlay — remove when that is migrated.
  */
 export const useCurrentAiReviewSuggestion = () =>
   useBulletSuggestionsStore((state) => {
@@ -235,7 +237,7 @@ export const useCurrentAiReviewSuggestion = () =>
   });
 
 /**
- * Get AI review progress: { current, total, acceptedCount, rejectedCount }
+ * DEPRECATED: From attempt 3. Use inlineSuggestionQueueStore selectors instead.
  */
 export const useAiReviewProgress = () =>
   useBulletSuggestionsStore((state) => {

@@ -4,6 +4,11 @@ import { useCallback, useEffect, useRef, type KeyboardEvent } from "react";
 import { Plus, X, GripVertical, Sparkles } from "lucide-react";
 import { nanoid } from "nanoid";
 import { cn } from "@/lib/utils";
+// TODO: verify if dead code — AiReviewDiffOverlay and useCurrentAiReviewSuggestion
+// are from attempt 3 (260409_ai-bullet-review), now superseded by the inline
+// dropdown system (260412_inline-bullet-suggestions). Both systems fire simultaneously
+// when suggestions load. Remove these imports and the overlay render (line ~246)
+// once the inline system fully replaces the old AI review flow.
 import { useCurrentAiReviewSuggestion } from "@/lib/stores/bulletSuggestionsStore";
 import { AiReviewDiffOverlay } from "@/components/tailor/editor/AiReviewDiffOverlay";
 
