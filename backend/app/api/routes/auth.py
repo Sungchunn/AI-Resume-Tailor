@@ -241,6 +241,8 @@ async def google_auth(
             # Link Google to existing account
             user.google_id = google_user.google_id
             user.google_linked_at = datetime.now(timezone.utc)
+            if not user.full_name and google_user.full_name:
+                user.full_name = google_user.full_name
             account_linked = True
 
         else:

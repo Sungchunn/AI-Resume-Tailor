@@ -11,6 +11,7 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
+    full_name: str = Field(..., min_length=1, max_length=255)
     password: str = Field(..., min_length=8, max_length=100)
 
     @field_validator("password")
