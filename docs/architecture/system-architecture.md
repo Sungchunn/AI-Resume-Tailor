@@ -2190,7 +2190,7 @@ flowchart TB
 - `MONGODB_URI`, `JWT_SECRET_KEY`, and `OPENAI_API_KEY` are required at import time (via `pydantic-settings` validators in `app/core/config.py`), so the migrate job must pass them even though alembic itself doesn't use them.
 - Rollback: edit `deploy/docker-compose.prod.yml` on the droplet to pin `image:` to a previous `sha-<commit>` tag, then `docker compose pull api && up -d api`.
 
-See `/docs/architecture/080426_digitalocean-hosting-setup.md` for the droplet-side operational details (Nginx config, logs, troubleshooting).
+See `/docs/architecture/digitalocean-hosting-setup.md` for the droplet-side operational details (Nginx config, logs, troubleshooting).
 
 ---
 

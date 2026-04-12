@@ -126,7 +126,7 @@ poetry run alembic current                # Show current revision
 
 ## Deployment Pipeline
 
-Backend deployment is fully automated via GitHub Actions. See `/docs/features/infrastructure/110426_docker-cicd-pipeline/` for the full cutover rationale, and `/docs/architecture/080426_digitalocean-hosting-setup.md` for droplet operations.
+Backend deployment is fully automated via GitHub Actions. See `/docs/features/infrastructure/110426_docker-cicd-pipeline/` for the full cutover rationale, and `/docs/architecture/digitalocean-hosting-setup.md` for droplet operations.
 
 **`ci.yml`** — runs on every PR touching `backend/**`. Lint (`ruff`) plus the full `pytest` suite against ephemeral Postgres 16 (with `pgvector`) and MongoDB 7 service containers.
 

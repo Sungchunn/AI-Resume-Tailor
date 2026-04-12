@@ -207,7 +207,7 @@ routes → schemas → CRUD → models
 
 - [Backend Security Refactor Plan](./220226_backend-security-refactor.md)
 - [Code Review Refactoring Plan](./230226_code-review-refactoring-plan.md)
-- [Backend Architecture](../architecture/170226_backend-architecture.md)
+- [Backend Architecture](../architecture/backend-architecture.md)
 
 ---
 

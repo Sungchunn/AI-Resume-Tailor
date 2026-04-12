@@ -173,7 +173,7 @@ An AI-powered application that tailors resumes to specific job descriptions, hel
   - Container registry → private GHCR (`ghcr.io/sungchunn/resume-builder-api`)
   - CI/CD → `.github/workflows/ci.yml` (ruff + pytest vs real Postgres 16 / Mongo 7) and `.github/workflows/cd.yml` (build → migrate → deploy)
   - See `/docs/features/infrastructure/110426_docker-cicd-pipeline/` for the cutover feature
-  - See `/docs/architecture/080426_digitalocean-hosting-setup.md` for droplet operational docs
+  - See `/docs/architecture/digitalocean-hosting-setup.md` for droplet operational docs
 - [x] Environment variable management for production (injected via `deploy/.env` — image is never baked with secrets)
 - [ ] Basic analytics/monitoring
 

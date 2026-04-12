@@ -137,7 +137,7 @@ Eliminate ReportLab PDF generation path and route all resume PDF exports through
     - Run `poetry lock && poetry install`
 
 2. **Update documentation:**
-    - Update `/docs/architecture/170226_backend-architecture.md`
+    - Update `/docs/architecture/backend-architecture.md`
     - Update `/docs/api/upload-export.md` with page_count/overflows in response
 
 ---
@@ -155,7 +155,7 @@ Eliminate ReportLab PDF generation path and route all resume PDF exports through
 | `backend/app/api/routes/export.py` | Add response headers |
 | `backend/app/api/routes/resume_builds.py` | Add response headers |
 | `backend/pyproject.toml` | Remove reportlab, add jinja2 |
-| `docs/architecture/170226_backend-architecture.md` | Document PDF pipeline change |
+| `docs/architecture/backend-architecture.md` | Document PDF pipeline change |
 | `docs/api/upload-export.md` | Add page_count/overflows to schema |
 
 ---
