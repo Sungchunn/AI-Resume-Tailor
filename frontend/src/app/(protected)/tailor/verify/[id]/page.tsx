@@ -5,33 +5,27 @@
  * architecture refactoring. Resume verification now happens in the
  * Library flow at /library/resumes/[id]/verify.
  *
- * This page redirects to the editor for backward compatibility.
+ * Redirects to the tailor landing page.
  */
 
 "use client";
 
-import { use, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default function DeprecatedVerifyPage({ params }: PageProps) {
-  const { id } = use(params);
+export default function DeprecatedVerifyPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to editor - the new destination after analyze
-    router.replace(`/tailor/editor/${id}`);
-  }, [id, router]);
+    router.replace("/tailor");
+  }, [router]);
 
   return (
     <div className="h-screen flex items-center justify-center bg-muted/30">
       <div className="text-center">
         <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
         <p className="mt-4 text-sm text-muted-foreground">
-          Redirecting to editor...
+          Redirecting...
         </p>
       </div>
     </div>
