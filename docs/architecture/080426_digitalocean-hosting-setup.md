@@ -350,6 +350,30 @@ Deployments are automated via GitHub Actions. Two workflows cover the backend:
 - **`.github/workflows/ci.yml`** — runs on every PR touching `backend/**`. Lint (`ruff`) + full `pytest` suite against real Postgres 16 (pgvector) and MongoDB 7 service containers.
 - **`.github/workflows/cd.yml`** — runs on push to `main` touching `backend/**`, `deploy/docker-compose.prod.yml`, or the workflow itself. Three sequential jobs:
 
+### Trigger Scope
+
+**Triggers a workflow run:**
+
+| Path | Triggers | Why |
+| ---- | -------- | --- |
+| `backend/**` | `ci.yml` + `cd.yml` | App code, Dockerfile, Alembic migrations, tests, `pyproject.toml` — all live here |
+| `deploy/docker-compose.prod.yml` | `cd.yml` only | Production compose changes (image tag, Redis flags, healthcheck tuning) |
+| `.github/workflows/ci.yml` | `ci.yml` only | Workflow self-change |
+| `.github/workflows/cd.yml` | `cd.yml` only | Workflow self-change |
+
+Database migrations are not a separate trigger — they live at `backend/alembic/versions/`, which is already inside `backend/**`. Any migration change fires the normal `cd.yml` pipeline (build → migrate → deploy).
+
+**Does NOT trigger either workflow:**
+
+- `frontend/**` — handled entirely by Vercel's own GitHub integration, which watches `frontend/**` and redeploys independently on push/PR. Nothing in `.github/workflows/` touches the frontend.
+- `docs/**`, `README.md`, `CLAUDE.md`, `scripts/**`
+- Root `docker-compose.yml` (local-dev only)
+- Any `.github/workflows/` file other than `ci.yml` / `cd.yml`
+
+**Gotcha:** editing `deploy/docker-compose.prod.yml` alone (e.g., just bumping a Redis flag) triggers a full `cd.yml` run — image rebuild, migration, and redeploy. The rebuild uses whatever `backend/` currently is, so it's safe but potentially surprising if you only intended a compose-level tweak.
+
+### Pipeline Jobs
+
 **Job 1: `build-and-push`**
 
 - Checks out the repo on a GHA runner
