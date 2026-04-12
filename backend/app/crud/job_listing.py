@@ -844,6 +844,15 @@ class JobListingRepository:
         return deleted_count
 
 
+_KANBAN_LOAD_COLUMNS = (
+    JobListing.id,
+    JobListing.job_title,
+    JobListing.company_name,
+    JobListing.company_logo,
+    JobListing.location,
+)
+
+
 class UserJobInteractionRepository:
     """Repository for UserJobInteraction operations."""
 
@@ -1020,7 +1029,11 @@ class UserJobInteractionRepository:
                 UserJobInteraction.user_id == user_id,
                 UserJobInteraction.is_saved == True,
             )
-            .options(selectinload(UserJobInteraction.job_listing))
+            .options(
+                selectinload(UserJobInteraction.job_listing).load_only(
+                    *JobListingRepository._LIST_LOAD_COLUMNS
+                )
+            )
             .offset(offset)
             .limit(limit)
             .order_by(UserJobInteraction.created_at.desc())
@@ -1042,7 +1055,11 @@ class UserJobInteractionRepository:
                 UserJobInteraction.user_id == user_id,
                 UserJobInteraction.applied_at.isnot(None),
             )
-            .options(selectinload(UserJobInteraction.job_listing))
+            .options(
+                selectinload(UserJobInteraction.job_listing).load_only(
+                    *JobListingRepository._LIST_LOAD_COLUMNS
+                )
+            )
             .offset(offset)
             .limit(limit)
             .order_by(UserJobInteraction.applied_at.desc())
@@ -1110,7 +1127,11 @@ class UserJobInteractionRepository:
                 UserJobInteraction.applied_at.isnot(None),
                 UserJobInteraction.application_status.isnot(None),
             )
-            .options(selectinload(UserJobInteraction.job_listing))
+            .options(
+                selectinload(UserJobInteraction.job_listing).load_only(
+                    *_KANBAN_LOAD_COLUMNS
+                )
+            )
             .order_by(
                 UserJobInteraction.application_status,
                 UserJobInteraction.column_position,
