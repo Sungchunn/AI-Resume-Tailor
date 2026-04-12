@@ -140,6 +140,7 @@ These explicit color pairs (e.g., `bg-amber-600 text-white`) are safe because th
 ### The Problem
 
 Toggle switches typically have:
+
 - **Track:** The background pill that indicates ON/OFF state
 - **Thumb:** The circular knob that slides left/right
 
@@ -153,6 +154,7 @@ Common (broken) implementation:
 ```
 
 In dark mode:
+
 - `bg-primary` = white (track when ON)
 - `bg-white` = white (thumb)
 - Result: Invisible thumb!
@@ -166,7 +168,7 @@ Use `bg-primary-foreground` for the thumb, which adapts to contrast with the tra
 <button
   type="button"
   onClick={handleToggle}
-  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
     isActive ? "bg-primary" : "bg-muted"
   }`}
 >
