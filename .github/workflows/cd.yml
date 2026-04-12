@@ -114,6 +114,40 @@ jobs:
             echo '${{ secrets.GHCR_PAT }}' | docker login ghcr.io \
               -u '${{ secrets.GHCR_USERNAME }}' --password-stdin
 
+            # Generate .env from GitHub Secrets (single source of truth)
+            cat > .env << 'ENVEOF'
+            DATABASE_URL=${{ secrets.PROD_DATABASE_URL }}
+            DATABASE_URL_SYNC=${{ secrets.PROD_DATABASE_URL_SYNC }}
+            MONGODB_URI=${{ secrets.PROD_MONGODB_URI }}
+            MONGODB_DATABASE=resume_tailor
+            REDIS_URL=redis://redis:6379
+            JWT_SECRET_KEY=${{ secrets.PROD_JWT_SECRET_KEY }}
+            JWT_ALGORITHM=HS256
+            ACCESS_TOKEN_EXPIRE_MINUTES=30
+            AI_PROVIDER=openai
+            OPENAI_API_KEY=${{ secrets.PROD_OPENAI_API_KEY }}
+            OPENAI_MODEL=gpt-4o-mini
+            OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+            ENVIRONMENT=production
+            CORS_ORIGINS=https://re-zoo-me.com
+            TRUST_PROXY=true
+            ADMIN_EMAILS=sungchun.hua@gmail.com
+            APIFY_API_TOKEN=${{ secrets.PROD_APIFY_API_TOKEN }}
+            APIFY_ACTOR_ID=hKByXkMQaC5Qt9UMN
+            APIFY_TIMEOUT_SECONDS=300
+            APIFY_MAX_RETRIES=3
+            APIFY_MEMORY_MBYTES=1024
+            SCRAPER_SCHEDULE_HOUR=6
+            SCRAPER_SCHEDULE_MINUTE=0
+            SCRAPER_ENABLED=true
+            JOB_RETENTION_DAYS=21
+            JOB_CLEANUP_ENABLED=true
+            GOOGLE_CLIENT_ID=${{ secrets.PROD_GOOGLE_CLIENT_ID }}
+            GOOGLE_OAUTH_ENABLED=true
+            STORAGE_ENABLED=false
+            ENVEOF
+            chmod 600 .env
+
             docker compose -f docker-compose.prod.yml pull api
             docker compose -f docker-compose.prod.yml up -d api
             docker image prune -f
