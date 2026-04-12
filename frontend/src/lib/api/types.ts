@@ -907,9 +907,21 @@ export interface ReorderKanbanRequest {
   job_listing_ids: number[];
 }
 
+export interface KanbanJobItem {
+  id: number;
+  job_title: string;
+  company_name: string;
+  company_logo: string | null;
+  location: string | null;
+  application_status: ApplicationStatus | null;
+  status_changed_at: string | null;
+  applied_at: string | null;
+  column_position: number;
+}
+
 export interface KanbanColumnResponse {
   status: string;
-  jobs: JobListingResponse[];
+  jobs: KanbanJobItem[];
   total: number;
 }
 
