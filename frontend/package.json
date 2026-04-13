@@ -35,6 +35,7 @@
     "@tiptap/pm": "^3.20.0",
     "@tiptap/react": "^3.20.0",
     "@tiptap/starter-kit": "^3.20.0",
+    "@vercel/analytics": "^2.0.1",
     "autoprefixer": "^10.4.24",
     "diff": "^8.0.3",
     "dompurify": "^3.3.2",

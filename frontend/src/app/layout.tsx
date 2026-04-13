@@ -5,6 +5,7 @@ import { QueryProvider } from "@/providers/QueryProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { TimezoneProvider } from "@/contexts/TimezoneContext";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 // Load Google Fonts for resume preview
@@ -66,6 +67,7 @@ export default function RootLayout({
             </QueryProvider>
           </ThemeProvider>
         </GoogleOAuthProvider>
+        <Analytics />
       </body>
     </html>
   );
