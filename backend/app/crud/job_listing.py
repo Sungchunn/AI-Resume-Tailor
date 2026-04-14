@@ -27,6 +27,7 @@ from app.schemas.job_listing import (
     WebhookJobListing,
 )
 from app.utils.apify_helpers import (
+    compute_dedup_hash,
     convert_employment_type,
     detect_remote,
     extract_company_address,
@@ -50,6 +51,7 @@ class JobListingRepository:
         """Create a new job listing."""
         db_obj = JobListing(
             external_job_id=obj_in.external_job_id,
+            dedup_hash=compute_dedup_hash(obj_in.job_title, obj_in.company_name, obj_in.city),
             job_title=obj_in.job_title,
             company_name=obj_in.company_name,
             company_logo=obj_in.company_logo,
@@ -105,6 +107,15 @@ class JobListingRepository:
         """Get a job listing by external ID."""
         result = await db.execute(
             select(JobListing).where(JobListing.external_job_id == external_job_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_dedup_hash(
+        self, db: AsyncSession, *, dedup_hash: str
+    ) -> JobListing | None:
+        """Get a job listing by dedup hash."""
+        result = await db.execute(
+            select(JobListing).where(JobListing.dedup_hash == dedup_hash)
         )
         return result.scalar_one_or_none()
 
@@ -427,14 +438,22 @@ class JobListingRepository:
 
         Returns tuple of (listing, is_created).
         """
-        existing = await self.get_by_external_id(db, external_job_id=job_data.external_job_id)
         now = datetime.now(timezone.utc)
+
+        # Dual-lookup: try external_id first, fall back to content-based hash
+        dedup = compute_dedup_hash(
+            job_data.job_title, job_data.company_name, job_data.city
+        )
+        existing = await self.get_by_external_id(db, external_job_id=job_data.external_job_id)
+        if not existing:
+            existing = await self.get_by_dedup_hash(db, dedup_hash=dedup)
 
         if existing:
             # Update existing listing
             data = job_data.model_dump()
             for field, value in data.items():
                 setattr(existing, field, value)
+            existing.dedup_hash = dedup
             existing.last_synced_at = now
             await db.flush()
             await db.refresh(existing)
@@ -462,7 +481,6 @@ class JobListingRepository:
         Returns tuple of (listing, is_created).
         """
         external_id = job_data.id
-        existing = await self.get_by_external_id(db, external_job_id=external_id)
         now = datetime.now(timezone.utc)
 
         # Use helper functions for data transformation
@@ -478,9 +496,16 @@ class JobListingRepository:
             job_data.companyAddress,
         )
 
+        # Dual-lookup: try external_id first, fall back to content-based hash
+        dedup = compute_dedup_hash(job_data.title, job_data.companyName, city)
+        existing = await self.get_by_external_id(db, external_job_id=external_id)
+        if not existing:
+            existing = await self.get_by_dedup_hash(db, dedup_hash=dedup)
+
         # Build the update/create data
         data = {
             "external_job_id": external_id,
+            "dedup_hash": dedup,
             "job_title": job_data.title,
             "company_name": job_data.companyName,
             "company_logo": normalize_url(job_data.companyLogo),
@@ -614,9 +639,12 @@ class JobListingRepository:
                     company_website = normalize_url(job_data.companyWebsite)
                     company_linkedin_url = normalize_url(job_data.companyLinkedinUrl)
 
+                    dedup = compute_dedup_hash(job_data.title, job_data.companyName, city)
+
                     values_list.append(
                         {
                             "external_job_id": job_data.id,
+                            "dedup_hash": dedup,
                             "job_title": job_data.title,
                             "company_name": job_data.companyName,
                             "company_logo": company_logo,
@@ -669,21 +697,28 @@ class JobListingRepository:
                 logger.warning(f"Batch {i // batch_size + 1}: all jobs failed parsing, skipping")
                 continue
 
+            # Deduplicate within batch — same scrape can contain duplicates.
+            # Keep last occurrence per dedup_hash (most recent data wins).
+            seen: dict[str, dict] = {}
+            for v in values_list:
+                seen[v["dedup_hash"]] = v
+            values_list = list(seen.values())
+
             logger.info(f"Batch {i // batch_size + 1}: prepared {len(values_list)} jobs for upsert")
 
             # Build upsert statement
             stmt = insert(JobListing).values(values_list)
 
-            # ON CONFLICT DO UPDATE - update all fields except id and created_at
-            # Use explicit column list from the values to ensure compatibility
-            excluded_from_update = {"id", "external_job_id", "created_at"}
+            # ON CONFLICT on dedup_hash — update all fields except id, dedup_hash, and created_at.
+            # external_job_id IS updated so reposts get the fresh ID.
+            excluded_from_update = {"id", "dedup_hash", "created_at"}
             update_cols = {}
             for key in values_list[0].keys():
                 if key not in excluded_from_update:
                     update_cols[key] = stmt.excluded[key]
 
             stmt = stmt.on_conflict_do_update(
-                index_elements=["external_job_id"],
+                index_elements=["dedup_hash"],
                 set_=update_cols,
             )
 
