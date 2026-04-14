@@ -6,8 +6,9 @@ Create Date: 2026-04-14
 
 Adds content-based deduplication to job_listings using an MD5 hash of
 (job_title, company_name, city). Backfills existing rows, merges
-user_job_interactions and re-points tailored_resumes from duplicate
-losers to winners, then deactivates losers and adds a unique index.
+user_job_interactions from duplicate losers to winners, deactivates
+losers, and adds a unique index. MongoDB collections (tailored_resumes,
+keyword_overrides) are handled by the post-deploy cleanup script.
 """
 from collections.abc import Sequence
 
@@ -104,12 +105,9 @@ def upgrade() -> None:
                 WHERE job_listing_id = :loser_id
             """), {"winner_id": winner_id, "loser_id": loser_id})
 
-            # Re-point tailored_resumes FK from loser to winner
-            conn.execute(sa.text("""
-                UPDATE tailored_resumes
-                SET job_listing_id = :winner_id
-                WHERE job_listing_id = :loser_id
-            """), {"winner_id": winner_id, "loser_id": loser_id})
+            # Note: tailored_resumes was migrated from PostgreSQL to MongoDB
+            # in 20260312_0002. Re-pointing is handled by the post-deploy
+            # cleanup script (scripts/cleanup_keyword_overrides_dedup.py).
 
             # Deactivate loser (soft-delete)
             conn.execute(sa.text("""

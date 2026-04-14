@@ -1,8 +1,8 @@
-"""Post-deploy script: migrate keyword_overrides from dedup losers to winners.
+"""Post-deploy script: migrate MongoDB collections from dedup losers to winners.
 
 Reads the _dedup_loser_winner_map table created by migration 20260414_0001
-and re-points keyword_overrides documents in MongoDB from loser job_listing_id
-to winner job_listing_id.
+and re-points documents in both keyword_overrides and tailored_resumes
+MongoDB collections from loser IDs to winner IDs.
 
 Usage:
     cd backend
@@ -38,7 +38,9 @@ async def main() -> None:
         mongo_client.close()
         return
 
-    updated = 0
+    # 1. Re-point keyword_overrides
+    print("Re-pointing keyword_overrides...")
+    kw_updated = 0
     for row in rows:
         loser_id = row["loser_id"]
         winner_id = row["winner_id"]
@@ -47,10 +49,25 @@ async def main() -> None:
             {"$set": {"job_listing_id": winner_id}},
         )
         if result.modified_count:
-            print(f"  Migrated {result.modified_count} docs: {loser_id} -> {winner_id}")
-            updated += result.modified_count
+            print(f"  keyword_overrides: {result.modified_count} docs {loser_id} -> {winner_id}")
+            kw_updated += result.modified_count
 
-    print(f"Done. Updated {updated} keyword_overrides documents across {len(rows)} mappings.")
+    # 2. Re-point tailored_resumes (migrated from PG to MongoDB in 20260312_0002)
+    print("Re-pointing tailored_resumes...")
+    tailored = mongo_db["tailored_resumes"]
+    tr_updated = 0
+    for row in rows:
+        loser_id = row["loser_id"]
+        winner_id = row["winner_id"]
+        result = await tailored.update_many(
+            {"job_source.type": "job_listing", "job_source.id": loser_id},
+            {"$set": {"job_source.id": winner_id}},
+        )
+        if result.modified_count:
+            print(f"  tailored_resumes: {result.modified_count} docs {loser_id} -> {winner_id}")
+            tr_updated += result.modified_count
+
+    print(f"Done. Updated {kw_updated} keyword_overrides + {tr_updated} tailored_resumes across {len(rows)} mappings.")
     print("You can now drop the temp table:")
     print("  DROP TABLE IF EXISTS _dedup_loser_winner_map;")
 
