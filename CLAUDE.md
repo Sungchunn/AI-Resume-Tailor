@@ -673,6 +673,130 @@ After completing a feature that replaces or supersedes prior implementations:
 
 ---
 
+## AI Behavioral Principles
+
+These principles govern how Claude approaches all work in this project. They address the known failure modes of AI coding agents: wrong assumptions, overcomplicated code, orthogonal edits, and unverifiable work.
+
+### Think Before Coding
+
+**Never start implementing until the approach is clear and agreed upon.**
+
+- Before writing any code, state your understanding of the task and the approach you plan to take
+- Surface any confusion, ambiguities, or missing context — ask rather than assume
+- When multiple approaches exist, present the tradeoffs and let the human decide
+- Push back when a request seems wrong, unclear, or likely to cause problems
+- If something contradicts existing patterns in the codebase, flag it explicitly
+
+**Red flags that require stopping and asking:**
+
+- The task description is ambiguous about scope or behavior
+- You need to guess at a data shape, API contract, or user-facing behavior
+- The requested change conflicts with an existing pattern or rule in this file
+- You're unsure whether a dependency, function, or file still exists
+
+```text
+# WRONG - Assuming and running with it
+"I'll add a new Redux store for this feature..."
+(Project doesn't use Redux)
+
+# CORRECT - Surfacing confusion
+"The task says 'persist this state' but I'm not sure where —
+the app uses Zustand for client state and PostgreSQL for server state.
+Which is appropriate here?"
+```
+
+### Simplicity First
+
+**Write the least code that solves the actual problem. Nothing more.**
+
+- Prefer 100 clear lines over 1000 "well-architected" lines
+- Do not introduce abstractions, helpers, or utilities unless they are used in 3+ places today (not hypothetically)
+- Do not add configuration, feature flags, or extension points that weren't requested
+- Do not refactor surrounding code while working on a task — stay focused
+- If a solution feels complex, step back and ask whether the problem is being overcomplicated
+
+**Complexity budget checklist:**
+
+- Can this be done with a simple function instead of a class? Use the function.
+- Can this be done inline instead of a helper? Do it inline.
+- Does this abstraction serve the current task, or a hypothetical future one? If hypothetical, skip it.
+- Are you adding types, interfaces, or wrappers that only have one implementation? Probably unnecessary.
+
+```python
+# WRONG - Premature abstraction
+class ResumeFormatterFactory:
+    _formatters: dict[str, Type[BaseFormatter]] = {}
+
+    @classmethod
+    def register(cls, format_type: str):
+        def decorator(formatter_cls):
+            cls._formatters[format_type] = formatter_cls
+            return formatter_cls
+        return decorator
+
+    @classmethod
+    def create(cls, format_type: str) -> BaseFormatter:
+        return cls._formatters[format_type]()
+
+# CORRECT - Direct solution (only one format exists today)
+def format_resume_as_pdf(resume_data: dict) -> bytes:
+    ...
+```
+
+### Surgical Changes
+
+**Touch only what the task requires. Leave everything else exactly as-is.**
+
+- Do not modify comments, formatting, or code style in lines you aren't changing for the task
+- Do not add docstrings, type annotations, or comments to unchanged code
+- Do not rename variables, reorder imports, or "clean up" adjacent code
+- Do not remove code you don't fully understand, even if it looks unused
+- If you notice something broken or wrong outside the task scope, mention it to the user — don't fix it silently
+
+**The diff test:** Before finishing, every line in your diff should directly serve the task. If a line is there "while I'm here" or "for consistency," remove it.
+
+```text
+# WRONG - Task was "fix the date format bug"
+- Changed the date parsing logic (the actual fix)
+- Also reformatted 3 adjacent functions
+- Added type hints to 5 unrelated parameters
+- Removed a comment that "seemed outdated"
+
+# CORRECT - Task was "fix the date format bug"
+- Changed the date parsing logic (the actual fix)
+- Nothing else
+```
+
+### Goal-Driven Execution
+
+**Define what "done" looks like before starting, and verify it when finished.**
+
+- Before coding, state the success criteria: what should work when the task is complete
+- After coding, verify against those criteria — run the relevant tests, check the UI, confirm the behavior
+- If the task involves UI, start the dev server and visually verify (don't just trust the type checker)
+- If the task involves an API, test the endpoint (don't just trust that the code "looks right")
+- Prefer writing or running a test over manually asserting "this should work"
+
+**Verification hierarchy (most to least trustworthy):**
+
+1. Automated test passes (write one if it doesn't exist and the behavior is testable)
+2. Manual verification in browser/API client
+3. Type checker + linter pass
+4. "The code looks correct" (this alone is NOT sufficient for UI/API work)
+
+```text
+# WRONG
+"I've updated the component to fix the layout. The code looks correct."
+
+# CORRECT
+"I've updated the component. Started the dev server and verified:
+- The card renders at the correct width on desktop (1024px)
+- The card stacks vertically on mobile (375px)
+- No visual regressions on the /library page"
+```
+
+---
+
 ## Development Workflow
 
 ### Starting a New Session
