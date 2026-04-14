@@ -34,6 +34,7 @@ class JobListing(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     external_job_id = Column(String(255), unique=True, index=True, nullable=False)
+    dedup_hash = Column(String(32), nullable=False, unique=True, index=True)
 
     # Core job fields
     job_title = Column(String(500), nullable=False)
