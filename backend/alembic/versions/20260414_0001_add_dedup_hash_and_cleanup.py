@@ -6,8 +6,8 @@ Create Date: 2026-04-14
 
 Adds content-based deduplication to job_listings using an MD5 hash of
 (job_title, company_name, city). Backfills existing rows, merges
-user_job_interactions from duplicate losers to winners, deactivates
-losers, and adds a unique index. MongoDB collections (tailored_resumes,
+user_job_interactions from duplicate losers to winners, deletes losers,
+and adds a unique index. MongoDB collections (tailored_resumes,
 keyword_overrides) are handled by the post-deploy cleanup script.
 """
 from collections.abc import Sequence
@@ -109,16 +109,8 @@ def upgrade() -> None:
             # in 20260312_0002. Re-pointing is handled by the post-deploy
             # cleanup script (scripts/cleanup_keyword_overrides_dedup.py).
 
-            # Deactivate loser (soft-delete)
-            conn.execute(sa.text("""
-                UPDATE job_listings
-                SET is_active = FALSE
-                WHERE id = :loser_id
-            """), {"loser_id": loser_id})
-
-    # Log loser-to-winner mapping for MongoDB cleanup (Step 8)
+    # Log loser-to-winner mapping for MongoDB cleanup BEFORE deleting losers
     if loser_to_winner:
-        # Create a temp table to persist the mapping for the post-deploy script
         conn.execute(sa.text("""
             CREATE TABLE IF NOT EXISTS _dedup_loser_winner_map (
                 loser_id INTEGER NOT NULL,
@@ -129,6 +121,14 @@ def upgrade() -> None:
             conn.execute(sa.text(
                 "INSERT INTO _dedup_loser_winner_map (loser_id, winner_id) VALUES (:loser_id, :winner_id)"
             ), {"loser_id": loser_id, "winner_id": winner_id})
+
+        # Delete losers — all user_job_interactions have been re-pointed to
+        # winners above, and tailored_resumes lives in MongoDB now. Any
+        # straggler interactions would be cascade-deleted via the FK.
+        loser_ids = [lid for lid, _ in loser_to_winner]
+        conn.execute(sa.text(
+            "DELETE FROM job_listings WHERE id = ANY(:ids)"
+        ), {"ids": loser_ids})
 
     # Phase C — Add NOT NULL constraint and unique index
     op.alter_column("job_listings", "dedup_hash", nullable=False)
