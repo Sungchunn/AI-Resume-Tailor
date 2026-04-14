@@ -7,11 +7,26 @@ to the application's internal snake_case format.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from datetime import datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+
+def compute_dedup_hash(job_title: str, company_name: str, city: str | None) -> str:
+    """Compute an MD5 hex digest for deduplicating job listings.
+
+    Match key: (lower(trim(job_title)), lower(trim(company_name)), lower(trim(city)))
+    Uses '|' delimiter to prevent boundary collisions.
+    """
+    normalized = "|".join([
+        job_title.strip().lower(),
+        company_name.strip().lower(),
+        (city or "").strip().lower(),
+    ])
+    return hashlib.md5(normalized.encode()).hexdigest()
 
 
 def parse_job_date(posted_at: datetime | str | None) -> datetime | None:
