@@ -5,6 +5,9 @@ Iteratively compresses resume styles to fit content on a single page.
 Uses WeasyPrint for accurate page count detection.
 """
 
+import hashlib
+import json
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -45,6 +48,25 @@ class FitToPageResult:
     adjusted_style: dict[str, Any]
     reductions: list[dict[str, Any]]
     warning: str | None = None
+
+
+_RENDER_CACHE_MAX = 50
+_RENDER_CACHE_TTL = 300  # 5 minutes
+_render_cache: dict[str, tuple[int, float]] = {}  # key → (page_count, timestamp)
+
+
+def _cache_key(html: str, style: dict[str, Any], page_size: str) -> str:
+    """Build a deterministic cache key from render inputs."""
+    raw = html + json.dumps(style, sort_keys=True) + page_size
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
+def _prune_render_cache() -> None:
+    """Remove expired entries from the render cache."""
+    now = time.monotonic()
+    expired = [k for k, (_, ts) in _render_cache.items() if now - ts > _RENDER_CACHE_TTL]
+    for k in expired:
+        del _render_cache[k]
 
 
 class FitToPageService:
@@ -154,7 +176,19 @@ class FitToPageService:
         style: dict[str, Any],
         page_size: str,
     ) -> int:
-        """Render HTML and return page count."""
+        """Render HTML and return page count (cached by content hash)."""
+        key = _cache_key(html_content, style, page_size)
+        now = time.monotonic()
+
+        cached = _render_cache.get(key)
+        if cached is not None:
+            page_count, ts = cached
+            if now - ts <= _RENDER_CACHE_TTL:
+                return page_count
+
+        # Cache miss — prune expired entries, then render
+        _prune_render_cache()
+
         options = ExportOptions(
             font_size=int(style.get("font_size", 11)),
             margin_top=style.get("margin_top", 0.75),
@@ -164,7 +198,15 @@ class FitToPageService:
             line_spacing=style.get("line_spacing", 1.4),
             page_size=page_size,
         )
-        return self.html_service.render_page_count(html_content, options)
+        page_count = self.html_service.render_page_count(html_content, options)
+
+        # Evict oldest if at capacity
+        if len(_render_cache) >= _RENDER_CACHE_MAX:
+            oldest_key = min(_render_cache, key=lambda k: _render_cache[k][1])
+            del _render_cache[oldest_key]
+
+        _render_cache[key] = (page_count, now)
+        return page_count
 
 
 # Singleton instance
