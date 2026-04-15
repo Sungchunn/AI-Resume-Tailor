@@ -10,9 +10,8 @@ import logging
 import uuid
 from functools import lru_cache
 
-import redis.asyncio as redis
+from redis.asyncio import Redis
 
-from app.core.config import get_settings
 from app.schemas.resume import ParseStatusResponse
 
 logger = logging.getLogger(__name__)
@@ -25,8 +24,8 @@ TASK_TTL = 60 * 60
 class ParseTaskService:
     """Service for managing parse task state in Redis."""
 
-    def __init__(self, redis_url: str):
-        self.redis = redis.from_url(redis_url, decode_responses=True)
+    def __init__(self, redis_client: Redis):
+        self.redis = redis_client
         self.key_prefix = "parse_task"
 
     def _make_key(self, task_id: str) -> str:
@@ -169,13 +168,9 @@ class ParseTaskService:
         await self.redis.setex(key, TASK_TTL, json.dumps(task_data))
         logger.warning(f"Failed parse task {task_id}: {error}")
 
-    async def close(self) -> None:
-        """Close the Redis connection."""
-        await self.redis.close()
-
-
 @lru_cache
 def get_parse_task_service() -> ParseTaskService:
     """Get a singleton parse task service instance."""
-    settings = get_settings()
-    return ParseTaskService(redis_url=settings.redis_url)
+    from app.db.redis import get_redis
+
+    return ParseTaskService(redis_client=get_redis())

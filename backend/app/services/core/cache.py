@@ -4,9 +4,7 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from typing import Any
 
-import redis.asyncio as redis
-
-from app.core.config import get_settings
+from redis.asyncio import Redis
 
 
 class CacheService:
@@ -17,8 +15,8 @@ class CacheService:
     TAILOR_TTL = 60 * 60 * 24 * 7  # 7 days for tailored results
     ATS_TTL = 60 * 60 * 24  # 24 hours for ATS analysis results
 
-    def __init__(self, redis_url: str):
-        self.redis = redis.from_url(redis_url, decode_responses=True)
+    def __init__(self, redis_client: Redis):
+        self.redis = redis_client
 
     def _make_key(self, prefix: str, content: str) -> str:
         """Generate a cache key from content hash."""
@@ -201,13 +199,9 @@ class CacheService:
         """Check if key exists."""
         return bool(await self.redis.exists(key))
 
-    async def close(self) -> None:
-        """Close the Redis connection."""
-        await self.redis.close()
-
-
 @lru_cache
 def get_cache_service() -> CacheService:
     """Get a singleton cache service instance."""
-    settings = get_settings()
-    return CacheService(redis_url=settings.redis_url)
+    from app.db.redis import get_redis
+
+    return CacheService(redis_client=get_redis())

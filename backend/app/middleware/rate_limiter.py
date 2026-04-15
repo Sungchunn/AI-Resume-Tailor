@@ -233,20 +233,18 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app,
-        redis_url: str | None = None,
         config: RateLimitConfig | None = None,
     ):
         super().__init__(app)
         self.config = config or rate_limit_settings
-        self.redis_url = redis_url or get_settings().redis_url
-        self._redis: redis.Redis | None = None
         self._limiter: RateLimiter | None = None
 
     async def _get_limiter(self) -> RateLimiter:
-        """Lazy initialization of Redis connection and limiter."""
+        """Lazy initialization of limiter using the shared Redis client."""
         if self._limiter is None:
-            self._redis = redis.from_url(self.redis_url, decode_responses=True)
-            self._limiter = RateLimiter(self._redis, self.config)
+            from app.db.redis import get_redis
+
+            self._limiter = RateLimiter(get_redis(), self.config)
         return self._limiter
 
     async def dispatch(
