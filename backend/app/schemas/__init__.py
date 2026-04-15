@@ -55,6 +55,7 @@ from app.schemas.tailor import (
 from app.schemas.user import (
     GoogleAuthRequest,
     GoogleAuthResponse,
+    SSETicketResponse,
     Token,
     TokenRefresh,
     UserBase,
@@ -80,6 +81,7 @@ __all__ = [
     "TokenRefresh",
     "GoogleAuthRequest",
     "GoogleAuthResponse",
+    "SSETicketResponse",
     # Resume schemas
     "ResumeBase",
     "ResumeCreate",

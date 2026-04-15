@@ -1,10 +1,11 @@
+import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db_session
+from app.api.deps import get_current_user, get_current_user_id, get_db_session
 from app.core.config import Settings, get_settings
 from app.core.security import (
     create_access_token,
@@ -17,6 +18,7 @@ from app.models import User
 from app.schemas import (
     GoogleAuthRequest,
     GoogleAuthResponse,
+    SSETicketResponse,
     Token,
     TokenRefresh,
     UserCreate,
@@ -26,6 +28,9 @@ from app.schemas import (
 from app.services.google_oauth import GoogleOAuthService, get_google_oauth_service
 
 router = APIRouter()
+
+SSE_TICKET_TTL_SECONDS = 30
+SSE_TICKET_PREFIX = "sse-ticket"
 
 
 def _is_admin_email(email: str, settings: Settings) -> bool:
@@ -281,3 +286,20 @@ async def google_auth(
         is_new_user=is_new_user,
         account_linked=account_linked,
     )
+
+
+@router.post("/sse-ticket", response_model=SSETicketResponse)
+async def create_sse_ticket(
+    user_id: int = Depends(get_current_user_id),
+) -> SSETicketResponse:
+    """Create a short-lived, one-time-use ticket for SSE authentication."""
+    from app.db.redis import get_redis
+
+    ticket_id = uuid.uuid4()
+    redis = get_redis()
+    await redis.setex(
+        f"{SSE_TICKET_PREFIX}:{ticket_id}",
+        SSE_TICKET_TTL_SECONDS,
+        str(user_id),
+    )
+    return SSETicketResponse(ticket=str(ticket_id))

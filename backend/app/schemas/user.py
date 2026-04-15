@@ -104,3 +104,9 @@ class AIPreferencesUpdate(BaseModel):
     preferred_model: str | None = Field(
         description="Model ID to set, or null to reset to defaults"
     )
+
+
+class SSETicketResponse(BaseModel):
+    """Response containing a short-lived SSE authentication ticket."""
+
+    ticket: str
