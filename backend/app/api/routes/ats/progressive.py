@@ -66,7 +66,17 @@ async def analyze_progressive_ats(
 
     **Client Usage:**
     ```javascript
-    const eventSource = new EventSource('/api/v1/ats/analyze-progressive?resume_id=123&job_id=456');
+    // 1. Exchange JWT for one-time ticket
+    const resp = await fetch('/api/auth/sse-ticket', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer <jwt>' },
+    });
+    const { ticket } = await resp.json();
+
+    // 2. Connect with opaque ticket (no JWT in URL)
+    const eventSource = new EventSource(
+      '/api/v1/ats/analyze-progressive?resume_id=123&job_id=456&ticket=' + ticket
+    );
     eventSource.addEventListener('stage_complete', (e) => {
       const data = JSON.parse(e.data);
       console.log(`Stage ${data.stage} done:`, data.result);

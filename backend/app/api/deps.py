@@ -94,17 +94,32 @@ async def get_current_user_id(
 
 
 async def get_current_user_id_sse(
-    token: Annotated[str | None, Depends(oauth2_scheme)],
-    token_query: str | None = Query(None, alias="token", description="JWT token for SSE auth"),
+    ticket: str | None = Query(None, description="One-time SSE auth ticket"),
 ) -> int:
     """
-    Validate JWT token for SSE endpoints.
-    Accepts token from Authorization header OR query parameter.
-    EventSource doesn't support custom headers, so query param is needed.
+    Validate a one-time SSE ticket from Redis.
+    Tickets are created via POST /auth/sse-ticket and are single-use (getdel).
     """
-    # Prefer header token, fall back to query param
-    effective_token = token or token_query
-    return _validate_token(effective_token)
+    if not ticket:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing SSE ticket",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    from app.db.redis import get_redis
+
+    redis = get_redis()
+    user_id_str = await redis.getdel(f"sse-ticket:{ticket}")
+
+    if user_id_str is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired SSE ticket",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return int(user_id_str)
 
 
 async def get_current_user(
