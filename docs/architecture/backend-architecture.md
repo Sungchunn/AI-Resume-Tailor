@@ -562,9 +562,9 @@ flowchart TD
     end
 ```
 
-### In-Process Job-Listings Cache
+### Redis Job-Listings Cache
 
-The `/api/job-listings` browse endpoints use an in-process cache (via `fastapi-cache2` with `InMemoryBackend`) instead of Redis. The droplet is RAM-constrained (1 GB total, shared with Postgres, Mongo, Redis, frontend), and Redis is already carrying AI parsing, rate limiting, and scraper locks — adding another large dataset would push it over budget.
+The `/api/job-listings` browse endpoints use a Redis-backed cache (via `fastapi-cache2` with `RedisBackend`), sharing the existing Redis connection established at startup. This replaced the earlier `InMemoryBackend` approach, which suffered from per-worker isolation — each Uvicorn worker kept its own cache copy, so a post-scrape `FastAPICache.clear()` only invalidated one worker's entries. The Redis backend ensures all workers share a single cache and invalidation is consistent. If Redis is unavailable at boot, the system falls back to `InMemoryBackend`.
 
 **What is cached:**
 
@@ -586,11 +586,7 @@ Every cache write (rows, count, filter-options) uses `get_cache_ttl_seconds()` f
 - After every successful batch upsert the scraper scheduler calls `FastAPICache.clear()` followed by `warm_default_job_listing_cache()` (`backend/app/services/scraping/cache_warm.py`), which repopulates filter-options, the default unfiltered list view for pages 1–3, and page 1 for the top 5 countries. The first user through the door after a scrape hits an already-warm cache.
 - User-interaction mutations (save / hide / mark applied) do **not** need to invalidate the public cache because interaction state is merged post-cache.
 
-**Multi-worker caveat:**
-
-Each Uvicorn worker keeps its own copy of the cache — there is no cross-worker sharing. On the current 1–2 worker droplet this duplication is negligible (target ≤ 20 MB per worker). If we ever scale horizontally to many workers or to multiple containers, the cache will need to move to Redis or be replaced with edge caching (see Phase 3 of `/docs/features/infrastructure/260411_jobs-page-caching/`).
-
-Initialization happens in `app.main.lifespan` immediately after the Redis connection is established, before the scheduler starts.
+Initialization happens in `app.main.lifespan` immediately after the Redis connection is established, before the scheduler starts. The `RedisBackend` reuses the shared `get_redis()` client from `app.db.redis`.
 
 ### Service Singleton Pattern
 
@@ -602,7 +598,7 @@ def get_ai_client() -> AIClient:
 
 @lru_cache
 def get_cache_service() -> CacheService:
-    return CacheService(redis_url=settings.REDIS_URL)
+    return CacheService(redis_client=get_redis())
 
 # Factory function composes services
 def get_tailoring_service() -> TailoringService:

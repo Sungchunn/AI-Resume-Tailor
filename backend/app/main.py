@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
+from fastapi_cache.backends.redis import RedisBackend
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.exc import TimeoutError as SQLTimeoutError
@@ -13,7 +14,7 @@ from sqlalchemy.exc import TimeoutError as SQLTimeoutError
 from app.api import api_router
 from app.core.config import get_settings
 from app.db.mongodb import close_mongodb, connect_mongodb, get_mongodb
-from app.db.redis import close_redis, connect_redis
+from app.db.redis import close_redis, connect_redis, get_redis
 from app.db.session import AsyncSessionLocal, engine
 from app.middleware.rate_limiter import RateLimitConfig, RateLimitMiddleware
 from app.services.scraping.scheduler import get_scheduler_service
@@ -31,10 +32,13 @@ async def lifespan(app: FastAPI):
     # Startup: Initialize Redis connection
     await connect_redis()
 
-    # Startup: Initialize in-process FastAPI cache.
-    # Per-worker cache (1-2 workers on the 1 GB droplet); see
-    # /docs/architecture/backend-architecture.md for the multi-worker caveat.
-    FastAPICache.init(InMemoryBackend(), prefix="rb-cache")
+    # Startup: Initialize FastAPI cache with Redis backend.
+    # Shared across workers; falls back to in-process cache if Redis fails.
+    try:
+        FastAPICache.init(RedisBackend(get_redis()), prefix="rb-cache")
+    except Exception:
+        logger.warning("Redis unavailable for FastAPICache, falling back to InMemoryBackend")
+        FastAPICache.init(InMemoryBackend(), prefix="rb-cache")
 
     # Startup: Initialize scheduler
     scheduler = get_scheduler_service()
