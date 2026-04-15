@@ -7,6 +7,7 @@ import Image from "next/image";
 import {
   useResumes,
   useJobListing,
+  useJob,
 } from "@/lib/api";
 import { CardGridSkeleton } from "@/components/ui";
 import { TailorFlowStepper } from "@/components/tailoring";
@@ -16,12 +17,14 @@ function TailorPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Check for job_listing_id from URL (e.g., from job detail page)
+  // Check for job_listing_id (scraped) or job_id (user-created) from URL
   const jobListingIdParam = searchParams.get("job_listing_id");
   const jobListingId = jobListingIdParam ? parseInt(jobListingIdParam, 10) : null;
+  const jobId = searchParams.get("job_id");
 
   const { data: resumes, isLoading: resumesLoading } = useResumes();
   const { data: jobListing, isLoading: jobListingLoading, error: jobListingError } = useJobListing(jobListingId ?? 0);
+  const { data: job, isLoading: jobLoading, error: jobError } = useJob(jobId ?? "");
 
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
 
@@ -30,20 +33,26 @@ function TailorPageContent() {
   const selectedResume = verifiedResumes.find((r) => r.id === selectedResumeId);
   const hasResumes = verifiedResumes.length > 0;
 
-  // Check if we have a valid job listing from URL
+  // Check if we have a valid job from URL (scraped or user-created)
   const hasJobListingFromUrl = !!jobListingId && !!jobListing && !jobListingError;
+  const hasJobFromUrl = !!jobId && !!job && !jobError;
+  const hasAnyJob = hasJobListingFromUrl || hasJobFromUrl;
 
-  // Can proceed if we have a resume selected and a job listing from URL
-  const canProceed = hasResumes && selectedResumeId && hasJobListingFromUrl;
+  // Can proceed if we have a resume selected and any job
+  const canProceed = hasResumes && selectedResumeId && hasAnyJob;
 
   const handleGenerateTailored = () => {
-    if (!selectedResumeId || !hasJobListingFromUrl) return;
+    if (!selectedResumeId || !hasAnyJob) return;
 
-    router.push(`/tailor/analyze?resume_id=${selectedResumeId}&job_listing_id=${jobListingId}`);
+    if (hasJobListingFromUrl) {
+      router.push(`/tailor/analyze?resume_id=${selectedResumeId}&job_listing_id=${jobListingId}`);
+    } else if (hasJobFromUrl) {
+      router.push(`/tailor/analyze?resume_id=${selectedResumeId}&job_id=${jobId}`);
+    }
   };
 
-  // No job_listing_id — show "coming soon" landing page
-  if (!jobListingId) {
+  // No job ID at all — show "coming soon" landing page
+  if (!jobListingId && !jobId) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
@@ -84,7 +93,7 @@ function TailorPageContent() {
     );
   }
 
-  if (resumesLoading || (jobListingId && jobListingLoading)) {
+  if (resumesLoading || (jobListingId && jobListingLoading) || (jobId && jobLoading)) {
     return (
       <div className="space-y-6">
         <div>
@@ -151,9 +160,9 @@ function TailorPageContent() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Back button - show when coming from job listing */}
+      {/* Back button - show when coming from a job */}
       <Link
-        href={`/jobs/${jobListingId}`}
+        href={hasJobListingFromUrl ? `/jobs/${jobListingId}` : `/library/jobs/${jobId}`}
         className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
       >
         <ChevronLeftIcon className="h-4 w-4 mr-1" />
@@ -266,6 +275,58 @@ function TailorPageContent() {
             </div>
           )}
 
+          {/* Pre-selected User-Created Job from URL */}
+          {hasJobFromUrl && job && (
+            <div className="card border-2 border-primary/20 bg-primary/10/50">
+              <div className="flex items-center gap-2 mb-3">
+                <svg
+                  className="w-5 h-5 text-primary"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span className="text-sm font-medium text-primary">
+                  Job Selected
+                </span>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center">
+                  <span className="text-muted-foreground text-lg font-semibold">
+                    {(job.company ?? job.title).charAt(0)}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-foreground truncate">
+                    {job.title}
+                  </h3>
+                  {job.company && (
+                    <p className="text-sm text-muted-foreground">
+                      {job.company}
+                    </p>
+                  )}
+                  {job.raw_content && (
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                      {job.raw_content.slice(0, 150)}...
+                    </p>
+                  )}
+                </div>
+                <Link
+                  href={`/library/jobs/${jobId}`}
+                  className="text-sm text-primary hover:text-primary whitespace-nowrap"
+                >
+                  View Job →
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* Resume Selection */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
@@ -321,7 +382,9 @@ function TailorPageContent() {
                 <div>
                   <span className="text-muted-foreground">Job:</span>{" "}
                   <span className="font-medium">
-                    {jobListing!.job_title} at {jobListing!.company_name}
+                    {hasJobListingFromUrl
+                      ? `${jobListing!.job_title} at ${jobListing!.company_name}`
+                      : `${job!.title}${job!.company ? ` at ${job!.company}` : ""}`}
                   </span>
                 </div>
               </div>

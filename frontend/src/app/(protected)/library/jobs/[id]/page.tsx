@@ -18,7 +18,7 @@ export default function JobDetailPage({ params }: PageProps) {
   const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this job description?")) {
       await deleteJob.mutateAsync(id);
-      router.push("/library");
+      router.push("/jobs");
     }
   };
 
@@ -37,7 +37,7 @@ export default function JobDetailPage({ params }: PageProps) {
       <div className="max-w-4xl">
         <div className="mb-6">
           <Link
-            href="/library"
+            href="/jobs"
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
           >
             <svg
@@ -53,7 +53,7 @@ export default function JobDetailPage({ params }: PageProps) {
                 d="M15.75 19.5L8.25 12l7.5-7.5"
               />
             </svg>
-            Back to Library
+            Back to Jobs
           </Link>
         </div>
         <div className="card bg-destructive/10 border-destructive/20">
@@ -67,7 +67,7 @@ export default function JobDetailPage({ params }: PageProps) {
     <div className="max-w-4xl">
       <div className="mb-6">
         <Link
-          href="/library"
+          href="/jobs"
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <svg
@@ -83,7 +83,7 @@ export default function JobDetailPage({ params }: PageProps) {
               d="M15.75 19.5L8.25 12l7.5-7.5"
             />
           </svg>
-          Back to Library
+          Back to Jobs
         </Link>
       </div>
 
@@ -166,7 +166,7 @@ export default function JobDetailPage({ params }: PageProps) {
 
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Tailor a Resume</h2>
-          <Link href="/tailor" className="btn-secondary">
+          <Link href={`/tailor?job_id=${id}`} className="btn-secondary">
             Start Tailoring
           </Link>
         </div>
