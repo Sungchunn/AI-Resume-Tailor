@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { tokenManager } from "@/lib/api/client";
+import { authApi } from "@/lib/api/client";
 import { useWorkshop, type ATSCompositeScore, type KnockoutRisk, type ATSStageResult } from "../WorkshopContext";
 import type { ATSKeywordDetailedResponse, KeywordDetail } from "@/lib/api/types";
 
@@ -220,11 +220,16 @@ export function useATSProgressiveAnalysis(options?: UseATSProgressiveAnalysisOpt
       url.searchParams.set("job_id", jobId.toString());
     }
 
-    // Add auth token as query param (EventSource doesn't support headers)
-    const accessToken = tokenManager.getAccessToken();
-    if (accessToken) {
-      url.searchParams.set("token", accessToken);
+    // Exchange JWT for a one-time SSE ticket
+    let ticket: string;
+    try {
+      ({ ticket } = await authApi.sseTicket());
+    } catch {
+      dispatch({ type: "ATS_ANALYSIS_ERROR", payload: "Failed to obtain SSE ticket" });
+      options?.onError?.("Failed to obtain SSE ticket");
+      return;
     }
+    url.searchParams.set("ticket", ticket);
 
     const eventSource = new EventSource(url.toString());
     eventSourceRef.current = eventSource;

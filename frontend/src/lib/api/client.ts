@@ -339,6 +339,9 @@ export const authApi = {
     tokenManager.setTokens(response.access_token, response.refresh_token);
     return response;
   },
+
+  sseTicket: (): Promise<{ ticket: string }> =>
+    fetchApi("/api/auth/sse-ticket", { method: "POST" }),
 };
 
 // Profile API

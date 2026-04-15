@@ -11,7 +11,7 @@ import {
   atsApi,
   scraperRequestApi,
   profileApi,
-  tokenManager,
+  authApi,
 } from "./client";
 import { VersionConflictError, isVersionConflictError } from "./errors";
 import type {
@@ -1144,7 +1144,7 @@ export function useATSProgressiveAnalysis() {
   const store = useATSProgressStore();
 
   const startAnalysis = useCallback(
-    (resumeId: string, options: { jobId?: string; jobListingId?: number; forceRefresh?: boolean }) => {
+    async (resumeId: string, options: { jobId?: string; jobListingId?: number; forceRefresh?: boolean }) => {
       // Close any existing connection
       store.closeConnection();
 
@@ -1166,11 +1166,15 @@ export function useATSProgressiveAnalysis() {
         params.set("force_refresh", "true");
       }
 
-      // Add auth token as query param (EventSource doesn't support headers)
-      const accessToken = tokenManager.getAccessToken();
-      if (accessToken) {
-        params.set("token", accessToken);
+      // Exchange JWT for a one-time SSE ticket
+      let ticket: string;
+      try {
+        ({ ticket } = await authApi.sseTicket());
+      } catch {
+        store.setError("Failed to obtain SSE ticket");
+        return;
       }
+      params.set("ticket", ticket);
 
       // Create SSE connection
       const url = `${API_BASE_URL}/api/v1/ats/analyze-progressive?${params.toString()}`;
