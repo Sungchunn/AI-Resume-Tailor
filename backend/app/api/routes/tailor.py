@@ -635,8 +635,8 @@ async def list_tailored_resumes(
             )
         except IDResolutionError:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to access this job",
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Job not found",
             )
         except ValueError as e:
             raise HTTPException(

@@ -84,8 +84,8 @@ async def analyze_bullets_for_resume(
             job_description = str(job.raw_content or "")
         except IDResolutionError:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Job not found or not authorized",
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Job not found",
             )
 
     if not job_description:
