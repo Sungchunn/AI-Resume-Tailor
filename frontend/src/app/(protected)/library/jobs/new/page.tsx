@@ -35,8 +35,8 @@ export default function NewJobPage() {
         company: data.company || null,
         url: data.url || null,
       };
-      await createJob.mutateAsync(payload);
-      router.push("/library");
+      const result = await createJob.mutateAsync(payload);
+      router.push(`/library/jobs/${result.id}`);
     } catch {
       // Error is handled by mutation
     }
@@ -46,7 +46,7 @@ export default function NewJobPage() {
     <div className="max-w-3xl">
       <div className="mb-6">
         <Link
-          href="/library"
+          href="/jobs"
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <svg
@@ -62,7 +62,7 @@ export default function NewJobPage() {
               d="M15.75 19.5L8.25 12l7.5-7.5"
             />
           </svg>
-          Back to Library
+          Back to Jobs
         </Link>
       </div>
 
@@ -165,7 +165,7 @@ export default function NewJobPage() {
             >
               {isSubmitting || createJob.isPending ? "Adding..." : "Add Job"}
             </button>
-            <Link href="/library" className="btn-ghost">
+            <Link href="/jobs" className="btn-ghost">
               Cancel
             </Link>
           </div>
