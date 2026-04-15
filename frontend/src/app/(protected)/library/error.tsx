@@ -54,10 +54,10 @@ export default function LibraryError({ error, reset }: ErrorProps) {
             Try Again
           </button>
           <a
-            href="/library"
+            href="/profile"
             className="px-4 py-2 text-sm font-medium border border-input rounded-md hover:bg-accent transition-colors"
           >
-            Back to Library
+            Back to Profile
           </a>
         </div>
 

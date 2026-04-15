@@ -76,7 +76,7 @@ export default function EditJobPage({ params }: PageProps) {
       <div className="max-w-3xl">
         <div className="mb-6">
           <Link
-            href="/library"
+            href="/profile"
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
           >
             <svg
@@ -92,7 +92,7 @@ export default function EditJobPage({ params }: PageProps) {
                 d="M15.75 19.5L8.25 12l7.5-7.5"
               />
             </svg>
-            Back to Library
+            Back to Profile
           </Link>
         </div>
         <div className="card bg-destructive/10 border-destructive/20">

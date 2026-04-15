@@ -196,7 +196,7 @@ export default function NewResumePage() {
   // Handle parse complete (if we implement background parsing later)
   const handleParseComplete = useCallback((resumeId: string, warning?: string | null) => {
     // For now, just proceed to library
-    router.push("/library");
+    router.push("/profile");
   }, [router]);
 
   // Handle cancel
@@ -263,7 +263,7 @@ export default function NewResumePage() {
       };
 
       await createResume.mutateAsync(resumeData);
-      router.push("/library");
+      router.push("/profile");
     } catch {
       // Error is handled by mutation
     }
@@ -301,7 +301,7 @@ export default function NewResumePage() {
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
         <Link
-          href="/library"
+          href="/profile"
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <svg
@@ -317,7 +317,7 @@ export default function NewResumePage() {
               d="M15.75 19.5L8.25 12l7.5-7.5"
             />
           </svg>
-          Back to Library
+          Back to Profile
         </Link>
       </div>
 
@@ -546,7 +546,7 @@ export default function NewResumePage() {
                   >
                     {createResume.isPending ? "Creating..." : "Create Resume"}
                   </button>
-                  <Link href="/library" className="btn-ghost">
+                  <Link href="/profile" className="btn-ghost">
                     Cancel
                   </Link>
                 </div>
