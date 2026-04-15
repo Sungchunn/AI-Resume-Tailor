@@ -76,7 +76,14 @@ export function Sidebar() {
           <div className="space-y-0.5">
             {sidebarNavigation.map((item) => {
               const isActive =
-                pathname === item.href || pathname.startsWith(item.href + "/");
+                pathname === item.href ||
+                pathname.startsWith(item.href + "/") ||
+                // Library resume pages belong to Profile
+                (item.href === "/profile" && pathname.startsWith("/library/resumes")) ||
+                // Workshop pages belong to Tailor
+                (item.href === "/tailor" && pathname.startsWith("/workshop")) ||
+                // Library job pages belong to Jobs
+                (item.href === "/jobs" && pathname.startsWith("/library/jobs"));
               const Icon = item.icon;
 
               return (
