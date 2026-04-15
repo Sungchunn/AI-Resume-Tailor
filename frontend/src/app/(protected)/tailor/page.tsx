@@ -8,6 +8,7 @@ import {
   useResumes,
   useJobListing,
   useJob,
+  useTailoredResumes,
 } from "@/lib/api";
 import { CardGridSkeleton } from "@/components/ui";
 import { TailorFlowStepper } from "@/components/tailoring";
@@ -51,46 +52,9 @@ function TailorPageContent() {
     }
   };
 
-  // No job ID at all — show "coming soon" landing page
+  // No job ID at all — show tailoring history
   if (!jobListingId && !jobId) {
-    return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Tailor Resume</h1>
-          <p className="mt-1 text-muted-foreground">
-            AI-powered resume tailoring for specific job descriptions
-          </p>
-        </div>
-
-        <div className="card text-center py-12">
-          <div className="mx-auto w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">
-            <svg
-              className="w-8 h-8 text-primary"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
-              />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-foreground mb-2">
-            Ad-Hoc Tailoring Coming Soon
-          </h3>
-          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-            Soon you&apos;ll be able to paste any job description and tailor your resume directly.
-            For now, browse job listings and tailor from there.
-          </p>
-          <Link href="/jobs" className="btn-primary">
-            Browse Job Listings
-          </Link>
-        </div>
-      </div>
-    );
+    return <TailorLandingPage />;
   }
 
   if (resumesLoading || (jobListingId && jobListingLoading) || (jobId && jobLoading)) {
@@ -418,6 +382,96 @@ export default function TailorPage() {
     >
       <TailorPageContent />
     </Suspense>
+  );
+}
+
+function TailorLandingPage() {
+  const { data: tailoredResumes, isLoading } = useTailoredResumes();
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Tailor Resume</h1>
+        <p className="mt-1 text-muted-foreground">
+          AI-powered resume tailoring for specific job descriptions
+        </p>
+      </div>
+
+      {isLoading ? (
+        <CardGridSkeleton count={3} />
+      ) : tailoredResumes && tailoredResumes.length > 0 ? (
+        <>
+          <div className="card">
+            <h2 className="text-lg font-semibold text-foreground mb-4">
+              Tailoring History
+            </h2>
+            <div className="space-y-2">
+              {tailoredResumes.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/workshop/${item.id}`}
+                  className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-border/80 hover:bg-accent/50 transition-colors"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-foreground truncate">
+                      {item.formatted_name}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  {item.match_score != null && (
+                    <span
+                      className={`ml-4 shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                        item.match_score >= 80
+                          ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                          : item.match_score >= 60
+                            ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
+                            : "bg-red-500/10 text-red-600 dark:text-red-400"
+                      }`}
+                    >
+                      {item.match_score}%
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <p className="text-sm text-muted-foreground text-center">
+            To start a new tailoring session, find a job listing and click &quot;Optimize Resume&quot; on the job detail page.
+          </p>
+        </>
+      ) : (
+        <div className="card text-center py-12">
+          <div className="mx-auto w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">
+            <svg
+              className="w-8 h-8 text-primary"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold text-foreground mb-2">
+            Start Tailoring
+          </h3>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            Browse job listings, find one you like, and click &quot;Optimize Resume&quot;
+            to create an AI-tailored version.
+          </p>
+          <Link href="/jobs" className="btn-primary">
+            Browse Job Listings
+          </Link>
+        </div>
+      )}
+    </div>
   );
 }
 
