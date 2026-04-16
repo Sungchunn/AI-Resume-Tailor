@@ -1,19 +1,25 @@
 import Link from "next/link";
 
-const footerLinks = {
+interface FooterLink {
+  name: string;
+  href: string;
+  comingSoon?: boolean;
+}
+
+const footerLinks: Record<string, FooterLink[]> = {
   product: [
-    { name: "Features", href: "/features" },
-    { name: "Pricing", href: "/pricing" },
-    { name: "FAQ", href: "/faq" },
+    { name: "Features", href: "/features", comingSoon: true },
+    { name: "Pricing", href: "/pricing", comingSoon: true },
+    { name: "FAQ", href: "/faq", comingSoon: true },
   ],
   company: [
-    { name: "About", href: "/about" },
-    { name: "Blog", href: "/blog" },
-    { name: "Contact", href: "/contact" },
+    { name: "About", href: "/about", comingSoon: true },
+    { name: "Blog", href: "/blog", comingSoon: true },
+    { name: "Contact", href: "/contact", comingSoon: true },
   ],
   legal: [
-    { name: "Privacy", href: "/privacy" },
-    { name: "Terms", href: "/terms" },
+    { name: "Privacy", href: "/privacy", comingSoon: true },
+    { name: "Terms", href: "/terms", comingSoon: true },
   ],
 };
 
@@ -36,53 +42,34 @@ export function Footer() {
             </p>
           </div>
 
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">Product</h3>
-            <ul className="mt-4 space-y-3">
-              {footerLinks.product.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">Company</h3>
-            <ul className="mt-4 space-y-3">
-              {footerLinks.company.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">Legal</h3>
-            <ul className="mt-4 space-y-3">
-              {footerLinks.legal.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {Object.entries(footerLinks).map(([category, links]) => (
+            <div key={category}>
+              <h3 className="text-sm font-semibold text-foreground capitalize">
+                {category}
+              </h3>
+              <ul className="mt-4 space-y-3">
+                {links.map((link) => (
+                  <li key={link.name}>
+                    {link.comingSoon ? (
+                      <span className="text-sm text-muted-foreground/50 cursor-default flex items-center gap-2">
+                        {link.name}
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground/40 border border-muted-foreground/20 rounded px-1 py-0.5 leading-none">
+                          Soon
+                        </span>
+                      </span>
+                    ) : (
+                      <Link
+                        href={link.href}
+                        className="text-sm text-muted-foreground hover:text-foreground"
+                      >
+                        {link.name}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
         <div className="mt-12 border-t border-border pt-8">
