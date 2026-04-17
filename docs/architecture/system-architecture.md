@@ -17,7 +17,7 @@ A comprehensive visualization of the entire web application architecture, coveri
    - [PostgreSQL Schema](#41-postgresql-schema)
    - [MongoDB Collections](#42-mongodb-collections)
    - [PostgreSQL-MongoDB Relationship](#43-postgresql-mongodb-relationship)
-   - [Vector Search Architecture](#44-vector-search-architecture)
+   - [Embeddings Footnote](#44-embeddings-footnote)
 5. [Frontend Architecture](#5-frontend-architecture)
    - [Page Routes & Navigation Flow](#51-page-routes--navigation-flow)
    - [Component Hierarchy](#52-component-hierarchy)
@@ -75,7 +75,7 @@ flowchart TB
         AIProvider["OpenAI or Gemini<br/>(Configurable)<br/>Text Generation"]
         GeminiEmbed["Google Gemini<br/>Text Embeddings"]
         Apify["Apify<br/>LinkedIn Scraper"]
-        N8N["n8n Webhooks<br/>Job Ingestion"]
+        GoogleOAuth["Google OAuth<br/>(Sign-in)"]
     end
 
     Browser --> NextJS
@@ -89,7 +89,7 @@ flowchart TB
     AIServices --> AIProvider
     AIServices --> GeminiEmbed
     ScraperServices --> Apify
-    ScraperServices --> N8N
+    Auth --> GoogleOAuth
 
     Services --> PostgreSQL
     Services --> MongoDB
@@ -113,6 +113,8 @@ flowchart LR
         F6["Tailwind CSS 4.1"]
         F7["Framer Motion"]
         F8["@dnd-kit"]
+        F9["Zustand"]
+        F10["Vercel Analytics"]
     end
 
     subgraph Backend["Backend Stack"]
@@ -138,8 +140,8 @@ flowchart LR
         direction TB
         A1["OpenAI API (default)<br/>or Gemini API"]
         A2["Gemini Embeddings<br/>(Google)"]
-        A3["768-dim Vectors"]
-        A4["HNSW Index"]
+        A3["AI Usage Tracking<br/>(ai_usage_logs)"]
+        A4["SSE Streaming<br/>(Progressive ATS)"]
     end
 
     Frontend --> Backend
@@ -154,13 +156,15 @@ flowchart LR
 | Frontend | Next.js | 15.1.0 | SSR Framework |
 | Frontend | React | 19.0.0 | UI Library |
 | Frontend | TanStack Query | 5.90 | Server State |
+| Frontend | Zustand | 5.x | Client State (ATS progress, suggestions, keyword review) |
 | Frontend | TipTap | 3.20 | Rich Text Editor |
 | Backend | FastAPI | Latest | API Framework |
 | Backend | SQLAlchemy | 2.0 | PostgreSQL ORM |
 | Backend | Motor | 3.x | MongoDB Async Driver |
+| Backend | sse-starlette | Latest | Server-Sent Events |
+| Backend | fastapi-cache2 | Latest | Response cache (Redis backend) |
 | Database | PostgreSQL | 15 | Relational Data |
 | Database | MongoDB | 7 | Document Storage |
-| Database | pgvector | 0.5+ | Vector Search |
 | AI | OpenAI (default) | gpt-4o-mini | Text Generation |
 | AI | Gemini (alt) | gemini-2.0-flash | Text Generation |
 | AI | Gemini | text-embedding-004 | Embeddings (768-dim) |
@@ -186,14 +190,13 @@ flowchart TB
         Tailor["tailor<br/>/api/tailor"]
         Export["export<br/>/api/export"]
         Upload["upload<br/>/api/upload"]
-        Blocks["blocks<br/>/api/v1/blocks"]
-        Match["match<br/>/api/v1/match"]
         Builds["resume-builds<br/>/api/v1/resume-builds"]
-        ATS["ats<br/>/api/v1/ats"]
+        ATS["ats<br/>/api/v1/ats<br/>(modular sub-routers)"]
         AIChat["ai<br/>/api/v1/ai"]
+        Profile["profile<br/>/api/v1/profile"]
         Listings["job-listings<br/>/api/job-listings"]
-        Webhooks["webhooks<br/>/api/webhooks"]
-        Admin["admin<br/>/api/admin"]
+        ScraperReq["scraper-requests<br/>/api/scraper-requests"]
+        Admin["admin<br/>/api/admin<br/>(scraper + ai-usage)"]
     end
 
     App --> Health
@@ -206,15 +209,16 @@ flowchart TB
     APIRouter --> Tailor
     APIRouter --> Export
     APIRouter --> Upload
-    APIRouter --> Blocks
-    APIRouter --> Match
     APIRouter --> Builds
     APIRouter --> ATS
     APIRouter --> AIChat
+    APIRouter --> Profile
     APIRouter --> Listings
-    APIRouter --> Webhooks
+    APIRouter --> ScraperReq
     APIRouter --> Admin
 ```
+
+**Note:** The API currently runs at version `2.0.0` (see `app/main.py`), exposed as `re-zoo-me API` in the OpenAPI title. A migration from integer IDs to UUIDs is in progress — some resources (`jobs`, `resume_builds`, `user_job_interactions`) expose both integer and UUID `public_id` forms with a `Deprecation: true` + `Sunset: 2026-07-01` response header when clients use the integer form.
 
 ### 3.2 Complete API Endpoint Reference
 
@@ -226,6 +230,8 @@ flowchart LR
         POST1["POST /register"]
         POST2["POST /login"]
         POST3["POST /refresh"]
+        POST4["POST /google"]
+        POST5["POST /sse-ticket"]
         GET1["GET /me"]
     end
 
@@ -233,15 +239,19 @@ flowchart LR
     POST2 --> |"Verify Credentials"| DB
     POST2 --> |"Issue JWT"| Token["Access + Refresh Tokens"]
     POST3 --> |"Refresh"| Token
+    POST4 --> |"Verify Google ID Token"| DB
+    POST5 --> |"Mint one-time ticket"| Redis[(Redis<br/>30s TTL)]
     GET1 --> |"Get Current User"| DB
 ```
 
 | Method | Endpoint | Description | Auth |
 | -------- | ---------- | ------------- | ------ |
-| POST | `/auth/register` | Register new user | No |
-| POST | `/auth/login` | Login, get tokens | No |
+| POST | `/auth/register` | Register new user (email+password, full_name required) | No |
+| POST | `/auth/login` | Login, get access + refresh tokens | No |
 | POST | `/auth/refresh` | Refresh access token | Refresh Token |
-| GET | `/auth/me` | Get current user | Yes |
+| POST | `/auth/google` | Sign in / register via Google OAuth ID token | No |
+| POST | `/auth/sse-ticket` | Mint a one-time Redis ticket for SSE auth (30s TTL) | Yes |
+| GET | `/auth/me` | Get current authenticated user | Yes |
 
 #### Resume Endpoints (`/api/resumes`)
 
@@ -282,8 +292,10 @@ flowchart LR
 | POST | `/resumes` | Create new resume |
 | GET | `/resumes/{id}` | Get resume by ID |
 | GET | `/resumes` | List user's resumes (paginated) |
-| PUT | `/resumes/{id}` | Update resume content |
+| PUT | `/resumes/{id}` | Update resume content (optimistic concurrency via `version`) |
 | DELETE | `/resumes/{id}` | Delete resume |
+| PATCH | `/resumes/{id}/set-master` | Designate resume as the user's master |
+| PATCH | `/resumes/{id}/verify-parsed` | Mark AI-parsed output as user-verified |
 | GET | `/resumes/export/templates` | Get available export templates |
 | POST | `/resumes/{id}/export` | Export to PDF/DOCX |
 | POST | `/resumes/{id}/parse` | Trigger async parsing |
@@ -321,71 +333,24 @@ flowchart TB
 
 | Method | Endpoint | Description |
 | -------- | ---------- | ------------- |
-| POST | `/tailor` | Create tailored resume (Two Copies Architecture) |
+| POST | `/tailor` | Create tailored resume (Two Copies Architecture, accepts `focus_keywords`) |
 | POST | `/tailor/quick-match` | Quick match score without full tailoring |
-| GET | `/tailor/{id}` | Get tailored resume |
+| GET | `/tailor/{id}` | Get tailored resume (includes ATS cache metadata) |
 | GET | `/tailor/{id}/compare` | Get original + tailored for diffing |
 | POST | `/tailor/{id}/finalize` | Finalize user's approved version |
+| POST | `/tailor/{id}/analyze-bullets` | Run AI bullet-level analysis + suggestions |
 | PATCH | `/tailor/{id}` | Update tailored resume |
 | GET | `/tailor` | List tailored resumes |
 | DELETE | `/tailor/{id}` | Delete tailored resume |
 
-#### Experience Blocks/Vault Endpoints (`/api/v1/blocks`)
-
-```mermaid
-flowchart LR
-    subgraph Blocks["Experience Vault API"]
-        direction TB
-        CRUD["CRUD"]
-        Semantic["Semantic"]
-        Import["Import"]
-    end
-
-    subgraph CRUD_B["Block CRUD"]
-        B1["POST /"]
-        B2["GET /"]
-        B3["GET /{id}"]
-        B4["PATCH /{id}"]
-        B5["DELETE /{id}"]
-        B6["POST /{id}/verify"]
-    end
-
-    subgraph Semantic_B["Semantic Operations"]
-        B7["POST /embed"]
-        B8["POST /{id}/embed"]
-    end
-
-    subgraph Import_B["Import"]
-        B9["POST /import"]
-    end
-
-    CRUD --> CRUD_B
-    Semantic --> Semantic_B
-    Import --> Import_B
-
-    B7 --> |"Gemini API"| Vectors["768-dim Vectors"]
-    Vectors --> pgvector[(pgvector)]
-```
+#### Export Endpoints (`/api/export`)
 
 | Method | Endpoint | Description |
 | -------- | ---------- | ------------- |
-| POST | `/blocks` | Create experience block |
-| GET | `/blocks` | List blocks (filter by type, tags, verified) |
-| GET | `/blocks/{id}` | Get specific block |
-| PATCH | `/blocks/{id}` | Update block |
-| DELETE | `/blocks/{id}` | Soft delete block |
-| POST | `/blocks/{id}/verify` | Mark block as verified |
-| POST | `/blocks/import` | Import blocks from resume |
-| POST | `/blocks/embed` | Generate embeddings (batch) |
-| POST | `/blocks/{id}/embed` | Generate embedding (single) |
+| GET | `/export/{tailored_id}` | Export tailored resume to PDF/DOCX |
+| POST | `/export/fit-to-page` | Compress resume to fit a single page (in-process render cache) |
 
-#### Semantic Match Endpoints (`/api/v1/match`)
-
-| Method | Endpoint | Description |
-| -------- | ---------- | ------------- |
-| POST | `/match` | Find matching blocks for job description |
-| POST | `/match/analyze` | Analyze skill gaps vs requirements |
-| GET | `/match/job/{job_id}` | Get cached match results |
+> **Note:** The earlier `/api/v1/blocks` (Vault) and `/api/v1/match` routers were removed when the `experience_blocks` table was dropped in migration `20260405_0001`. Semantic search against user-curated atomic blocks is no longer part of the system — tailoring is driven directly from resume content + job description + user-selected `focus_keywords`.
 
 #### Resume Build/Workshop Endpoints (`/api/v1/resume-builds`)
 
@@ -394,7 +359,6 @@ flowchart TB
     subgraph Workshop["Resume Workshop API"]
         direction TB
         Core["Core Operations"]
-        Blocks["Block Operations"]
         AI["AI Operations"]
         Diffs["Diff Management"]
         Export["Export"]
@@ -408,14 +372,9 @@ flowchart TB
         W5["DELETE /{id}"]
     end
 
-    subgraph Blocks_W["Block Pull"]
-        W6["POST /{id}/pull"]
-        W7["GET /{id}/blocks"]
-        W8["DELETE /{id}/blocks/{block_id}"]
-    end
-
     subgraph AI_W["AI Suggestions"]
         W9["POST /{id}/suggest"]
+        W9b["POST /{id}/suggest-bullet"]
     end
 
     subgraph Diffs_W["Diff Management"]
@@ -424,15 +383,13 @@ flowchart TB
         W12["POST /{id}/diffs/clear"]
     end
 
-    subgraph Export_W["Writeback & Status"]
-        W13["POST /{id}/writeback/preview"]
-        W14["POST /{id}/writeback"]
+    subgraph Export_W["Sections, Status & Export"]
         W15["PATCH /{id}/sections"]
         W16["PATCH /{id}/status"]
+        W17["POST /{id}/export"]
     end
 
     Core --> Core_W
-    Blocks --> Blocks_W
     AI --> AI_W
     Diffs --> Diffs_W
     Export --> Export_W
@@ -445,26 +402,74 @@ flowchart TB
 | GET | `/resume-builds/{id}` | Get specific build |
 | PATCH | `/resume-builds/{id}` | Update build |
 | DELETE | `/resume-builds/{id}` | Delete build |
-| POST | `/resume-builds/{id}/pull` | Pull blocks from Vault |
-| GET | `/resume-builds/{id}/blocks` | Get pulled blocks |
-| DELETE | `/resume-builds/{id}/blocks/{block_id}` | Remove block |
 | POST | `/resume-builds/{id}/suggest` | Generate AI suggestions |
+| POST | `/resume-builds/{id}/suggest-bullet` | Suggest rewrite for a single bullet |
 | POST | `/resume-builds/{id}/diffs/accept` | Accept diff |
 | POST | `/resume-builds/{id}/diffs/reject` | Reject diff |
 | POST | `/resume-builds/{id}/diffs/clear` | Clear all diffs |
 | PATCH | `/resume-builds/{id}/sections` | Update sections |
-| PATCH | `/resume-builds/{id}/status` | Update status |
-| POST | `/resume-builds/{id}/writeback/preview` | Preview writeback |
-| POST | `/resume-builds/{id}/writeback` | Execute writeback |
+| PATCH | `/resume-builds/{id}/status` | Update status (draft / in_progress / exported) |
+| POST | `/resume-builds/{id}/export` | Export the build to PDF/DOCX |
 
 #### ATS Analysis Endpoints (`/api/v1/ats`)
 
-| Method | Endpoint | Description |
-| -------- | ---------- | ------------- |
-| POST | `/ats/structure` | Analyze resume structure |
-| POST | `/ats/keywords` | Analyze keyword coverage |
-| POST | `/ats/keywords/detailed` | Detailed keyword analysis |
-| GET | `/ats/tips` | Get ATS optimization tips |
+`/api/v1/ats` is a modular router composed of per-stage sub-routers registered in `backend/app/api/routes/ats/__init__.py`. The 5 scoring stages (knockout, structure, keywords, content-quality, role-proximity) each expose their own endpoint and are also orchestrated together as a single SSE stream at `/analyze-progressive`.
+
+```mermaid
+flowchart TB
+    subgraph ATS["ATS Sub-Routers"]
+        direction TB
+        Knockout["knockout.py<br/>POST /knockout-check"]
+        Structure["structure.py<br/>POST /structure"]
+        Keywords["keywords.py<br/>POST /keywords<br/>POST /keywords/detailed<br/>POST /keywords/enhanced<br/>POST /keywords/extract<br/>GET|PUT /keywords/override<br/>GET /tips"]
+        ContentQ["content_quality.py<br/>POST /content-quality"]
+        RoleProx["role_proximity.py<br/>POST /role-proximity"]
+        Content["content.py<br/>POST /analyze-content"]
+        Bullets["bullets.py<br/>POST /analyze-bullets"]
+        Progressive["progressive.py<br/>GET /analyze-progressive<br/>(SSE, ticket auth)"]
+    end
+
+    Progressive -.orchestrates.-> Knockout
+    Progressive -.orchestrates.-> Structure
+    Progressive -.orchestrates.-> Keywords
+    Progressive -.orchestrates.-> ContentQ
+    Progressive -.orchestrates.-> RoleProx
+
+    Keywords --> MongoKW[(MongoDB<br/>keyword_overrides)]
+    Progressive --> RedisCache[(Redis<br/>ats cache, 24h)]
+```
+
+| Method | Endpoint | Description | Auth |
+| ------ | -------- | ----------- | ---- |
+| POST | `/ats/knockout-check` | Pass/fail knockout criteria (must-have skills, etc.) | JWT |
+| POST | `/ats/structure` | Section presence + formatting sanity | JWT |
+| POST | `/ats/keywords` | Basic keyword coverage | JWT |
+| POST | `/ats/keywords/detailed` | Per-keyword presence, synonyms, context | JWT |
+| POST | `/ats/keywords/enhanced` | LLM-augmented keyword analysis | JWT |
+| POST | `/ats/keywords/extract` | Extract keywords from a job with importance weights | JWT |
+| GET | `/ats/keywords/override` | Get the user's keyword override for a job | JWT |
+| PUT | `/ats/keywords/override` | Save/update keyword override | JWT |
+| GET | `/ats/tips` | Static ATS optimization tips | Public |
+| POST | `/ats/content-quality` | Verb/metric/clarity scoring | JWT |
+| POST | `/ats/role-proximity` | Title + seniority semantic match | JWT |
+| POST | `/ats/analyze-content` | Legacy consolidated content analysis | JWT |
+| POST | `/ats/analyze-bullets` | Bullet-level rewrite suggestions | JWT |
+| GET | `/ats/analyze-progressive` | SSE stream of all 5 stages with composite score | SSE Ticket |
+
+**Progressive SSE event types** (from `analyze-progressive`):
+
+| Event | Emitted When |
+| ----- | ------------ |
+| `cache_hit` | Cached composite score found, fast playback begins |
+| `cache_miss` | No cache entry; running full pipeline |
+| `stage_start` | Stage N is beginning |
+| `stage_complete` | Stage N completed (payload includes the stage result) |
+| `stage_error` | Stage N failed (payload includes error; other stages continue) |
+| `score_calculation` | All stages done, computing composite |
+| `complete` | Final composite score + metrics |
+| `error` | Fatal error aborting the stream |
+
+Cache key: `ats:{resume_content_hash[:16]}:{job_id}`, TTL 24h, bypassable via `force_refresh=true`. SSE auth flow: client calls `POST /auth/sse-ticket` to exchange its JWT for a one-time ticket (Redis, 30s TTL), then opens `EventSource(url?ticket=...)`. The backend consumes the ticket on connect via `get_current_user_id_sse`.
 
 #### AI Chat Endpoints (`/api/v1/ai`)
 
@@ -472,6 +477,15 @@ flowchart TB
 | -------- | ---------- | ------------- |
 | POST | `/ai/improve-section` | AI improvement for section |
 | POST | `/ai/chat` | Conversational AI |
+
+#### Profile Endpoints (`/api/v1/profile`)
+
+| Method | Endpoint | Description |
+| -------- | ---------- | ------------- |
+| POST | `/profile/generate-about-me` | Generate AI "About Me" summary from resumes |
+| PATCH | `/profile` | Update profile fields (headline, about_me, timezone, ...) |
+| GET | `/profile/ai-preferences` | Get the user's preferred AI provider/model |
+| PUT | `/profile/ai-preferences` | Update the user's preferred AI provider/model |
 
 #### Job Listings Endpoints (`/api/job-listings`)
 
@@ -507,23 +521,30 @@ flowchart TB
 
 | Method | Endpoint | Description |
 | -------- | ---------- | ------------- |
-| GET | `/job-listings/filter-options` | Get filter options |
+| GET | `/job-listings/filter-options` | Get filter options (public) |
 | GET | `/job-listings` | List with filters |
 | GET | `/job-listings/search` | Full-text search |
-| GET | `/job-listings/{id}` | Get specific listing |
 | GET | `/job-listings/saved` | User's saved jobs |
 | GET | `/job-listings/applied` | User's applied jobs |
+| GET | `/job-listings/kanban` | Kanban board view (columns + `KanbanJobItem` cards) |
+| PUT | `/job-listings/kanban/reorder` | Reorder a card within / across kanban columns |
+| GET | `/job-listings/{id}` | Get specific listing |
 | POST | `/job-listings/{id}/save` | Save/unsave job |
 | POST | `/job-listings/{id}/hide` | Hide/unhide job |
 | POST | `/job-listings/{id}/applied` | Mark applied |
+| PATCH | `/job-listings/{id}/status` | Update the user's application status for this listing |
 
-#### Webhook Endpoints (`/api/webhooks`)
+#### User Scraper Requests (`/api/scraper-requests`)
+
+Users can request that a specific LinkedIn search URL be added to the shared scraper schedule. Admin approval is required before the request becomes a preset.
 
 | Method | Endpoint | Description |
-| -------- | ---------- | ------------- |
-| POST | `/webhooks/job-listings` | Batch ingest (up to 2000) |
-| POST | `/webhooks/job-listings/single` | Ingest single listing |
-| DELETE | `/webhooks/job-listings/{external_job_id}` | Deactivate listing |
+| ------ | -------- | ----------- |
+| POST | `/scraper-requests` | Submit a new URL for admin review |
+| GET | `/scraper-requests` | List the current user's requests and their status |
+| DELETE | `/scraper-requests/{request_id}` | Cancel a pending request |
+
+> **Removed:** The previous `/api/webhooks/job-listings` router has been retired. All listings now enter the system through the `ScraperOrchestrator` (scheduled presets, admin manual triggers, admin ad-hoc scrapes, or approved user requests). External ingestion via n8n is no longer part of the architecture.
 
 #### Admin Endpoints (`/api/admin`)
 
@@ -534,6 +555,8 @@ flowchart TB
         Scraper["Scraper Controls"]
         Presets["Preset Management"]
         Schedule["Schedule Settings"]
+        ReqReview["User Request Review"]
+        AIUsage["AI Usage Dashboard"]
     end
 
     subgraph Scraper_A["Scraper"]
@@ -562,10 +585,51 @@ flowchart TB
         A17["POST /scraper/schedule/toggle"]
     end
 
+    subgraph Req_A["User Requests"]
+        A18["GET /scraper-requests"]
+        A19["POST /scraper-requests/{id}/approve"]
+        A20["POST /scraper-requests/{id}/reject"]
+    end
+
+    subgraph Usage_A["AI Usage"]
+        A21["GET /summary"]
+        A22["GET /by-endpoint"]
+        A23["GET /by-provider"]
+        A24["GET /by-user"]
+        A25["GET /time-series"]
+        A26["GET /pricing"]
+        A27["PUT /pricing/{config_id}"]
+    end
+
     Scraper --> Scraper_A
     Presets --> Presets_A
     Schedule --> Schedule_A
+    ReqReview --> Req_A
+    AIUsage --> Usage_A
 ```
+
+| Group | Method | Endpoint | Description |
+| ----- | ------ | -------- | ----------- |
+| Scraper | GET | `/admin/scraper/status` | Orchestrator + scheduler status |
+| Scraper | POST | `/admin/scraper/trigger` | Manually run all active presets |
+| Scraper | POST | `/admin/jobs/cleanup` | Deactivate stale listings |
+| Scraper | GET | `/admin/scraper/costs` | Apify spend summary |
+| Scraper | GET | `/admin/scraper/stats` | Aggregate run statistics |
+| Scraper | GET | `/admin/scraper/history` | Recent `scraper_runs` |
+| Scraper | GET | `/admin/scraper/health` | Orchestrator health |
+| Scraper | POST | `/admin/scraper/adhoc` | Run a one-off URL outside of presets |
+| Presets | POST\|GET\|GET /{id}\|PATCH\|DELETE\|POST toggle | `/admin/scraper/presets...` | CRUD + enable/disable |
+| Schedule | GET\|PATCH\|POST toggle | `/admin/scraper/schedule...` | Cron-style schedule for presets |
+| Requests | GET | `/admin/scraper-requests` | Queue of user-submitted scrape requests |
+| Requests | POST | `/admin/scraper-requests/{id}/approve` | Approve → create preset |
+| Requests | POST | `/admin/scraper-requests/{id}/reject` | Reject with admin notes |
+| AI Usage | GET | `/admin/summary` | Rolled-up tokens + `cost_usd` |
+| AI Usage | GET | `/admin/by-endpoint` | Usage grouped by route |
+| AI Usage | GET | `/admin/by-provider` | Usage grouped by OpenAI/Gemini |
+| AI Usage | GET | `/admin/by-user` | Usage grouped by user |
+| AI Usage | GET | `/admin/time-series` | Time-bucketed cost/usage |
+| AI Usage | GET | `/admin/pricing` | Effective-dated pricing configs |
+| AI Usage | PUT | `/admin/pricing/{config_id}` | Update a pricing row |
 
 ### 3.3 Service Layer Architecture
 
@@ -577,37 +641,36 @@ flowchart TB
 
     subgraph Services["Service Layer"]
         subgraph Core["Core Services"]
-            AIClient["AIClient<br/>(OpenAI or Gemini)"]
             Cache["CacheService<br/>(Redis)"]
             Audit["AuditService"]
             PII["PIIStripper"]
         end
 
-        subgraph AI_ML["AI/ML Services"]
+        subgraph AI["AI Services"]
+            AIClient["AIClient<br/>(OpenAI or Gemini)"]
             Embedding["EmbeddingService<br/>(Gemini)"]
-            SemanticMatcher["SemanticMatcher<br/>(Hybrid Search)"]
-            TailorService["TailorService"]
+            UsageTracker["AIUsageTracker<br/>(logs to ai_usage_logs)"]
+            GoogleOAuthSvc["GoogleOAuthService"]
         end
 
         subgraph Resume["Resume Services"]
             Parser["ResumeParser"]
-            BlockSplitter["BlockSplitter"]
-            BlockClassifier["BlockClassifier"]
             ParseTask["ParseTaskManager"]
-            Writeback["WritebackService"]
+            TailorService["TailoringService"]
         end
 
         subgraph Job["Job Services"]
             Analyzer["JobAnalyzer"]
-            ATSAnalyzer["ATSAnalyzer"]
-            DiffEngine["DiffEngine"]
+            ATSFacade["ATSFacade<br/>+ 5 stage analyzers<br/>(knockout, structure,<br/>keywords, content-quality,<br/>role-proximity)"]
+            DiffEngine["DiffEngine + BulletAnalyzer"]
         end
 
-        subgraph Document["Document Services"]
+        subgraph Document["Document / Export"]
             Converter["DocumentConverter"]
             Extractor["DocumentExtractor"]
             HTMLToDoc["HTMLToDocument"]
             ExportSvc["ExportService"]
+            FitToPage["FitToPageService<br/>(in-process render cache)"]
         end
 
         subgraph Scraping["Scraper Services"]
@@ -615,6 +678,7 @@ flowchart TB
             CostTracker["CostTracker"]
             Scheduler["APScheduler"]
             Orchestrator["ScraperOrchestrator"]
+            CacheWarm["PostScrapeCacheWarm"]
         end
 
         subgraph Storage["Storage Services"]
@@ -640,8 +704,10 @@ flowchart TB
     AIClient --> TextGenAPI
     Embedding --> EmbedAPI
     ApifyClient --> Apify
+    GoogleOAuthSvc --> GoogleAPI["Google OAuth"]
 
     Core --> Redis
+    UsageTracker --> PostgreSQL
     Resume --> MongoDB
     Job --> PostgreSQL
     Scraping --> PostgreSQL
@@ -658,18 +724,23 @@ flowchart LR
 
     subgraph Middleware["Middleware Pipeline"]
         CORS["CORS Middleware<br/>Allow: GET, POST, PUT,<br/>PATCH, DELETE, OPTIONS"]
-        RateLimit["Rate Limiter<br/>default: 60/min, 1000/hr<br/>ai: 30/min, 300/hr<br/>auth: 10/min, 100/hr"]
-        JWTAuth["JWT Authentication<br/>(per-route)"]
-        AdminCheck["Admin Check<br/>(per-route)"]
-        WebhookKey["Webhook Key<br/>(X-API-Key)"]
+        RateLimit["Rate Limiter<br/>default: 60/min, 1000/hr<br/>ai: 10/min, 100/hr<br/>auth: 10/min, 50/hr"]
+    end
+
+    subgraph Deps["Per-Route Dependencies"]
+        JWTAuth["get_current_user_id<br/>(JWT Bearer)"]
+        SSETicket["get_current_user_id_sse<br/>(one-time Redis ticket)"]
+        AdminCheck["require_admin<br/>(is_admin flag)"]
     end
 
     subgraph Handler["Route Handler"]
         Route["Endpoint Logic"]
     end
 
-    Req --> CORS --> RateLimit --> JWTAuth --> AdminCheck --> WebhookKey --> Route
+    Req --> CORS --> RateLimit --> Deps --> Route
 ```
+
+The two true middlewares (registered in `app/main.py` via `app.add_middleware`) are `RateLimitMiddleware` (optional, gated by `rate_limit_enabled`) and `CORSMiddleware`. Authentication, SSE-ticket validation, and admin checks are route-level FastAPI dependencies, not global middleware.
 
 ---
 
@@ -681,10 +752,11 @@ flowchart LR
 erDiagram
     users ||--o{ resumes : owns
     users ||--o{ job_descriptions : owns
-    users ||--o{ experience_blocks : owns
     users ||--o{ resume_builds : owns
     users ||--o{ user_job_interactions : has
     users ||--o{ audit_logs : generates
+    users ||--o{ ai_usage_logs : generates
+    users ||--o{ scraper_requests : submits
 
     resumes ||--o{ tailored_resumes : generates
 
@@ -692,13 +764,23 @@ erDiagram
     job_listings ||--o{ tailored_resumes : targets
     job_listings ||--o{ user_job_interactions : receives
 
+    scraper_presets ||--o{ scraper_requests : approvedAs
+
     users {
         int id PK
         string email UK
-        string hashed_password
+        string hashed_password "nullable (Google-only users)"
         string full_name
         boolean is_active
         boolean is_admin
+        string auth_provider "email|google"
+        string google_id "nullable"
+        datetime google_linked_at "nullable"
+        string headline "profile"
+        text about_me "AI-generated"
+        datetime about_me_generated_at
+        string timezone
+        string preferred_ai_model
         datetime created_at
         datetime updated_at
     }
@@ -721,6 +803,7 @@ erDiagram
 
     job_descriptions {
         int id PK
+        uuid public_id UK
         int owner_id FK
         string title
         string company
@@ -734,8 +817,15 @@ erDiagram
     job_listings {
         int id PK
         string external_job_id UK
+        string dedup_hash UK "content-based dedup"
         string job_title
         string company_name
+        string company_logo
+        string company_website
+        text company_description
+        string company_linkedin_url
+        string company_address_locality
+        string company_address_country
         string location
         string city
         string state
@@ -747,6 +837,7 @@ erDiagram
         text job_description
         text job_description_html
         string job_url
+        string job_url_direct
         string apply_url
         jsonb job_type
         jsonb emails
@@ -759,6 +850,7 @@ erDiagram
         string salary_period
         datetime date_posted
         datetime scraped_at
+        datetime last_synced_at
         string source_platform
         string region
         boolean is_active
@@ -780,35 +872,17 @@ erDiagram
         datetime updated_at
     }
 
-    experience_blocks {
-        int id PK
-        int user_id FK
-        text content
-        string block_type
-        array tags
-        string source_company
-        string source_role
-        date source_date_start
-        date source_date_end
-        vector_768 embedding
-        string embedding_model
-        string content_hash
-        boolean verified
-        datetime created_at
-        datetime updated_at
-        datetime deleted_at
-    }
-
     resume_builds {
         int id PK
+        uuid public_id UK
         int user_id FK
         string job_title
         string job_company
         text job_description
-        vector_768 job_embedding
+        vector_768 job_embedding "retained; not used for search"
         string status
         jsonb sections
-        array pulled_block_ids
+        array pulled_block_ids "legacy, unused"
         jsonb pending_diffs
         datetime created_at
         datetime updated_at
@@ -817,12 +891,60 @@ erDiagram
 
     user_job_interactions {
         int id PK
+        uuid public_id UK
         int user_id FK
         int job_listing_id FK
         boolean is_saved
         boolean is_hidden
         datetime applied_at
         datetime last_viewed_at
+        string application_status "kanban column"
+        datetime status_changed_at
+        int column_position "kanban ordering"
+        datetime created_at
+        datetime updated_at
+    }
+
+    ai_usage_logs {
+        int id PK
+        int user_id FK "nullable for system ops"
+        string endpoint
+        string provider "openai | gemini"
+        string model
+        string operation_type "generation | embedding"
+        int input_tokens
+        int output_tokens
+        int total_tokens
+        decimal cost_usd
+        int latency_ms
+        boolean success
+        string error_message
+        datetime created_at
+    }
+
+    ai_pricing_configs {
+        int id PK
+        string provider
+        string model
+        decimal input_cost_per_1k
+        decimal output_cost_per_1k
+        date effective_date
+        boolean is_active
+        datetime created_at
+        datetime updated_at
+    }
+
+    scraper_requests {
+        int id PK
+        int user_id FK
+        text url
+        string name
+        text reason
+        string status "pending | approved | rejected | cancelled"
+        text admin_notes
+        int reviewed_by FK "nullable"
+        datetime reviewed_at
+        int preset_id FK "nullable, set on approval"
         datetime created_at
         datetime updated_at
     }
@@ -893,18 +1015,22 @@ erDiagram
 
 | Table | Purpose | Key Indexes |
 | -------- | ---------- | ------------- |
-| `users` | User accounts | email (unique) |
+| `users` | User accounts (email + Google OAuth) | email (unique), google_id (unique) |
 | `resumes` | Resume metadata & content | owner_id |
-| `job_descriptions` | User-created job postings | owner_id |
-| `job_listings` | System-wide scraped jobs | external_job_id, company, location, seniority, date_posted |
+| `job_descriptions` | User-created job postings | owner_id, public_id |
+| `job_listings` | System-wide scraped jobs | external_job_id, dedup_hash, company, location, seniority, date_posted |
 | `tailored_resumes` | AI-tailored versions | resume_id, job_id, job_listing_id |
-| `experience_blocks` | Vault - atomic resume blocks | user_id+block_type, HNSW (embedding), GIN (tags) |
-| `resume_builds` | Workshop workspace | user_id |
-| `user_job_interactions` | Save/hide/apply tracking | (user_id, job_listing_id) unique |
+| `resume_builds` | Workshop workspace | user_id, public_id |
+| `user_job_interactions` | Save/hide/apply + kanban state | (user_id, job_listing_id) unique, public_id |
+| `ai_usage_logs` | Per-call AI cost/latency tracking | (created_at, endpoint), (created_at, provider), (user_id, created_at) |
+| `ai_pricing_configs` | Effective-dated pricing for cost calc | (provider, model, effective_date) |
+| `scraper_requests` | User-submitted scrape URLs pending admin review | user_id, status |
 | `audit_logs` | Action audit trail | user+resource, action+timestamp |
 | `scraper_runs` | Scraper execution history | status, started_at |
-| `scraper_presets` | Named search URL presets | - |
-| `scraper_schedule_settings` | Singleton scheduler config | - |
+| `scraper_presets` | Named search URL presets | — |
+| `scraper_schedule_settings` | Singleton scheduler config | — |
+
+> **Removed:** `experience_blocks` (Vault) was dropped by migration `20260405_0001_drop_experience_blocks.py`. The pgvector extension is no longer load-bearing — `resume_builds.job_embedding` is retained but not used for retrieval.
 
 ### 4.2 MongoDB Collections
 
@@ -920,6 +1046,9 @@ flowchart TB
             R_Parsed["parsed: ParsedContent"]
             R_Style["style: StyleSettings"]
             R_File["original_file: OriginalFile"]
+            R_Master["is_master: bool"]
+            R_Verify["parsed_verified, parsed_verified_at"]
+            R_Ver["version: int (OCC)"]
             R_TS["created_at, updated_at"]
         end
 
@@ -928,31 +1057,34 @@ flowchart TB
             T_Resume["resume_id: ObjectId (FK)"]
             T_User["user_id: int (FK)"]
             T_Job["job_source: {type, id}"]
-            T_Data["tailored_data: dict"]
-            T_Final["finalized_data: dict"]
+            T_Content["content: dict (tailored)"]
             T_Status["status: enum"]
-            T_Score["match_score: float"]
             T_ATS["ats_keywords: ATSKeywords"]
-            T_Meta["job_title, company_name"]
-            T_TS["created_at, updated_at, finalized_at"]
+            T_TS["created_at, updated_at"]
         end
 
         subgraph builds_col["resume_builds Collection"]
             B_ID["_id: ObjectId"]
             B_User["user_id: int (FK)"]
-            B_Job["job: JobInfo"]
-            B_Status["status: draft|in_progress|exported"]
+            B_Job["job_info: JobInfo"]
             B_Sections["sections: ResumeSections"]
-            B_Order["section_order: list"]
-            B_Blocks["pulled_block_ids: list[int]"]
             B_Diffs["pending_diffs: list[PendingDiff]"]
-            B_TS["created_at, updated_at, exported_at"]
+            B_TS["created_at, updated_at"]
+        end
+
+        subgraph kw_col["keyword_overrides Collection"]
+            K_ID["_id: ObjectId"]
+            K_User["user_id: int (FK)"]
+            K_Hash["job_content_hash: string"]
+            K_Keywords["keywords: list[KeywordEntry]"]
+            K_TS["last_updated"]
         end
     end
 
-    resumes_col --> |"Indexes"| R_IDX["user_id<br/>(user_id, updated_at DESC)"]
+    resumes_col --> |"Indexes"| R_IDX["user_id<br/>(user_id, updated_at DESC)<br/>(user_id, is_master)"]
     tailored_col --> |"Indexes"| T_IDX["resume_id<br/>user_id<br/>(job_source.type, job_source.id)"]
     builds_col --> |"Indexes"| B_IDX["user_id<br/>(user_id, status)"]
+    kw_col --> |"Indexes"| K_IDX["(user_id, job_content_hash)"]
 ```
 
 ### MongoDB Document Schemas
@@ -995,10 +1127,16 @@ flowchart TB
     "file_type": "application/pdf",
     "size_bytes": 102400
   },
+  "is_master": true,
+  "parsed_verified": false,
+  "parsed_verified_at": null,
+  "version": 3,
   "created_at": "2026-02-20T...",
-  "updated_at": "2026-02-20T..."
+  "updated_at": "2026-04-17T..."
 }
 ```
+
+`version` is incremented on every write and checked on PUT `/resumes/{id}` for optimistic concurrency; concurrent writes with a stale version are rejected.
 
 #### Tailored Resume Document
 
@@ -1042,26 +1180,26 @@ flowchart TB
         PG_Resumes["resumes<br/>(metadata)"]
         PG_Jobs["job_descriptions"]
         PG_Listings["job_listings"]
-        PG_Blocks["experience_blocks<br/>(vectors)"]
         PG_Builds["resume_builds<br/>(metadata)"]
         PG_Interactions["user_job_interactions"]
+        PG_Usage["ai_usage_logs"]
     end
 
     subgraph MongoDB["MongoDB (Document Content)"]
         MG_Resumes["resumes<br/>(full content)"]
         MG_Tailored["tailored_resumes<br/>(AI versions)"]
         MG_Builds["resume_builds<br/>(sections)"]
+        MG_Kw["keyword_overrides<br/>(user keyword choices)"]
     end
 
     PG_Users --> |"user_id"| MG_Resumes
     PG_Users --> |"user_id"| MG_Tailored
     PG_Users --> |"user_id"| MG_Builds
+    PG_Users --> |"user_id"| MG_Kw
 
     MG_Resumes --> |"resume_id"| MG_Tailored
     PG_Jobs --> |"job_source.id"| MG_Tailored
     PG_Listings --> |"job_source.id"| MG_Tailored
-
-    PG_Blocks --> |"pulled_block_ids"| MG_Builds
 ```
 
 ### Dual-Database Transaction Pattern
@@ -1090,56 +1228,9 @@ sequenceDiagram
     end
 ```
 
-### 4.4 Vector Search Architecture
+### 4.4 Embeddings Footnote
 
-```mermaid
-flowchart TB
-    subgraph Input["Query Input"]
-        JobDesc["Job Description Text"]
-    end
-
-    subgraph Embedding["Embedding Generation"]
-        GeminiAPI["Gemini API<br/>text-embedding-004"]
-        QueryVec["Query Vector<br/>(768-dim)"]
-    end
-
-    subgraph Search["Hybrid Search"]
-        subgraph SQLFilters["SQL Filters (First)"]
-            F1["user_id = ?"]
-            F2["block_type IN (?)"]
-            F3["tags && ?"]
-            F4["verified = ?"]
-            F5["deleted_at IS NULL"]
-        end
-
-        subgraph VectorSearch["Vector Distance (Second)"]
-            HNSW["HNSW Index<br/>m=16, ef=64"]
-            Cosine["cosine_distance()"]
-        end
-    end
-
-    subgraph Results["Search Results"]
-        Ranked["Top-K Blocks<br/>by Similarity"]
-    end
-
-    JobDesc --> GeminiAPI --> QueryVec
-    QueryVec --> SQLFilters
-    SQLFilters --> |"Filtered Rows"| VectorSearch
-    VectorSearch --> Ranked
-
-    style SQLFilters fill:#e1f5fe
-    style VectorSearch fill:#fff3e0
-```
-
-### Vector Index Configuration
-
-| Parameter | Value | Purpose |
-| -------- | ---------- | ------------- |
-| Dimensions | 768 | Gemini text-embedding-004 native |
-| Index Type | HNSW | Hierarchical Navigable Small World |
-| m | 16 | Connections per layer |
-| ef_construction | 64 | Build quality |
-| Distance | cosine_ops | Cosine similarity |
+Gemini's `text-embedding-004` (768-dim) is still called from `EmbeddingService`, and `resume_builds.job_embedding` is still populated on build creation, but the semantic retrieval path that powered the Vault was removed along with the `experience_blocks` table (migration `20260405_0001`). The HNSW/pgvector index is no longer part of any read path. If a future feature re-introduces vector search, the embedding pipeline and the Gemini API surface are still in place — only the blocks schema was dropped.
 
 ---
 
@@ -1156,6 +1247,11 @@ flowchart TB
     end
 
     subgraph Protected["Protected Routes (Auth Required)"]
+        subgraph Profile["Profile"]
+            ProfilePage["/profile"]
+            SettingsPage["/settings"]
+        end
+
         subgraph Jobs["Jobs Section"]
             JobsList["/jobs"]
             JobDetail["/jobs/[id]"]
@@ -1164,23 +1260,22 @@ flowchart TB
         end
 
         subgraph Library["Library Section"]
-            LibDash["/library"]
+            LibDash["/library (→ /profile)"]
             ResNew["/library/resumes/new"]
             ResView["/library/resumes/[id]"]
             ResEdit["/library/resumes/[id]/edit"]
+            ResVerify["/library/resumes/[id]/verify"]
             JobNew["/library/jobs/new"]
             JobView["/library/jobs/[id]"]
             JobEdit["/library/jobs/[id]/edit"]
-            VaultNew["/library/vault/new"]
-            VaultView["/library/vault/[id]"]
-            VaultImport["/library/vault/import"]
         end
 
-        subgraph Tailor["Tailoring Section"]
-            TailorHub["/tailor"]
-            TailorInit["/tailor/[id]"]
+        subgraph Tailor["Tailoring Section (3-step wizard)"]
+            TailorHub["/tailor (select)"]
+            TailorAnalyze["/tailor/analyze (ATS SSE)"]
+            TailorKeywords["/tailor/keywords/[id]"]
             TailorReview["/tailor/review/[id]"]
-            TailorEditor["/tailor/editor/[id]"]
+            TailorVerify["/tailor/verify/[id]"]
         end
 
         subgraph Workshop["Workshop Section"]
@@ -1189,6 +1284,7 @@ flowchart TB
 
         subgraph Admin["Admin Section"]
             AdminScraper["/admin/scraper"]
+            AdminAIUsage["/admin/ai-usage"]
         end
     end
 
@@ -1201,20 +1297,16 @@ flowchart TB
     JobsList --> |"Saved Tab"| SavedJobs
     JobsList --> |"Applied Tab"| AppliedJobs
 
-    LibDash --> |"New Resume"| ResNew
-    LibDash --> |"View Resume"| ResView
+    ProfilePage --> |"New Resume"| ResNew
+    ProfilePage --> |"View Resume"| ResView
     ResView --> |"Edit"| ResEdit
-    LibDash --> |"New Job"| JobNew
-    LibDash --> |"View Job"| JobView
+    ResView --> |"Verify Parsed"| ResVerify
+    ProfilePage --> |"New Job"| JobNew
+    ProfilePage --> |"View Job"| JobView
     JobView --> |"Edit"| JobEdit
-    LibDash --> |"New Block"| VaultNew
-    LibDash --> |"View Block"| VaultView
-    LibDash --> |"Import"| VaultImport
 
-    JobDetail --> |"Tailor Resume"| TailorInit
-    TailorInit --> |"AI Processing"| TailorReview
-    TailorReview --> |"Review Diffs"| TailorEditor
-    TailorEditor --> |"Finalize"| LibDash
+    JobDetail --> |"Optimize Resume"| TailorHub
+    TailorHub --> TailorAnalyze --> TailorKeywords --> TailorReview --> TailorVerify
 
     JobDetail --> |"Build Workshop"| WorkshopPage
 ```
@@ -1224,28 +1316,30 @@ flowchart TB
 | Route | Component | Description |
 | -------- | ---------- | ------------- |
 | `/` | Landing Page | Hero, tech stack, how it works |
-| `/(auth)/login` | Login Page | User authentication |
-| `/(auth)/signup` | Signup Page | User registration |
-| `/jobs` | Jobs Browse | List/filter LinkedIn jobs |
+| `/(auth)/login` | Login Page | Email+password or Google OAuth |
+| `/(auth)/signup` | Signup Page | Email+password or Google OAuth (full name required) |
+| `/profile` | Profile | Identity, master resume, About Me, AI preferences |
+| `/settings` | Settings | Account settings, timezone |
+| `/jobs` | Jobs Browse | List/filter scraped jobs + kanban view |
 | `/jobs/[id]` | Job Detail | Single job view |
 | `/jobs/saved` | Saved Jobs | User's saved listings |
-| `/jobs/applied` | Applied Jobs | Applied tracking |
-| `/library` | Library Dashboard | Resumes, jobs, vault overview |
+| `/jobs/applied` | Applied Jobs | Kanban-style application tracking |
+| `/library` | Legacy redirect | Redirects to `/profile` |
 | `/library/resumes/new` | New Resume | Create resume |
 | `/library/resumes/[id]` | View Resume | Resume detail |
 | `/library/resumes/[id]/edit` | Edit Resume | Rich text editor |
+| `/library/resumes/[id]/verify` | Verify Parsed | Confirm AI parse output |
 | `/library/jobs/new` | New Job | Create job description |
 | `/library/jobs/[id]` | View Job | Job detail |
 | `/library/jobs/[id]/edit` | Edit Job | Edit job description |
-| `/library/vault/new` | New Block | Create vault block |
-| `/library/vault/[id]` | View Block | Block detail |
-| `/library/vault/import` | Import Blocks | Bulk import from resume |
-| `/tailor` | Tailor Hub | Start tailoring flow |
-| `/tailor/[id]` | Tailor Init | Initialize session |
-| `/tailor/review/[id]` | Tailor Review | Side-by-side diff UI |
-| `/tailor/editor/[id]` | Tailor Editor | Final refinements |
+| `/tailor` | Step 1: Select | Choose resume + job |
+| `/tailor/analyze` | Step 2a: ATS | Progressive SSE ATS analysis |
+| `/tailor/keywords/[id]` | Step 2b: Keywords | User selects focus keywords |
+| `/tailor/review/[id]` | Step 3: Review | Side-by-side diff UI |
+| `/tailor/verify/[id]` | Step 3: Verify | Final confirmation |
 | `/workshop/[id]` | Workshop | Multi-panel resume builder |
-| `/admin/scraper` | Admin Scraper | Scraper management |
+| `/admin/scraper` | Admin Scraper | Scraper + preset + request review |
+| `/admin/ai-usage` | Admin AI Usage | Cost dashboard with time series |
 
 ### 5.2 Component Hierarchy
 
@@ -1308,10 +1402,16 @@ flowchart TB
             W7["ScoreSummary"]
         end
 
-        subgraph Vault_C["Vault Components"]
-            V1["BlockList"]
-            V2["BlockEditor"]
-            V3["ImportWizard"]
+        subgraph ATS_C["ATS Components"]
+            AT1["ATSProgressStepper"]
+            AT2["KeywordReviewPanel"]
+            AT3["ScoreDashboard"]
+        end
+
+        subgraph Admin_C["Admin Components"]
+            AD1["AIUsageCharts"]
+            AD2["ScraperPresetEditor"]
+            AD3["ScraperRequestQueue"]
         end
     end
 
@@ -1327,38 +1427,22 @@ flowchart TB
 
 ```text
 /src/components
-├── /layout
-│   ├── Sidebar.tsx
-│   ├── Header.tsx
-│   └── Footer.tsx
-├── /ui
-│   ├── LoadingSpinner.tsx
-│   ├── ErrorMessage.tsx
-│   ├── Skeleton.tsx
-│   └── TechStackLogos.tsx
-├── /jobs
-│   ├── JobListingCard.tsx
-│   ├── JobListingTable.tsx
-│   └── JobListingFilters.tsx
-├── /tailoring
-│   ├── PreviewDiffLayout.tsx
-│   └── VersionHistoryPanel.tsx
-├── /editor
-│   ├── TipTapEditor.tsx
-│   └── SuggestionPopover.tsx
-├── /export
-│   └── ExportDialog.tsx
-├── /workshop
-│   ├── EditorPanel.tsx
-│   ├── AIRewritePanel.tsx
-│   ├── SectionList.tsx
-│   ├── ChangeSummary.tsx
-│   ├── StylePanel.tsx
-│   ├── ResumePreview/
-│   └── ScoreSummary.tsx
-├── /vault
-│   ├── BlockList.tsx
-│   └── BlockEditor.tsx
+├── /layout         (Sidebar, Header, Footer)
+├── /ui             (LoadingSpinner, ErrorMessage, Skeleton, ...)
+├── /auth           (login/signup forms, Google OAuth button)
+├── /jobs           (JobListingCard, JobListingTable, JobListingFilters, kanban)
+├── /tailor         (step-1/step-2 wizard UI)
+├── /tailoring      (PreviewDiffLayout, VersionHistoryPanel, diff review)
+├── /ats            (ATSProgressStepper, KeywordReviewPanel, ScoreDashboard)
+├── /editor         (TipTapEditor, SuggestionPopover, inline suggestions)
+├── /export         (ExportDialog, PDF export wrapper)
+├── /workshop       (EditorPanel, AIRewritePanel, SectionList, StylePanel, ResumePreview/, ScoreSummary)
+├── /admin          (AIUsageCharts, ScraperPresetEditor, ScraperRequestQueue)
+├── /library        (resume/job library cards)
+├── /upload         (file upload + extraction)
+├── /icons          (SVG icons)
+├── /errors         (error boundaries)
+├── /demos          (landing-page demo embeds)
 └── ProtectedRoute.tsx
 ```
 
@@ -1367,9 +1451,17 @@ flowchart TB
 ```mermaid
 flowchart TB
     subgraph Global["Global State (Context)"]
-        AuthCtx["AuthContext<br/>user, isAuthenticated, login/logout"]
-        ThemeCtx["ThemeContext<br/>theme, toggleTheme"]
+        AuthCtx["AuthContext<br/>user, tokens, Google OAuth"]
+        ThemeCtx["ThemeContext<br/>theme"]
         TailorCtx["TailoringContext<br/>session, diffs, history"]
+        TzCtx["TimezoneContext<br/>user timezone"]
+    end
+
+    subgraph Zstd["Client Domain State (Zustand)"]
+        Z1["atsProgressStore<br/>SSE events, stage results"]
+        Z2["bulletSuggestionsStore"]
+        Z3["inlineSuggestionQueueStore"]
+        Z4["keywordReviewStore"]
     end
 
     subgraph Server["Server State (React Query)"]
@@ -1379,23 +1471,24 @@ flowchart TB
             Q1["useResumes()"]
             Q2["useJobs()"]
             Q3["useJobListings(filters)"]
-            Q4["useBlocks()"]
             Q5["useTailoredResumes()"]
             Q6["useWorkshops()"]
+            Q7["useKanbanBoard()"]
+            Q8["useAIUsageSummary()"]
         end
 
         subgraph Mutations["Mutation Hooks"]
             M1["useCreateResume()"]
             M2["useUpdateResume()"]
             M3["useTailorResume()"]
-            M4["useFinalizeTailored()"]
-            M5["useSaveJob()"]
+            M4["useFinalizeTailoredResume()"]
+            M5["useSaveJobListing()"]
+            M6["useUpdateApplicationStatus()"]
         end
     end
 
     subgraph Local["Local State"]
-        useState["useState"]
-        useReducer["useReducer"]
+        useState["useState / useReducer"]
         SessionStorage["sessionStorage<br/>(TailoringSession)"]
     end
 
@@ -1411,11 +1504,15 @@ flowchart TB
 
 | Layer | Technology | Purpose | Persistence |
 | -------- | ---------- | ------------- | ------------- |
-| Auth | AuthContext | User session, tokens | localStorage |
+| Auth | AuthContext | User session, access+refresh tokens, Google OAuth | localStorage |
 | Theme | ThemeContext | Dark/light mode | localStorage |
-| Tailoring | TailoringContext | Edit session state | sessionStorage (30min) |
+| Timezone | TimezoneContext | User timezone for date rendering | localStorage |
+| Tailoring | TailoringContext | Edit session state | sessionStorage (~30min) |
+| ATS | `atsProgressStore` (Zustand) | Active SSE connection + stage results | localStorage (persist middleware) |
+| Bullet suggestions | `bulletSuggestionsStore`, `inlineSuggestionQueueStore` (Zustand) | AI bullet rewrite queue/state | Memory |
+| Keyword review | `keywordReviewStore` (Zustand) | User keyword selections in Step 2 | Memory |
 | Server | React Query | API data cache | Memory (staleTime: 60s) |
-| Local | useState/useReducer | Component state | None |
+| Local | useState / useReducer | Component state | None |
 
 ### TailoringContext State Structure
 
@@ -1460,18 +1557,19 @@ flowchart TB
         FetchAPI["fetchApi<T>()<br/>Base fetch wrapper"]
 
         subgraph Modules["API Modules"]
-            AuthAPI["authApi"]
-            ResumeAPI["resumeApi"]
+            AuthAPI["authApi (incl. googleAuth, sseTicket)"]
+            ProfileAPI["profileApi"]
+            ResumeAPI["resumeApi (incl. setMaster, verifyParsed)"]
             JobAPI["jobApi"]
-            TailorAPI["tailorApi"]
-            BlockAPI["blockApi"]
-            MatchAPI["matchApi"]
-            BuildAPI["resumeBuildApi"]
+            TailorAPI["tailorApi (incl. analyzeBullets)"]
+            BuildAPI["resumeBuildApi (aliased as workshopApi)"]
             UploadAPI["uploadApi"]
-            ListingsAPI["jobListingsApi"]
-            AdminAPI["adminApi"]
-            ATSAPI["atsApi"]
-            AIChatAPI["aiChatApi"]
+            ListingsAPI["jobListingApi (incl. kanban)"]
+            ScraperReqAPI["scraperRequestApi"]
+            AdminAPI["adminApi (scraper + AI usage dashboard)"]
+            ATSAPI["atsApi (+ SSE hook)"]
+            AIChatAPI["aiApi"]
+            ExportAPI["exportApi (incl. fitToPage)"]
         end
     end
 
@@ -1487,6 +1585,25 @@ flowchart TB
     FastAPI --> |"401 Unauthorized"| FetchAPI
     FetchAPI --> |"Auto Refresh"| TokenMgr
 ```
+
+### SSE Client Pattern
+
+```typescript
+// 1. Exchange JWT for one-time ticket (fetched via authApi.sseTicket)
+const { ticket } = await authApi.sseTicket();
+
+// 2. Open EventSource — ticket travels as a query param, not the Authorization header
+const url = `/api/v1/ats/analyze-progressive?resume_id=${resumeId}&job_id=${jobId}&ticket=${ticket}`;
+const es = new EventSource(url);
+
+es.addEventListener("stage_complete", (e) => {
+  const payload = JSON.parse((e as MessageEvent).data);
+  atsProgressStore.setState({ stage: payload.stage, result: payload.result });
+});
+es.addEventListener("complete", () => es.close());
+```
+
+The frontend never puts the JWT in the URL. Each SSE connection consumes a fresh 30-second ticket, which is why `POST /auth/sse-ticket` is called immediately before opening the EventSource.
 
 ### Query Key Hierarchy
 
@@ -1533,6 +1650,8 @@ const queryKeys = {
 
 ### 6.1 Authentication Flow
 
+The authentication surface supports three entry modes (email+password, Google OAuth, refresh) and an SSE-specific ticket exchange that is not itself authentication but is how authenticated users open EventSource connections.
+
 ```mermaid
 sequenceDiagram
     participant User
@@ -1540,19 +1659,31 @@ sequenceDiagram
     participant AuthCtx as AuthContext
     participant API as FastAPI
     participant DB as PostgreSQL
+    participant Google
+    participant Redis
 
-    User->>Browser: Click Login
-    Browser->>API: POST /api/auth/login
-    API->>DB: Verify credentials
-    DB-->>API: User record
-    API-->>Browser: {access_token, refresh_token}
+    alt Email + Password
+        User->>Browser: Submit login form
+        Browser->>API: POST /api/auth/login
+        API->>DB: Verify credentials
+        DB-->>API: User record
+        API-->>Browser: {access_token, refresh_token}
+    else Google OAuth
+        User->>Browser: Click "Continue with Google"
+        Browser->>Google: Get Google ID token
+        Google-->>Browser: id_token
+        Browser->>API: POST /api/auth/google {id_token}
+        API->>Google: Verify id_token
+        API->>DB: Upsert user (auth_provider=google)
+        API-->>Browser: {access_token, refresh_token}
+    end
+
     Browser->>AuthCtx: setTokens(), setUser()
     AuthCtx->>Browser: localStorage.setItem()
-    Browser->>User: Redirect to /jobs
 
     Note over Browser,API: On subsequent requests...
 
-    Browser->>API: GET /api/resumes (with Bearer token)
+    Browser->>API: GET /api/resumes (Bearer token)
 
     alt Token Valid
         API-->>Browser: 200 OK + data
@@ -1560,10 +1691,19 @@ sequenceDiagram
         API-->>Browser: 401 Unauthorized
         Browser->>API: POST /api/auth/refresh
         API-->>Browser: New access_token
-        Browser->>AuthCtx: Update token
         Browser->>API: Retry original request
         API-->>Browser: 200 OK + data
     end
+
+    Note over Browser,API: When opening an SSE (e.g. /ats/analyze-progressive)...
+
+    Browser->>API: POST /api/auth/sse-ticket (Bearer token)
+    API->>Redis: SETEX sse_ticket:{rand} user_id TTL=30s
+    API-->>Browser: {ticket}
+    Browser->>API: EventSource(url?ticket=...)
+    API->>Redis: GETDEL sse_ticket:{ticket}
+    Redis-->>API: user_id (or nil → 401)
+    API-->>Browser: SSE stream
 ```
 
 ### 6.2 Resume Tailoring Flow
@@ -1598,7 +1738,7 @@ sequenceDiagram
     ATS-->>Step2: complete event with composite_score
     ATS->>Redis: Cache ATS results (24h TTL)
 
-    Note over Step2: Show keyword selection UI<br/>Vault-backed: checkboxes<br/>Non-vault: grayed out
+    Note over Step2: Show keyword selection UI<br/>Keywords present in resume: checkboxes<br/>Missing-from-resume: grayed out
     User->>Step2: Select focus keywords
     User->>Step2: Click "Generate Tailored Resume"
 
@@ -1639,7 +1779,7 @@ sequenceDiagram
 | Navigation | Single page with steps | 3 distinct routes |
 | History Display | On selection page | Version history sidebar on detail page |
 | ATS Analysis | None | 5-stage progressive with SSE |
-| Keyword Control | AI decides | User selects from vault-backed skills |
+| Keyword Control | AI decides | User selects from resume-backed skills; missing-from-resume keywords are disabled |
 | Score Display | Instant, potentially inconsistent | Gated until analysis complete |
 | Naming | UUID-based | Human-readable: "{job} @ {company} — {date}" |
 
@@ -1659,7 +1799,7 @@ POST /api/tailor {
 }
 ```
 
-Skills not in the user's vault are grayed out and cannot be selected, preventing AI from adding unverified skills to the resume.
+Skills that don't appear in the user's resume content are grayed out and cannot be selected, preventing AI from adding unverified skills to the resume.
 
 ### Two Copies Architecture
 
@@ -1693,7 +1833,6 @@ sequenceDiagram
     participant User
     participant Workshop as Workshop UI
     participant API as FastAPI
-    participant Vault as Experience Blocks
     participant AI as OpenAI/Gemini API
     participant MG as MongoDB
 
@@ -1702,15 +1841,12 @@ sequenceDiagram
     API->>MG: Create resume_build doc
     API-->>Workshop: {build_id}
 
-    User->>Workshop: Pull relevant blocks
-    Workshop->>API: POST /api/v1/resume-builds/{id}/pull
-    API->>Vault: Semantic search (pgvector)
-    Vault-->>API: Matching blocks
-    API->>MG: Update pulled_block_ids
-    API-->>Workshop: Pulled blocks
+    User->>Workshop: Edit sections directly in the multi-panel UI
+    Workshop->>API: PATCH /api/v1/resume-builds/{id}/sections
+    API->>MG: Update sections
 
-    User->>Workshop: Request AI suggestions
-    Workshop->>API: POST /api/v1/resume-builds/{id}/suggest
+    User->>Workshop: Request AI suggestions (full or single bullet)
+    Workshop->>API: POST /api/v1/resume-builds/{id}/suggest[-bullet]
     API->>AI: Generate improvements
     AI-->>API: Diff suggestions
     API->>MG: Store pending_diffs
@@ -1723,9 +1859,11 @@ sequenceDiagram
     end
 
     User->>Workshop: Export
-    Workshop->>API: POST /api/export/{id}
+    Workshop->>API: POST /api/v1/resume-builds/{id}/export
     API-->>Workshop: PDF/DOCX file
 ```
+
+The Workshop no longer pulls blocks from the Vault (which was removed in `20260405_0001`). Content originates from one of: a starting resume template, pulled content from one of the user's existing resumes, or manual entry — then is refined with per-section / per-bullet AI suggestions exposed as accept/reject diffs.
 
 ### Workshop Multi-Panel Layout
 
@@ -1758,10 +1896,11 @@ flowchart LR
 
 ```mermaid
 sequenceDiagram
+    participant User
+    participant Admin
     participant Scheduler as APScheduler
     participant Orchestrator as ScraperOrchestrator
     participant Apify as Apify API
-    participant Webhook as n8n Webhook
     participant API as FastAPI
     participant DB as PostgreSQL
 
@@ -1775,23 +1914,25 @@ sequenceDiagram
             Apify-->>Orchestrator: Job listings batch
         end
 
-        Orchestrator->>DB: Upsert job_listings
+        Orchestrator->>DB: Upsert job_listings (dedup_hash)
         Orchestrator->>DB: Log scraper_run
     end
 
-    alt Webhook Ingestion
-        Webhook->>API: POST /api/webhooks/job-listings
-        Note over Webhook,API: X-API-Key header required
-        API->>DB: Batch upsert (up to 2000)
-        API-->>Webhook: {created, updated, errors}
-    end
-
-    alt Ad-hoc Scrape
-        Admin->>API: POST /api/admin/scraper/adhoc
-        API->>Orchestrator: trigger_adhoc()
-        Orchestrator->>Apify: Run custom URL
+    alt Admin Manual / Ad-hoc
+        Admin->>API: POST /admin/scraper/trigger (all presets)
+        Admin->>API: POST /admin/scraper/adhoc (one URL)
+        API->>Orchestrator: trigger_*()
+        Orchestrator->>Apify: Run
         Apify-->>Orchestrator: Results
         Orchestrator-->>API: Stats
+    end
+
+    alt User-Submitted Request
+        User->>API: POST /api/scraper-requests (URL + reason)
+        API->>DB: scraper_requests INSERT (status=pending)
+        Admin->>API: POST /admin/scraper-requests/{id}/approve
+        API->>DB: Create scraper_preset, link to request
+        Note over API,DB: Next scheduled run will include it
     end
 ```
 
@@ -1801,33 +1942,37 @@ sequenceDiagram
 flowchart TB
     subgraph Triggers["Scrape Triggers"]
         Scheduled["APScheduler<br/>(Daily/Weekly)"]
-        Manual["Admin Manual<br/>POST /trigger"]
-        AdHoc["Ad-hoc URL<br/>POST /adhoc"]
-        Webhook["n8n Webhook<br/>POST /webhooks"]
+        Manual["Admin Manual<br/>POST /admin/scraper/trigger"]
+        AdHoc["Ad-hoc URL<br/>POST /admin/scraper/adhoc"]
+        UserReq["User-submitted request<br/>approved by admin → preset"]
     end
 
     subgraph Processing["Processing"]
         Orchestrator["ScraperOrchestrator"]
         ApifyClient["ApifyClient"]
         CostTracker["CostTracker"]
+        CacheWarm["Post-scrape cache warm"]
     end
 
     subgraph Storage["Storage"]
         JobListings[(job_listings)]
         ScraperRuns[(scraper_runs)]
         Presets[(scraper_presets)]
+        Requests[(scraper_requests)]
         Schedule[(scraper_schedule_settings)]
     end
 
     Scheduled --> Orchestrator
     Manual --> Orchestrator
     AdHoc --> Orchestrator
-    Webhook --> |"Direct DB"| JobListings
+    UserReq --> Requests
+    Requests --> Presets
 
     Orchestrator --> ApifyClient
     ApifyClient --> |"Results"| Orchestrator
     Orchestrator --> JobListings
     Orchestrator --> ScraperRuns
+    Orchestrator --> CacheWarm
     ApifyClient --> CostTracker
 
     Presets --> Orchestrator
@@ -1902,16 +2047,9 @@ flowchart TB
         MinIO[(MinIO<br/>Original File)]
     end
 
-    subgraph Split["Block Split Phase"]
-        BlockSplitter["BlockSplitter"]
-        BlockClassifier["BlockClassifier"]
-        Blocks["Atomic Blocks"]
-        Embedding["EmbeddingService"]
-        Vectors["768-dim Vectors"]
-    end
-
-    subgraph VaultStore["Vault Storage"]
-        PostgreSQL[(PostgreSQL<br/>experience_blocks)]
+    subgraph Verify["Verification Phase (User)"]
+        VerifyUI["/library/resumes/[id]/verify"]
+        Confirmed["parsed_verified=true"]
     end
 
     File --> Extractor --> Text
@@ -1922,11 +2060,10 @@ flowchart TB
     HTML --> MongoDB
     Structured --> MongoDB
 
-    Structured --> BlockSplitter --> Blocks
-    Blocks --> BlockClassifier
-    BlockClassifier --> Embedding --> Vectors
-    Vectors --> PostgreSQL
+    MongoDB --> VerifyUI --> Confirmed --> MongoDB
 ```
+
+The atomic-block splitter + embedder that previously fed the Vault was removed along with the `experience_blocks` table. After parsing, the user now reviews the AI output directly in the verify page and marks it as trusted (`parsed_verified`), which downstream tailoring and ATS flows use as a signal of fidelity.
 
 ---
 
@@ -1941,8 +2078,9 @@ flowchart TB
 
     subgraph Authorization["Authorization"]
         UserAuth["User Auth<br/>(JWT Required)"]
+        GoogleAuth["Google OAuth<br/>(ID Token)"]
+        SSETicket["SSE Ticket<br/>(one-time, Redis, 30s TTL)"]
         AdminAuth["Admin Auth<br/>(is_admin Check)"]
-        WebhookAuth["Webhook Auth<br/>(X-API-Key)"]
     end
 
     subgraph Protection["Protection Layers"]
@@ -1959,11 +2097,13 @@ flowchart TB
 
     JWT --> UserAuth
     JWT --> AdminAuth
+    JWT --> SSETicket
     BCrypt --> Auth
+    GoogleAuth --> UserAuth
 
     UserAuth --> |"Protected Routes"| API["API Endpoints"]
     AdminAuth --> |"/api/admin/*"| AdminAPI["Admin Endpoints"]
-    WebhookAuth --> |"/api/webhooks/*"| WebhookAPI["Webhook Endpoints"]
+    SSETicket --> |"/api/v1/ats/analyze-progressive"| SSEAPI["SSE Endpoints"]
 
     CORS --> API
     RateLimit --> API
@@ -1976,12 +2116,14 @@ flowchart TB
 | Layer | Protection | Implementation |
 | ------- | ------------ | ---------------- |
 | Authentication | JWT Tokens | Access (short-lived) + Refresh (long-lived) |
-| Password | BCrypt | Salted hashing |
-| API Rate Limits | Redis | 60/min default, 30/min AI, 10/min auth |
+| Federated Auth | Google OAuth | ID-token verification; `users.auth_provider` records origin |
+| Password | BCrypt | Salted hashing; nullable for Google-only users |
+| SSE Auth | One-time Redis ticket | `POST /auth/sse-ticket` (requires JWT) → ticket consumed on EventSource connect, 30s TTL |
+| API Rate Limits | Redis | `default: 60/min, 1000/hr`; `ai: 10/min, 100/hr`; `auth: 10/min, 50/hr` |
 | CORS | FastAPI Middleware | Configured allowed origins |
 | SQL Injection | SQLAlchemy | Parameterized queries only |
 | PII Protection | PII Stripper | Removes sensitive data before AI |
-| Secrets | Environment Variables | .env files (gitignored) |
+| Secrets | Environment Variables | `.env` files (gitignored); never baked into images |
 
 ---
 
@@ -1997,12 +2139,15 @@ flowchart TB
 
     subgraph Backend["Backend Caching"]
         Redis[(Redis)]
+        InProc["In-process<br/>(FitToPage render cache)"]
 
-        subgraph RedisKeys["Cache Keys"]
+        subgraph RedisKeys["Redis Keys"]
             RateLimit["rate_limit:{user}:{endpoint}"]
             ParseStatus["parse_status:{task_id}"]
             Embedding["embedding:{content_hash}"]
-            Match["match:{job_id}"]
+            ATSCache["ats:{resume_hash}:{job_id} (24h)"]
+            SSETicket["sse_ticket:{rand} (30s)"]
+            FastAPICache["rb-cache:* (fastapi-cache2 prefix)"]
         end
     end
 
@@ -2018,11 +2163,14 @@ flowchart TB
 | Cache | TTL | Purpose |
 | ------- | ----- | --------- |
 | React Query | 60s staleTime | API response freshness |
-| Tailoring Session | 30 minutes | Cross-page state handoff |
+| Tailoring Session | ~30 minutes | Cross-page state handoff |
 | Rate Limit Counters | 1 minute / 1 hour | Request throttling |
 | Parse Status | Until complete | Background task tracking |
-| Embedding Cache | 24 hours | Avoid redundant API calls |
-| Match Results | 1 hour | Semantic search results |
+| Embedding Cache | 24 hours | Avoid redundant Gemini calls |
+| ATS Progressive | 24 hours | Cached composite score per (resume, job) |
+| SSE Ticket | 30 seconds | One-time SSE auth |
+| FastAPICache | Per-endpoint | Response cache, Redis-backed (falls back to in-memory if Redis is unreachable at startup) |
+| FitToPage render | In-process LRU | Skip re-rendering identical layouts |
 
 ---
 
@@ -2039,7 +2187,6 @@ The deployment model splits cleanly into two environments:
 flowchart TB
     subgraph External["External Traffic"]
         Users["Users"]
-        N8N["n8n Webhooks"]
     end
 
     subgraph Docker["Docker Compose Stack (local dev)"]
@@ -2067,7 +2214,6 @@ flowchart TB
     end
 
     Users --> NextJS
-    N8N --> FastAPI
     NextJS --> FastAPI
 
     FastAPI --> PostgreSQL
@@ -2114,9 +2260,11 @@ OPENAI_MODEL=gpt-4o-mini  # Default model
 GEMINI_API_KEY=<gemini-api-key>
 GEMINI_MODEL=gemini-2.0-flash  # Text generation model
 
+# Google OAuth (optional — enables "Continue with Google")
+GOOGLE_OAUTH_CLIENT_ID=<google-client-id>
+
 # Scraper
 APIFY_API_TOKEN=<apify-token>
-WEBHOOK_API_KEY=<webhook-secret>
 
 # Storage
 MINIO_ENDPOINT=minio:9000
@@ -2198,21 +2346,20 @@ See `/docs/architecture/digitalocean-hosting-setup.md` for the droplet-side oper
 
 | Category | Endpoint Count |
 | ---------- | ---------------- |
-| Auth | 4 |
-| Resumes | 9 |
+| Auth | 6 |
+| Resumes | 11 |
 | Jobs | 5 |
-| Tailor | 8 |
-| Export | 1 |
+| Tailor | 9 |
+| Export | 2 |
 | Upload | 1 |
-| Blocks (Vault) | 9 |
-| Match | 3 |
-| Resume Builds | 17 |
-| ATS | 4 |
+| Resume Builds | 13 |
+| ATS | 14 |
 | AI Chat | 2 |
-| Job Listings | 10 |
-| Webhooks | 3 |
-| Admin | 17 |
-| **Total** | **93** |
+| Profile | 4 |
+| Job Listings | 12 |
+| Scraper Requests (user) | 3 |
+| Admin (scraper + presets + schedule + request review + AI usage) | 27 |
+| **Total** | **109** |
 
 ---
 
@@ -2220,20 +2367,23 @@ See `/docs/architecture/digitalocean-hosting-setup.md` for the droplet-side oper
 
 | Database | Collection/Table | Purpose |
 | ---------- | ------------------ | --------- |
-| PostgreSQL | users | User accounts |
+| PostgreSQL | users | User accounts (email + Google OAuth) |
 | PostgreSQL | resumes | Resume metadata |
 | PostgreSQL | job_descriptions | User job postings |
-| PostgreSQL | job_listings | System-wide scraped jobs |
+| PostgreSQL | job_listings | System-wide scraped jobs (dedup_hash) |
 | PostgreSQL | tailored_resumes | AI-tailored metadata |
-| PostgreSQL | experience_blocks | Vault with vectors |
 | PostgreSQL | resume_builds | Workshop metadata |
-| PostgreSQL | user_job_interactions | Save/hide/apply tracking |
+| PostgreSQL | user_job_interactions | Save/hide/apply + kanban state |
+| PostgreSQL | ai_usage_logs | Per-call AI cost + latency tracking |
+| PostgreSQL | ai_pricing_configs | Effective-dated provider/model pricing |
+| PostgreSQL | scraper_requests | User-submitted scrape URLs awaiting admin review |
 | PostgreSQL | audit_logs | Action audit trail |
 | PostgreSQL | scraper_runs | Scraper history |
 | PostgreSQL | scraper_presets | URL presets |
 | PostgreSQL | scraper_schedule_settings | Schedule config |
-| MongoDB | resumes | Full resume content |
+| MongoDB | resumes | Full resume content (+ version for OCC) |
 | MongoDB | tailored_resumes | Full tailored content |
 | MongoDB | resume_builds | Workshop sections |
-| **PostgreSQL Total** | **12 tables** | |
-| **MongoDB Total** | **3 collections** | |
+| MongoDB | keyword_overrides | Per-user keyword selections by job content hash |
+| **PostgreSQL Total** | **14 tables** | |
+| **MongoDB Total** | **4 collections** | |
