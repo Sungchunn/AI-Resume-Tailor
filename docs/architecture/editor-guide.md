@@ -229,7 +229,7 @@ Use these canonical names in code comments, commit messages, and documentation t
 
 ## 3. Feature Gating Rules
 
-The `hasJobContext` flag is the primary gate. It is `true` when a `jobListingId`, `jobId`, or embedded job source is present. The `isTailorMode` flag (from `useTailorEditorContextSafe`) is the secondary gate for tailor-specific features.
+The `hasJobContext` flag is the primary gate. It is `true` when a `jobListingId`, `jobId`, or embedded job source is present. The `isTailorMode` flag (from `useTailorEditorContextSafe`) is the secondary gate for tailor-specific features. A third gate, the `tailoredResumeId` prop, is threaded `EditorLayout → ControlPanel → AIChatTab` and is required for tailor-only bullet analysis: `SuggestionProgressPanel` renders only when `isTailorMode && tailoredResumeId` is truthy. The prop exists in the infrastructure today but is not passed by any current entry point — it is retained for the upcoming merged ad-hoc editor (see §1.3).
 
 | Feature | Resume Editor | Job-Linked Editor | Workshop Editor |
 | ----- | ----- | ----- | ----- |
@@ -277,6 +277,8 @@ Workshop Editor (separate stack):
   WorkshopProvider
     └── WorkshopLayout
 ```
+
+`EditorLayout` also accepts a `tailoredResumeId` prop (default `null`). When set, it is threaded to `ControlPanel` → `AIChatTab` → `SuggestionProgressPanel` / `useBulletAnalysis` / `useInlineSuggestionQueue` to enable tailored bullet analysis. No current page passes it — see §3.
 
 ### 4.3 How Components Interact
 
@@ -397,6 +399,10 @@ All block mutations go through `dispatch(action)` on the `BlockEditorContext` re
 | `MOVE_BLOCK_DOWN` | Move block one position later |
 | `TOGGLE_COLLAPSE` | Collapse/expand block in the editor panel |
 | `TOGGLE_VISIBILITY` | Hide/show block in preview and PDF export |
+| `SET_ACTIVE_BLOCK` | Track which block is selected (click-to-select highlight) |
+| `SET_HOVERED_BLOCK` | Track which block the cursor is over (hover highlight) |
+| `SET_ACTIVE_ELEMENT` | Track which element path is selected (granular inline-edit target) |
+| `SET_HOVERED_ELEMENT` | Track which element path the cursor is over |
 | `SET_STYLE` | Update style properties (font, margins, spacing) |
 | `SET_FIT_TO_ONE_PAGE` | Toggle auto-fit mode |
 | `SET_MIN_FONT_SIZE` | Set user minimum for auto-fit (7-10pt) |
@@ -800,13 +806,15 @@ The editor uses version-based OCC to prevent lost updates:
 
 Each tab has a unique `TAB_ID`. Messages from the same tab are ignored.
 
-### 11.5 Tailor Editor Save
+### 11.5 Tailored-Resume Save Path
 
-The Tailor Editor uses a custom `onSave` callback passed to `BlockEditorProvider`. Instead of the default `useUpdateResume` mutation, it:
+The standalone Tailor Editor route is disabled (see §1.3), but the custom save path is retained for the upcoming merged ad-hoc editor. When `BlockEditorProvider` is given a tailored-resume `onSave` callback, it replaces the default `useUpdateResume` mutation with:
 
-1. Converts blocks to `ParsedContent` via `blocksToParsedContent()`
-2. Converts `ParsedContent` to `TailoredContent` via `parsedContentToTailoredContent()`
-3. Calls `useUpdateTailoredResume` mutation with the converted data
+1. Convert blocks to `ParsedContent` via `blocksToParsedContent()`
+2. Convert `ParsedContent` to `TailoredContent` via `parsedContentToTailoredContent()`
+3. Call `useUpdateTailoredResume` mutation with the converted data
+
+This path is dormant today — no editor entry point currently wires it up.
 
 ---
 
@@ -1127,11 +1135,12 @@ The full ATS analysis is a **5-stage SSE (Server-Sent Events) pipeline** managed
 
 **Real-time streaming:**
 
-1. Frontend opens an EventSource (SSE) connection to `/api/v1/ats/analyze-progressive`
-2. Backend executes stages sequentially, streaming results as each completes
-3. Each stage event updates `atsProgressStore` via `updateStage(stageResult)`
-4. UI renders progress in real-time (stepper component shows stage-by-stage completion)
-5. On completion, composite score is calculated and stored
+1. Frontend POSTs to `/api/auth/sse-ticket` (via `authApi.sseTicket()`) to exchange the JWT for a single-use Redis-backed ticket. EventSource cannot send `Authorization` headers, so ticket-based auth is required.
+2. Frontend opens an EventSource (SSE) connection to `/api/v1/ats/analyze-progressive?ticket=<ticket>&...`
+3. Backend validates and consumes the ticket in Redis (single-use, short TTL), then executes stages sequentially, streaming results as each completes
+4. Each stage event updates `atsProgressStore` via `updateStage(stageResult)`
+5. UI renders progress in real-time (stepper component shows stage-by-stage completion)
+6. On completion, composite score is calculated and stored
 
 **Backend caching:** Results are cached for 24 hours keyed on `resume_content_hash:job_id`. On cache hit, cached results are replayed at accelerated speed. See `backend/app/api/routes/ats/progressive.py`.
 
@@ -1421,7 +1430,6 @@ graph TD
 | Route | File |
 | ----- | ----- |
 | `/library/resumes/[id]/edit` | `app/(protected)/library/resumes/[id]/edit/page.tsx` |
-| `/tailor/editor/[id]` | `app/(protected)/tailor/editor/[id]/page.tsx` |
 | `/workshop/[id]` | `app/(protected)/workshop/[id]/page.tsx` |
 
 ### 21.2 Core Editor Components
@@ -1462,15 +1470,14 @@ graph TD
 | `ATSEvaluationTab` | `components/library/editor/tabs/ATSEvaluationTab.tsx` |
 | `FormattingTab` | `components/library/editor/tabs/FormattingTab.tsx` |
 | `SectionDraggerTab` | `components/library/editor/tabs/SectionDraggerTab.tsx` |
+| `SuggestionProgressPanel` | `components/library/editor/tabs/SuggestionProgressPanel.tsx` |
 
 ### 21.6 Tailor Editor Components
 
 | Component | File |
 | ----- | ----- |
 | `TailorEditorContext` | `components/tailor/editor/TailorEditorContext.tsx` |
-| `BulletSuggestionsPanel` | `components/tailor/editor/BulletSuggestionsPanel.tsx` |
 | `SkillSuggestionsPanel` | `components/tailor/editor/SkillSuggestionsPanel.tsx` |
-| `BulletSuggestionCard` | `components/tailor/editor/BulletSuggestionCard.tsx` |
 | `AiReviewDiffOverlay` | `components/tailor/editor/AiReviewDiffOverlay.tsx` |
 
 ### 21.7 Hooks
