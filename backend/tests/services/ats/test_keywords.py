@@ -969,3 +969,31 @@ class TestAnalyzeKeywordsEnhanced:
         assert any("CRITICAL" in s for s in result.suggestions)
         # Strongly preferred should have HIGH label
         assert any("HIGH" in s for s in result.suggestions)
+
+    @pytest.mark.asyncio
+    async def test_keyword_score_never_exceeds_100(self, keyword_analyzer, sample_resume):
+        """Regression: keyword_score must stay in [0, 100] even when every bonus is maxed.
+
+        The numerator uses additive scoring (max MAX_KEYWORD_SCORE=5.25 per keyword); the
+        denominator must use the same per-keyword max, not importance_weight. Otherwise a
+        well-matched resume produces keyword_score > 100 and breaks the composite schema.
+        """
+        mock_response = """[
+            {"keyword": "Python", "importance": "required"},
+            {"keyword": "AWS", "importance": "required"},
+            {"keyword": "Docker", "importance": "required"}
+        ]"""
+
+        with patch.object(
+            keyword_analyzer._ai_client,
+            "generate_json",
+            new=AsyncMock(return_value=mock_response),
+        ):
+            result = await keyword_analyzer.analyze_keywords_enhanced(
+                parsed_resume=sample_resume,
+                job_description="Test job",
+            )
+
+        assert 0.0 <= result.keyword_score <= 100.0, (
+            f"keyword_score={result.keyword_score} out of bounds"
+        )
