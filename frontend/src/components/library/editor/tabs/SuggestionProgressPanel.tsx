@@ -11,7 +11,6 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-import { useInlineSuggestionQueue } from "@/hooks/useInlineSuggestionQueue";
 import {
   useInlineSuggestionQueueStore,
   useQueueProgress,
@@ -20,6 +19,7 @@ import {
 } from "@/lib/stores/inlineSuggestionQueueStore";
 import { analysisBulletIdToElementId } from "@/lib/resume/bulletIdMapping";
 import { useBlockEditor } from "../BlockEditorContext";
+import { useInlineSuggestionQueueContext } from "../InlineSuggestionQueueProvider";
 import type { ATSKeywordDetailedResponse } from "@/lib/api/types";
 
 interface SuggestionProgressPanelProps {
@@ -43,20 +43,8 @@ const STATUS_ICONS = {
   dismissed: <X className="w-3 h-3 text-zinc-500" />,
 } as const;
 
-export function SuggestionProgressPanel({
-  tailoredResumeId,
-  resumeId,
-  jobId,
-  jobListingId,
-  atsData,
-}: SuggestionProgressPanelProps) {
-  const queue = useInlineSuggestionQueue({
-    tailoredResumeId,
-    resumeId,
-    jobId,
-    jobListingId,
-    atsData,
-  });
+export function SuggestionProgressPanel(_props: SuggestionProgressPanelProps) {
+  const queue = useInlineSuggestionQueueContext();
 
   const progress = useQueueProgress();
   const isActive = useIsInlineReviewActive();
@@ -65,7 +53,6 @@ export function SuggestionProgressPanel({
     (s) => s.preAnalysisScore
   );
   const jumpTo = useInlineSuggestionQueueStore((s) => s.jumpTo);
-  const dismissAll = useInlineSuggestionQueueStore((s) => s.dismissAll);
   const { state } = useBlockEditor();
   const blocks = state.blocks;
 
@@ -215,26 +202,6 @@ export function SuggestionProgressPanel({
               <ChevronRight className="w-3 h-3 text-zinc-600 shrink-0 ml-auto" />
             </button>
           ))}
-        </div>
-      )}
-
-      {/* Bulk actions */}
-      {hasItems && !allReviewed && (
-        <div className="flex gap-2">
-          <button
-            onClick={queue.acceptAll}
-            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium bg-emerald-600/20 text-emerald-400 rounded hover:bg-emerald-600/30 transition-colors"
-          >
-            <Check className="w-3 h-3" />
-            Accept All
-          </button>
-          <button
-            onClick={dismissAll}
-            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium bg-zinc-700/50 text-zinc-400 rounded hover:bg-zinc-700 transition-colors"
-          >
-            <X className="w-3 h-3" />
-            Dismiss All
-          </button>
         </div>
       )}
 
