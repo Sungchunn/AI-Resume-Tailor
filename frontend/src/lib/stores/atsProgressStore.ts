@@ -171,7 +171,11 @@ export const useATSProgressStore = create<ATSProgressState>()(
     }),
     {
       name: 'ats-progress-storage',
-      version: 2,
+      // v3 (2026-04-18): editor sidebar now sources its score from
+      // `compositeScore.finalScore` (was locally-held 0–1 coverage). Forces a
+      // clean slate so first render after deploy runs the progressive SSE
+      // flow and shows a number that matches `/tailor/analyze`.
+      version: 3,
       partialize: (state) => ({
         stages: state.stages,
         compositeScore: state.compositeScore,

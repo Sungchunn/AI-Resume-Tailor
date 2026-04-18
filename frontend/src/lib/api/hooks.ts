@@ -39,6 +39,7 @@ import type {
   ScraperPresetUpdate,
   ScheduleSettingsUpdate,
   ATSKeywordDetailedRequest,
+  ATSContentAnalysisRequest,
   ScraperRequestCreate,
   ScraperRequestStatus,
   ScraperRequestApproveRequest,
@@ -951,10 +952,21 @@ export function useToggleSchedule() {
 }
 
 // ATS Analysis Hooks
+
+// DEPRECATED: kept for the orphan editor and backend tests; new code should
+// use `useATSContentAnalysis` which runs the same 5-stage pipeline as
+// `/tailor/analyze` and produces a matching composite score.
 export function useATSKeywordAnalysis() {
   return useMutation({
     mutationFn: (data: ATSKeywordDetailedRequest) =>
       atsApi.analyzeKeywordsDetailed(data),
+  });
+}
+
+export function useATSContentAnalysis() {
+  return useMutation({
+    mutationFn: (data: ATSContentAnalysisRequest) =>
+      atsApi.analyzeContent(data),
   });
 }
 

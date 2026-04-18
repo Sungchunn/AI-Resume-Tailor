@@ -70,7 +70,7 @@ export function ControlPanel({ resumeId, jobId, jobListingId, tailoredResumeId }
           <AIChatTab resumeId={resumeId} jobId={jobId} jobListingId={jobListingId} tailoredResumeId={tailoredResumeId} />
         </div>
         <div className={`h-full ${activeTab === "ats" ? "" : "hidden"}`}>
-          <ATSEvaluationTab jobId={jobId} jobListingId={jobListingId} />
+          <ATSEvaluationTab resumeId={resumeId} jobId={jobId} jobListingId={jobListingId} />
         </div>
         <div className={`h-full ${activeTab === "formatting" ? "" : "hidden"}`}>
           <FormattingTab />

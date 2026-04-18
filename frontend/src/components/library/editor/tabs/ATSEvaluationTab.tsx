@@ -12,19 +12,42 @@ import {
   Plus,
   Briefcase,
   Building2,
+  ShieldAlert,
 } from "lucide-react";
+import { useDebouncedCallback } from "use-debounce";
 import { useBlockEditor } from "../BlockEditorContext";
-import { blocksToText } from "@/lib/resume/transforms";
-import { useJob, useJobListing, useATSKeywordAnalysis } from "@/lib/api/hooks";
+import { blocksToContent } from "@/lib/tailoring/blocksToContent";
+import {
+  useJob,
+  useJobListing,
+  useATSContentAnalysis,
+  useATSProgressiveAnalysis,
+} from "@/lib/api/hooks";
 import { useATSProgressStore } from "@/lib/stores/atsProgressStore";
 import { useBulletSuggestionsStore } from "@/lib/stores/bulletSuggestionsStore";
 import { generateContentHash } from "@/lib/utils/contentHash";
+import { transformEnhancedToDetailedFormat } from "@/lib/ats/transformKeywordAnalysis";
 import type {
+  ATSContentAnalysisResponse,
   ATSKeywordDetailedResponse,
+  ATSKeywordEnhancedAnalysis,
   KeywordImportance,
+  KnockoutRiskItem,
 } from "@/lib/api/types";
 
+const LIVE_DEBOUNCE_MS = 1500;
+
+// Stage key → label (matches backend helpers.py composite keys)
+const STAGE_LABELS: Record<string, string> = {
+  structure: "Structure",
+  "keywords-enhanced": "Keywords",
+  "content-quality": "Content Quality",
+  "role-proximity": "Role Proximity",
+};
+
 interface ATSEvaluationTabProps {
+  /** Resume MongoDB ObjectId - required for the progressive SSE flow */
+  resumeId: string;
   /** User-created job ID for ATS analysis - UUID, null means no job context */
   jobId: string | null;
   /** Scraped job listing ID for ATS analysis - integer, null means no job context */
@@ -234,10 +257,10 @@ function KeywordSection({
 }
 
 /**
- * Main ATS score display
+ * Main ATS score display (score is 0–100 composite final_score)
  */
 function ATSScoreDisplay({ score }: { score: number }) {
-  const percentage = Math.round(score * 100);
+  const percentage = Math.round(score);
   const color =
     percentage >= 70
       ? "text-green-600 border-green-500"
@@ -261,6 +284,116 @@ function ATSScoreDisplay({ score }: { score: number }) {
         </span>
       </div>
       <p className="text-sm text-muted-foreground mt-2">ATS Score</p>
+    </div>
+  );
+}
+
+/**
+ * Composite breakdown — shows each stage's raw score, its weight,
+ * and its weighted contribution to the composite. Fed by either the
+ * live /analyze-content response or the persisted SSE composite.
+ */
+function CompositeBreakdown({
+  stageBreakdown,
+  weightsUsed,
+  failedStages,
+}: {
+  stageBreakdown: Record<string, number>;
+  weightsUsed: Record<string, number>;
+  failedStages: string[];
+}) {
+  const rows = Object.entries(weightsUsed)
+    .filter(([, weight]) => weight > 0)
+    .map(([key, weight]) => {
+      const contribution = stageBreakdown[key] ?? 0;
+      const rawScore = weight > 0 ? contribution / weight : 0;
+      return {
+        key,
+        label: STAGE_LABELS[key] ?? key,
+        weight,
+        contribution,
+        rawScore,
+      };
+    });
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="p-3 bg-muted/30 rounded-lg border border-border space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-muted-foreground">
+          Score breakdown
+        </span>
+        <span className="text-[10px] text-muted-foreground/70">
+          score × weight = contribution
+        </span>
+      </div>
+      <div className="space-y-1">
+        {rows.map((r) => (
+          <div
+            key={r.key}
+            className="flex items-center gap-2 text-xs tabular-nums"
+          >
+            <span className="w-24 text-muted-foreground truncate">
+              {r.label}
+            </span>
+            <span className="w-10 text-right">{Math.round(r.rawScore)}</span>
+            <span className="text-muted-foreground/60">×</span>
+            <span className="w-10 text-right">
+              {Math.round(r.weight * 100)}%
+            </span>
+            <span className="text-muted-foreground/60">=</span>
+            <span className="flex-1 text-right font-medium">
+              {r.contribution.toFixed(1)}
+            </span>
+          </div>
+        ))}
+      </div>
+      {failedStages.length > 0 && (
+        <div className="text-[11px] text-yellow-800 bg-yellow-50 border border-yellow-200 rounded p-2 mt-1 flex items-start gap-1.5">
+          <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+          <span>
+            Some stages failed and weights were renormalized:{" "}
+            {failedStages.join(", ")}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Knockout risk banner — surfaces critical disqualifiers from Stage 0.
+ */
+function KnockoutBanner({ risks }: { risks: KnockoutRiskItem[] }) {
+  if (risks.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      {risks.map((risk, idx) => {
+        const isCritical = risk.severity === "critical";
+        const wrapper = isCritical
+          ? "bg-red-50 border-red-300"
+          : "bg-yellow-50 border-yellow-300";
+        const text = isCritical ? "text-red-800" : "text-yellow-800";
+        return (
+          <div key={idx} className={`p-3 rounded-lg border ${wrapper}`}>
+            <div className={`flex items-start gap-2 ${text}`}>
+              <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{risk.description}</p>
+                <p className="text-xs mt-1 opacity-80">
+                  Job requires: {risk.job_requires}
+                </p>
+                {risk.user_has && (
+                  <p className="text-xs opacity-80">
+                    Your resume: {risk.user_has}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -295,19 +428,33 @@ function JobContextHeader({
 }
 
 /**
- * ATSEvaluationTab - ATS analysis and keyword coverage
+ * ATSEvaluationTab — editor sidebar ATS score.
  *
- * Shows keyword coverage analysis when a job context is provided.
- * Disabled state when no job is selected.
+ * Uses the SAME 5-stage composite pipeline as /tailor/analyze so the numbers
+ * match bit-for-bit on a cache hit. Two-mode scoring:
+ *
+ *  1. Cache-hit mode: if `useATSProgressStore` already has a composite for
+ *     this (resumeId, jobId), render it immediately. Otherwise kick off the
+ *     progressive SSE flow (same as /tailor/analyze) so Redis can answer fast.
+ *
+ *  2. Live mode: after any resume edit, debounce 1500ms then POST
+ *     /analyze-content with the in-memory buffer. Same 5 stages, no Redis —
+ *     correct score for unsaved content.
  */
 export function ATSEvaluationTab({
+  resumeId,
   jobId,
   jobListingId,
 }: ATSEvaluationTabProps) {
   const { state } = useBlockEditor();
   const { blocks } = state;
 
-  // ATS content staleness tracking
+  // Store selectors
+  const storeResumeId = useATSProgressStore((s) => s.resumeId);
+  const storeJobId = useATSProgressStore((s) => s.jobId);
+  const compositeScore = useATSProgressStore((s) => s.compositeScore);
+  const storeStages = useATSProgressStore((s) => s.stages);
+  const storeIsAnalyzing = useATSProgressStore((s) => s.isAnalyzing);
   const analyzedContentHash = useATSProgressStore((s) => s.analyzedContentHash);
   const contentStale = useATSProgressStore((s) => s.contentStale);
   const setAnalyzedContentHash = useATSProgressStore(
@@ -319,17 +466,18 @@ export function ATSEvaluationTab({
   const markContentStale = useATSProgressStore((s) => s.markContentStale);
   const clearStaleFlag = useATSProgressStore((s) => s.clearStaleFlag);
 
-  // Bullet suggestions store for clearing on re-analysis
   const clearBulletSuggestions = useBulletSuggestionsStore(
     (s) => s.clearSuggestions
   );
 
-  // Determine which type of job we're fetching
+  // Job context
   const isUserJob = jobId !== null;
   const isJobListing = jobListingId !== null;
   const hasJobContext = isUserJob || isJobListing;
+  // Mirror the store's encoding of the job id (always a string, "0" if none)
+  const effectiveJobId =
+    jobId ?? (jobListingId !== null ? jobListingId.toString() : "0");
 
-  // Fetch job data based on which ID is provided
   const {
     data: userJob,
     isLoading: userJobLoading,
@@ -341,136 +489,233 @@ export function ATSEvaluationTab({
     error: jobListingError,
   } = useJobListing(jobListingId ?? 0);
 
-  // Extract job description from whichever source is available
   const jobDescription = useMemo(() => {
-    if (isUserJob && userJob) {
-      return userJob.raw_content;
-    }
-    if (isJobListing && jobListing) {
-      return jobListing.job_description;
-    }
+    if (isUserJob && userJob) return userJob.raw_content;
+    if (isJobListing && jobListing) return jobListing.job_description;
     return null;
   }, [isUserJob, isJobListing, userJob, jobListing]);
 
-  // Extract job title and company for display
   const jobTitle = useMemo(() => {
-    if (isUserJob && userJob) {
-      return userJob.title;
-    }
-    if (isJobListing && jobListing) {
-      return jobListing.job_title;
-    }
+    if (isUserJob && userJob) return userJob.title;
+    if (isJobListing && jobListing) return jobListing.job_title;
     return null;
   }, [isUserJob, isJobListing, userJob, jobListing]);
 
   const jobCompany = useMemo(() => {
-    if (isUserJob && userJob) {
-      return userJob.company;
-    }
-    if (isJobListing && jobListing) {
-      return jobListing.company_name;
-    }
+    if (isUserJob && userJob) return userJob.company;
+    if (isJobListing && jobListing) return jobListing.company_name;
     return null;
   }, [isUserJob, isJobListing, userJob, jobListing]);
 
-  // Convert blocks to text for ATS analysis
-  const resumeContent = useMemo(() => blocksToText(blocks), [blocks]);
-
-  // ATS analysis state
-  const [analysis, setAnalysis] = useState<ATSKeywordDetailedResponse | null>(
+  // Live scoring via /analyze-content
+  const contentMutation = useATSContentAnalysis();
+  const [analysis, setAnalysis] = useState<ATSContentAnalysisResponse | null>(
     null
   );
   const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const analysisMutation = useATSKeywordAnalysis();
 
-  // Track if analysis is in progress to prevent duplicate requests
-  const isAnalyzingRef = useRef(false);
+  // Progressive SSE (same flow /tailor/analyze uses)
+  const { startAnalysis } = useATSProgressiveAnalysis();
 
-  // Run ATS analysis
-  const runAnalysis = useCallback(() => {
+  // The store's compositeScore matches our (resumeId, jobId)?
+  const storeMatches =
+    storeResumeId === resumeId &&
+    storeJobId === effectiveJobId &&
+    compositeScore !== null;
+
+  // Preferred source for the displayed score — live analysis takes priority
+  const displayScore = useMemo(() => {
+    if (analysis) return analysis.final_score;
+    if (storeMatches && compositeScore) return compositeScore.finalScore;
+    return null;
+  }, [analysis, storeMatches, compositeScore]);
+
+  const stageBreakdown = useMemo(() => {
+    if (analysis) return analysis.stage_breakdown;
+    if (storeMatches && compositeScore) return compositeScore.stageBreakdown;
+    return null;
+  }, [analysis, storeMatches, compositeScore]);
+
+  const weightsUsed = useMemo(() => {
+    if (analysis) return analysis.weights_used;
+    if (storeMatches && compositeScore) return compositeScore.weightsUsed;
+    return null;
+  }, [analysis, storeMatches, compositeScore]);
+
+  const failedStages = useMemo(() => {
+    if (analysis) return analysis.failed_stages;
+    if (storeMatches && compositeScore) return compositeScore.failedStages;
+    return [];
+  }, [analysis, storeMatches, compositeScore]);
+
+  const knockoutRisks = useMemo<KnockoutRiskItem[]>(() => {
+    if (analysis?.knockout_risks?.length) return analysis.knockout_risks;
+    if (storeMatches) {
+      const stage0 = storeStages[0]?.result as
+        | { risks?: KnockoutRiskItem[] }
+        | undefined;
+      return stage0?.risks ?? [];
+    }
+    return [];
+  }, [analysis, storeMatches, storeStages]);
+
+  // Collapse enhanced → detailed 3-tier for keyword UI
+  const detailedKeywordAnalysis = useMemo<ATSKeywordDetailedResponse | null>(
+    () => {
+      if (analysis?.keyword_analysis) {
+        return transformEnhancedToDetailedFormat(analysis.keyword_analysis);
+      }
+      if (storeMatches) {
+        const stage2 = storeStages[2]?.result as
+          | ATSKeywordEnhancedAnalysis
+          | undefined;
+        if (stage2) return transformEnhancedToDetailedFormat(stage2);
+      }
+      return null;
+    },
+    [analysis, storeMatches, storeStages]
+  );
+
+  // Keep the shared store's keyword analysis in sync so the inline suggestion
+  // queue (which reads `keywordAnalysisResult` globally) stays current.
+  useEffect(() => {
+    setKeywordAnalysisResult(detailedKeywordAnalysis);
+  }, [detailedKeywordAnalysis, setKeywordAnalysisResult]);
+
+  // Reset local analysis state when the target resume or job changes
+  useEffect(() => {
+    setAnalysis(null);
+    setAnalysisError(null);
+  }, [resumeId, effectiveJobId]);
+
+  // Live scoring call
+  const runLiveAnalysis = useCallback(() => {
     if (!jobDescription || jobDescription.length < 50) {
       setAnalysisError("Job description is too short for analysis");
       return;
     }
-
-    // Prevent duplicate requests
-    if (isAnalyzingRef.current) {
-      return;
-    }
-    isAnalyzingRef.current = true;
-
+    const content = blocksToContent(blocks);
+    const currentHash = generateContentHash(blocks);
     setAnalysisError(null);
-    analysisMutation.mutate(
+    contentMutation.mutate(
       {
+        resume_content: content,
         job_description: jobDescription,
-        resume_content: resumeContent || undefined,
       },
       {
-        onSuccess: (data) => {
-          setAnalysis(data);
-          isAnalyzingRef.current = false;
-          // Store the content hash at analysis time for staleness detection
-          const currentHash = generateContentHash(blocks);
+        onSuccess: (response) => {
+          setAnalysis(response);
           setAnalyzedContentHash(currentHash);
-          // Share keyword result with other tabs (e.g. bullet suggestions in library mode)
-          setKeywordAnalysisResult(data);
+          clearStaleFlag();
         },
         onError: (err) => {
           setAnalysisError(
-            err instanceof Error ? err.message : "Failed to analyze keywords"
+            err instanceof Error ? err.message : "Failed to analyze content"
           );
-          isAnalyzingRef.current = false;
         },
       }
     );
-  }, [jobDescription, resumeContent, analysisMutation, blocks, setAnalyzedContentHash, setKeywordAnalysisResult]);
+  }, [
+    blocks,
+    jobDescription,
+    contentMutation,
+    setAnalyzedContentHash,
+    clearStaleFlag,
+  ]);
 
-  // Keep runAnalysis ref in sync for effect
-  const runAnalysisRef = useRef(runAnalysis);
+  const debouncedLive = useDebouncedCallback(runLiveAnalysis, LIVE_DEBOUNCE_MS);
+  useEffect(() => () => debouncedLive.cancel(), [debouncedLive]);
+
+  // Kick progressive SSE once per (resume, job) pair. Mirrors /tailor/analyze
+  // so the Redis cache answers instantly when the pair was already analyzed.
+  const initialKickedKeyRef = useRef<string | null>(null);
   useEffect(() => {
-    runAnalysisRef.current = runAnalysis;
-  }, [runAnalysis]);
+    if (!hasJobContext || !jobDescription || jobDescription.length < 50) return;
+    const pairKey = `${resumeId}::${effectiveJobId}`;
+    if (initialKickedKeyRef.current === pairKey) return;
+    initialKickedKeyRef.current = pairKey;
+    if (storeMatches) return; // store already has the answer
+    startAnalysis(resumeId, {
+      jobId: jobId ?? undefined,
+      jobListingId: jobListingId ?? undefined,
+    });
+  }, [
+    hasJobContext,
+    jobDescription,
+    storeMatches,
+    resumeId,
+    effectiveJobId,
+    jobId,
+    jobListingId,
+    startAnalysis,
+  ]);
 
-  // Auto-run analysis only on first load (when no analysis exists yet).
-  // Subsequent re-analysis is manual via the "Re-analyze" button.
+  // When progressive SSE writes a new composite to the store, record the
+  // buffer hash so later edits can detect staleness against a known baseline.
+  const lastSeenCompositeRef = useRef<number | null>(null);
   useEffect(() => {
-    if (jobDescription && jobDescription.length >= 50 && !analysis) {
-      const timeoutId = setTimeout(() => runAnalysisRef.current(), 1000);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [jobDescription, analysis]);
+    if (!storeMatches || !compositeScore) return;
+    if (compositeScore.finalScore === lastSeenCompositeRef.current) return;
+    lastSeenCompositeRef.current = compositeScore.finalScore;
+    setAnalyzedContentHash(generateContentHash(blocks));
+  }, [storeMatches, compositeScore, blocks, setAnalyzedContentHash]);
 
-  // Detect content changes after analysis and mark as stale
+  // Re-score on edits (debounced). Staleness banner fires until the response
+  // returns and clearStaleFlag runs.
   useEffect(() => {
-    // Only check if we have a previous hash (analysis was run)
-    if (!analyzedContentHash || !analysis) return;
-
+    if (!jobDescription || jobDescription.length < 50) return;
+    if (!analyzedContentHash) return;
     const currentHash = generateContentHash(blocks);
-    if (currentHash !== analyzedContentHash && !contentStale) {
-      markContentStale();
-    }
-  }, [blocks, analyzedContentHash, analysis, contentStale, markContentStale]);
+    if (currentHash === analyzedContentHash) return;
+    if (!contentStale) markContentStale();
+    debouncedLive();
+  }, [
+    blocks,
+    jobDescription,
+    analyzedContentHash,
+    contentStale,
+    markContentStale,
+    debouncedLive,
+  ]);
 
-  // Re-analyze handler - clears stale state and bullet suggestions
-  const handleReanalyze = useCallback(() => {
-    // Clear bullet suggestions (they're based on old ATS data)
+  // Force a full re-run via progressive SSE (skips Redis cache). Used by the
+  // "Full re-analyze" header button.
+  const handleForceRefresh = useCallback(() => {
+    debouncedLive.cancel();
     clearBulletSuggestions();
-    // Clear stale flag
     clearStaleFlag();
-    // Run fresh analysis
-    runAnalysis();
-  }, [clearBulletSuggestions, clearStaleFlag, runAnalysis]);
+    startAnalysis(resumeId, {
+      jobId: jobId ?? undefined,
+      jobListingId: jobListingId ?? undefined,
+      forceRefresh: true,
+    });
+  }, [
+    debouncedLive,
+    clearBulletSuggestions,
+    clearStaleFlag,
+    startAnalysis,
+    resumeId,
+    jobId,
+    jobListingId,
+  ]);
+
+  // Stale-banner button: re-score the live buffer now (no debounce).
+  const handleLiveReanalyze = useCallback(() => {
+    debouncedLive.cancel();
+    clearBulletSuggestions();
+    runLiveAnalysis();
+  }, [debouncedLive, clearBulletSuggestions, runLiveAnalysis]);
 
   // Loading states
   const isLoadingJob = isUserJob ? userJobLoading : jobListingLoading;
   const jobError = isUserJob ? userJobError : jobListingError;
-  const isAnalyzing = analysisMutation.isPending;
+  const isAnalyzing = contentMutation.isPending || storeIsAnalyzing;
+  const hasScore = displayScore !== null;
 
   // No job context - show disabled state
   if (!hasJobContext) {
     return (
       <div className="h-full flex flex-col">
-        {/* Header */}
         <div className="px-4 py-3 border-b border-border">
           <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
             <Target className="w-4 h-4" />
@@ -481,7 +726,6 @@ export function ATSEvaluationTab({
           </p>
         </div>
 
-        {/* Disabled state content */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
@@ -504,7 +748,6 @@ export function ATSEvaluationTab({
     );
   }
 
-  // Loading job data
   if (isLoadingJob) {
     return (
       <div className="h-full flex flex-col">
@@ -526,7 +769,6 @@ export function ATSEvaluationTab({
     );
   }
 
-  // Error loading job
   if (jobError) {
     return (
       <div className="h-full flex flex-col">
@@ -556,22 +798,23 @@ export function ATSEvaluationTab({
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 px-4 py-3 border-b border-border">
+      <div className="shrink-0 px-4 py-3 border-b border-border">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
             <Target className="w-4 h-4" />
             ATS Evaluation
           </h3>
-          {analysis && (
+          {hasScore && (
             <button
-              onClick={runAnalysis}
+              onClick={handleForceRefresh}
               disabled={isAnalyzing}
               className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 disabled:opacity-50"
+              title="Skip cache and re-run all 5 stages"
             >
               <RefreshCw
                 className={`w-3 h-3 ${isAnalyzing ? "animate-spin" : ""}`}
               />
-              Refresh
+              Full re-analyze
             </button>
           )}
         </div>
@@ -589,7 +832,7 @@ export function ATSEvaluationTab({
         )}
 
         {/* Stale content warning */}
-        {contentStale && analysis && (
+        {contentStale && hasScore && (
           <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 min-w-0">
@@ -604,7 +847,7 @@ export function ATSEvaluationTab({
                 </div>
               </div>
               <button
-                onClick={handleReanalyze}
+                onClick={handleLiveReanalyze}
                 disabled={isAnalyzing}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-700 dark:text-yellow-400 rounded-md transition-colors shrink-0 disabled:opacity-50"
               >
@@ -617,23 +860,21 @@ export function ATSEvaluationTab({
           </div>
         )}
 
-        {/* Analyzing state */}
-        {isAnalyzing && !analysis && (
+        {/* First-load spinner */}
+        {isAnalyzing && !hasScore && (
           <div className="flex flex-col items-center justify-center py-8">
             <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin mb-3" />
-            <p className="text-sm text-muted-foreground">
-              Analyzing keywords...
-            </p>
+            <p className="text-sm text-muted-foreground">Analyzing resume...</p>
           </div>
         )}
 
-        {/* Analysis error */}
+        {/* Fatal error (live analysis) */}
         {analysisError && !isAnalyzing && (
           <div className="text-center py-8">
             <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">{analysisError}</p>
             <button
-              onClick={runAnalysis}
+              onClick={runLiveAnalysis}
               className="mt-3 text-sm text-primary hover:text-primary/80 font-medium"
             >
               Retry Analysis
@@ -641,85 +882,99 @@ export function ATSEvaluationTab({
           </div>
         )}
 
-        {/* Analysis Results */}
-        {analysis && (
+        {/* Results */}
+        {hasScore && (
           <>
-            {/* ATS Score */}
-            <ATSScoreDisplay score={analysis.coverage_score} />
+            <KnockoutBanner risks={knockoutRisks} />
 
-            {/* Coverage Indicators */}
-            <div className="space-y-2">
-              <CoverageIndicator
-                score={analysis.coverage_score}
-                label="Overall"
-              />
-              <CoverageIndicator
-                score={analysis.required_coverage}
-                label="Required"
-              />
-              <CoverageIndicator
-                score={analysis.preferred_coverage}
-                label="Preferred"
-              />
-            </div>
+            <ATSScoreDisplay score={displayScore!} />
 
-            {/* Warnings */}
-            {analysis.warnings.length > 0 && (
-              <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-100">
-                {analysis.warnings.map((warning, idx) => (
-                  <div key={idx} className="flex items-start gap-2 text-xs">
-                    <AlertCircle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-yellow-800">{warning}</span>
-                  </div>
-                ))}
-              </div>
+            {stageBreakdown && weightsUsed && (
+              <CompositeBreakdown
+                stageBreakdown={stageBreakdown}
+                weightsUsed={weightsUsed}
+                failedStages={failedStages}
+              />
             )}
 
-            {/* Keyword Sections */}
-            <div className="space-y-3">
-              <KeywordSection
-                title="Required"
-                importance="required"
-                matched={analysis.required_matched}
-                missing={analysis.required_missing}
-                missingInVault={analysis.missing_available_in_vault}
-              />
+            {detailedKeywordAnalysis && (
+              <>
+                <div className="space-y-2">
+                  <CoverageIndicator
+                    score={detailedKeywordAnalysis.required_coverage}
+                    label="Required"
+                  />
+                  <CoverageIndicator
+                    score={detailedKeywordAnalysis.preferred_coverage}
+                    label="Preferred"
+                  />
+                </div>
 
-              <KeywordSection
-                title="Preferred"
-                importance="preferred"
-                matched={analysis.preferred_matched}
-                missing={analysis.preferred_missing}
-                missingInVault={analysis.missing_available_in_vault}
-              />
+                {detailedKeywordAnalysis.warnings.length > 0 && (
+                  <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-100 space-y-1">
+                    {detailedKeywordAnalysis.warnings.map((warning, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-2 text-xs"
+                      >
+                        <AlertCircle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
+                        <span className="text-yellow-800">{warning}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-              <KeywordSection
-                title="Nice to Have"
-                importance="nice_to_have"
-                matched={analysis.nice_to_have_matched}
-                missing={analysis.nice_to_have_missing}
-                missingInVault={analysis.missing_available_in_vault}
-              />
-            </div>
+                <div className="space-y-3">
+                  <KeywordSection
+                    title="Required"
+                    importance="required"
+                    matched={detailedKeywordAnalysis.required_matched}
+                    missing={detailedKeywordAnalysis.required_missing}
+                    missingInVault={
+                      detailedKeywordAnalysis.missing_available_in_vault
+                    }
+                  />
+                  <KeywordSection
+                    title="Preferred"
+                    importance="preferred"
+                    matched={detailedKeywordAnalysis.preferred_matched}
+                    missing={detailedKeywordAnalysis.preferred_missing}
+                    missingInVault={
+                      detailedKeywordAnalysis.missing_available_in_vault
+                    }
+                  />
+                  <KeywordSection
+                    title="Nice to Have"
+                    importance="nice_to_have"
+                    matched={detailedKeywordAnalysis.nice_to_have_matched}
+                    missing={detailedKeywordAnalysis.nice_to_have_missing}
+                    missingInVault={
+                      detailedKeywordAnalysis.missing_available_in_vault
+                    }
+                  />
+                </div>
 
-            {/* Suggestions */}
-            {analysis.suggestions.length > 0 && (
-              <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
-                <h4 className="text-sm font-medium text-foreground mb-2">
-                  Suggestions
-                </h4>
-                <ul className="space-y-1">
-                  {analysis.suggestions.map((suggestion, idx) => (
-                    <li
-                      key={idx}
-                      className="text-xs text-foreground/80 flex items-start gap-2"
-                    >
-                      <span className="text-primary">•</span>
-                      {suggestion}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                {detailedKeywordAnalysis.suggestions.length > 0 && (
+                  <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+                    <h4 className="text-sm font-medium text-foreground mb-2">
+                      Suggestions
+                    </h4>
+                    <ul className="space-y-1">
+                      {detailedKeywordAnalysis.suggestions.map(
+                        (suggestion, idx) => (
+                          <li
+                            key={idx}
+                            className="text-xs text-foreground/80 flex items-start gap-2"
+                          >
+                            <span className="text-primary">•</span>
+                            {suggestion}
+                          </li>
+                        )
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
