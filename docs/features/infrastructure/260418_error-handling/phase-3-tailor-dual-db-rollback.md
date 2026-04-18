@@ -1,8 +1,8 @@
 # Tailor Dual-DB Rollback
 
 **Created:** 2026-04-22 (planned landing)
-**Parent audit:** [`260418_backend-error-handling-audit.md`](./260418_backend-error-handling-audit.md) — bucket C (items 13, 14)
-**Depends on:** none — parallel-safe with `260420_*` and `260421_*`
+**Parent audit:** [`master-plan.md`](./master-plan.md) — bucket C (items 13, 14)
+**Depends on:** none — parallel-safe with `phase-1-*` and `phase-2-*`
 **Scope:** `backend/app/api/routes/tailor.py` (2 call sites)
 
 ## Context
@@ -22,7 +22,7 @@ Today the route under `POST /tailor` logs AI usage (billing-relevant) via `usage
 
 Non-goals:
 
-- Adding global exception handlers (that is `260420_*`)
+- Adding global exception handlers (that is `phase-1-*`)
 - Changing `usage_tracker.log_generation(...)` semantics
 - Refactoring the tailoring service
 
@@ -89,7 +89,7 @@ try:
     tailored = await tailored_resume_crud.create(mongo, obj_in=create_data)
 except Exception:
     await pg.rollback()              # Mongo failed → undo AI usage log
-    raise                            # bubble to global handler in 260420_*
+    raise                            # bubble to global handler in phase-1-*
 
 await pg.commit()                    # both writes succeeded → persist billing
 ```
@@ -183,7 +183,7 @@ Mirrors Test 1 but monkeypatches `tailored_resume_crud.finalize` to raise and as
 - **Billing double-decrement.** If `usage_tracker.log_generation(...)` internally decrements a quota counter in Redis (or similar cache) before the PG commit, a rollback leaves the cache out-of-sync. Re-read `app/services/ai/usage_tracker.py` before landing — if there's an auxiliary side-effect, either move it after the PG commit or add a compensating decrement in the rollback branch.
 - **`pg.flush()` vs `pg.commit()`.** Flush sends the INSERT to the DB but does not release locks or end the transaction. Commit ends the transaction. Using flush here means the `ai_usage` row exists in the transaction's view but is not durable until commit. A subsequent read within the same session sees it; a separate connection does not. This matches the intent exactly.
 - **Bare `except Exception`.** Deliberate (see Site 1 rationale). Do not narrow to `OperationFailure` — we want to catch every Mongo failure mode including serialization and network errors. The re-raise preserves type for the global handler.
-- **No handler additions here.** Bucket A (`260420_*`) registers global handlers. Bucket C does not. Do not register new handlers in this PR.
+- **No handler additions here.** Bucket A (`phase-1-*`) registers global handlers. Bucket C does not. Do not register new handlers in this PR.
 - **Scope discipline.** If a third dual-DB site surfaces during implementation (e.g., another route found to have reversed ordering), open a separate ticket. Do not grow this PR.
 - **Existing `AIServiceError` wrap stays.** `tailor.py:212-217` catches `AIServiceError` and raises 503 — that happens **before** any Mongo write, so it doesn't need rollback (no PG state is pending yet at that point in the flow). Leave it untouched.
 

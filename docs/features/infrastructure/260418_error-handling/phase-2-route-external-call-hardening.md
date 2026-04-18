@@ -1,13 +1,13 @@
 # Route-Level External Call Hardening
 
 **Created:** 2026-04-21 (planned landing)
-**Parent audit:** [`260418_backend-error-handling-audit.md`](./260418_backend-error-handling-audit.md) — bucket B (items 6–12)
-**Depends on:** [`260420_register-domain-exception-handlers.md`](./260420_register-domain-exception-handlers.md) must land first
+**Parent audit:** [`master-plan.md`](./master-plan.md) — bucket B (items 6–12)
+**Depends on:** [`phase-1-register-domain-exception-handlers.md`](./phase-1-register-domain-exception-handlers.md) must land first
 **Scope:** 6 route files; no service-layer changes
 
 ## Context
 
-Bucket A (`260420_*`) registers global handlers for 6 domain exception classes. That covers most cases where a service raises a typed exception. It does **not** cover:
+Bucket A (`phase-1-*`) registers global handlers for 6 domain exception classes. That covers most cases where a service raises a typed exception. It does **not** cover:
 
 1. **Driver-level errors from Motor/PyMongo** (`InvalidId`, `OperationFailure`) — these aren't domain classes; they need route-local mapping to HTTP status
 2. **AI service errors in non-tailor routes** — `AIServiceError` is intentionally kept route-local (see audit's "out of scope" note)
@@ -16,7 +16,7 @@ Bucket A (`260420_*`) registers global handlers for 6 domain exception classes. 
 
 This plan wraps 6 specific sites with try/except that maps driver/third-party errors to `HTTPException`, mirroring existing patterns at `routes/tailor.py:212` (`AIServiceError → 503`) and `routes/resumes.py:382-399` (PDF export → 500).
 
-Audit item #12 (`routes/admin.py:351`) is **not** in scope — it becomes redundant once `260420_*` registers `ApifyClientError` handler H3. Skip it in this PR.
+Audit item #12 (`routes/admin.py:351`) is **not** in scope — it becomes redundant once `phase-1-*` registers `ApifyClientError` handler H3. Skip it in this PR.
 
 ## Goal
 
@@ -24,7 +24,7 @@ Add try/except around 6 external-call sites, each mapping driver-level exception
 
 Non-goals:
 
-- Re-catching domain exceptions already handled globally by `260420_*` (would double-handle)
+- Re-catching domain exceptions already handled globally by `phase-1-*` (would double-handle)
 - Refactoring the SSE generator structure in `progressive.py`
 - Moving `admin.py:351` (deletable work; skipped here)
 
@@ -40,7 +40,7 @@ Non-goals:
 | S6 | `routes/resume_builds.py` | 340 | `diff_engine.suggest_single_bullet(...)` | `AIServiceError → 503` | `ai_unavailable` | audit #9 |
 | S7 | `routes/resumes.py` | 403 | `export_service.export_docx(...)` | mirror PDF try/except at `:383-399` | same shape as PDF handler | audit #10 |
 
-Audit item #12 (`admin.py:351`) is **skipped** — covered by `ApifyClientError` handler in `260420_*`.
+Audit item #12 (`admin.py:351`) is **skipped** — covered by `ApifyClientError` handler in `phase-1-*`.
 
 ## Precedents to mirror
 
@@ -169,7 +169,7 @@ else:  # docx
     extension = "docx"
 ```
 
-If `export_docx` raises a more specific exception than `RuntimeError` (e.g., a custom class from the docx library), catch that instead. Check the service implementation at `backend/app/services/export/html_to_document.py:674` (the concrete `export_docx` method; the factory `get_html_export_service()` at `:707` returns this service) before finalizing — use the narrowest type that makes sense. `DocumentConversionError` from the upload converter is a **different class** and is already covered by H5 in `260420_*`; don't conflate them.
+If `export_docx` raises a more specific exception than `RuntimeError` (e.g., a custom class from the docx library), catch that instead. Check the service implementation at `backend/app/services/export/html_to_document.py:674` (the concrete `export_docx` method; the factory `get_html_export_service()` at `:707` returns this service) before finalizing — use the narrowest type that makes sense. `DocumentConversionError` from the upload converter is a **different class** and is already covered by H5 in `phase-1-*`; don't conflate them.
 
 ## Implementation order
 
@@ -203,8 +203,8 @@ Reuse `backend/tests/conftest.py` fixtures for authenticated client and mongo/pg
 ## Risks / gotchas
 
 - **S1/S2 must NOT re-raise.** The SSE generator swallows cache failures; the client never sees an error envelope for this path. That is intentional. Do not "improve" this to return an HTTP error — it would break the client's stream-handling code.
-- **S4 dual-DB check:** Re-read `keywords.py:550-580` for any Postgres write before the Mongo upsert. If one exists, the `except` block must call `await pg.rollback()`. Bucket C (`260422_*`) handles a separate tailor.py case and does not cover this file.
-- **Skip #12 (`admin.py:351`).** Covered by `ApifyClientError` handler H3 in `260420_*`. Adding a wrap here would double-handle. If `260420_*` hasn't merged yet, land that first.
+- **S4 dual-DB check:** Re-read `keywords.py:550-580` for any Postgres write before the Mongo upsert. If one exists, the `except` block must call `await pg.rollback()`. Bucket C (`phase-3-*`) handles a separate tailor.py case and does not cover this file.
+- **Skip #12 (`admin.py:351`).** Covered by `ApifyClientError` handler H3 in `phase-1-*`. Adding a wrap here would double-handle. If `phase-1-*` hasn't merged yet, land that first.
 - **S7 exception type:** Check `services/export/html_export.py` — if `export_docx` raises a specific class, narrow the catch. `except Exception` is too broad and would mask unrelated bugs.
 - **Don't add a decorator yet.** With 7 sites and 4 different failure-to-status mappings, a shared wrapper would either be too generic (loses intent) or too specific (same LOC as inline). Revisit at 15+ sites.
 - **AIServiceError global handler:** Audit's "out of scope" note says a global handler for `AIServiceError` would be defense-in-depth but not urgent. If a future plan registers one, S5/S6 wraps can be deleted.
@@ -224,7 +224,7 @@ Reuse `backend/tests/conftest.py` fixtures for authenticated client and mongo/pg
 
 ## Completion checklist
 
-- [ ] `260420_*` merged (dependency)
+- [ ] `phase-1-*` merged (dependency)
 - [ ] S1–S7 wrapped in try/except with correct mapping
 - [ ] 7 failure-injection tests added, all pass
 - [ ] Full backend test suite green

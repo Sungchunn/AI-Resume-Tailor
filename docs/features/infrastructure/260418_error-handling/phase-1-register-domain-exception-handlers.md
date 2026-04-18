@@ -1,7 +1,7 @@
 # Register Domain Exception Handlers
 
 **Created:** 2026-04-20 (planned landing)
-**Parent audit:** [`260418_backend-error-handling-audit.md`](./260418_backend-error-handling-audit.md) — bucket A (items 1–5) + bucket D (item 15)
+**Parent audit:** [`master-plan.md`](./master-plan.md) — bucket A (items 1–5) + bucket D (item 15)
 **Scope:** `backend/app/main.py` + new `backend/tests/test_main.py`
 
 ## Context
@@ -10,7 +10,7 @@ Commit `fc2071b` added a catch-all `Exception` handler in `backend/app/main.py:1
 
 The audit identified five unregistered domain exception classes (bucket A) and one Redis call site that should share the same treatment (bucket D). This plan registers global `@app.exception_handler(...)` blocks for all six, so every path that raises these — whether in a route, a service, or a CRUD helper — returns a typed envelope with the right HTTP status and a stable `error_code` the frontend can branch on.
 
-No route code changes in this PR. Route-level hardening ships separately as `260421_route-external-call-hardening.md`.
+No route code changes in this PR. Route-level hardening ships separately as `phase-2-route-external-call-hardening.md`.
 
 ## Goal
 
@@ -20,7 +20,7 @@ Non-goals:
 
 - Refactoring the four existing handlers (`Exception`, `IntegrityError`, `OperationalError`, `SQLTimeoutError`)
 - Introducing new exception classes (we register handlers for classes that already exist)
-- Route-level try/except work (deferred to `260421_*`)
+- Route-level try/except work (deferred to `phase-2-*`)
 
 ## Current state (handlers already registered)
 
@@ -200,7 +200,7 @@ Reuse pytest fixture plumbing from `backend/tests/conftest.py` if it provides a 
 
 ## Risks / gotchas
 
-- **Dependency for bucket B:** Once H3 (`ApifyClientError`) lands, the audit's item #12 (`routes/admin.py:351`) no longer needs its own wrap. Bucket B plan (`260421_*`) will skip #12 if this PR is merged first.
+- **Dependency for bucket B:** Once H3 (`ApifyClientError`) lands, the audit's item #12 (`routes/admin.py:351`) no longer needs its own wrap. Bucket B plan (`phase-2-*`) will skip #12 if this PR is merged first.
 - **`FileStorageError` base vs subclasses:** The base-class handler catches `StorageFileNotFoundError` and `FileUploadError` too (Python exception resolution). If a route wants 404-specific semantics for not-found, it must catch the subclass locally and raise `HTTPException(404)` before the global handler fires.
 - **`DocumentConversionError` fallback preservation:** `routes/upload.py:126` has a route-local try/except that falls back to plain-text on conversion failure. That still wins — the global handler fires only when the exception bubbles past the route. **Do not touch `upload.py` in this PR.**
 - **`RedisError` scope:** `redis.exceptions.RedisError` is the base of all `redis-py` exceptions. Catching the base means the handler fires for Redis decode errors too; that's intentional — audit item #11 (SSE progressive) is route-level because it needs to continue the stream, not abort.

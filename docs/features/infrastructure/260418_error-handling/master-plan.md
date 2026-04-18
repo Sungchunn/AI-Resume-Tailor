@@ -70,7 +70,7 @@ For each registered handler, add a unit test in `backend/tests/test_main.py` tha
 
 Each bucket above should land as its own plan + PR, not a single megadiff:
 
-- `260420_register-domain-exception-handlers.md` — bucket A (5 handlers in `main.py`)
-- `260421_route-external-call-hardening.md` — bucket B (7 routes)
-- `260422_tailor-dual-db-rollback.md` — bucket C (rule #7 compliance)
+- `phase-1-register-domain-exception-handlers.md` — bucket A (5 handlers in `main.py`)
+- `phase-2-route-external-call-hardening.md` — bucket B (7 routes)
+- `phase-3-tailor-dual-db-rollback.md` — bucket C (rule #7 compliance)
 - Auth SSE ticket Redis wrap — bundle into bucket A.4 PR once `FileStorageError` handler exists
