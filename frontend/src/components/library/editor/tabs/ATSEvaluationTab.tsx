@@ -763,7 +763,7 @@ export function ATSEvaluationTab({
             <p className="text-sm text-muted-foreground mb-2">
               No Job Selected
             </p>
-            <p className="text-xs text-muted-foreground/70 max-w-[220px] mb-4">
+            <p className="text-xs text-muted-foreground/70 max-w-55 mb-4">
               ATS evaluation requires a job description. Navigate from a job
               posting to enable this feature.
             </p>
