@@ -85,9 +85,13 @@ class CacheService:
             job_id: The job ID (either job_descriptions.id or job_listings.id).
 
         Returns:
-            Cache key in format: ats:{resume_hash}:{job_id}
+            Cache key in format: ats:v2:{resume_hash}:{job_id}
+
+        Version note: v2 introduced after the keyword-score denominator fix
+        (2026-04-18) rescaled scores ~2-3x. Bumping the namespace ensures
+        pre-fix inflated results aren't served; old v1 keys expire via TTL.
         """
-        return f"ats:{resume_content_hash[:16]}:{job_id}"
+        return f"ats:v2:{resume_content_hash[:16]}:{job_id}"
 
     @staticmethod
     def hash_content(content: str) -> str:
