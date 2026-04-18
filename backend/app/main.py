@@ -8,17 +8,23 @@ from fastapi.responses import JSONResponse
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.backends.redis import RedisBackend
+from redis.exceptions import RedisError
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.exc import TimeoutError as SQLTimeoutError
 
 from app.api import api_router
+from app.api.utils.id_resolution import IDResolutionError
 from app.core.config import get_settings
+from app.crud.mongo.exceptions import VersionConflictError
 from app.db.mongodb import close_mongodb, connect_mongodb, get_mongodb
 from app.db.redis import close_redis, connect_redis, get_redis
 from app.db.session import AsyncSessionLocal, engine
 from app.middleware.rate_limiter import RateLimitConfig, RateLimitMiddleware
+from app.services.document.converter import DocumentConversionError
+from app.services.scraping.apify_client import ApifyClientError
 from app.services.scraping.scheduler import get_scheduler_service
+from app.services.storage.file_storage import FileStorageError
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -218,6 +224,123 @@ async def timeout_error_handler(request: Request, exc: SQLTimeoutError) -> JSONR
     )
     logger.error(
         "db_timeout error_id=%s path=%s: %s",
+        error_id,
+        request.url.path,
+        exc,
+    )
+    return response
+
+
+@app.exception_handler(VersionConflictError)
+async def version_conflict_handler(
+    request: Request, exc: VersionConflictError
+) -> JSONResponse:
+    """Handle Mongo optimistic-concurrency conflicts (stale-write rejections)."""
+    error_id, response = _make_error_response(
+        status_code=409,
+        detail={
+            "message": exc.message,
+            "document_id": exc.document_id,
+            "expected_version": exc.expected_version,
+        },
+        error_code="document_version_conflict",
+    )
+    logger.warning(
+        "document_version_conflict error_id=%s path=%s document_id=%s expected_version=%s",
+        error_id,
+        request.url.path,
+        exc.document_id,
+        exc.expected_version,
+    )
+    return response
+
+
+@app.exception_handler(IDResolutionError)
+async def id_resolution_error_handler(
+    request: Request, exc: IDResolutionError
+) -> JSONResponse:
+    """Handle unresolvable/unauthorized resource IDs as 404 to avoid leaking existence."""
+    error_id, response = _make_error_response(
+        status_code=404,
+        detail=str(exc),
+        error_code="resource_not_found",
+    )
+    logger.warning(
+        "resource_not_found error_id=%s path=%s: %s",
+        error_id,
+        request.url.path,
+        exc,
+    )
+    return response
+
+
+@app.exception_handler(DocumentConversionError)
+async def document_conversion_error_handler(
+    request: Request, exc: DocumentConversionError
+) -> JSONResponse:
+    """Handle uncaught document-conversion failures (corrupt/unsupported uploads)."""
+    error_id, response = _make_error_response(
+        status_code=422,
+        detail=str(exc),
+        error_code="document_conversion_failed",
+    )
+    logger.warning(
+        "document_conversion_failed error_id=%s path=%s: %s",
+        error_id,
+        request.url.path,
+        exc,
+    )
+    return response
+
+
+@app.exception_handler(ApifyClientError)
+async def apify_client_error_handler(
+    request: Request, exc: ApifyClientError
+) -> JSONResponse:
+    """Handle Apify upstream failures (outage, rate-limit, actor error) as 502."""
+    error_id, response = _make_error_response(
+        status_code=502,
+        detail=str(exc),
+        error_code="external_api_error",
+    )
+    logger.error(
+        "external_api_error error_id=%s path=%s: %s",
+        error_id,
+        request.url.path,
+        exc,
+    )
+    return response
+
+
+@app.exception_handler(FileStorageError)
+async def file_storage_error_handler(
+    request: Request, exc: FileStorageError
+) -> JSONResponse:
+    """Handle S3/disk storage failures (unavailability, upload/download errors)."""
+    error_id, response = _make_error_response(
+        status_code=503,
+        detail="Storage temporarily unavailable",
+        error_code="storage_unavailable",
+    )
+    logger.error(
+        "storage_unavailable error_id=%s path=%s: %s",
+        error_id,
+        request.url.path,
+        exc,
+    )
+    return response
+
+
+@app.exception_handler(RedisError)
+async def redis_error_handler(request: Request, exc: RedisError) -> JSONResponse:
+    """Handle Redis failures (connection, timeout, auth) as cache-unavailable."""
+    error_id, response = _make_error_response(
+        status_code=503,
+        detail="Cache temporarily unavailable",
+        error_code="cache_unavailable",
+    )
+    logger.error(
+        "cache_unavailable error_id=%s path=%s: %s",
         error_id,
         request.url.path,
         exc,
