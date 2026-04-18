@@ -37,7 +37,7 @@ class SectionOrderDetails(BaseModel):
 class ATSStructureResponse(BaseModel):
     """Response for ATS structure analysis."""
 
-    format_score: int = Field(..., description="Format compatibility score 0-100")
+    format_score: int = Field(..., ge=0, le=100, description="Format compatibility score 0-100")
     sections_found: list[str] = Field(
         ..., description="Standard sections found in resume"
     )

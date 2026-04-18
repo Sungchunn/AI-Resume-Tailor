@@ -169,14 +169,15 @@ def calculate_composite_score(
             result = stage_results[stage_key]
 
             if stage_key == "structure":
-                scores[stage_key] = float(result.format_score)
+                raw = float(result.format_score)
             elif stage_key == "keywords-enhanced":
-                scores[stage_key] = float(result.keyword_score)
+                raw = float(result.keyword_score)
             elif stage_key == "content-quality":
-                scores[stage_key] = float(result.content_quality_score)
+                raw = float(result.content_quality_score)
             elif stage_key == "role-proximity":
-                scores[stage_key] = float(result.role_proximity_score)
+                raw = float(result.role_proximity_score)
 
+            scores[stage_key] = max(0.0, min(raw, 100.0))
             available_weight += weight
 
     normalization_applied = available_weight < 1.0
