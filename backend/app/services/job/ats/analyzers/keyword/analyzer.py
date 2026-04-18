@@ -28,6 +28,7 @@ from .matcher import (
     order_experiences_by_date,
 )
 from .scorer import (
+    MAX_KEYWORD_SCORE,
     calculate_keyword_weighted_score,
     get_density_multiplier,
     get_importance_weight,
@@ -407,7 +408,7 @@ class KeywordAnalyzer:
 
             # Calculate weighted scores
             importance_weight = get_importance_weight(importance)
-            max_possible_score += importance_weight
+            max_possible_score += MAX_KEYWORD_SCORE
 
             if found_in_resume:
                 placement_score, density_score, recency_score, weighted_score = (
