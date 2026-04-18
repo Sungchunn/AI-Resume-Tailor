@@ -20,16 +20,6 @@ import {
 import { analysisBulletIdToElementId } from "@/lib/resume/bulletIdMapping";
 import { useBlockEditor } from "../BlockEditorContext";
 import { useInlineSuggestionQueueContext } from "../InlineSuggestionQueueProvider";
-import type { ATSKeywordDetailedResponse } from "@/lib/api/types";
-
-interface SuggestionProgressPanelProps {
-  tailoredResumeId?: string;
-  resumeId?: string;
-  jobId?: string | null;
-  jobListingId?: number | null;
-  atsReady?: boolean;
-  atsData?: ATSKeywordDetailedResponse | null;
-}
 
 const IMPACT_COLORS = {
   high: "text-red-400",
@@ -43,7 +33,7 @@ const STATUS_ICONS = {
   dismissed: <X className="w-3 h-3 text-zinc-500" />,
 } as const;
 
-export function SuggestionProgressPanel(_props: SuggestionProgressPanelProps) {
+export function SuggestionProgressPanel() {
   const queue = useInlineSuggestionQueueContext();
 
   const progress = useQueueProgress();

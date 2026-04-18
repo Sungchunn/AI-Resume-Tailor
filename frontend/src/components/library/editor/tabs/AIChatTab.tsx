@@ -304,7 +304,7 @@ export function AIChatTab({ resumeId, jobId, jobListingId, tailoredResumeId }: A
       {/* Bullet & Skill Suggestions Panels (tailor mode) */}
       {isTailorMode && tailoredResumeId && (
         <div className="px-4 py-3 border-b border-border space-y-4">
-          <SuggestionProgressPanel tailoredResumeId={tailoredResumeId} />
+          <SuggestionProgressPanel />
           <SkillSuggestionsPanel />
         </div>
       )}
@@ -312,13 +312,7 @@ export function AIChatTab({ resumeId, jobId, jobListingId, tailoredResumeId }: A
       {/* Bullet Suggestions Panel (library mode with job + ATS complete) */}
       {!isTailorMode && hasJobContext && atsKeywordResult && (
         <div className="px-4 py-3 border-b border-border space-y-4">
-          <SuggestionProgressPanel
-            resumeId={resumeId}
-            jobId={jobId}
-            jobListingId={jobListingId}
-            atsReady={true}
-            atsData={atsKeywordResult}
-          />
+          <SuggestionProgressPanel />
         </div>
       )}
 
