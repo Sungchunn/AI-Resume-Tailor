@@ -5,8 +5,12 @@ All keyword-related endpoints including basic, detailed, and enhanced analysis.
 Also includes keyword extraction with context and user override endpoints.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+import logging
+
+from bson.errors import InvalidId
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo.errors import OperationFailure
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_id, get_db, get_mongo_db, resolve_ai_model
@@ -39,6 +43,8 @@ from app.schemas.ats import (
 from app.services.ai.client import get_ai_client_for_model
 from app.services.job.ats import create_ats_analyzer, get_ats_analyzer
 from app.services.job.ats.analyzers.keyword.extractor import KeywordExtractor
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -445,12 +451,27 @@ async def get_keyword_override(
             detail="Either job_listing_id or job_id must be provided",
         )
 
-    override = await keyword_override_crud.get(
-        mongo_db,
-        user_id=user_id,
-        job_listing_id=job_listing_id,
-        job_id=job_id,
-    )
+    try:
+        override = await keyword_override_crud.get(
+            mongo_db,
+            user_id=user_id,
+            job_listing_id=job_listing_id,
+            job_id=job_id,
+        )
+    except InvalidId as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid ID format: {exc}",
+        )
+    except OperationFailure as exc:
+        logger.error(
+            "mongo_operation_failed path=/ats/keywords/override method=GET error=%s",
+            exc,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Document store temporarily unavailable",
+        )
 
     if not override:
         return None
@@ -574,7 +595,22 @@ async def save_keyword_override(
         reviewed=request.mark_reviewed,
     )
 
-    result = await keyword_override_crud.upsert(mongo_db, create_data)
+    try:
+        result = await keyword_override_crud.upsert(mongo_db, create_data)
+    except InvalidId as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid ID format: {exc}",
+        )
+    except OperationFailure as exc:
+        logger.error(
+            "mongo_operation_failed path=/ats/keywords/override method=PUT error=%s",
+            exc,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Document store temporarily unavailable",
+        )
 
     return KeywordOverrideResponse(
         id=str(result.id),
