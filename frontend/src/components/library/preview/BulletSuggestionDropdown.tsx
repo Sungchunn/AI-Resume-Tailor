@@ -12,6 +12,7 @@ import {
 } from "@/lib/stores/inlineSuggestionQueueStore";
 import { analysisBulletIdToElementId } from "@/lib/resume/bulletIdMapping";
 import { useTypewriter } from "@/hooks/useTypewriter";
+import { useInlineSuggestionQueueContext } from "@/components/library/editor/InlineSuggestionQueueProvider";
 import type { AnyResumeBlock } from "@/lib/resume/types";
 
 interface BulletSuggestionDropdownProps {
@@ -45,6 +46,10 @@ export function BulletSuggestionDropdown({
   const setTypewriterDone = useInlineSuggestionQueueStore(
     (s) => s.setTypewriterDone
   );
+  const dismissCurrent = useInlineSuggestionQueueStore(
+    (s) => s.dismissCurrent
+  );
+  const { acceptCurrent } = useInlineSuggestionQueueContext();
 
   const { displayText, isDone, fastForward } = useTypewriter(
     suggestion?.suggested ?? ""
@@ -190,8 +195,21 @@ export function BulletSuggestionDropdown({
           </div>
         </div>
 
-        {/* Suggestion text with typewriter effect */}
-        <div className="px-3 py-2">
+        {/* Current (original) bullet text */}
+        <div className="px-3 pt-2 pb-1.5 border-b border-zinc-700/50">
+          <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide mb-0.5">
+            Current
+          </p>
+          <p className="text-xs text-zinc-500 leading-relaxed line-through">
+            {suggestion.original}
+          </p>
+        </div>
+
+        {/* Suggested text with typewriter effect */}
+        <div className="px-3 pt-2 pb-1.5">
+          <p className="text-[10px] font-medium text-emerald-500 uppercase tracking-wide mb-0.5">
+            Suggested
+          </p>
           <p className="text-sm text-zinc-200 leading-relaxed">
             {displayText}
             {!isDone && (
@@ -205,6 +223,30 @@ export function BulletSuggestionDropdown({
           className={`px-3 pb-2 transition-opacity duration-300 ${isDone ? "opacity-100" : "opacity-0"}`}
         >
           <p className="text-xs text-zinc-400 italic">{suggestion.reason}</p>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-2 px-3 pb-3">
+          <button
+            type="button"
+            onClick={() => {
+              void acceptCurrent();
+            }}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors"
+          >
+            <Check className="w-3.5 h-3.5" />
+            Accept
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              dismissCurrent();
+            }}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+            Dismiss
+          </button>
         </div>
 
         {/* Keyboard hints */}
