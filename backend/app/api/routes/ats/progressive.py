@@ -5,6 +5,7 @@ Orchestrates all ATS stages with real-time progress streaming.
 """
 
 import json
+import logging
 import time
 from dataclasses import asdict, is_dataclass
 
@@ -29,6 +30,8 @@ from app.schemas.ats import ATSProgressiveRequest
 from app.services.ai import get_usage_tracker
 from app.services.ai.response import AccumulatedMetrics
 from app.services.core.cache import get_cache_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -182,8 +185,23 @@ async def analyze_progressive_ats(
                 job_content=job_content,
             )
 
-            # Check cache before running analysis (skip if force_refresh is True)
-            cached_result = None if force_refresh else await cache.get_ats_result(resume_content_hash, effective_job_id)
+            # Check cache before running analysis (skip if force_refresh is True).
+            # A cache failure must not abort the SSE stream — downgrade any error
+            # to a cache miss and continue to the full analysis path.
+            try:
+                cached_result = (
+                    None
+                    if force_refresh
+                    else await cache.get_ats_result(resume_content_hash, effective_job_id)
+                )
+            except Exception as cache_exc:
+                logger.warning(
+                    "ats_cache_get_failed resume_hash=%s job=%s error=%s",
+                    resume_content_hash,
+                    effective_job_id,
+                    cache_exc,
+                )
+                cached_result = None
             if cached_result:
                 cached_at = cached_result.get("cached_at", "")
                 yield {
@@ -338,12 +356,22 @@ async def analyze_progressive_ats(
                     else:
                         cacheable_stage_results[key] = result
 
-                await cache.set_ats_result(
-                    resume_content_hash=resume_content_hash,
-                    job_id=effective_job_id,
-                    composite_score=composite_score.model_dump(),
-                    stage_results=cacheable_stage_results,
-                )
+                # A cache-write failure must not abort the stream — the client
+                # already has its results; we just forfeit the next cache hit.
+                try:
+                    await cache.set_ats_result(
+                        resume_content_hash=resume_content_hash,
+                        job_id=effective_job_id,
+                        composite_score=composite_score.model_dump(),
+                        stage_results=cacheable_stage_results,
+                    )
+                except Exception as cache_exc:
+                    logger.warning(
+                        "ats_cache_set_failed resume_hash=%s job=%s error=%s",
+                        resume_content_hash,
+                        effective_job_id,
+                        cache_exc,
+                    )
 
             knockout_risks = []
             knockout_result = stage_results.get("knockout-check")
