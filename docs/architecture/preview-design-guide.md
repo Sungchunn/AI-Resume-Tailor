@@ -74,8 +74,8 @@ Blocks never split across page boundaries. If a block does not fit on the curren
 │                                                │  1056 px tall (fixed, overflow: hidden)
 │  padding-top:    marginTop × 96     (48 px)    │
 │  padding-bottom: marginBottom × 96  (48 px)    │  bg-white
-│  padding-left:   marginLeft × 96   (48 px)    │  shadow-lg
-│  padding-right:  marginRight × 96  (48 px)    │  rounded-sm
+│  padding-left:   marginLeft × 96   (48 px)     │  shadow-lg
+│  padding-right:  marginRight × 96  (48 px)     │  rounded-sm
 │                                                │  border border-border
 │           [ resume content ]                   │
 │                                                │
@@ -349,7 +349,7 @@ Appears floating above selected text within any `InlineRichText` field. Portaled
 
 ```text
        ┌──────────────────────────────┐
-       │  B  I  U  │  Clear ✕        │
+       │  B  I  U  │  Clear ✕         │
        └──────────────────────────────┘
             ↑ 8 px above selection
 ```
@@ -381,7 +381,7 @@ Renders via portal (`SuggestionPortalLayer`) as an absolute-positioned sibling o
 │  Adds specific metrics and quantifies business impact        │  fades in after text reveals
 │                                                              │
 ├──────────────────────────────────────────────────────────────┤
-│  Tab to accept  ·  Esc to skip  ·  ↑↓ to navigate           │  footer: bg-zinc-700/30
+│  Tab to accept  ·  Esc to skip  ·  ↑↓ to navigate            │  footer: bg-zinc-700/30
 └──────────────────────────────────────────────────────────────┘
 min-width: max(320px, target bullet width)    z-index: 50
 ```
@@ -553,7 +553,7 @@ A scrollable list of section items, each collapsible:
 
 ```text
 ┌──────────────────────────────────────────────────────────┐
-│  ⠿  Work Experience  (3)  ▼                     [⋮]     │  border-2 (default: border-border)
+│  ⠿  Work Experience  (3)  ▼                     [⋮]      │  border-2 (default: border-border)
 ├──────────────────────────────────────────────────────────┤  (active: border-primary-300)
 │                                                          │  (dragging: border-primary-400
 │  [form fields for this section]                          │           shadow-lg opacity-90)
