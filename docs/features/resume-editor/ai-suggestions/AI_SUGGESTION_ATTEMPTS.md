@@ -8,7 +8,8 @@
 | 2 | 2026-04-06 | `260406_ai-bullet-editing/` | Panel-based card system in tailor editor. `BulletSuggestionsPanel`, `BulletSuggestionCard`, `bulletSuggestionsStore`, `useBulletAnalysis`, backend `analyze-bullets` endpoint. | **Partially active.** Backend endpoint, Zustand store, and `useBulletAnalysis` hook are still the foundation. Panel UI (`BulletSuggestionsPanel`, `BulletSuggestionCard`) replaced in attempt 5 -- deleted 2026-04-12. |
 | 3 | 2026-04-09 | `260409_ai-bullet-review/` | Sequential one-at-a-time review mode on top of attempt 2. Added `aiReviewActive`/`aiReviewIndex`/`aiReviewComplete` to store, `AiReviewDiffOverlay` inline on bullet rows, keyboard Enter/Esc navigation. | **Deprecated.** Store fields and `AiReviewDiffOverlay` still wired into `BulletList.tsx` and `useBulletAnalysis.ts`, but superseded by `inlineSuggestionQueueStore` from attempt 5. Both systems currently fire simultaneously. Needs cleanup. |
 | 4 | 2026-04-10 | `260410_library-bullet-suggestions/` | Extended attempt 2/3 to work in library editor (not just tailor). New backend endpoint `POST /ats/analyze-bullets`, refactored `useBulletAnalysis` for dual-mode, shared ATS data via `atsProgressStore`. | **Active.** All changes were modifications to existing files. No orphaned code. |
-| 5 | 2026-04-12 | `260412_inline-bullet-suggestions/` | Floating dropdown below target bullet in preview with typewriter animation. `inlineSuggestionQueueStore`, `BulletSuggestionDropdown`, `SuggestionProgressPanel`, keyboard/queue hooks, portal layer. | **Active (current design).** This is the intended UX going forward. Reuses `bulletSuggestionsStore` + `useBulletAnalysis` as the data layer. |
+| 5 | 2026-04-12 | `260412_inline-bullet-suggestions/` | Floating dropdown below target bullet in preview with typewriter animation. `inlineSuggestionQueueStore`, `BulletSuggestionDropdown`, `SuggestionProgressPanel`, keyboard/queue hooks, portal layer. | **Superseded by attempt 6.** Shipped the plumbing but the dropdown rendered keyboard hints only; users actually reviewed suggestions in the sidebar panel. Keyboard Tab also hit `store.acceptCurrent` which never wrote text back to the block. |
+| 6 | 2026-04-18 | `260418_inline-review-migration/` | Completes the inline migration. Adds `InlineSuggestionQueueProvider` so the dropdown, sidebar panel, and keyboard hook share one wrapped-action call. Adds original-text section and visible Accept/Dismiss buttons to `BulletSuggestionDropdown`. Strips Accept All / Dismiss All out of `SuggestionProgressPanel`. Fixes the keyboard Tab accept path. | **Active (current design).** Dropdown is now the sole review surface; sidebar panel is a progress/navigation tracker. |
 
 ---
 
@@ -24,14 +25,15 @@
 - `backend/app/api/routes/ats/bullets.py` -- library analyze-bullets endpoint
 - `backend/app/services/job/diff/bullet_analyzer.py` -- batch bullet analysis service
 
-### Inline dropdown system (from attempt 5)
+### Inline dropdown system (attempts 5 + 6)
 
 - `frontend/src/lib/stores/inlineSuggestionQueueStore.ts` -- queue navigation state
-- `frontend/src/components/library/preview/BulletSuggestionDropdown.tsx` -- floating dropdown card
+- `frontend/src/components/library/preview/BulletSuggestionDropdown.tsx` -- floating dropdown card (current + suggested text, Accept/Dismiss buttons, keyboard hints)
 - `frontend/src/components/library/preview/SuggestionPortalLayer.tsx` -- portal outside page DOM
-- `frontend/src/components/library/editor/tabs/SuggestionProgressPanel.tsx` -- progress panel in AI tab
-- `frontend/src/hooks/useInlineSuggestionKeyboard.ts` -- Tab/Esc/arrow key handler
-- `frontend/src/hooks/useInlineSuggestionQueue.ts` -- orchestration hook
+- `frontend/src/components/library/editor/InlineSuggestionQueueProvider.tsx` -- shared wrapped-action provider (attempt 6)
+- `frontend/src/components/library/editor/tabs/SuggestionProgressPanel.tsx` -- progress + navigation tracker in AI tab (no review actions)
+- `frontend/src/hooks/useInlineSuggestionKeyboard.ts` -- Tab/Esc/arrow key handler; Tab routes through wrapped acceptCurrent
+- `frontend/src/hooks/useInlineSuggestionQueue.ts` -- orchestration hook, called once by the provider
 - `frontend/src/hooks/useTypewriter.ts` -- typewriter animation
 - `frontend/src/lib/resume/bulletIdMapping.ts` -- analysis ID to DOM element ID bridge
 
@@ -74,13 +76,13 @@
 
 ## Design Going Forward
 
-The **inline bullet suggestion system** (attempt 5, `260412_inline-bullet-suggestions/master-plan.md`) is the canonical design:
+The **inline bullet suggestion system** (attempts 5 + 6) is the canonical design:
 
 1. ATS analysis completes, user clicks "Analyze Bullets" in AI tab progress panel
 2. Backend returns suggestions via `useBulletAnalysis` into `bulletSuggestionsStore`
-3. `inlineSuggestionQueueStore` picks up suggestions, sorts by impact
-4. Floating `BulletSuggestionDropdown` appears below target bullet with typewriter animation
-5. User presses Tab to accept, Esc to dismiss, arrows to navigate
-6. `SuggestionProgressPanel` in AI tab shows progress and allows click-to-jump
+3. `InlineSuggestionQueueProvider` (mounted once at `EditorLayout`) watches the suggestion store and populates `inlineSuggestionQueueStore`
+4. Floating `BulletSuggestionDropdown` appears below target bullet showing the current bullet, the suggested rewrite with typewriter animation, and Accept/Dismiss buttons
+5. User clicks Accept/Dismiss or presses Tab/Esc; arrows navigate pending items
+6. `SuggestionProgressPanel` in AI tab shows progress, score delta, and a click-to-jump nav list -- no review actions
 
-**Next cleanup:** Remove deprecated attempt 3 fields from `bulletSuggestionsStore` and decouple `BulletList.tsx` from `AiReviewDiffOverlay`. The `setSuggestions` action currently sets `aiReviewActive: true` alongside the inline queue -- this dual activation should be eliminated.
+**Next cleanup:** Remove deprecated attempt 3 fields from `bulletSuggestionsStore` and decouple `BulletList.tsx` from `AiReviewDiffOverlay`. The `setSuggestions` action currently sets `aiReviewActive: true` alongside the inline queue -- this dual activation should be eliminated. Also: the wrapped `acceptAll` exposed by `useInlineSuggestionQueue` no longer has any callers now that the bulk UI is gone; it can be removed along with the store-level `acceptAll` / `dismissAll` / `bulletSuggestionsStore.acceptAll` / `rejectAll` if no other consumers remain.
