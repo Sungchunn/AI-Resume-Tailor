@@ -434,3 +434,40 @@ class TestPdfExport:
             # WeasyPrint not available - this is expected in some environments
             assert response.status_code == 500
             assert "WeasyPrint" in response.json().get("detail", "")
+
+
+class TestDocxExportErrorHandling:
+    """Phase-2 S7: DOCX export must map RuntimeError to 500 with the message."""
+
+    @pytest_asyncio.fixture
+    async def resume(self, client: AsyncClient):
+        response = await client.post(
+            "/api/resumes",
+            json={
+                "title": "DOCX Error Resume",
+                "raw_content": "Content",
+                "html_content": "<p>Content</p>",
+            },
+        )
+        assert response.status_code == 201
+        return response.json()
+
+    @pytest.mark.asyncio
+    async def test_docx_runtime_error_returns_500(
+        self, client: AsyncClient, resume: dict, monkeypatch
+    ):
+        """A RuntimeError from export_docx should surface as 500, not 200 or opaque 500."""
+        from app.services.export.html_to_document import HTMLToDocumentService
+
+        async def _raise_runtime(self, *args, **kwargs):
+            raise RuntimeError("python-docx missing required fonts")
+
+        monkeypatch.setattr(HTMLToDocumentService, "export_docx", _raise_runtime)
+
+        response = await client.post(
+            f"/api/resumes/{resume['id']}/export",
+            json={"format": "docx"},
+        )
+
+        assert response.status_code == 500
+        assert response.json()["detail"] == "python-docx missing required fonts"
