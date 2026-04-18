@@ -6,7 +6,7 @@ AI-powered keyword extraction from job descriptions.
 
 import json
 import re
-from typing import Any
+from typing import Any, Literal, overload
 
 from app.services.ai.client import get_ai_client
 from app.services.ai.response import AIResponse
@@ -47,6 +47,14 @@ class KeywordExtractor:
         """Allow tests to set a mock AI client."""
         self._ai_client_instance = value
 
+    @overload
+    async def extract_keywords(
+        self, job_description: str, return_metrics: Literal[False] = False
+    ) -> list[str]: ...
+    @overload
+    async def extract_keywords(
+        self, job_description: str, return_metrics: Literal[True]
+    ) -> tuple[list[str], AIResponse | None]: ...
     async def extract_keywords(
         self, job_description: str, return_metrics: bool = False
     ) -> list[str] | tuple[list[str], AIResponse | None]:
@@ -102,6 +110,14 @@ Do not include common words like "experience", "ability", "skills".
             fallback = basic_keyword_extraction(job_description)
             return (fallback, None) if return_metrics else fallback
 
+    @overload
+    async def extract_keywords_with_importance(
+        self, job_description: str, return_metrics: Literal[False] = False
+    ) -> list[dict[str, Any]]: ...
+    @overload
+    async def extract_keywords_with_importance(
+        self, job_description: str, return_metrics: Literal[True]
+    ) -> tuple[list[dict[str, Any]], AIResponse | None]: ...
     async def extract_keywords_with_importance(
         self, job_description: str, return_metrics: bool = False
     ) -> list[dict[str, Any]] | tuple[list[dict[str, Any]], AIResponse | None]:
@@ -178,6 +194,14 @@ Do not include common generic words like "experience", "ability", "skills".
             ]
             return (fallback, None) if return_metrics else fallback
 
+    @overload
+    async def extract_keywords_with_importance_enhanced(
+        self, job_description: str, return_metrics: Literal[False] = False
+    ) -> list[dict[str, Any]]: ...
+    @overload
+    async def extract_keywords_with_importance_enhanced(
+        self, job_description: str, return_metrics: Literal[True]
+    ) -> tuple[list[dict[str, Any]], AIResponse | None]: ...
     async def extract_keywords_with_importance_enhanced(
         self, job_description: str, return_metrics: bool = False
     ) -> list[dict[str, Any]] | tuple[list[dict[str, Any]], AIResponse | None]:
