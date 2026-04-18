@@ -1,4 +1,5 @@
 import logging
+import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -86,77 +87,142 @@ When using deprecated integer IDs, responses include deprecation headers:
 )
 
 
-# Global exception handlers
+# Error-envelope helper
+#
+# All error responses returned from registered exception handlers share a
+# stable shape so clients can correlate failures with server logs:
+#
+#     {"detail": <str|dict>, "error_id": <12-hex>, "error_code": <str>}
+#
+# Because these handlers run inside ExceptionMiddleware (i.e. inside the
+# user middleware stack), responses flow back through CORSMiddleware and
+# receive Access-Control-Allow-Origin headers automatically. This is the
+# reason the catch-all Exception handler exists: without it, uncaught
+# errors are intercepted by Starlette's ServerErrorMiddleware outside the
+# user middleware stack and the browser sees "CORS blocked" instead of
+# the real 500.
+def _make_error_response(
+    *,
+    status_code: int,
+    detail: str | dict,
+    error_code: str,
+) -> tuple[str, JSONResponse]:
+    error_id = uuid.uuid4().hex[:12]
+    return error_id, JSONResponse(
+        status_code=status_code,
+        content={
+            "detail": detail,
+            "error_id": error_id,
+            "error_code": error_code,
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Catch-all handler for unexpected errors.
+
+    Produces a structured 500 envelope with a correlation id and logs the
+    full stack trace under that id. Runs inside the middleware stack so
+    CORS headers are attached to the response.
+    """
+    error_id, response = _make_error_response(
+        status_code=500,
+        detail="Internal server error",
+        error_code="internal_error",
+    )
+    logger.error(
+        "unhandled_exception error_id=%s method=%s path=%s",
+        error_id,
+        request.method,
+        request.url.path,
+        exc_info=exc,
+    )
+    return response
+
+
 @app.exception_handler(IntegrityError)
 async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
-    """Handle database integrity errors (unique constraints, foreign keys, etc.).
-
-    Converts SQLAlchemy IntegrityError to user-friendly error responses.
-    """
+    """Handle database integrity errors (unique constraints, foreign keys, etc.)."""
     error_message = str(exc.orig) if exc.orig else str(exc)
-    logger.warning(f"Database integrity error: {error_message}")
+    lowered = error_message.lower()
 
-    # Check for common constraint violations and provide user-friendly messages
-    if "unique constraint" in error_message.lower() or "duplicate key" in error_message.lower():
-        # Try to extract the field name from the error
-        if "email" in error_message.lower():
+    if "unique constraint" in lowered or "duplicate key" in lowered:
+        if "email" in lowered:
             detail = "Email already registered"
-        elif "username" in error_message.lower():
+        elif "username" in lowered:
             detail = "Username already taken"
         else:
             detail = "A record with this value already exists"
-        return JSONResponse(
-            status_code=409,
-            content={"detail": detail},
-        )
-
-    if "foreign key" in error_message.lower():
+        status_code = 409
+    elif "foreign key" in lowered:
         detail = "Referenced record does not exist"
-        return JSONResponse(
-            status_code=400,
-            content={"detail": detail},
-        )
+        status_code = 400
+    else:
+        detail = "Database constraint violation"
+        status_code = 400
 
-    # Generic database error
-    return JSONResponse(
-        status_code=400,
-        content={"detail": "Database constraint violation"},
+    error_id, response = _make_error_response(
+        status_code=status_code,
+        detail=detail,
+        error_code="db_integrity",
     )
+    logger.warning(
+        "db_integrity error_id=%s path=%s: %s",
+        error_id,
+        request.url.path,
+        error_message,
+    )
+    return response
 
 
 @app.exception_handler(OperationalError)
 async def operational_error_handler(request: Request, exc: OperationalError) -> JSONResponse:
-    """Handle database operational errors (connection issues, pool exhaustion, etc.).
-
-    These typically indicate infrastructure issues with the database connection.
-    """
+    """Handle database operational errors (connection issues, pool exhaustion, etc.)."""
     error_message = str(exc.orig) if exc.orig else str(exc)
-    logger.error(f"Database operational error: {error_message}")
+    lowered = error_message.lower()
 
-    # Check for connection-related issues
-    if any(keyword in error_message.lower() for keyword in [
-        "connection", "pool", "timeout", "refused", "unavailable", "closed"
-    ]):
-        return JSONResponse(
-            status_code=503,
-            content={"detail": "Database temporarily unavailable. Please try again in a moment."},
-        )
+    if any(
+        keyword in lowered
+        for keyword in ("connection", "pool", "timeout", "refused", "unavailable", "closed")
+    ):
+        detail = "Database temporarily unavailable. Please try again in a moment."
+        status_code = 503
+        error_code = "db_unavailable"
+    else:
+        detail = "A database error occurred. Please try again."
+        status_code = 500
+        error_code = "db_operational"
 
-    # Generic operational error
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "A database error occurred. Please try again."},
+    error_id, response = _make_error_response(
+        status_code=status_code,
+        detail=detail,
+        error_code=error_code,
     )
+    logger.error(
+        "db_operational error_id=%s path=%s: %s",
+        error_id,
+        request.url.path,
+        error_message,
+    )
+    return response
 
 
 @app.exception_handler(SQLTimeoutError)
 async def timeout_error_handler(request: Request, exc: SQLTimeoutError) -> JSONResponse:
     """Handle database timeout errors."""
-    logger.error(f"Database timeout error: {exc}")
-    return JSONResponse(
+    error_id, response = _make_error_response(
         status_code=504,
-        content={"detail": "Database request timed out. Please try again."},
+        detail="Database request timed out. Please try again.",
+        error_code="db_timeout",
     )
+    logger.error(
+        "db_timeout error_id=%s path=%s: %s",
+        error_id,
+        request.url.path,
+        exc,
+    )
+    return response
 
 
 # Add middleware in order (last added = first executed)

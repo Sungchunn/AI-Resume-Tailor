@@ -327,20 +327,50 @@ async def get_filter_options(
     )
 
     cache_key = _filter_options_cache_key()
-    backend = FastAPICache.get_backend()
-    coder = FastAPICache.get_coder()
-
     try:
-        cached = await backend.get(cache_key)
+        backend = FastAPICache.get_backend()
+        coder = FastAPICache.get_coder()
     except Exception:
         logger.warning(
-            "rb-cache: backend get failed for %s", cache_key, exc_info=True
+            "rb-cache: FastAPICache unavailable, skipping cache for %s",
+            cache_key,
+            exc_info=True,
         )
-        cached = None
+        backend = None
+        coder = None
 
-    if cached is not None:
-        logger.debug("rb-cache: HIT %s", cache_key)
-        return coder.decode_as_type(cached, type_=JobListingFilterOptionsResponse)
+    cached = None
+    if backend is not None:
+        try:
+            cached = await backend.get(cache_key)
+        except Exception:
+            logger.warning(
+                "rb-cache: backend get failed for %s", cache_key, exc_info=True
+            )
+            cached = None
+
+    if cached is not None and coder is not None:
+        try:
+            decoded = coder.decode_as_type(
+                cached, type_=JobListingFilterOptionsResponse
+            )
+            logger.debug("rb-cache: HIT %s", cache_key)
+            return decoded
+        except Exception:
+            # Stale/incompatible payload (e.g. schema changed since it was
+            # written). Evict and fall through to a fresh DB read so the
+            # endpoint self-heals instead of 500ing.
+            logger.warning(
+                "rb-cache: decode failed for %s, evicting and rebuilding",
+                cache_key,
+                exc_info=True,
+            )
+            try:
+                await backend.clear(key=cache_key) # type: ignore
+            except Exception:
+                logger.warning(
+                    "rb-cache: evict failed for %s", cache_key, exc_info=True
+                )
 
     logger.debug("rb-cache: MISS %s", cache_key)
     options = await job_listing_repository.get_filter_options(db, active_only=True)
@@ -351,14 +381,15 @@ async def get_filter_options(
         cities=[FilterOption(**c) for c in options["cities"]],
     )
 
-    try:
-        await backend.set(
-            cache_key, coder.encode(payload), expire=get_cache_ttl_seconds()
-        )
-    except Exception:
-        logger.warning(
-            "rb-cache: backend set failed for %s", cache_key, exc_info=True
-        )
+    if backend is not None and coder is not None:
+        try:
+            await backend.set(
+                cache_key, coder.encode(payload), expire=get_cache_ttl_seconds()
+            )
+        except Exception:
+            logger.warning(
+                "rb-cache: backend set failed for %s", cache_key, exc_info=True
+            )
 
     return payload
 
