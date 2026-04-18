@@ -7,10 +7,15 @@ import {
   useInlineSuggestionQueueStore,
 } from "@/lib/stores/inlineSuggestionQueueStore";
 import { useInlineEditOptional } from "@/components/library/editor/inline/InlineEditContext";
+import { useInlineSuggestionQueueContext } from "@/components/library/editor/InlineSuggestionQueueProvider";
 
 export function useInlineSuggestionKeyboard() {
   const isActive = useIsInlineReviewActive();
   const inlineEditContext = useInlineEditOptional();
+  // Wrapped version: writes the improved text back to the block, not just
+  // the queue status. The store-level acceptCurrent alone leaves the resume
+  // text unchanged.
+  const { acceptCurrent } = useInlineSuggestionQueueContext();
 
   useEffect(() => {
     if (!isActive) return;
@@ -29,7 +34,7 @@ export function useInlineSuggestionKeyboard() {
         e.stopPropagation();
 
         if (store.typewriterDone) {
-          store.acceptCurrent();
+          acceptCurrent();
         } else {
           store.setRequestFastForward(true);
         }
@@ -52,5 +57,5 @@ export function useInlineSuggestionKeyboard() {
     return () => {
       document.removeEventListener("keydown", handleKeyDown, { capture: true });
     };
-  }, [isActive, inlineEditContext?.focusedElementId]);
+  }, [isActive, inlineEditContext?.focusedElementId, acceptCurrent]);
 }
