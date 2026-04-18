@@ -15,6 +15,7 @@ import type { PaginatedResumePreviewHandle } from "../preview/PaginatedResumePre
 import ExportDialog from "@/components/export/ExportDialog";
 import { useInlineSuggestionKeyboard } from "@/hooks/useInlineSuggestionKeyboard";
 import { useInlineSuggestionQueueStore } from "@/lib/stores/inlineSuggestionQueueStore";
+import { InlineSuggestionQueueProvider } from "./InlineSuggestionQueueProvider";
 
 interface EditorLayoutProps {
   /** Resume ID */
@@ -43,8 +44,26 @@ interface EditorLayoutProps {
  * - Right panel: Tabbed control panel (AI, ATS, Formatting, Sections)
  * - Resizable panels
  * - Keyboard shortcuts (Cmd+S, Cmd+Z, Cmd+Shift+Z)
+ *
+ * Wraps the content in InlineSuggestionQueueProvider so the preview-side
+ * dropdown buttons, the sidebar progress panel, and the document-level
+ * keyboard hook all share the same wrapped acceptCurrent/acceptAll actions
+ * that write improved text back to the resume blocks.
  */
-export function EditorLayout({
+export function EditorLayout(props: EditorLayoutProps) {
+  return (
+    <InlineSuggestionQueueProvider
+      tailoredResumeId={props.tailoredResumeId ?? undefined}
+      resumeId={props.resumeId}
+      jobId={props.jobId}
+      jobListingId={props.jobListingId}
+    >
+      <EditorLayoutContent {...props} />
+    </InlineSuggestionQueueProvider>
+  );
+}
+
+function EditorLayoutContent({
   resumeId,
   title,
   hasRawContent = false,
