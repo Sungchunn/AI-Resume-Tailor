@@ -48,6 +48,19 @@ Audit item #12 (`admin.py:351`) is **skipped** — covered by `ApifyClientError`
 - `routes/resumes.py:382-399` — PDF export try/except on `RuntimeError`. Mirror for S7 DOCX.
 - `routes/upload.py:126` — fallback-on-exception pattern (returns a degraded result instead of raising). Model for S1 "treat decode error as cache miss."
 
+## Prerequisite: module-level loggers
+
+The code snippets below reference `logger.warning(...)` / `logger.error(...)`. As of commit `d0151cd`, neither `routes/ats/progressive.py` nor `routes/ats/keywords.py` defines a module-level logger. Add these to the top of each affected file before the main edits:
+
+```python
+# progressive.py and keywords.py (top of file)
+import logging
+
+logger = logging.getLogger(__name__)
+```
+
+`resume_builds.py` and `resumes.py` do not need a logger for the snippets here (S5/S6/S7 don't log), but adding one is cheap if the route will gain log statements later.
+
 ## Implementation
 
 ### Step 1 — S1 and S2 (progressive SSE cache)
@@ -156,7 +169,7 @@ else:  # docx
     extension = "docx"
 ```
 
-If `export_docx` raises a more specific exception than `RuntimeError` (e.g., a custom class from the docx library), catch that instead. Check the service implementation at `backend/app/services/export/html_export.py` before finalizing — use the narrowest type that makes sense. `DocumentConversionError` from the upload converter is a **different class** and is already covered by H5 in `260420_*`; don't conflate them.
+If `export_docx` raises a more specific exception than `RuntimeError` (e.g., a custom class from the docx library), catch that instead. Check the service implementation at `backend/app/services/export/html_to_document.py:674` (the concrete `export_docx` method; the factory `get_html_export_service()` at `:707` returns this service) before finalizing — use the narrowest type that makes sense. `DocumentConversionError` from the upload converter is a **different class** and is already covered by H5 in `260420_*`; don't conflate them.
 
 ## Implementation order
 
