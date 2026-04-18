@@ -171,6 +171,7 @@ export const useATSProgressStore = create<ATSProgressState>()(
     }),
     {
       name: 'ats-progress-storage',
+      version: 2,
       partialize: (state) => ({
         stages: state.stages,
         compositeScore: state.compositeScore,
