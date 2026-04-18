@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/layout/Sidebar";
+import { MobileTopBar } from "@/components/layout/MobileTopBar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { TailoringProvider } from "@/contexts/TailoringContext";
 
@@ -14,12 +15,15 @@ export default function DashboardLayout({
         <div className="h-screen bg-sidebar flex overflow-hidden">
           <Sidebar />
           {/* Content wrapper with L-frame padding */}
-          <div className="flex-1 flex flex-col pt-4 pr-4 pb-4 min-h-0">
-            <main className="flex-1 bg-background rounded-2xl shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col overflow-hidden min-h-0">
-              <div className="flex-1 pt-8 px-6 pb-6 overflow-y-auto">
-                {children}
-              </div>
-            </main>
+          <div className="flex-1 flex flex-col min-h-0 min-w-0">
+            <MobileTopBar />
+            <div className="flex-1 flex flex-col p-2 md:pt-4 md:pr-4 md:pb-4 md:pl-0 min-h-0">
+              <main className="flex-1 bg-background rounded-2xl shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col overflow-hidden min-h-0">
+                <div className="flex-1 pt-8 px-6 pb-6 overflow-y-auto">
+                  {children}
+                </div>
+              </main>
+            </div>
           </div>
         </div>
       </TailoringProvider>
