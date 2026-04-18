@@ -31,7 +31,35 @@ This document covers error handling conventions and rate limiting across all API
 
 ## Error Response Format
 
-All error responses follow a consistent format:
+Errors raised by registered exception handlers (unhandled 500s, database integrity/operational/timeout errors) use the structured envelope below:
+
+```json
+{
+  "detail": "Error message describing the problem",
+  "error_id": "a1b2c3d4e5f6",
+  "error_code": "internal_error"
+}
+```
+
+| Field | Description |
+| ----- | ----------- |
+| `detail` | Human-readable message (may be a string or, for some conflict errors, an object). Always present. |
+| `error_id` | 12-hex correlation id. Also logged server-side at `ERROR` level with the full stack trace — quote this id when reporting a bug so it can be looked up in logs. |
+| `error_code` | Stable machine-readable code. See table below. |
+
+### Error Codes
+
+| `error_code` | Typical HTTP status | Meaning |
+| ----- | ----- | ----- |
+| `internal_error` | 500 | Catch-all for unhandled exceptions. A bug — quote the `error_id` when reporting. |
+| `db_integrity` | 400 / 409 | Unique-constraint violation, foreign-key miss, or other schema constraint failure. |
+| `db_unavailable` | 503 | Database connection issue; transient. Retry with backoff. |
+| `db_operational` | 500 | Database operational error that isn't a connectivity issue. |
+| `db_timeout` | 504 | Query exceeded its timeout. Retry with a smaller scope or after load subsides. |
+
+### Legacy and Other Responses
+
+Responses raised directly by route code (via `fastapi.HTTPException`) and validation responses (422) continue to use the plain `{"detail": ...}` shape for backward compatibility:
 
 ```json
 {
