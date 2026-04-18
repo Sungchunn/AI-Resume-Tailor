@@ -1155,6 +1155,59 @@ export interface ATSKeywordDetailedResponse {
   warnings: string[];
 }
 
+// Enhanced (4-tier) keyword analysis shape returned by backend Stage 2 analyzer
+// (`analyze_keywords_enhanced`). Used by `/analyze-content` and the SSE
+// `/analyze-progressive` Stage 2 event. Collapse to `ATSKeywordDetailedResponse`
+// via `transformEnhancedToDetailedFormat` (see `@/lib/ats/transformKeywordAnalysis`).
+export interface ATSKeywordEnhancedDetail {
+  keyword: string;
+  importance: string;
+  found_in_resume: boolean;
+  found_in_vault: boolean;
+  frequency_in_job: number;
+  context: string | null;
+  occurrence_count: number;
+  base_score: number;
+  placement_score: number;
+  density_score: number;
+  recency_score: number;
+  importance_weight: number;
+  weighted_score: number;
+}
+
+export interface ATSKeywordEnhancedAnalysis {
+  keyword_score: number;
+  raw_coverage: number;
+
+  required_coverage: number;
+  strongly_preferred_coverage: number;
+  preferred_coverage: number;
+  nice_to_have_coverage: number;
+
+  placement_contribution: number;
+  density_contribution: number;
+  recency_contribution: number;
+
+  required_matched: string[];
+  required_missing: string[];
+  strongly_preferred_matched: string[];
+  strongly_preferred_missing: string[];
+  preferred_matched: string[];
+  preferred_missing: string[];
+  nice_to_have_matched: string[];
+  nice_to_have_missing: string[];
+
+  missing_available_in_vault: string[];
+  missing_not_in_vault: string[];
+
+  gap_list: Array<{ keyword: string; importance: string; in_vault: boolean }>;
+
+  all_keywords: ATSKeywordEnhancedDetail[];
+
+  suggestions: string[];
+  warnings: string[];
+}
+
 // Keyword Extraction with Context (for Review Step)
 export interface KeywordWithContext {
   keyword: string;
@@ -1337,7 +1390,10 @@ export interface ATSContentAnalysisResponse {
   weights_used: Record<string, number>;
   failed_stages: string[];
   knockout_risks: KnockoutRiskItem[];
-  keyword_analysis: ATSKeywordDetailedResponse | null;
+  // Backend serializes `EnhancedKeywordAnalysis` (4-tier) here, NOT the 3-tier
+  // detailed shape. Callers that render the detailed UI must pass this through
+  // `transformEnhancedToDetailedFormat` from `@/lib/ats/transformKeywordAnalysis`.
+  keyword_analysis: ATSKeywordEnhancedAnalysis | null;
 }
 
 // ============================================================================

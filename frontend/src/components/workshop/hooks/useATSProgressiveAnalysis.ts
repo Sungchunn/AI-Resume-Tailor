@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef } from "react";
 import { authApi } from "@/lib/api/client";
 import { useWorkshop, type ATSCompositeScore, type KnockoutRisk, type ATSStageResult } from "../WorkshopContext";
-import type { ATSKeywordDetailedResponse, KeywordDetail } from "@/lib/api/types";
+import type { ATSKeywordEnhancedAnalysis } from "@/lib/api/types";
+import { transformEnhancedToDetailedFormat } from "@/lib/ats/transformKeywordAnalysis";
 
 interface UseATSProgressiveAnalysisOptions {
   onComplete?: () => void;
@@ -16,116 +17,6 @@ interface SSEStageCompleteEvent {
   score: number;
   details: Record<string, unknown>;
   elapsed_ms: number;
-}
-
-// Enhanced keyword detail from backend (4-layer weighted scoring)
-interface EnhancedKeywordDetail {
-  keyword: string;
-  importance: string;
-  found_in_resume: boolean;
-  found_in_vault: boolean;
-  frequency_in_job: number;
-  context: string | null;
-  occurrence_count: number;
-  base_score: number;
-  placement_score: number;
-  density_score: number;
-  recency_score: number;
-  importance_weight: number;
-  weighted_score: number;
-}
-
-// Enhanced keyword analysis from progressive endpoint Stage 2
-interface EnhancedKeywordAnalysis {
-  // Overall scores (0-100)
-  keyword_score: number;
-  raw_coverage: number;
-
-  // Coverage by tier (0-1)
-  required_coverage: number;
-  strongly_preferred_coverage: number;
-  preferred_coverage: number;
-  nice_to_have_coverage: number;
-
-  // Score contributions
-  placement_contribution: number;
-  density_contribution: number;
-  recency_contribution: number;
-
-  // Grouped keywords
-  required_matched: string[];
-  required_missing: string[];
-  strongly_preferred_matched: string[];
-  strongly_preferred_missing: string[];
-  preferred_matched: string[];
-  preferred_missing: string[];
-  nice_to_have_matched: string[];
-  nice_to_have_missing: string[];
-
-  // Vault availability
-  missing_available_in_vault: string[];
-  missing_not_in_vault: string[];
-
-  // Gap analysis
-  gap_list: Array<{ keyword: string; importance: string; in_vault: boolean }>;
-
-  // Detailed keywords
-  all_keywords: EnhancedKeywordDetail[];
-
-  // Suggestions
-  suggestions: string[];
-  warnings: string[];
-}
-
-/**
- * Transform enhanced keyword analysis (4-tier) to detailed format (3-tier).
- * Merges strongly_preferred into preferred tier since frontend uses 3 tiers.
- */
-function transformEnhancedToDetailedFormat(
-  enhanced: EnhancedKeywordAnalysis
-): ATSKeywordDetailedResponse {
-  // Merge strongly_preferred into preferred (frontend type has 3 tiers, backend has 4)
-  const preferredMatched = [
-    ...(enhanced.strongly_preferred_matched ?? []),
-    ...(enhanced.preferred_matched ?? []),
-  ];
-  const preferredMissing = [
-    ...(enhanced.strongly_preferred_missing ?? []),
-    ...(enhanced.preferred_missing ?? []),
-  ];
-
-  // Convert EnhancedKeywordDetail to simpler KeywordDetail
-  const allKeywords: KeywordDetail[] = (enhanced.all_keywords ?? []).map((kw) => ({
-    keyword: kw.keyword,
-    importance: kw.importance === "strongly_preferred" ? "preferred" : kw.importance as KeywordDetail["importance"],
-    found_in_resume: kw.found_in_resume,
-    found_in_vault: kw.found_in_vault,
-    frequency_in_job: kw.frequency_in_job,
-    context: kw.context,
-  }));
-
-  // Calculate merged preferred coverage (average of strongly_preferred and preferred)
-  const mergedPreferredCoverage =
-    (enhanced.strongly_preferred_coverage ?? 0) > 0 && (enhanced.preferred_coverage ?? 0) > 0
-      ? ((enhanced.strongly_preferred_coverage ?? 0) + (enhanced.preferred_coverage ?? 0)) / 2
-      : Math.max(enhanced.strongly_preferred_coverage ?? 0, enhanced.preferred_coverage ?? 0);
-
-  return {
-    coverage_score: enhanced.raw_coverage / 100, // Convert 0-100 to 0-1
-    required_coverage: enhanced.required_coverage,
-    preferred_coverage: mergedPreferredCoverage,
-    required_matched: enhanced.required_matched ?? [],
-    required_missing: enhanced.required_missing ?? [],
-    preferred_matched: preferredMatched,
-    preferred_missing: preferredMissing,
-    nice_to_have_matched: enhanced.nice_to_have_matched ?? [],
-    nice_to_have_missing: enhanced.nice_to_have_missing ?? [],
-    missing_available_in_vault: enhanced.missing_available_in_vault ?? [],
-    missing_not_in_vault: enhanced.missing_not_in_vault ?? [],
-    all_keywords: allKeywords,
-    suggestions: enhanced.suggestions ?? [],
-    warnings: enhanced.warnings ?? [],
-  };
 }
 
 // Backend knockout risk format (from API)
@@ -257,7 +148,7 @@ export function useATSProgressiveAnalysis(options?: UseATSProgressiveAnalysisOpt
             if (keywordStage?.details) {
               dispatch({
                 type: "SET_ATS_ANALYSIS",
-                payload: transformEnhancedToDetailedFormat(keywordStage.details as unknown as EnhancedKeywordAnalysis),
+                payload: transformEnhancedToDetailedFormat(keywordStage.details as unknown as ATSKeywordEnhancedAnalysis),
               });
             }
 
@@ -290,7 +181,7 @@ export function useATSProgressiveAnalysis(options?: UseATSProgressiveAnalysisOpt
             if (result.stage === 2 && result.details) {
               dispatch({
                 type: "SET_ATS_ANALYSIS",
-                payload: transformEnhancedToDetailedFormat(result.details as unknown as EnhancedKeywordAnalysis),
+                payload: transformEnhancedToDetailedFormat(result.details as unknown as ATSKeywordEnhancedAnalysis),
               });
             }
             break;

@@ -5,6 +5,7 @@ import { useDebouncedCallback } from "use-debounce";
 import type { TailoredContent, ATSKeywordDetailedResponse } from "@/lib/api/types";
 import { atsApi } from "@/lib/api/client";
 import { useQuickMatch } from "@/lib/api/hooks";
+import { transformEnhancedToDetailedFormat } from "@/lib/ats/transformKeywordAnalysis";
 import type {
   UseScoreCalculationOptions,
   UseScoreCalculationResult,
@@ -61,7 +62,9 @@ export function useScoreCalculation({
         });
 
         newScore = response.final_score;
-        newKeywordAnalysis = response.keyword_analysis;
+        newKeywordAnalysis = response.keyword_analysis
+          ? transformEnhancedToDetailedFormat(response.keyword_analysis)
+          : null;
       } else {
         // Fallback to quick-match (fetches from DB, different scoring algorithm)
         const request = jobListingId
