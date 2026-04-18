@@ -158,7 +158,7 @@ async def tailor_resume(
         raw_job = job.raw_content
         job_source_type = "user_created"
         job_source_id = job.id  # Store integer ID in MongoDB for backward compat
-        job_public_id = job.public_id  # Return UUID in response
+        job_public_id = job.public_id  # type: ignore[assignment]
         job_title = job.title  # type: ignore[assignment]
         company_name = job.company  # type: ignore[assignment]
     else:
@@ -189,7 +189,7 @@ async def tailor_resume(
             focus_keywords=request.focus_keywords,
         )
 
-        # Log AI usage metrics
+        # Log AI usage metrics (flush, not commit, until Mongo succeeds)
         if "ai_metrics" in result:
             usage_tracker = get_usage_tracker()
             await usage_tracker.log_generation(
@@ -198,7 +198,7 @@ async def tailor_resume(
                 endpoint="/tailor",
                 response=result["ai_metrics"],
             )
-            await pg.commit()
+            await pg.flush()
 
     except TailoringValidationError as e:
         # AI output failed Pydantic validation even after retry
@@ -216,7 +216,7 @@ async def tailor_resume(
             detail=f"AI service error: {str(e)}",
         )
 
-    # Save to MongoDB with complete tailored_data
+    # Save to MongoDB with complete tailored_data (source of truth)
     create_data = MongoTailoredResumeCreate(
         resume_id=request.resume_id,
         user_id=current_user_id,
@@ -226,7 +226,13 @@ async def tailor_resume(
         job_title=job_title,
         company_name=company_name,
     )
-    tailored = await tailored_resume_crud.create(mongo, obj_in=create_data)
+    try:
+        tailored = await tailored_resume_crud.create(mongo, obj_in=create_data)
+    except Exception:
+        await pg.rollback()
+        raise
+
+    await pg.commit()
 
     return TailorResponse(
         id=str(tailored.id),
@@ -391,7 +397,7 @@ async def get_tailored_resume(
     if tailored.job_source.type == "user_created":
         job = await job_crud.get(pg, id=tailored.job_source.id)
         if job:
-            job_public_id = job.public_id
+            job_public_id = job.public_id  # type: ignore[assignment]
 
     return TailoredResumeFullResponse(
         id=str(tailored.id),
@@ -497,7 +503,11 @@ async def finalize_tailored_resume(
 
     # Finalize with the user's merged document
     finalize_data = MongoTailoredResumeFinalize(finalized_data=request.finalized_data)
-    updated = await tailored_resume_crud.finalize(mongo, id=tailored_id, obj_in=finalize_data)
+    try:
+        updated = await tailored_resume_crud.finalize(mongo, id=tailored_id, obj_in=finalize_data)
+    except Exception:
+        await pg.rollback()
+        raise
 
     if not updated:
         raise HTTPException(
@@ -510,7 +520,7 @@ async def finalize_tailored_resume(
     if updated.job_source.type == "user_created":
         job = await job_crud.get(pg, id=updated.job_source.id)
         if job:
-            job_public_id = job.public_id
+            job_public_id = job.public_id  # type: ignore[assignment]
 
     return TailoredResumeFullResponse(
         id=str(updated.id),
@@ -575,7 +585,7 @@ async def update_tailored_resume(
     if updated.job_source.type == "user_created":
         job = await job_crud.get(pg, id=updated.job_source.id)
         if job:
-            job_public_id = job.public_id
+            job_public_id = job.public_id  # type: ignore[assignment]
 
     return TailoredResumeFullResponse(
         id=str(updated.id),
@@ -671,7 +681,7 @@ async def list_tailored_resumes(
     job_id_to_public_id: dict[int, UUID] = {}
     if user_job_ids:
         jobs = await job_crud.get_by_ids(pg, ids=list(user_job_ids))
-        job_id_to_public_id = {j.id: j.public_id for j in jobs}
+        job_id_to_public_id = {j.id: j.public_id for j in jobs}  # type: ignore[misc]
 
     return [
         TailoredResumeListResponse(

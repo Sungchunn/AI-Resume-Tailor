@@ -11,7 +11,7 @@ import logging
 import re
 import uuid
 from dataclasses import asdict
-from typing import Any, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 from pydantic import ValidationError
 
@@ -34,7 +34,7 @@ class TailoringValidationError(Exception):
         self.validation_errors = validation_errors or []
 
 
-class TailoringResult(TypedDict, total=False):
+class TailoringResult(TypedDict):
     """Result of tailoring a resume.
 
     Two Copies Architecture:
@@ -48,7 +48,7 @@ class TailoringResult(TypedDict, total=False):
     skill_matches: list[str]
     skill_gaps: list[str]
     keyword_coverage: float
-    ai_metrics: AIResponse  # Accumulated metrics for logging (optional)
+    ai_metrics: NotRequired[AIResponse]
 
 
 # System prompt for Two Copies architecture
