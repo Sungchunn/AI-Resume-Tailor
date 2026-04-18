@@ -507,6 +507,33 @@ export function ATSEvaluationTab({
     return null;
   }, [isUserJob, isJobListing, userJob, jobListing]);
 
+  // Parsed job metadata (title, company, seniority, industry, etc.) for
+  // Stage 4 Role Proximity. Without this, role_proximity_score is 0 and the
+  // composite drops ~20 points vs /tailor/analyze. Mirrors the shape that
+  // /analyze-progressive builds in progressive.py lines 148–176.
+  const jobContent = useMemo<Record<string, unknown> | null>(() => {
+    if (isJobListing && jobListing) {
+      return {
+        title: jobListing.job_title,
+        company: jobListing.company_name,
+        location: jobListing.location,
+        seniority: jobListing.seniority,
+        job_function: jobListing.job_function,
+        industry: jobListing.industry,
+        description: jobListing.job_description,
+      };
+    }
+    if (isUserJob && userJob) {
+      if (userJob.parsed_content) return userJob.parsed_content;
+      return {
+        title: userJob.title,
+        company: userJob.company,
+        description: userJob.raw_content,
+      };
+    }
+    return null;
+  }, [isUserJob, isJobListing, userJob, jobListing]);
+
   // Live scoring via /analyze-content
   const contentMutation = useATSContentAnalysis();
   const [analysis, setAnalysis] = useState<ATSContentAnalysisResponse | null>(
@@ -601,6 +628,7 @@ export function ATSEvaluationTab({
       {
         resume_content: content,
         job_description: jobDescription,
+        job_content: jobContent,
       },
       {
         onSuccess: (response) => {
@@ -618,6 +646,7 @@ export function ATSEvaluationTab({
   }, [
     blocks,
     jobDescription,
+    jobContent,
     contentMutation,
     setAnalyzedContentHash,
     clearStaleFlag,
