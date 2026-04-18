@@ -282,6 +282,14 @@ Do not include common generic words like "experience", "ability", "skills".
             ]
             return (fallback, None) if return_metrics else fallback
 
+    @overload
+    async def extract_keywords_with_context(
+        self, job_description: str, return_metrics: Literal[False] = False
+    ) -> list[dict[str, Any]]: ...
+    @overload
+    async def extract_keywords_with_context(
+        self, job_description: str, return_metrics: Literal[True]
+    ) -> tuple[list[dict[str, Any]], AIResponse | None]: ...
     async def extract_keywords_with_context(
         self, job_description: str, return_metrics: bool = False
     ) -> list[dict[str, Any]] | tuple[list[dict[str, Any]], AIResponse | None]:
