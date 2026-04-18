@@ -43,6 +43,7 @@ from app.schemas.resume_build import (
     UpdateStatusRequest,
 )
 from app.services.ai import get_usage_tracker
+from app.services.ai.client import AIServiceError
 
 router = APIRouter()
 
@@ -256,14 +257,20 @@ async def generate_suggestions(
     # Generate suggestions based on resume content
     diff_engine = get_diff_engine()
     usage_tracker = get_usage_tracker()
-    result, ai_response = await diff_engine.generate_suggestions(
-        workshop=resume_build,
-        job_description=resume_build.get("job_description", ""),
-        available_blocks=[],  # No vault blocks, use resume content directly
-        max_suggestions=suggest_in.max_suggestions,
-        focus_sections=suggest_in.focus_sections,
-        return_metrics=True,
-    )
+    try:
+        result, ai_response = await diff_engine.generate_suggestions(
+            workshop=resume_build,
+            job_description=resume_build.get("job_description", ""),
+            available_blocks=[],  # No vault blocks, use resume content directly
+            max_suggestions=suggest_in.max_suggestions,
+            focus_sections=suggest_in.focus_sections,
+            return_metrics=True,
+        )
+    except AIServiceError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"AI service error: {str(e)}",
+        )
 
     # Add suggestions to resume build
     if result["suggestions"]:
@@ -337,16 +344,22 @@ async def suggest_bullet(
     # Generate suggestion
     diff_engine = get_diff_engine()
     usage_tracker = get_usage_tracker()
-    result, ai_response = await diff_engine.suggest_single_bullet(
-        bullet_text=request.bullet_text,
-        entry_context={
-            "title": request.entry_context.title,
-            "company": request.entry_context.company,
-            "date_range": request.entry_context.date_range,
-        },
-        job_description=job_description,
-        return_metrics=True,
-    )
+    try:
+        result, ai_response = await diff_engine.suggest_single_bullet(
+            bullet_text=request.bullet_text,
+            entry_context={
+                "title": request.entry_context.title,
+                "company": request.entry_context.company,
+                "date_range": request.entry_context.date_range,
+            },
+            job_description=job_description,
+            return_metrics=True,
+        )
+    except AIServiceError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"AI service error: {str(e)}",
+        )
 
     if ai_response:
         await usage_tracker.log_generation(
