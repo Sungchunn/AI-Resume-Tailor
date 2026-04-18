@@ -1,32 +1,32 @@
 "use client";
 
 import { useState } from "react";
-import { MessageSquare, Target, Palette, Layers } from "lucide-react";
-import { AIChatTab, ATSEvaluationTab, FormattingTab, SectionDraggerTab } from "./tabs";
+import { Target, Palette, Layers } from "lucide-react";
+import { ATSEvaluationTab, FormattingTab, SectionDraggerTab } from "./tabs";
 
-type ControlPanelTab = "ai" | "ats" | "formatting" | "sections";
+type ControlPanelTab = "ats" | "formatting" | "sections";
 
 interface ControlPanelProps {
-  /** Resume MongoDB ObjectId - needed for library-mode bullet suggestions */
+  /** Resume MongoDB ObjectId - needed for ATS evaluation */
   resumeId: string;
   /** User-created job ID for ATS analysis - UUID, null means no job context */
   jobId: string | null;
   /** Scraped job listing ID for ATS analysis - integer, null means no job context */
   jobListingId: number | null;
-  /** Tailored resume ID for bullet suggestions - only provided in tailor editor */
-  tailoredResumeId?: string | null;
 }
 
 /**
  * ControlPanel - Tabbed control panel for the resume editor
  *
  * Tabs:
- * 1. AI Chat - AI-powered suggestions
- * 2. ATS Evaluation - Keyword coverage and ATS compatibility
- * 3. Formatting - Style, font, and spacing controls
- * 4. Sections - Drag-and-drop section ordering
+ * 1. ATS Evaluation - Keyword coverage and ATS compatibility
+ * 2. Formatting - Style, font, and spacing controls
+ * 3. Sections - Drag-and-drop section ordering
+ *
+ * The bullet-suggestion review UI (SuggestionProgressPanel) lives in the
+ * floating EditorSuggestionDock next to the preview canvas, not in a tab.
  */
-export function ControlPanel({ resumeId, jobId, jobListingId, tailoredResumeId }: ControlPanelProps) {
+export function ControlPanel({ resumeId, jobId, jobListingId }: ControlPanelProps) {
   const [activeTab, setActiveTab] = useState<ControlPanelTab>("formatting");
 
   // Has job context if either job ID is provided
@@ -36,12 +36,6 @@ export function ControlPanel({ resumeId, jobId, jobListingId, tailoredResumeId }
     <div className="h-full flex flex-col bg-card border-l border-border">
       {/* Tab Navigation */}
       <div className="flex items-center border-b border-border px-2">
-        <TabButton
-          active={activeTab === "ai"}
-          onClick={() => setActiveTab("ai")}
-          icon={<MessageSquare className="w-4 h-4" />}
-          label="AI"
-        />
         <TabButton
           active={activeTab === "ats"}
           onClick={() => setActiveTab("ats")}
@@ -66,9 +60,6 @@ export function ControlPanel({ resumeId, jobId, jobListingId, tailoredResumeId }
 
       {/* Tab Content — all tabs stay mounted to preserve state; inactive tabs are hidden */}
       <div className="flex-1 overflow-hidden">
-        <div className={`h-full ${activeTab === "ai" ? "" : "hidden"}`}>
-          <AIChatTab resumeId={resumeId} jobId={jobId} jobListingId={jobListingId} tailoredResumeId={tailoredResumeId} />
-        </div>
         <div className={`h-full ${activeTab === "ats" ? "" : "hidden"}`}>
           <ATSEvaluationTab resumeId={resumeId} jobId={jobId} jobListingId={jobListingId} />
         </div>

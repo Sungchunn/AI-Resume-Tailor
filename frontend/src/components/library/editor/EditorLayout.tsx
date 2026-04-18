@@ -16,6 +16,7 @@ import ExportDialog from "@/components/export/ExportDialog";
 import { useInlineSuggestionKeyboard } from "@/hooks/useInlineSuggestionKeyboard";
 import { useInlineSuggestionQueueStore } from "@/lib/stores/inlineSuggestionQueueStore";
 import { InlineSuggestionQueueProvider } from "./InlineSuggestionQueueProvider";
+import { EditorSuggestionDock } from "./EditorSuggestionDock";
 
 interface EditorLayoutProps {
   /** Resume ID */
@@ -283,50 +284,60 @@ function EditorLayoutContent({
         <Group orientation="horizontal" className="h-full">
           {/* Left Panel: Preview */}
           <Panel defaultSize={isPreviewFullscreen ? "100%" : "73%"} minSize="40%">
-            <div ref={previewScrollContainerRef} className="h-full overflow-auto bg-muted p-4 flex flex-col items-center">
-              {isPreviewFullscreen && (
-                <div className="mb-4 w-full flex justify-end">
-                  <button
-                    onClick={() => setIsPreviewFullscreen(false)}
-                    className="px-3 py-1.5 text-sm bg-card border border-border rounded-md shadow-sm hover:bg-accent transition-colors"
-                  >
-                    Exit Fullscreen
-                  </button>
-                </div>
-              )}
+            <div className="relative h-full">
+              <div ref={previewScrollContainerRef} className="h-full overflow-auto bg-muted p-4 flex flex-col items-center">
+                {isPreviewFullscreen && (
+                  <div className="mb-4 w-full flex justify-end">
+                    <button
+                      onClick={() => setIsPreviewFullscreen(false)}
+                      className="px-3 py-1.5 text-sm bg-card border border-border rounded-md shadow-sm hover:bg-accent transition-colors"
+                    >
+                      Exit Fullscreen
+                    </button>
+                  </div>
+                )}
 
-              {/* Minimum reached warning - auto-fit is enabled but can't fit content */}
-              {fitToOnePage && autoFitStatus.state === "minimum_reached" && (
-                <MinimumReachedWarning message={autoFitStatus.message} />
-              )}
+                {/* Minimum reached warning - auto-fit is enabled but can't fit content */}
+                {fitToOnePage && autoFitStatus.state === "minimum_reached" && (
+                  <MinimumReachedWarning message={autoFitStatus.message} />
+                )}
 
-              {/* Overflow warning - only when auto-fit is disabled */}
-              {!fitToOnePage && overflows && (
-                <OverflowWarning estimatedPageCount={pageCount} />
-              )}
+                {/* Overflow warning - only when auto-fit is disabled */}
+                {!fitToOnePage && overflows && (
+                  <OverflowWarning estimatedPageCount={pageCount} />
+                )}
 
-              {/* Paginated preview */}
-              <PaginatedResumePreview
-                ref={previewRef}
-                blocks={blocks}
-                style={style}
-                activeBlockId={activeBlockId}
-                hoveredBlockId={hoveredBlockId}
-                onBlockClick={handlePreviewBlockClick}
-                onBlockHover={handlePreviewBlockHover}
-                onMoveBlockUp={handleMoveBlockUp}
-                onMoveBlockDown={handleMoveBlockDown}
-                activeElementId={activeElementId}
-                hoveredElementId={hoveredElementId}
-                onElementClick={handlePreviewElementClick}
-                onElementHover={handlePreviewElementHover}
-                interactive={true}
-                showPageBorder={true}
-                pageGap={24}
-                enableInlineEdit={true}
-                onInlineEditCommit={handleInlineEditCommit}
-                scrollContainerRef={previewScrollContainerRef}
-              />
+                {/* Paginated preview */}
+                <PaginatedResumePreview
+                  ref={previewRef}
+                  blocks={blocks}
+                  style={style}
+                  activeBlockId={activeBlockId}
+                  hoveredBlockId={hoveredBlockId}
+                  onBlockClick={handlePreviewBlockClick}
+                  onBlockHover={handlePreviewBlockHover}
+                  onMoveBlockUp={handleMoveBlockUp}
+                  onMoveBlockDown={handleMoveBlockDown}
+                  activeElementId={activeElementId}
+                  hoveredElementId={hoveredElementId}
+                  onElementClick={handlePreviewElementClick}
+                  onElementHover={handlePreviewElementHover}
+                  interactive={true}
+                  showPageBorder={true}
+                  pageGap={24}
+                  enableInlineEdit={true}
+                  onInlineEditCommit={handleInlineEditCommit}
+                  scrollContainerRef={previewScrollContainerRef}
+                />
+              </div>
+
+              {!isPreviewFullscreen && (
+                <EditorSuggestionDock
+                  jobId={jobId}
+                  jobListingId={jobListingId}
+                  tailoredResumeId={tailoredResumeId}
+                />
+              )}
             </div>
           </Panel>
 
@@ -337,7 +348,7 @@ function EditorLayoutContent({
               <Separator className="w-1.5 bg-muted hover:bg-primary/20 transition-colors cursor-col-resize" />
 
               <Panel defaultSize="27%" minSize="20%" maxSize="40%">
-                <ControlPanel resumeId={resumeId} jobId={jobId} jobListingId={jobListingId} tailoredResumeId={tailoredResumeId} />
+                <ControlPanel resumeId={resumeId} jobId={jobId} jobListingId={jobListingId} />
               </Panel>
             </>
           )}

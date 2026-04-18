@@ -77,7 +77,6 @@ export { ParseResumeButton } from "./ParseResumeButton";
 
 // Tab components
 export {
-  AIChatTab,
   ATSEvaluationTab,
   FormattingTab,
   SectionDraggerTab,
