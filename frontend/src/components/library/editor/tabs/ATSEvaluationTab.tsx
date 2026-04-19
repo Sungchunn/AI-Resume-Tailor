@@ -13,6 +13,7 @@ import {
   Briefcase,
   Building2,
   ShieldAlert,
+  Sparkles,
 } from "lucide-react";
 import { useDebouncedCallback } from "use-debounce";
 import { useBlockEditor } from "../BlockEditorContext";
@@ -28,7 +29,10 @@ import { useBulletSuggestionsStore } from "@/lib/stores/bulletSuggestionsStore";
 import { useRewriteIsActive, useRewriteIsLoading } from "@/lib/stores/rewriteDiffStore";
 import { useIsInlineReviewActive } from "@/lib/stores/inlineSuggestionQueueStore";
 import { useRewriteResume } from "@/hooks/useRewriteResume";
+import { useKeywordTargetedSuggestions } from "@/hooks/useKeywordTargetedSuggestions";
+import { useKeywordAssignmentStore } from "@/lib/stores/keywordAssignmentStore";
 import { Wand2 } from "lucide-react";
+import type { ExperienceEntry, ProjectEntry } from "@/lib/resume/types";
 import { generateContentHash } from "@/lib/utils/contentHash";
 import { transformEnhancedToDetailedFormat } from "@/lib/ats/transformKeywordAnalysis";
 import type {
@@ -134,36 +138,56 @@ function KeywordChip({
   found,
   inVault,
   importance,
+  onClick,
+  isSelected,
 }: {
   keyword: string;
   found: boolean;
   inVault: boolean;
   importance: KeywordImportance;
+  onClick?: () => void;
+  isSelected?: boolean;
 }) {
   const config = IMPORTANCE_CONFIG[importance];
+  const isInteractive = !found && !!onClick;
 
   return (
     <span
+      role={isInteractive ? "button" : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
+      onClick={isInteractive ? onClick : undefined}
+      onKeyDown={
+        isInteractive
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") onClick?.();
+            }
+          : undefined
+      }
       className={`
-        inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium
+        inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-opacity
+        ${isInteractive ? "cursor-pointer" : "cursor-default"}
         ${
           found
             ? "bg-green-100 text-green-700 border border-green-200"
-            : inVault
-              ? `${config.bgColor} ${config.textColor} border ${config.borderColor} opacity-90`
-              : `${config.bgColor} ${config.textColor} border ${config.borderColor} opacity-70`
+            : isSelected
+              ? "bg-teal-100 text-teal-700 border border-teal-400"
+              : inVault
+                ? `${config.bgColor} ${config.textColor} border ${config.borderColor} opacity-90 hover:opacity-100`
+                : `${config.bgColor} ${config.textColor} border ${config.borderColor} opacity-70 hover:opacity-90`
         }
       `}
       title={
         found
           ? "Found in your resume"
-          : inVault
-            ? "Available in your vault"
-            : "Not found in your experience"
+          : isSelected
+            ? "Selected — assign to a section below"
+            : inVault
+              ? "Available in your vault — click to select"
+              : "Missing from your resume — click to select"
       }
     >
-      {found && <Check className="w-3 h-3" />}
-      {!found && inVault && <Plus className="w-3 h-3" />}
+      {(found || isSelected) && <Check className="w-3 h-3" />}
+      {!found && !isSelected && inVault && <Plus className="w-3 h-3" />}
       {keyword}
     </span>
   );
@@ -178,12 +202,16 @@ function KeywordSection({
   matched,
   missing,
   missingInVault,
+  selectedKeywords,
+  onToggleKeyword,
 }: {
   title: string;
   importance: KeywordImportance;
   matched: string[];
   missing: string[];
   missingInVault: string[];
+  selectedKeywords: Record<string, boolean>;
+  onToggleKeyword: (keyword: string) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const config = IMPORTANCE_CONFIG[importance];
@@ -249,6 +277,8 @@ function KeywordSection({
                     found={false}
                     inVault={missingInVault.includes(kw)}
                     importance={importance}
+                    onClick={() => onToggleKeyword(kw)}
+                    isSelected={!!selectedKeywords[kw]}
                   />
                 ))}
               </div>
@@ -452,6 +482,31 @@ export function ATSEvaluationTab({
 }: ATSEvaluationTabProps) {
   const { state } = useBlockEditor();
   const { blocks } = state;
+
+  // Keyword assignment store
+  const selectedKeywords = useKeywordAssignmentStore((s) => s.selectedKeywords);
+  const toggleSelect = useKeywordAssignmentStore((s) => s.toggleSelect);
+  const assignSection = useKeywordAssignmentStore((s) => s.assignSection);
+  const unassign = useKeywordAssignmentStore((s) => s.unassign);
+  const getAssigned = useKeywordAssignmentStore((s) => s.getAssigned);
+
+  // Section options for the keyword assignment dropdown (derived from current resume blocks)
+  const sectionOptions = useMemo(() => {
+    const opts: Array<{ id: string; label: string }> = [];
+    blocks.forEach((block) => {
+      if (block.type === "experience") {
+        (block.content as ExperienceEntry[]).forEach((entry, idx) => {
+          const label = [entry.title, entry.company].filter(Boolean).join(" at ");
+          opts.push({ id: `${block.id}:entry-${idx}`, label: label || `Experience ${idx + 1}` });
+        });
+      } else if (block.type === "projects") {
+        (block.content as ProjectEntry[]).forEach((entry, idx) => {
+          opts.push({ id: `${block.id}:entry-${idx}`, label: `Project: ${entry.name || `Project ${idx + 1}`}` });
+        });
+      }
+    });
+    return opts;
+  }, [blocks]);
 
   // Store selectors
   const storeResumeId = useATSProgressStore((s) => s.resumeId);
@@ -755,6 +810,17 @@ export function ATSEvaluationTab({
     jobDescription: jobDescription ?? "",
     preRewriteScore: displayScore,
   });
+
+  const {
+    triggerKeywordSuggestions,
+    isRunning: kwIsRunning,
+    error: kwError,
+  } = useKeywordTargetedSuggestions({
+    resumeId,
+    jobId: jobId ?? null,
+    jobListingId: jobListingId ?? null,
+    atsData: detailedKeywordAnalysis,
+  });
   const canRewrite =
     hasScore &&
     hasJobContext &&
@@ -1005,6 +1071,10 @@ export function ATSEvaluationTab({
                     missingInVault={
                       detailedKeywordAnalysis.missing_available_in_vault
                     }
+                    selectedKeywords={Object.fromEntries(
+                      Object.keys(selectedKeywords).map((k) => [k, true])
+                    )}
+                    onToggleKeyword={(kw) => toggleSelect(kw, "required")}
                   />
                   <KeywordSection
                     title="Preferred"
@@ -1014,6 +1084,10 @@ export function ATSEvaluationTab({
                     missingInVault={
                       detailedKeywordAnalysis.missing_available_in_vault
                     }
+                    selectedKeywords={Object.fromEntries(
+                      Object.keys(selectedKeywords).map((k) => [k, true])
+                    )}
+                    onToggleKeyword={(kw) => toggleSelect(kw, "preferred")}
                   />
                   <KeywordSection
                     title="Nice to Have"
@@ -1023,8 +1097,74 @@ export function ATSEvaluationTab({
                     missingInVault={
                       detailedKeywordAnalysis.missing_available_in_vault
                     }
+                    selectedKeywords={Object.fromEntries(
+                      Object.keys(selectedKeywords).map((k) => [k, true])
+                    )}
+                    onToggleKeyword={(kw) => toggleSelect(kw, "nice_to_have")}
                   />
                 </div>
+
+                {/* Selected Keywords — assign to sections + run targeted suggestions */}
+                {Object.keys(selectedKeywords).length > 0 && (
+                  <div className="border border-teal-200 rounded-lg overflow-hidden">
+                    <div className="flex items-center px-3 py-2 bg-teal-50/60 text-xs font-medium text-teal-700">
+                      <Check className="w-3.5 h-3.5 mr-1.5" />
+                      Selected Keywords ({Object.keys(selectedKeywords).length})
+                    </div>
+                    <div className="divide-y divide-border">
+                      {Object.values(selectedKeywords).map((assignment) => (
+                        <div key={assignment.keyword} className="flex items-center gap-2 px-3 py-2">
+                          <span className="text-xs font-medium text-foreground shrink-0">
+                            {assignment.keyword}
+                          </span>
+                          <select
+                            value={assignment.sectionId ?? ""}
+                            onChange={(e) => {
+                              const opt = sectionOptions.find((o) => o.id === e.target.value);
+                              if (opt) assignSection(assignment.keyword, opt.id, opt.label);
+                              else unassign(assignment.keyword);
+                            }}
+                            className="flex-1 min-w-0 text-xs border border-border rounded px-2 py-1 bg-background text-foreground"
+                          >
+                            <option value="">Assign to section…</option>
+                            {sectionOptions.map((opt) => (
+                              <option key={opt.id} value={opt.id}>{opt.label}</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => toggleSelect(assignment.keyword, assignment.importance)}
+                            className="shrink-0 text-muted-foreground hover:text-foreground text-base leading-none"
+                            title="Remove"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="px-3 py-2 border-t border-border bg-card space-y-2">
+                      {kwError && (
+                        <p className="text-xs text-red-600">{kwError}</p>
+                      )}
+                      <button
+                        onClick={triggerKeywordSuggestions}
+                        disabled={getAssigned().length === 0 || kwIsRunning}
+                        className="w-full flex items-center justify-center gap-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-700 disabled:bg-muted disabled:text-muted-foreground text-white py-2 rounded transition-colors"
+                      >
+                        {kwIsRunning ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            Running…
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5" />
+                            Run Keyword Suggestions
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {detailedKeywordAnalysis.suggestions.length > 0 && (
                   <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
