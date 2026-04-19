@@ -25,6 +25,10 @@ import {
 } from "@/lib/api/hooks";
 import { useATSProgressStore } from "@/lib/stores/atsProgressStore";
 import { useBulletSuggestionsStore } from "@/lib/stores/bulletSuggestionsStore";
+import { useRewriteIsActive, useRewriteIsLoading } from "@/lib/stores/rewriteDiffStore";
+import { useIsInlineReviewActive } from "@/lib/stores/inlineSuggestionQueueStore";
+import { useRewriteResume } from "@/hooks/useRewriteResume";
+import { Wand2 } from "lucide-react";
 import { generateContentHash } from "@/lib/utils/contentHash";
 import { transformEnhancedToDetailedFormat } from "@/lib/ats/transformKeywordAnalysis";
 import type {
@@ -741,6 +745,25 @@ export function ATSEvaluationTab({
   const isAnalyzing = contentMutation.isPending || storeIsAnalyzing;
   const hasScore = displayScore !== null;
 
+  // Rewrite feature
+  const isRewriteActive = useRewriteIsActive();
+  const isRewriteLoading = useRewriteIsLoading();
+  const isBatchReviewActive = useIsInlineReviewActive();
+  const { triggerRewrite, error: rewriteError } = useRewriteResume({
+    resumeId,
+    jobId: effectiveJobId,
+    jobDescription: jobDescription ?? "",
+    preRewriteScore: displayScore,
+  });
+  const canRewrite =
+    hasScore &&
+    hasJobContext &&
+    !!jobDescription &&
+    !isAnalyzing &&
+    !isRewriteActive &&
+    !isRewriteLoading &&
+    !isBatchReviewActive;
+
   // No job context - show disabled state
   if (!hasJobContext) {
     return (
@@ -833,20 +856,40 @@ export function ATSEvaluationTab({
             <Target className="w-4 h-4" />
             ATS Evaluation
           </h3>
-          {hasScore && (
-            <button
-              onClick={handleForceRefresh}
-              disabled={isAnalyzing}
-              className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 disabled:opacity-50"
-              title="Skip cache and re-run all 5 stages"
-            >
-              <RefreshCw
-                className={`w-3 h-3 ${isAnalyzing ? "animate-spin" : ""}`}
-              />
-              Full re-analyze
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {hasScore && (
+              <button
+                onClick={handleForceRefresh}
+                disabled={isAnalyzing}
+                className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 disabled:opacity-50"
+                title="Skip cache and re-run all 5 stages"
+              >
+                <RefreshCw
+                  className={`w-3 h-3 ${isAnalyzing ? "animate-spin" : ""}`}
+                />
+                Full re-analyze
+              </button>
+            )}
+            {hasScore && (
+              <button
+                onClick={triggerRewrite}
+                disabled={!canRewrite}
+                className="text-xs bg-teal-600 hover:bg-teal-700 text-white font-medium flex items-center gap-1 px-2 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                title={
+                  isRewriteActive
+                    ? "Rewrite review in progress"
+                    : "AI-rewrite all bullets for this job"
+                }
+              >
+                <Wand2 className={`w-3 h-3 ${isRewriteLoading ? "animate-pulse" : ""}`} />
+                {isRewriteLoading ? "Rewriting…" : "Rewrite for this job"}
+              </button>
+            )}
+          </div>
         </div>
+        {rewriteError && (
+          <p className="text-xs text-destructive mt-1">{rewriteError}</p>
+        )}
       </div>
 
       {/* Scrollable Content */}

@@ -14,9 +14,12 @@ import {
 import type { PaginatedResumePreviewHandle } from "../preview/PaginatedResumePreview";
 import ExportDialog from "@/components/export/ExportDialog";
 import { useInlineSuggestionKeyboard } from "@/hooks/useInlineSuggestionKeyboard";
+import { useRewriteKeyboard } from "@/hooks/useRewriteKeyboard";
 import { useInlineSuggestionQueueStore } from "@/lib/stores/inlineSuggestionQueueStore";
+import { useRewriteActiveElementId } from "@/lib/stores/rewriteDiffStore";
 import { InlineSuggestionQueueProvider } from "./InlineSuggestionQueueProvider";
 import { EditorSuggestionDock } from "./EditorSuggestionDock";
+import { RewriteChangeSummaryPanel } from "./RewriteChangeSummaryPanel";
 
 interface EditorLayoutProps {
   /** Resume ID */
@@ -110,6 +113,18 @@ function EditorLayoutContent({
 
   // Inline suggestion keyboard shortcuts
   useInlineSuggestionKeyboard();
+  // AI rewrite review keyboard shortcuts
+  useRewriteKeyboard();
+
+  // Scroll preview to the active rewrite bullet when navigation advances
+  const activeRewriteElementId = useRewriteActiveElementId();
+  useEffect(() => {
+    if (!activeRewriteElementId) return;
+    const el = document.querySelector(
+      `[data-bullet-element-id="${CSS.escape(activeRewriteElementId)}"]`
+    );
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [activeRewriteElementId]);
 
   // Page count from paginated preview (used for overflow warning)
   const pageCount = previewRef.current?.getPageCount() ?? 1;
@@ -332,11 +347,14 @@ function EditorLayoutContent({
               </div>
 
               {!isPreviewFullscreen && (
-                <EditorSuggestionDock
-                  jobId={jobId}
-                  jobListingId={jobListingId}
-                  tailoredResumeId={tailoredResumeId}
-                />
+                <>
+                  <RewriteChangeSummaryPanel />
+                  <EditorSuggestionDock
+                    jobId={jobId}
+                    jobListingId={jobListingId}
+                    tailoredResumeId={tailoredResumeId}
+                  />
+                </>
               )}
             </div>
           </Panel>

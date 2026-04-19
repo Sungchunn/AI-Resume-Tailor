@@ -1121,6 +1121,43 @@ export const atsApi = {
 };
 
 // AI Chat API (Resume Section Improvements)
+export interface RewriteBulletItem {
+  element_id: string;
+  text: string;
+  entry_context: { title: string; company: string; date_range: string };
+}
+
+export interface RewriteResumeRequest {
+  resume_id: string;
+  job_id: string;
+  job_description: string;
+  bullets: RewriteBulletItem[];
+  summary?: string;
+  missing_keywords: string[];
+  options: { rewrite_bullets: boolean; rewrite_summary: boolean };
+}
+
+export interface BulletRewriteResult {
+  element_id: string;
+  original: string;
+  proposed: string;
+  reason: string;
+  impact: "high" | "medium" | "low";
+  keywords_added: string[];
+}
+
+export interface SummaryRewriteResult {
+  original: string;
+  proposed: string;
+  reason: string;
+}
+
+export interface RewriteResumeResponse {
+  bullets: BulletRewriteResult[];
+  summary: SummaryRewriteResult | null;
+  stats: { bullets_changed: number; bullets_unchanged: number; keywords_added: number };
+}
+
 export const aiApi = {
   improveSection: (data: ImproveSectionRequest): Promise<ImproveSectionResponse> =>
     fetchApi("/api/v1/ai/improve-section", {
@@ -1130,6 +1167,12 @@ export const aiApi = {
 
   chat: (data: AIChatRequest): Promise<AIChatResponse> =>
     fetchApi("/api/v1/ai/chat", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  rewriteResume: (data: RewriteResumeRequest): Promise<RewriteResumeResponse> =>
+    fetchApi("/api/v1/ai/rewrite-resume", {
       method: "POST",
       body: JSON.stringify(data),
     }),
