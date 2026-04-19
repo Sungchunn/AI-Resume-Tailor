@@ -5,6 +5,7 @@ import type { BaseBlockPreviewProps } from "../types";
 import { InlineRichText } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
+import { useRewriteSummary } from "@/lib/stores/rewriteDiffStore";
 
 interface SummaryPreviewProps extends BaseBlockPreviewProps<string> {}
 
@@ -18,6 +19,7 @@ interface SummaryPreviewProps extends BaseBlockPreviewProps<string> {}
 export function SummaryPreview({ content, style, blockId }: SummaryPreviewProps) {
   const editorContext = useBlockEditorOptional();
   const isEditable = !!editorContext;
+  const summaryRewrite = useRewriteSummary();
 
   // Handle content change
   const handleContentChange = useCallback(
@@ -32,21 +34,35 @@ export function SummaryPreview({ content, style, blockId }: SummaryPreviewProps)
   // No-op handler for read-only mode
   const noopHandler = useCallback(() => {}, []);
 
+  const hasSummaryRewrite = summaryRewrite && summaryRewrite.status === "pending";
+  const displayContent = hasSummaryRewrite
+    ? summaryRewrite.stateStack[summaryRewrite.currentIndex]
+    : content || "";
+
+  const highlightClass = hasSummaryRewrite
+    ? "border-l-2 border-teal-400 bg-teal-50 pl-2"
+    : "";
+
   return (
     <div
+      className={highlightClass}
       style={{
         fontSize: style.bodyFontSize,
         lineHeight: style.lineHeight,
       }}
     >
-      <InlineRichText
-        elementId={blockId ? createFieldElementId(blockId, undefined, "content") : ""}
-        value={content || ""}
-        className="summary-content"
-        placeholder="Write a brief professional summary..."
-        onCommit={isEditable ? handleContentChange : noopHandler}
-        showToolbar={true}
-      />
+      {hasSummaryRewrite ? (
+        <span className="summary-content">{displayContent}</span>
+      ) : (
+        <InlineRichText
+          elementId={blockId ? createFieldElementId(blockId, undefined, "content") : ""}
+          value={content || ""}
+          className="summary-content"
+          placeholder="Write a brief professional summary..."
+          onCommit={isEditable ? handleContentChange : noopHandler}
+          showToolbar={true}
+        />
+      )}
     </div>
   );
 }

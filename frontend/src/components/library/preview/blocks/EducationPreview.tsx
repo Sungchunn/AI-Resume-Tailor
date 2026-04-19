@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import type { EducationEntry, BulletItem } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
 import { InlinePlainText, InlineRichText } from "../../editor/inline";
+import { RewritableBulletItem } from "../../editor/inline/RewritableBulletItem";
 import {
   createFieldElementId,
   createIndexedElementId,
@@ -310,23 +311,26 @@ function EducationEntryPreview({
         >
           <span className="font-medium text-muted-foreground">Relevant Courses: </span>
           <ul className="list-disc ml-4 mt-0.5 space-y-0.5">
-            {entry.relevantCourses.map((course, courseIndex) => (
-              <li
-                key={course.id}
-                className="text-muted-foreground"
-                data-bullet-element-id={createIndexedElementId(blockId, entry.id, "relevantCourses", courseIndex)}
-              >
-                <InlineRichText
-                  elementId={createIndexedElementId(blockId, entry.id, "relevantCourses", courseIndex)}
-                  value={course.text}
-                  placeholder="Course name..."
-                  onCommit={(value) => updateCourse(entryIndex, courseIndex, value)}
-                  onEnter={() => addCourse(entryIndex, courseIndex)}
-                  onBackspaceEmpty={() => removeCourse(entryIndex, courseIndex)}
-                  showToolbar={false}
-                />
-              </li>
-            ))}
+            {entry.relevantCourses.map((course, courseIndex) => {
+              const elementId = createIndexedElementId(blockId, entry.id, "relevantCourses", courseIndex);
+              return (
+                <RewritableBulletItem
+                  key={course.id}
+                  elementId={elementId}
+                  liStyle={{}}
+                >
+                  <InlineRichText
+                    elementId={elementId}
+                    value={course.text}
+                    placeholder="Course name..."
+                    onCommit={(value) => updateCourse(entryIndex, courseIndex, value)}
+                    onEnter={() => addCourse(entryIndex, courseIndex)}
+                    onBackspaceEmpty={() => removeCourse(entryIndex, courseIndex)}
+                    showToolbar={false}
+                  />
+                </RewritableBulletItem>
+              );
+            })}
           </ul>
         </div>
       )}

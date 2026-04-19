@@ -46,3 +46,5 @@ export type { InlineRichTextProps } from "./InlineRichText";
 
 export { InlineSkillsList } from "./InlineSkillsList";
 export type { InlineSkillsListProps } from "./InlineSkillsList";
+
+export { RewritableBulletItem } from "./RewritableBulletItem";

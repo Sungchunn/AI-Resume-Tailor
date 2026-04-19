@@ -5,6 +5,7 @@ import type { ProjectEntry, BulletItem } from "@/lib/resume/types";
 import type { BaseBlockPreviewProps } from "../types";
 import { formatDateRange } from "../previewStyles";
 import { InlinePlainText, InlineRichText } from "../../editor/inline";
+import { RewritableBulletItem } from "../../editor/inline/RewritableBulletItem";
 import {
   createFieldElementId,
   createIndexedElementId,
@@ -224,10 +225,23 @@ function ProjectEntryPreview({
           <ul className="list-disc ml-4 mt-1 space-y-0.5">
             {entry.bullets.map((bullet, bulletIndex) => {
               if (!bullet.text?.trim()) return null;
-              return (
+              const elementId = blockId
+                ? createIndexedElementId(blockId, entry.id, "bullets", bulletIndex)
+                : undefined;
+              return elementId ? (
+                <RewritableBulletItem
+                  key={bullet.id}
+                  elementId={elementId}
+                  liStyle={{
+                    fontSize: style.bodyFontSize,
+                    lineHeight: style.lineHeight,
+                  }}
+                >
+                  {bullet.text}
+                </RewritableBulletItem>
+              ) : (
                 <li
                   key={bullet.id}
-                  data-bullet-element-id={blockId ? createIndexedElementId(blockId, entry.id, "bullets", bulletIndex) : undefined}
                   style={{
                     fontSize: style.bodyFontSize,
                     lineHeight: style.lineHeight,
@@ -334,26 +348,29 @@ function ProjectEntryPreview({
       {/* Bullets */}
       {entry.bullets && entry.bullets.length > 0 && (
         <ul className="list-disc ml-4 mt-1 space-y-0.5">
-          {entry.bullets.map((bullet, bulletIndex) => (
-            <li
-              key={bullet.id}
-              data-bullet-element-id={createIndexedElementId(blockId, entry.id, "bullets", bulletIndex)}
-              style={{
-                fontSize: style.bodyFontSize,
-                lineHeight: style.lineHeight,
-              }}
-            >
-              <InlineRichText
-                elementId={createIndexedElementId(blockId, entry.id, "bullets", bulletIndex)}
-                value={bullet.text}
-                placeholder="Add accomplishment..."
-                onCommit={(value) => updateBullet(entryIndex, bulletIndex, value)}
-                onEnter={() => addBullet(entryIndex, bulletIndex)}
-                onBackspaceEmpty={() => removeBullet(entryIndex, bulletIndex)}
-                showToolbar={false}
-              />
-            </li>
-          ))}
+          {entry.bullets.map((bullet, bulletIndex) => {
+            const elementId = createIndexedElementId(blockId, entry.id, "bullets", bulletIndex);
+            return (
+              <RewritableBulletItem
+                key={bullet.id}
+                elementId={elementId}
+                liStyle={{
+                  fontSize: style.bodyFontSize,
+                  lineHeight: style.lineHeight,
+                }}
+              >
+                <InlineRichText
+                  elementId={elementId}
+                  value={bullet.text}
+                  placeholder="Add accomplishment..."
+                  onCommit={(value) => updateBullet(entryIndex, bulletIndex, value)}
+                  onEnter={() => addBullet(entryIndex, bulletIndex)}
+                  onBackspaceEmpty={() => removeBullet(entryIndex, bulletIndex)}
+                  showToolbar={false}
+                />
+              </RewritableBulletItem>
+            );
+          })}
         </ul>
       )}
     </div>
