@@ -133,15 +133,12 @@ function AnalyzePageContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeId, jobListingIdNum]);
 
-  // Navigate to keyword review step (step 3)
   const handleContinue = () => {
     if (!resumeId) return;
 
     if (jobListingIdNum) {
-      // Navigate to keyword review page
-      router.push(`/tailor/keywords/${jobListingIdNum}?resume_id=${resumeId}`);
+      router.push(`/library/resumes/${resumeId}/edit?jobListingId=${jobListingIdNum}`);
     } else if (jobId) {
-      // For user-created jobs (no keyword extraction), go directly to editor
       router.push(`/library/resumes/${resumeId}/edit?jobId=${jobId}`);
     }
   };

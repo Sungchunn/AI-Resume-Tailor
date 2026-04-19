@@ -21,7 +21,7 @@
 // Types
 // ============================================================================
 
-export type TailorFlowStep = "select" | "analyze" | "keywords" | "editor";
+export type TailorFlowStep = "select" | "analyze" | "editor";
 
 interface TailorFlowStepConfig {
   step: TailorFlowStep;
@@ -45,8 +45,7 @@ interface TailorFlowStepperProps {
 const TAILOR_STEPS: TailorFlowStepConfig[] = [
   { step: "select", label: "Select Resume", number: 1 },
   { step: "analyze", label: "Analyze Match", number: 2 },
-  { step: "keywords", label: "Review Keywords", number: 3 },
-  { step: "editor", label: "Review & Edit", number: 4 },
+  { step: "editor", label: "Review & Edit", number: 3 },
 ];
 
 // ============================================================================

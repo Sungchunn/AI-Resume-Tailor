@@ -133,7 +133,7 @@ function KeywordsPageContent() {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <TailorFlowStepper currentStep="keywords" />
+          <TailorFlowStepper currentStep="editor" />
           <div className="mt-8 flex items-center justify-center py-12">
             <div className="flex flex-col items-center gap-3 text-muted-foreground">
               <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -150,7 +150,7 @@ function KeywordsPageContent() {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <TailorFlowStepper currentStep="keywords" />
+          <TailorFlowStepper currentStep="editor" />
           <div className="mt-8 flex flex-col items-center gap-4 py-12">
             <AlertCircle className="h-12 w-12 text-destructive" />
             <p className="text-lg text-muted-foreground">Job listing not found</p>
@@ -171,7 +171,7 @@ function KeywordsPageContent() {
     <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Progress Stepper */}
-        <TailorFlowStepper currentStep="keywords" />
+        <TailorFlowStepper currentStep="editor" />
 
         {/* Back Link */}
         <div className="mt-6">
