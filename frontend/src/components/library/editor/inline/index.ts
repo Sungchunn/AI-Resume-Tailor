@@ -48,3 +48,5 @@ export { InlineSkillsList } from "./InlineSkillsList";
 export type { InlineSkillsListProps } from "./InlineSkillsList";
 
 export { RewritableBulletItem } from "./RewritableBulletItem";
+
+export { InlineRewriteDropdown } from "./InlineRewriteDropdown";

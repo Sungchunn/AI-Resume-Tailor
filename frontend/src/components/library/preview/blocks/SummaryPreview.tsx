@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import type { BaseBlockPreviewProps } from "../types";
-import { InlineRichText } from "../../editor/inline";
+import { InlineRichText, InlineRewriteDropdown } from "../../editor/inline";
 import { createFieldElementId } from "@/lib/resume/elementPath";
 import { useBlockEditorOptional } from "../../editor/BlockEditorContext";
 import { useRewriteSummary } from "@/lib/stores/rewriteDiffStore";
@@ -21,46 +21,41 @@ export function SummaryPreview({ content, style, blockId }: SummaryPreviewProps)
   const isEditable = !!editorContext;
   const summaryRewrite = useRewriteSummary();
 
-  // Handle content change
+  const elementId = blockId ? createFieldElementId(blockId, undefined, "content") : "";
+
   const handleContentChange = useCallback(
     (newValue: string) => {
-      if (!blockId || !editorContext) return;
-      const elementId = createFieldElementId(blockId, undefined, "content");
+      if (!elementId || !editorContext) return;
       editorContext.updateContentByPath(elementId, newValue);
     },
-    [blockId, editorContext]
+    [elementId, editorContext]
   );
 
-  // No-op handler for read-only mode
   const noopHandler = useCallback(() => {}, []);
 
-  const hasSummaryRewrite = summaryRewrite && summaryRewrite.status === "pending";
-  const displayContent = hasSummaryRewrite
-    ? summaryRewrite.stateStack[summaryRewrite.currentIndex]
-    : content || "";
-
-  const highlightClass = hasSummaryRewrite
-    ? "border-l-2 border-teal-400 bg-teal-50 pl-2"
-    : "";
+  const showDropdown =
+    summaryRewrite && summaryRewrite.status !== "rejected" && elementId;
 
   return (
     <div
-      className={highlightClass}
       style={{
         fontSize: style.bodyFontSize,
         lineHeight: style.lineHeight,
       }}
     >
-      {hasSummaryRewrite ? (
-        <span className="summary-content">{displayContent}</span>
-      ) : (
-        <InlineRichText
-          elementId={blockId ? createFieldElementId(blockId, undefined, "content") : ""}
-          value={content || ""}
-          className="summary-content"
-          placeholder="Write a brief professional summary..."
-          onCommit={isEditable ? handleContentChange : noopHandler}
-          showToolbar={true}
+      <InlineRichText
+        elementId={elementId}
+        value={content || ""}
+        className="summary-content"
+        placeholder="Write a brief professional summary..."
+        onCommit={isEditable ? handleContentChange : noopHandler}
+        showToolbar={true}
+      />
+      {showDropdown && (
+        <InlineRewriteDropdown
+          variant="summary"
+          elementId={elementId}
+          entry={summaryRewrite}
         />
       )}
     </div>

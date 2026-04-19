@@ -4,6 +4,7 @@ import {
   useRewriteActiveElementId,
   useRewriteBulletEntry,
 } from "@/lib/stores/rewriteDiffStore";
+import { InlineRewriteDropdown } from "./InlineRewriteDropdown";
 
 interface RewritableBulletItemProps {
   elementId: string;
@@ -12,13 +13,11 @@ interface RewritableBulletItemProps {
 }
 
 /**
- * Wraps a bullet <li> to show inline rewrite highlights and proposed text.
+ * Wraps a bullet <li> to render its normal content plus an inline rewrite
+ * dropdown when a rewrite entry exists for this elementId.
  *
- * When a rewrite entry exists for this elementId:
- *   - Applies teal (pending) or green (accepted) background highlight
- *   - Shows the proposed text as plain text instead of the normal children
- *     (which may be InlineRichText — not suitable for override without remounting)
- * When no rewrite entry: renders normally (no highlight, children as-is).
+ * The list marker (list-disc) attaches to the <li>; the dropdown renders as a
+ * subsequent child, appearing beneath the bullet without a marker of its own.
  */
 export function RewritableBulletItem({
   elementId,
@@ -28,7 +27,7 @@ export function RewritableBulletItem({
   const entry = useRewriteBulletEntry(elementId);
   const activeElementId = useRewriteActiveElementId();
 
-  if (!entry) {
+  if (!entry || entry.status === "rejected") {
     return (
       <li data-bullet-element-id={elementId} style={liStyle}>
         {children}
@@ -37,22 +36,19 @@ export function RewritableBulletItem({
   }
 
   const isActive = activeElementId === elementId;
-  const displayText = entry.stateStack[entry.currentIndex];
-
-  const highlightClass =
-    isActive
-      ? "bg-teal-100 ring-2 ring-inset ring-teal-500 rounded-sm"
-      : entry.status === "accepted"
-      ? "border-l-2 border-green-400 bg-green-50 pl-1"
-      : "border-l-2 border-teal-400 bg-teal-50 pl-1";
+  const textClass = isActive
+    ? "rounded-sm ring-1 ring-inset ring-teal-400 px-0.5"
+    : "";
 
   return (
-    <li
-      data-bullet-element-id={elementId}
-      style={liStyle}
-      className={highlightClass}
-    >
-      {displayText}
+    <li data-bullet-element-id={elementId} style={liStyle}>
+      <div className={textClass}>{children}</div>
+      <InlineRewriteDropdown
+        variant="bullet"
+        elementId={elementId}
+        entry={entry}
+        isActive={isActive}
+      />
     </li>
   );
 }

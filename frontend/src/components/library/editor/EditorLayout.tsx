@@ -19,7 +19,7 @@ import { useInlineSuggestionQueueStore } from "@/lib/stores/inlineSuggestionQueu
 import { useRewriteActiveElementId } from "@/lib/stores/rewriteDiffStore";
 import { InlineSuggestionQueueProvider } from "./InlineSuggestionQueueProvider";
 import { EditorSuggestionDock } from "./EditorSuggestionDock";
-import { RewriteChangeSummaryPanel } from "./RewriteChangeSummaryPanel";
+import { RewriteReviewDoneButton } from "./RewriteReviewDoneButton";
 
 interface EditorLayoutProps {
   /** Resume ID */
@@ -348,7 +348,7 @@ function EditorLayoutContent({
 
               {!isPreviewFullscreen && (
                 <>
-                  <RewriteChangeSummaryPanel />
+                  <RewriteReviewDoneButton />
                   <EditorSuggestionDock
                     jobId={jobId}
                     jobListingId={jobListingId}
