@@ -703,8 +703,8 @@ Defined in `STYLE_PRESETS` at `lib/resume/defaults.ts`.
 | `components/workshop/WorkshopLayout.tsx` | Workshop split-panel layout |
 | `components/workshop/WorkshopHeader.tsx` | Workshop header with score display |
 | `components/workshop/ResumePreview/` | Workshop preview pane components |
-| `components/workshop/style/StylePanel.tsx` | Workshop style controls |
-| `components/workshop/ats/ATSPanel.tsx` | ATS score display panel |
+| `components/workshop/panels/style/StylePanel.tsx` | Workshop style controls |
+| `components/workshop/panels/ats/ATSPanel.tsx` | ATS score display panel |
 | `components/workshop/ScoreDisplay.tsx` | Circular SVG score gauge |
 | `components/workshop/MatchScoreBadge.tsx` | Compact header score badge |
 | `components/workshop/MobileControlSheet.tsx` | Mobile bottom sheet control panel |

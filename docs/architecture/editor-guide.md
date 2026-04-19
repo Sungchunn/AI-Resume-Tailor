@@ -27,7 +27,8 @@ graph TB
         EL["EditorLayout<br/>orchestrates preview ↔ control panel"]
         EH["EditorHeader<br/>title, save status, export"]
         PP["PaginatedResumePreview<br/>WYSIWYG A4 preview + inline edit"]
-        CP["ControlPanel<br/>4 tabs: AI, ATS, Formatting, Sections"]
+        CP["ControlPanel<br/>3 tabs: ATS, Format, Sections"]
+        ESD["EditorSuggestionDock<br/>floating panel beside preview<br/>hosts SuggestionProgressPanel"]
     end
 
     subgraph "Zustand Stores (shared state bridges)"
@@ -49,11 +50,12 @@ graph TB
     EL --> EH
     EL --> PP
     EL --> CP
+    EL --> ESD
 
     CP -- "ATS tab triggers" --> APS
     APS -- "keywordAnalysisResult<br/>enables bullet suggestions" --> BSS
-    APS -- "keywordGaps → SkillSuggestionsPanel" --> TEP
     BSS -- "suggestions → populateQueue()" --> ISQS
+    ISQS -- "drives dropdown + dock" --> ESD
     ISQS -- "accept/dismiss → sync back" --> BSS
     ISQS -- "accepted suggestions → updateBlock()" --> BEP
 
@@ -76,7 +78,7 @@ graph TB
 **Key relationships to understand:**
 
 1. **EditorLayout is the orchestrator** — it wires preview callbacks to context setters and exposes the preview ref for auto-fit measurement
-2. **Zustand stores are bridges** — `atsProgressStore`, `bulletSuggestionsStore`, and `inlineSuggestionQueueStore` let tabs and preview coordinate without prop drilling (ATS tab populates data that the AI tab's SuggestionProgressPanel consumes; the queue store drives the inline dropdown in the preview)
+2. **Zustand stores are bridges** — `atsProgressStore`, `bulletSuggestionsStore`, and `inlineSuggestionQueueStore` let tabs, preview, and the floating dock coordinate without prop drilling (ATS tab's keyword analysis enables bullet-suggestion availability; the queue store drives both the inline dropdown in the preview and the `SuggestionProgressPanel` inside `EditorSuggestionDock`)
 3. **Preview ↔ Context is bidirectional** — clicks in the preview update context state, context state changes re-render the preview
 4. **The Tailor Editor wraps the same stack** — `TailorEditorProvider` adds job context and ATS context on top of the standard `BlockEditorProvider` → `EditorLayout` stack
 
@@ -124,10 +126,8 @@ BlockEditorProvider → EditorLayout
 **Disabled Features:**
 
 - ATS tab (gated by `hasJobContext`)
-- AI bullet suggestions panel (no job to analyze against)
+- AI bullet suggestions (no job to analyze against — `EditorSuggestionDock` stays hidden)
 - AI model selector (no AI features to configure)
-- AI chat job context indicator
-- Skill suggestions panel
 
 ---
 
@@ -158,9 +158,8 @@ BlockEditorProvider → EditorLayout (with jobId/jobListingId props)
 
 - Everything from Resume Editor, plus:
 - ATS scoring and keyword analysis tab
-- AI bullet suggestions panel (after ATS keyword analysis completes)
+- AI bullet suggestions (after ATS keyword analysis completes) — reviewed via the inline `BulletSuggestionDropdown` in the preview and the `SuggestionProgressPanel` inside `EditorSuggestionDock`
 - AI model selector
-- AI chat with job context indicator
 
 ---
 
@@ -170,7 +169,7 @@ BlockEditorProvider → EditorLayout (with jobId/jobListingId props)
 
 **Former Route:** `/tailor/editor/[id]` (deleted)
 
-**Infrastructure retained:** `TailorEditorProvider` and `TailorEditorContext` are still used by the Job-Linked Editor (via `useTailorEditorContextSafe` in `AIChatTab.tsx` and `SkillSuggestionsPanel.tsx`). These will be reused when the merged ad-hoc editor is built.
+**Infrastructure retained:** `TailorEditorProvider` and `TailorEditorContext` are retained for the upcoming merged ad-hoc editor. As of attempt 7 (see `docs/features/resume-editor/ai-suggestions/AI_SUGGESTION_ATTEMPTS.md`) neither the AI Chat tab nor the Skill Suggestions panel exists anymore, so there are no current consumers of these contexts in the block editor.
 
 ---
 
@@ -229,7 +228,7 @@ Use these canonical names in code comments, commit messages, and documentation t
 
 ## 3. Feature Gating Rules
 
-The `hasJobContext` flag is the primary gate. It is `true` when a `jobListingId`, `jobId`, or embedded job source is present. The `isTailorMode` flag (from `useTailorEditorContextSafe`) is the secondary gate for tailor-specific features. A third gate, the `tailoredResumeId` prop, is threaded `EditorLayout → ControlPanel → AIChatTab` and is required for tailor-only bullet analysis: `SuggestionProgressPanel` renders only when `isTailorMode && tailoredResumeId` is truthy. The prop exists in the infrastructure today but is not passed by any current entry point — it is retained for the upcoming merged ad-hoc editor (see §1.3).
+The `hasJobContext` flag is the primary gate. It is `true` when a `jobListingId`, `jobId`, or embedded job source is present. The `isTailorMode` flag (from `useTailorEditorContextSafe`) is the secondary gate for any future tailor-specific features. A third gate, the `tailoredResumeId` prop, is threaded `EditorLayout → InlineSuggestionQueueProvider → useBulletAnalysis` and is required for tailor-only bullet analysis. The prop exists in the infrastructure today but is not passed by any current entry point — it is retained for the upcoming merged ad-hoc editor (see §1.3).
 
 | Feature | Resume Editor | Job-Linked Editor | Workshop Editor |
 | ----- | ----- | ----- | ----- |
@@ -243,7 +242,6 @@ The `hasJobContext` flag is the primary gate. It is `true` when a `jobListingId`
 | AI bullet suggestions | No | Yes | No |
 | Inline suggestion dropdown | No | Yes | No |
 | AI model selector | No | Yes | No |
-| AI chat job indicator | No | Yes | No |
 | Real-time match score | No | No | Yes |
 
 ---
@@ -260,7 +258,8 @@ Both block editors (Resume, Job-Linked) share the same core component stack. The
 | `EditorLayout` | Split-screen layout: left A4 preview (73%) + right control panel (27%), resizable via `react-resizable-panels` | `components/library/editor/EditorLayout.tsx` |
 | `EditorHeader` | Top bar with resume title, save status, parse button, export button | `components/library/editor/EditorHeader.tsx` |
 | `PaginatedResumePreview` | Live WYSIWYG A4 preview with pagination, interactive block/element selection, inline suggestion dropdown via portal layer | `components/library/preview/PaginatedResumePreview.tsx` |
-| `ControlPanel` | Tabbed interface with 4 tabs: AI Chat, ATS Evaluation, Formatting, Sections | `components/library/editor/ControlPanel.tsx` |
+| `ControlPanel` | Tabbed interface with 3 tabs: ATS, Format, Sections (default is Format). Bullet-suggestion review lives in `EditorSuggestionDock`, not in a tab. | `components/library/editor/ControlPanel.tsx` |
+| `EditorSuggestionDock` | Floating panel pinned beside the preview; hosts `SuggestionProgressPanel` when the inline bullet-suggestion queue is active | `components/library/editor/EditorSuggestionDock.tsx` |
 
 ### 4.2 Provider Hierarchy
 
@@ -278,7 +277,7 @@ Workshop Editor (separate stack):
     └── WorkshopLayout
 ```
 
-`EditorLayout` also accepts a `tailoredResumeId` prop (default `null`). When set, it is threaded to `ControlPanel` → `AIChatTab` → `SuggestionProgressPanel` / `useBulletAnalysis` / `useInlineSuggestionQueue` to enable tailored bullet analysis. No current page passes it — see §3.
+`EditorLayout` also accepts a `tailoredResumeId` prop (default `null`). When set, it is threaded to `InlineSuggestionQueueProvider` → `useBulletAnalysis` / `useInlineSuggestionQueue` to enable tailored bullet analysis. No current page passes it — see §3.
 
 ### 4.3 How Components Interact
 
@@ -297,7 +296,6 @@ sequenceDiagram
     User->>Preview: Click bullet in preview
     Preview->>Layout: onBlockClick(blockId)
     Layout->>Context: setActiveBlock(blockId)
-    Context->>Control: AI tab syncs section selector
     Context->>Preview: activeBlockId highlight ring
 
     Note over User,Store: Inline Edit Flow
@@ -308,7 +306,7 @@ sequenceDiagram
     Context->>Context: isDirty = true → auto-save pipeline
 
     Note over User,Store: Inline Bullet Suggestion Flow
-    User->>Control: Click "Analyze Bullets" in AI tab
+    User->>Control: Click "Analyze Bullets" in EditorSuggestionDock
     Control->>Store: bulletSuggestionsStore.setSuggestions()
     Store->>Store: inlineSuggestionQueueStore.populateQueue()
     Store->>Preview: BulletSuggestionDropdown appears below target bullet
@@ -330,16 +328,16 @@ EditorLayout is the central wiring point. It:
 
 **ControlPanel tabs — always mounted, independently stateful:**
 
-All 4 tabs (AI, ATS, Formatting, Sections) are kept in the DOM with `hidden` class toggling. This preserves their internal state when switching tabs. Cross-tab effects flow through shared stores:
+All 3 tabs (ATS, Format, Sections) are kept in the DOM with `hidden` class toggling. This preserves their internal state when switching tabs. Cross-tab / cross-surface effects flow through shared stores:
 
-| Source Tab | Action | Effect on Other Components |
+| Source | Action | Effect on Other Components |
 | ----- | ----- | ----- |
-| Formatting | Enable fit-to-page | Triggers auto-fit → style changes → preview re-renders → new page count |
-| Formatting | Change font/margins | Preview re-renders → content staleness detected in ATS tab |
-| ATS | Complete keyword analysis | `keywordAnalysisResult` stored → AI tab enables SuggestionProgressPanel |
-| AI | Accept bullet suggestion | `updateBlock()` → preview re-renders → `isDirty` → auto-save |
-| AI | Analyze bullets | `bulletSuggestionsStore` populates → `inlineSuggestionQueueStore` builds ordered queue → dropdown appears in preview |
-| Sections | Reorder blocks via drag-drop | `reorderBlocks()` → preview re-renders → pagination recalculates |
+| Format tab | Enable fit-to-page | Triggers auto-fit → style changes → preview re-renders → new page count |
+| Format tab | Change font/margins | Preview re-renders → content staleness detected in ATS tab |
+| ATS tab | Complete keyword analysis | `keywordAnalysisResult` stored → `EditorSuggestionDock` enables bullet analysis |
+| EditorSuggestionDock | Analyze bullets | `bulletSuggestionsStore` populates → `inlineSuggestionQueueStore` builds ordered queue → `BulletSuggestionDropdown` appears in preview |
+| Preview / Dock | Accept bullet suggestion | `updateBlock()` → preview re-renders → `isDirty` → auto-save |
+| Sections tab | Reorder blocks via drag-drop | `reorderBlocks()` → preview re-renders → pagination recalculates |
 
 ---
 
@@ -849,59 +847,20 @@ Browser default undo/redo is prevented.
 
 ---
 
-## 13. AI Chat
+## 13. AI Bullet Suggestions
 
-Source: `components/library/editor/tabs/AIChatTab.tsx`
-
-### 13.1 Chat Interface
-
-The AI Chat tab provides a multi-turn conversational interface for AI-assisted editing:
-
-- Message history maintained in local component state (user and assistant messages)
-- Full message history sent with each request for conversational context
-- Responses can be of type: `advice`, `improvement`, `question`
-- `improvement` responses show original + improved content side-by-side with Apply/Reject buttons
-
-### 13.2 Quick Actions
-
-Four built-in action buttons that send predefined instructions:
-
-| Action | Purpose |
-| ----- | ----- |
-| Make concise | Shorten verbose bullets |
-| Add action verbs | Strengthen bullet openings |
-| Add metrics | Quantify achievements |
-| Rewrite | Full rewrite of targeted content |
-
-### 13.3 Section Targeting
-
-A dropdown selector allows the user to target AI suggestions at a specific resume section. Uses `BLOCK_TYPE_INFO` for section labels. When a section is selected, only that section's content is sent to the AI.
-
-### 13.4 Job Context Integration
-
-When `TailorEditorContext` is available (via `useTailorEditorContextSafe()`):
-
-- Chat includes job description, title, and company in the AI request context
-- A briefcase icon indicator shows that job context is active
-- AI responses are tailored to the specific job posting
-- Without job context, the AI provides general resume improvement advice
-
----
-
-## 14. AI Bullet Suggestions
-
-### 14.1 Availability
+### 13.1 Availability
 
 Requires both conditions:
 
 1. **Job context exists** (`hasJobContext = true`)
 2. **ATS keyword analysis is complete** (checked via `useATSReadiness()`)
 
-Available in Job-Linked Editor and Tailor Editor. In the Tailor Editor, `SuggestionProgressPanel` and `SkillSuggestionsPanel` are conditionally rendered when `isTailorMode = true`.
+Available in the Job-Linked Editor. When both conditions are met, `EditorSuggestionDock` becomes visible beside the preview and bullet analysis can be launched from it.
 
-### 14.2 Architecture Overview
+### 13.2 Architecture Overview
 
-The inline suggestion system uses two stores and a portal-based dropdown to show suggestions directly below the target bullet in the preview:
+The inline suggestion system uses two stores, a floating dock beside the preview, and a portal-based dropdown to show suggestions directly below the target bullet:
 
 ```text
 bulletSuggestionsStore (authoritative data)
@@ -913,7 +872,8 @@ bulletSuggestionsStore (authoritative data)
         ├── BulletSuggestionDropdown (portal in preview, typewriter animation)
         ├── useInlineSuggestionKeyboard (Tab/Esc/arrows)
         ├── useInlineSuggestionQueue (orchestration bridge)
-        └── SuggestionProgressPanel (AI tab, progress + click-to-jump)
+        ├── InlineSuggestionQueueProvider (shared wrapped-action provider)
+        └── SuggestionProgressPanel (rendered inside EditorSuggestionDock — floating beside preview)
 ```
 
 **Key files:**
@@ -928,9 +888,11 @@ bulletSuggestionsStore (authoritative data)
 | `hooks/useInlineSuggestionQueue.ts` | Bridges queue store to useBulletAnalysis |
 | `components/library/preview/BulletSuggestionDropdown.tsx` | Floating dropdown via portal |
 | `components/library/preview/SuggestionPortalLayer.tsx` | Export-safe portal target |
-| `components/library/editor/tabs/SuggestionProgressPanel.tsx` | AI tab progress panel |
+| `components/library/editor/EditorSuggestionDock.tsx` | Floating dock beside preview; mounts the progress panel |
+| `components/library/editor/InlineSuggestionQueueProvider.tsx` | Shared wrapped-action provider |
+| `components/library/editor/tabs/SuggestionProgressPanel.tsx` | Progress + click-to-jump panel (rendered inside the dock) |
 
-### 14.3 Analysis Flow
+### 13.3 Analysis Flow
 
 1. `useBulletAnalysis` hook (in `hooks/useBulletAnalysis.ts`) collects bullets from blocks via `collectBulletsFromBlocks()`
 2. Submits batch to backend for AI analysis
@@ -938,7 +900,7 @@ bulletSuggestionsStore (authoritative data)
 4. Results stored in `bulletSuggestionsStore`
 5. `useInlineSuggestionQueue` detects new suggestions and calls `populateQueue()` on the queue store, sorting by impact (high → medium → low)
 6. `BulletSuggestionDropdown` appears below the first target bullet in the preview
-7. `SuggestionProgressPanel` (in AI tab) shows progress, score delta, and click-to-jump list
+7. `SuggestionProgressPanel`, mounted inside `EditorSuggestionDock` beside the preview, shows progress, score delta, and a click-to-jump list
 
 **Each suggestion includes:**
 
@@ -951,7 +913,7 @@ bulletSuggestionsStore (authoritative data)
 | `keywords` | Keywords added by the suggestion |
 | `metricsAdded` | Whether metrics/quantification was added |
 
-### 14.4 Inline Review Flow
+### 13.4 Inline Review Flow
 
 When the queue is populated, an inline review session begins in the preview:
 
@@ -973,7 +935,7 @@ When the queue is populated, an inline review session begins in the preview:
 
 **Mutual exclusion with inline editing:** If `InlineEditContext.focusedElementId` is non-null (user clicked a bullet to edit inline), all keyboard shortcuts yield. Also checks `event.target.isContentEditable` as fallback.
 
-### 14.5 Bullet ID Mapping
+### 13.5 Bullet ID Mapping
 
 The analysis API uses positional IDs (`blockId:entry-N:bullet-M`) while the DOM uses actual entry nanoid IDs (`blockId:actualEntryId:bullets:bulletIndex`). The `bulletIdMapping.ts` utility bridges this gap:
 
@@ -982,7 +944,7 @@ The analysis API uses positional IDs (`blockId:entry-N:bullet-M`) while the DOM 
 
 Preview `<li>` elements carry `data-bullet-element-id` attributes for DOM targeting. This is set on all 5 block types that render bullets: Experience, Projects, Leadership, Volunteer, and Education (relevant courses).
 
-### 14.6 Dropdown Positioning
+### 13.6 Dropdown Positioning
 
 The dropdown is rendered in a `SuggestionPortalLayer` — an absolute-positioned sibling of the scaled `pagesWrapper`, not inside it. Positioning math:
 
@@ -994,13 +956,13 @@ The dropdown is rendered in a `SuggestionPortalLayer` — an absolute-positioned
 
 **Export safety:** The portal layer has `data-print-hidden="true"` and `data-no-export="true"`. The PDF export filter excludes both attributes.
 
-### 14.7 Pre/Post Score Tracking
+### 13.7 Pre/Post Score Tracking
 
 - `preAnalysisScore` is captured before suggestions are applied
 - After accepting suggestions, `isRescoring` flag tracks when the ATS score is being recalculated
 - Enables "score improvement" display showing the delta
 
-### 14.8 Bullet Suggestions State
+### 13.8 Bullet Suggestions State
 
 **`bulletSuggestionsStore`** (Zustand, **not persisted**) at `lib/stores/bulletSuggestionsStore.ts` — authoritative suggestion data from the API.
 
@@ -1033,11 +995,11 @@ The dropdown is rendered in a `SuggestionPortalLayer` — an absolute-positioned
 
 ---
 
-## 15. AI Inline Suggestions
+## 14. AI Inline Suggestions
 
 Source: `hooks/useInlineSuggestion.ts`
 
-### 15.1 How It Works
+### 14.1 How It Works
 
 When a user focuses on a bullet, the hook fetches an AI-powered improvement suggestion:
 
@@ -1047,7 +1009,7 @@ When a user focuses on a bullet, the hook fetches an AI-powered improvement sugg
 4. Race condition protection via `fetchIdRef` counter (only the latest request's response is used)
 5. Returns: suggested text, reason, and impact level
 
-### 15.2 Required Context
+### 14.2 Required Context
 
 | Input | Source |
 | ----- | ----- |
@@ -1060,41 +1022,11 @@ Suggestions are cleared when the hook is disabled or the bullet text changes sig
 
 ---
 
-## 16. Skill Suggestions
-
-Source: `components/tailor/editor/SkillSuggestionsPanel.tsx`
-
-### 16.1 Availability
-
-**Tailor Editor only.** Requires `TailorEditorContext` with completed ATS analysis.
-
-### 16.2 How It Works
-
-The panel shows missing keywords from the job posting that could be added to the resume's skills section:
-
-1. ATS keyword analysis identifies keywords in the job description
-2. Keywords are matched against resume content
-3. Unmatched keywords appear as **keyword gaps** in `atsContext.keywordGaps`
-4. Each gap has: keyword text, importance tier, and whether it exists in the user's skills vault (`inVault` flag)
-
-**Grouped by importance tier:**
-
-| Tier | Priority | Visual |
-| ----- | ----- | ----- |
-| Required | Must-have, explicitly stated | Red/high urgency |
-| Strongly Preferred | Emphasized in job posting | Orange/medium urgency |
-| Preferred | Mentioned as bonus | Yellow/low urgency |
-| Nice to Have | Contextual/implied | Grey/informational |
-
-Users can add missing skills directly to the skills block from the panel.
-
----
-
-## 17. ATS Scoring in the Editor
+## 15. ATS Scoring in the Editor
 
 ATS scoring is the most complex cross-cutting feature. It feeds data into bullet suggestions, skill suggestions, AI chat, and score displays. This section documents the full integration.
 
-### 17.1 ATS Evaluation Tab
+### 15.1 ATS Evaluation Tab
 
 Source: `components/library/editor/tabs/ATSEvaluationTab.tsx`
 
@@ -1117,7 +1049,7 @@ Source: `components/library/editor/tabs/ATSEvaluationTab.tsx`
 3. Results stored in `atsProgressStore.keywordAnalysisResult`
 4. Tab renders from store data
 
-### 17.2 ATS Progressive Analysis Pipeline
+### 15.2 ATS Progressive Analysis Pipeline
 
 The full ATS analysis is a **5-stage SSE (Server-Sent Events) pipeline** managed by `useATSProgressStream` hook (in `hooks/useATSProgressStream.ts`).
 
@@ -1144,7 +1076,7 @@ The full ATS analysis is a **5-stage SSE (Server-Sent Events) pipeline** managed
 
 **Backend caching:** Results are cached for 24 hours keyed on `resume_content_hash:job_id`. On cache hit, cached results are replayed at accelerated speed. See `backend/app/api/routes/ats/progressive.py`.
 
-### 17.3 Content Staleness Detection
+### 15.3 Content Staleness Detection
 
 The `atsProgressStore` tracks whether the resume content has changed since the last analysis:
 
@@ -1155,7 +1087,7 @@ The `atsProgressStore` tracks whether the resume content has changed since the l
 
 This prevents users from relying on outdated scores after editing their resume.
 
-### 17.4 Content Quality Hints (Tailor Editor)
+### 15.4 Content Quality Hints (Tailor Editor)
 
 In the Tailor Editor, ATS stage 3 (Content Quality) provides actionable hints displayed in the editor:
 
@@ -1169,7 +1101,7 @@ In the Tailor Editor, ATS stage 3 (Content Quality) provides actionable hints di
 
 These hints are available via `atsContext.contentQualityHints` in `TailorEditorContext`.
 
-### 17.5 How ATS Feeds Other Features
+### 15.5 How ATS Feeds Other Features
 
 The ATS analysis results create a dependency chain that powers multiple editor features. Understanding this chain is critical — changes to ATS scoring ripple through bullet suggestions, skill suggestions, and score displays:
 
@@ -1194,10 +1126,8 @@ graph TB
 
     subgraph "Features That Consume ATS Data"
         ATS_TAB["ATS Evaluation Tab<br/>keyword coverage, progress bars"]
-        BULLET["SuggestionProgressPanel<br/>+ BulletSuggestionDropdown"]
-        SKILL["SkillSuggestionsPanel<br/>missing keyword gaps"]
+        BULLET["EditorSuggestionDock<br/>(SuggestionProgressPanel + BulletSuggestionDropdown)"]
         HEADER["Tailor Editor Header<br/>composite score display"]
-        CHAT["AI Chat Tab<br/>job-aware recommendations"]
         STALE["Staleness Warning<br/>re-analysis prompt"]
     end
 
@@ -1207,14 +1137,12 @@ graph TB
 
     KAR --> ATS_TAB
     KAR -- "useATSReadiness() = true" --> BULLET
-    KAR -- "keywordGaps (Tailor only)" --> SKILL
-    CQH -- "bullets needing metrics,<br/>weak verbs" --> CHAT
+    CQH -- "bullets needing metrics,<br/>weak verbs" --> BULLET
     CS --> HEADER
     CS -- "preAnalysisScore" --> BULLET
     CH -- "content hash mismatch" --> STALE
 
     BULLET -- "accepted suggestion →<br/>updateBlock()" --> EDIT["BlockEditorContext<br/>(re-renders preview)"]
-    SKILL -- "add skill to resume" --> EDIT
     STALE -- "user clicks re-analyze" --> SSE
 
     style KAR fill:#4a9eff,color:#fff
@@ -1224,7 +1152,7 @@ graph TB
 
 **The cycle:** User edits resume → content hash changes → staleness detected → user re-analyzes → new ATS results → new suggestions → user accepts suggestions → content changes again. This edit-analyze-improve loop is the core UX of the job-linked editors.
 
-### 17.6 ATS Context in TailorEditorContext
+### 15.6 ATS Context in TailorEditorContext
 
 The `TailorEditorContext` assembles ATS data into an `ATSContext` interface:
 
@@ -1245,7 +1173,7 @@ interface ATSContext {
 
 This is assembled from `atsProgressStore` data when the Tailor Editor page loads. Components access it via `useTailorEditorContext().atsContext`.
 
-### 17.7 ATS Stores
+### 15.7 ATS Stores
 
 **`atsProgressStore`** (Zustand, **persisted** to localStorage):
 
@@ -1264,9 +1192,9 @@ This is assembled from `atsProgressStore` data when the Tailor Editor page loads
 
 ---
 
-## 18. State Management Summary
+## 16. State Management Summary
 
-### 18.1 BlockEditorContext
+### 16.1 BlockEditorContext
 
 **Type:** React Context + `useReducer`
 
@@ -1287,7 +1215,7 @@ This is assembled from `atsProgressStore` data when the Tailor Editor page loads
 | `useHasConflict()` | Whether OCC conflict exists |
 | `useCurrentVersion()` | Document version number |
 
-### 18.2 TailorEditorContext
+### 16.2 TailorEditorContext
 
 **Type:** React Context (simple provider, not reducer)
 
@@ -1313,7 +1241,7 @@ This is assembled from `atsProgressStore` data when the Tailor Editor page loads
 | `useTailorEditorContextSafe()` | Returns null if outside (used in shared components for feature gating) |
 | `useATSReadiness()` | Returns whether ATS analysis is complete |
 
-### 18.3 TailoringContext
+### 16.3 TailoringContext
 
 **Type:** React Context with session-based state
 
@@ -1333,21 +1261,22 @@ This is assembled from `atsProgressStore` data when the Tailor Editor page loads
 
 **Diff computation:** `computeDiff(original, aiProposed)` runs once on session init, producing `BlockDiff[]` for the review UI.
 
-### 18.4 Zustand Stores
+### 16.4 Zustand Stores
 
 | Store | Persisted | Purpose |
 | ----- | ----- | ----- |
 | `atsProgressStore` | Yes (localStorage) | ATS analysis state, composite score, content hash, keyword results |
 | `bulletSuggestionsStore` | No | Bullet suggestions array, AI review mode state, pre-analysis score |
+| `inlineSuggestionQueueStore` | No | Ordered review queue powering the inline dropdown and the dock progress panel |
 | `keywordReviewStore` | No | User keyword modifications during keyword review step |
 
 All stores at `lib/stores/`.
 
 ---
 
-## 19. Data Flow and Transformations
+## 17. Data Flow and Transformations
 
-### 19.1 Data Model Conversions
+### 17.1 Data Model Conversions
 
 The editor works with three data shapes that must be converted between. Understanding these conversions is essential — they run on every load and save:
 
@@ -1380,7 +1309,7 @@ graph LR
 
 **Tailor Editor save path:** `AnyResumeBlock[]` → `ParsedResumeContent` → `TailoredContent` (two conversions, reverse order).
 
-### 19.2 Parse-Once, Tailor-Many
+### 17.2 Parse-Once, Tailor-Many
 
 The original resume is parsed once into `ParsedResumeContent`. Multiple tailored versions can be generated from this single parsed form without re-parsing. Each tailored version is stored as `TailoredContent` and converted to blocks for editing.
 
@@ -1394,7 +1323,7 @@ graph TD
     PRC --> EDIT["Resume Editor<br/>(edit original)"]
 ```
 
-### 19.3 Bullet Helpers
+### 17.3 Bullet Helpers
 
 `lib/resume/bulletHelpers.ts` provides conversion between the API format (string arrays) and the editor format (BulletItem arrays with stable IDs):
 
@@ -1410,7 +1339,7 @@ graph TD
 
 ---
 
-## 20. Keyboard Shortcuts
+## 18. Keyboard Shortcuts
 
 | Shortcut (Mac / Windows) | Action |
 | ----- | ----- |
@@ -1423,16 +1352,16 @@ graph TD
 
 ---
 
-## 21. Source File Reference
+## 19. Source File Reference
 
-### 21.1 Page Routes
+### 19.1 Page Routes
 
 | Route | File |
 | ----- | ----- |
 | `/library/resumes/[id]/edit` | `app/(protected)/library/resumes/[id]/edit/page.tsx` |
 | `/workshop/[id]` | `app/(protected)/workshop/[id]/page.tsx` |
 
-### 21.2 Core Editor Components
+### 19.2 Core Editor Components
 
 | Component | File |
 | ----- | ----- |
@@ -1441,10 +1370,12 @@ graph TD
 | `EditorLayout` | `components/library/editor/EditorLayout.tsx` |
 | `EditorHeader` | `components/library/editor/EditorHeader.tsx` |
 | `ControlPanel` | `components/library/editor/ControlPanel.tsx` |
+| `EditorSuggestionDock` | `components/library/editor/EditorSuggestionDock.tsx` |
+| `InlineSuggestionQueueProvider` | `components/library/editor/InlineSuggestionQueueProvider.tsx` |
 | `BlockList` | `components/library/editor/BlockList.tsx` |
 | `BlockEditorDispatcher` | `components/library/editor/blocks/BlockEditorDispatcher.tsx` |
 
-### 21.3 Inline Editing
+### 19.3 Inline Editing
 
 | Component | File |
 | ----- | ----- |
@@ -1454,7 +1385,7 @@ graph TD
 | `FloatingToolbar` | `components/library/editor/inline/FloatingToolbar.tsx` |
 | `InlineEditContext` | `components/library/editor/inline/InlineEditContext.tsx` |
 
-### 21.4 Preview Components
+### 19.4 Preview Components
 
 | Component | File |
 | ----- | ----- |
@@ -1462,46 +1393,49 @@ graph TD
 | `useBlockPagination` | `components/library/preview/useBlockPagination.ts` |
 | `useBlockMeasurement` | `components/library/preview/useBlockMeasurement.ts` |
 
-### 21.5 Control Panel Tabs
+### 19.5 Control Panel Tabs
 
 | Component | File |
 | ----- | ----- |
-| `AIChatTab` | `components/library/editor/tabs/AIChatTab.tsx` |
 | `ATSEvaluationTab` | `components/library/editor/tabs/ATSEvaluationTab.tsx` |
 | `FormattingTab` | `components/library/editor/tabs/FormattingTab.tsx` |
 | `SectionDraggerTab` | `components/library/editor/tabs/SectionDraggerTab.tsx` |
-| `SuggestionProgressPanel` | `components/library/editor/tabs/SuggestionProgressPanel.tsx` |
+| `SuggestionProgressPanel` | `components/library/editor/tabs/SuggestionProgressPanel.tsx` (rendered inside `EditorSuggestionDock`, not in a tab) |
 
-### 21.6 Tailor Editor Components
+### 19.6 Tailor Editor Components
 
 | Component | File |
 | ----- | ----- |
 | `TailorEditorContext` | `components/tailor/editor/TailorEditorContext.tsx` |
-| `SkillSuggestionsPanel` | `components/tailor/editor/SkillSuggestionsPanel.tsx` |
-| `AiReviewDiffOverlay` | `components/tailor/editor/AiReviewDiffOverlay.tsx` |
+| `AiReviewDiffOverlay` | `components/tailor/editor/AiReviewDiffOverlay.tsx` (deprecated, pending cleanup — see `AI_SUGGESTION_ATTEMPTS.md`) |
 
-### 21.7 Hooks
+### 19.7 Hooks
 
 | Hook | File | Purpose |
 | ----- | ----- | ----- |
 | `useSaveCoordinator` | `hooks/useSaveCoordinator.ts` | OCC save locking and conflict detection |
 | `useAutoSaveStyles` | `hooks/useAutoSaveStyles.ts` | Debounced auto-save for style changes |
 | `useInlineSuggestion` | `hooks/useInlineSuggestion.ts` | Debounced AI inline bullet suggestions |
+| `useInlineSuggestionKeyboard` | `hooks/useInlineSuggestionKeyboard.ts` | Tab/Esc/arrow key handler for inline suggestions |
+| `useInlineSuggestionQueue` | `hooks/useInlineSuggestionQueue.ts` | Orchestration bridge between queue store and `useBulletAnalysis` |
+| `useTypewriter` | `hooks/useTypewriter.ts` | Character-by-character reveal animation |
 | `useBulletAnalysis` | `hooks/useBulletAnalysis.ts` | Batch bullet analysis orchestration |
 | `useBulletNavigation` | `hooks/useBulletNavigation.ts` | Keyboard bullet navigation |
 | `useATSProgressStream` | `hooks/useATSProgressStream.ts` | SSE streaming for ATS analysis |
 | `useTailoringSession` | `hooks/useTailoringSession.ts` | Three-state tailoring session management |
+| `useResumeBroadcast` | `components/library/editor/hooks/useResumeBroadcast.ts` | Cross-tab sync via BroadcastChannel |
 | `useUndoRedo` | `components/workshop/hooks/useUndoRedo.ts` | Generic undo/redo with history stack |
 
-### 21.8 Stores
+### 19.8 Stores
 
 | Store | File | Persisted |
 | ----- | ----- | ----- |
 | `atsProgressStore` | `lib/stores/atsProgressStore.ts` | Yes |
 | `bulletSuggestionsStore` | `lib/stores/bulletSuggestionsStore.ts` | No |
+| `inlineSuggestionQueueStore` | `lib/stores/inlineSuggestionQueueStore.ts` | No |
 | `keywordReviewStore` | `lib/stores/keywordReviewStore.ts` | No |
 
-### 21.9 Data Layer
+### 19.9 Data Layer
 
 | Module | File | Purpose |
 | ----- | ----- | ----- |
@@ -1511,14 +1445,14 @@ graph TD
 | Element paths | `lib/resume/elementPath.ts` | Encode/decode/get/set element paths |
 | Bullet helpers | `lib/resume/bulletHelpers.ts` | String to BulletItem conversion |
 
-### 21.10 Export
+### 19.10 Export
 
 | Module | File |
 | ----- | ----- |
 | `ExportDialog` | `components/export/ExportDialog.tsx` |
 | `exportToPdfFromPages` | `lib/pdf-export.ts` |
 
-### 21.11 Contexts
+### 19.11 Contexts
 
 | Context | File |
 | ----- | ----- |
