@@ -102,3 +102,88 @@ class ChatResponse(BaseModel):
     action_type: Literal["advice", "improvement", "question"] = Field(
         description="Type of response: advice (general tips), improvement (content changes), question (clarifying)"
     )
+
+
+# ─── Rewrite Resume Schemas ───────────────────────────────────────────────────
+
+
+class BulletEntryContext(BaseModel):
+    """Contextual information about the experience entry containing a bullet."""
+
+    title: str = Field(default="", description="Job title or role name")
+    company: str = Field(default="", description="Company or organization name")
+    date_range: str = Field(default="", description="Employment date range")
+
+
+class BulletRewriteItem(BaseModel):
+    """A single bullet point to be rewritten."""
+
+    element_id: str = Field(description="DOM element ID (blockId:entryId:bullets:N)")
+    text: str = Field(description="Current bullet text")
+    entry_context: BulletEntryContext = Field(
+        default_factory=BulletEntryContext,
+        description="Context about the parent experience entry",
+    )
+
+
+class RewriteOptions(BaseModel):
+    """Controls which parts of the resume are rewritten."""
+
+    rewrite_bullets: bool = Field(default=True)
+    rewrite_summary: bool = Field(default=True)
+
+
+class RewriteResumeRequest(BaseModel):
+    """Request to rewrite an entire resume targeted at a specific job."""
+
+    resume_id: str = Field(description="ID of the resume being rewritten")
+    job_id: str = Field(description="ID of the target job")
+    job_description: str = Field(description="Full text of the job description")
+    bullets: list[BulletRewriteItem] = Field(
+        default_factory=list,
+        description="All bullets to rewrite",
+    )
+    summary: str | None = Field(
+        default=None,
+        description="Current summary text to rewrite",
+    )
+    missing_keywords: list[str] = Field(
+        default_factory=list,
+        description="Keywords missing from the resume that appear in the job description",
+    )
+    options: RewriteOptions = Field(default_factory=RewriteOptions)
+
+
+class BulletRewriteResult(BaseModel):
+    """AI-rewritten version of a single bullet point."""
+
+    element_id: str
+    original: str
+    proposed: str
+    reason: str
+    impact: Literal["high", "medium", "low"]
+    keywords_added: list[str] = Field(default_factory=list)
+
+
+class SummaryRewriteResult(BaseModel):
+    """AI-rewritten version of the resume summary."""
+
+    original: str
+    proposed: str
+    reason: str
+
+
+class RewriteStats(BaseModel):
+    """Aggregate statistics about the rewrite operation."""
+
+    bullets_changed: int
+    bullets_unchanged: int
+    keywords_added: int
+
+
+class RewriteResumeResponse(BaseModel):
+    """Response containing AI-rewritten resume content."""
+
+    bullets: list[BulletRewriteResult]
+    summary: SummaryRewriteResult | None = None
+    stats: RewriteStats

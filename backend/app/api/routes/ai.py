@@ -1,5 +1,6 @@
 """AI Chat Routes for Resume Section Improvements."""
 
+import asyncio
 import json
 import re
 
@@ -8,10 +9,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_id, get_db, resolve_ai_model
 from app.schemas.ai import (
+    BulletRewriteItem,
+    BulletRewriteResult,
     ChatRequest,
     ChatResponse,
     ImproveSectionRequest,
     ImproveSectionResponse,
+    RewriteResumeRequest,
+    RewriteResumeResponse,
+    RewriteStats,
+    SummaryRewriteResult,
 )
 from app.services.ai import get_usage_tracker
 from app.services.ai.client import get_ai_client_for_model
@@ -229,3 +236,214 @@ Respond helpfully to the user's message."""
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"AI service error: {str(e)}",
         )
+
+
+# ─── Rewrite Resume ───────────────────────────────────────────────────────────
+
+BULLET_REWRITE_SYSTEM_PROMPT = """You are an expert resume writer optimizing bullets for ATS and recruiter impact.
+
+Rules:
+1. Start with a strong, specific action verb
+2. Add quantified outcomes (metrics, percentages, scale) where plausible from context
+3. Naturally incorporate provided keywords — never stuff them awkwardly
+4. Keep to a single line (under 120 characters when possible)
+5. Preserve factual accuracy — never invent numbers or companies
+6. If the bullet is already optimal, return it unchanged
+
+Return ONLY valid JSON, no markdown:
+{
+  "proposed": "The rewritten bullet text",
+  "reason": "One sentence explaining the improvement",
+  "impact": "high" | "medium" | "low",
+  "keywords_added": ["keyword1", "keyword2"]
+}
+
+Impact levels:
+- high: Adds quantification or directly targets a key job requirement
+- medium: Improves verb strength, clarity, or keyword coverage
+- low: Minor wording polish with little measurable effect"""
+
+
+SUMMARY_REWRITE_SYSTEM_PROMPT = """You are an expert resume writer optimizing professional summaries.
+
+Rules:
+1. Keep to 2-3 sentences maximum
+2. Mirror the language register of the job description
+3. Lead with the candidate's strongest match to the role
+4. Weave in top keywords naturally — no keyword stuffing
+5. Remove filler phrases ("results-driven", "passionate about", "team player")
+6. Preserve factual accuracy
+
+Return ONLY valid JSON, no markdown:
+{
+  "proposed": "The rewritten summary text",
+  "reason": "One sentence explaining the improvement"
+}"""
+
+
+async def _rewrite_bullet(
+    bullet: BulletRewriteItem,
+    job_description: str,
+    missing_keywords: list[str],
+    ai_client,
+) -> tuple[BulletRewriteResult, object]:
+    """Rewrite a single bullet and return (result, ai_response) for usage logging."""
+    keyword_hint = ""
+    if missing_keywords:
+        top_keywords = ", ".join(missing_keywords[:8])
+        keyword_hint = f"\nKeywords to incorporate (if natural): {top_keywords}"
+
+    user_prompt = f"""Bullet to rewrite:
+{bullet.text}
+
+Role context: {bullet.entry_context.title} at {bullet.entry_context.company}{keyword_hint}
+
+Job description (excerpt):
+{job_description[:2000]}"""
+
+    ai_response = await ai_client.generate_json_with_metrics(
+        system_prompt=BULLET_REWRITE_SYSTEM_PROMPT,
+        user_prompt=user_prompt,
+        max_tokens=512,
+    )
+
+    try:
+        result = parse_ai_json_response(ai_response.content)
+        proposed = result.get("proposed", bullet.text).strip()
+        reason = result.get("reason", "Improved for job alignment")
+        impact = result.get("impact", "medium").lower()
+        if impact not in ("high", "medium", "low"):
+            impact = "medium"
+        keywords_added = result.get("keywords_added", [])
+        if not isinstance(keywords_added, list):
+            keywords_added = []
+    except (ValueError, AttributeError):
+        proposed = bullet.text
+        reason = "No improvement generated"
+        impact = "low"
+        keywords_added = []
+
+    return (
+        BulletRewriteResult(
+            element_id=bullet.element_id,
+            original=bullet.text,
+            proposed=proposed,
+            reason=reason,
+            impact=impact,
+            keywords_added=keywords_added,
+        ),
+        ai_response,
+    )
+
+
+async def _rewrite_summary(
+    summary_text: str,
+    job_description: str,
+    missing_keywords: list[str],
+    ai_client,
+) -> tuple[SummaryRewriteResult, object]:
+    """Rewrite the summary and return (result, ai_response) for usage logging."""
+    keyword_hint = ""
+    if missing_keywords:
+        top_keywords = ", ".join(missing_keywords[:6])
+        keyword_hint = f"\nTop keywords to incorporate: {top_keywords}"
+
+    user_prompt = f"""Current summary:
+{summary_text}{keyword_hint}
+
+Job description (excerpt):
+{job_description[:2000]}"""
+
+    ai_response = await ai_client.generate_json_with_metrics(
+        system_prompt=SUMMARY_REWRITE_SYSTEM_PROMPT,
+        user_prompt=user_prompt,
+        max_tokens=512,
+    )
+
+    try:
+        result = parse_ai_json_response(ai_response.content)
+        proposed = result.get("proposed", summary_text).strip()
+        reason = result.get("reason", "Aligned summary with job description")
+    except (ValueError, AttributeError):
+        proposed = summary_text
+        reason = "No improvement generated"
+
+    return (
+        SummaryRewriteResult(original=summary_text, proposed=proposed, reason=reason),
+        ai_response,
+    )
+
+
+@router.post("/rewrite-resume", response_model=RewriteResumeResponse)
+async def rewrite_resume(
+    request: RewriteResumeRequest,
+    current_user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> RewriteResumeResponse:
+    """Rewrite an entire resume targeted at a specific job description.
+
+    Rewrites all bullets and optionally the summary in parallel, then returns
+    proposed changes for the user to review inline on the preview.
+    """
+    model = await resolve_ai_model(current_user_id, db, "general")
+    ai_client = get_ai_client_for_model(model)
+    usage_tracker = get_usage_tracker()
+
+    bullet_tasks = []
+    if request.options.rewrite_bullets and request.bullets:
+        for bullet in request.bullets:
+            bullet_tasks.append(
+                _rewrite_bullet(bullet, request.job_description, request.missing_keywords, ai_client)
+            )
+
+    summary_task = None
+    if request.options.rewrite_summary and request.summary:
+        summary_task = _rewrite_summary(
+            request.summary, request.job_description, request.missing_keywords, ai_client
+        )
+
+    try:
+        all_tasks = bullet_tasks + ([summary_task] if summary_task else [])
+        results = await asyncio.gather(*all_tasks)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AI rewrite failed: {str(e)}",
+        )
+
+    # Split results back into bullets and optional summary
+    bullet_results: list[BulletRewriteResult] = []
+    ai_responses = []
+    for i, (result, ai_resp) in enumerate(results):
+        if i < len(bullet_tasks):
+            bullet_results.append(result)
+        ai_responses.append(ai_resp)
+
+    summary_result: SummaryRewriteResult | None = None
+    if summary_task and results:
+        summary_result, _ = results[-1]
+
+    # Log aggregated usage
+    for ai_resp in ai_responses:
+        if ai_resp:
+            await usage_tracker.log_generation(
+                db=db,
+                user_id=current_user_id,
+                endpoint="/ai/rewrite-resume",
+                response=ai_resp,
+            )
+    if ai_responses:
+        await db.commit()
+
+    changed = sum(1 for b in bullet_results if b.proposed != b.original)
+    total_keywords = sum(len(b.keywords_added) for b in bullet_results)
+
+    return RewriteResumeResponse(
+        bullets=bullet_results,
+        summary=summary_result,
+        stats=RewriteStats(
+            bullets_changed=changed,
+            bullets_unchanged=len(bullet_results) - changed,
+            keywords_added=total_keywords,
+        ),
+    )
