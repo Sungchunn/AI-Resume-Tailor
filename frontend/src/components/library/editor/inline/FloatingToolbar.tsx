@@ -148,7 +148,7 @@ export function FloatingToolbar({ editor, onAIRequest }: FloatingToolbarProps) {
         (toolbarRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
       }}
       style={floatingStyles}
-      className="z-[60] flex items-center gap-0.5 bg-zinc-900 rounded-md shadow-lg p-1"
+      className="z-60 flex items-center gap-0.5 bg-zinc-900 rounded-md shadow-lg p-1"
       data-floating-toolbar
     >
       {/* Bold */}
