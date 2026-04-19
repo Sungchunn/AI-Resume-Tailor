@@ -100,6 +100,47 @@ describe("markAccepted", () => {
   });
 });
 
+describe("markRejected", () => {
+  beforeEach(() => {
+    store().populate([makeBullet("e:0"), makeBullet("e:1"), makeBullet("e:2")], null, "r1", "j1", null);
+  });
+
+  it("sets status to rejected", () => {
+    store().markRejected("e:1");
+    expect(store().bullets["e:1"].status).toBe("rejected");
+  });
+
+  it("does not change currentIndex", () => {
+    store().markRejected("e:1");
+    expect(store().bullets["e:1"].currentIndex).toBe(1);
+  });
+
+  it("advanceNext skips rejected bullets", () => {
+    store().markRejected("e:1");
+    store().setActiveElementId("e:0");
+    store().advanceNext();
+    expect(store().activeElementId).toBe("e:2");
+  });
+
+  it("advancePrevious skips rejected bullets", () => {
+    store().markRejected("e:1");
+    store().setActiveElementId("e:2");
+    store().advancePrevious();
+    expect(store().activeElementId).toBe("e:0");
+  });
+
+  it("is a no-op for unknown elementId", () => {
+    const before = { ...store().bullets };
+    store().markRejected("nonexistent");
+    expect(store().bullets).toEqual(before);
+  });
+
+  it("keeps the entry in the bullets map (does not delete)", () => {
+    store().markRejected("e:1");
+    expect(store().bullets["e:1"]).toBeDefined();
+  });
+});
+
 describe("popUndo", () => {
   beforeEach(() => {
     store().populate([makeBullet("e:0", "high", "orig", "prop")], null, "r1", "j1", null);

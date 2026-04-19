@@ -60,6 +60,7 @@ interface RewriteDiffActions {
   advancePrevious: () => void;
   jumpTo: (elementId: string) => void;
   markAccepted: (elementId: string) => void;
+  markRejected: (elementId: string) => void;
   popUndo: (elementId: string) => void;
   pushManualEdit: (elementId: string, text: string) => void;
   acceptSummary: () => void;
@@ -203,6 +204,19 @@ export const useRewriteDiffStore = create<RewriteDiffStore>((set, get) => ({
       bullets: {
         ...bullets,
         [elementId]: { ...entry, status: "accepted" },
+      },
+    });
+  },
+
+  markRejected: (elementId) => {
+    const { bullets } = get();
+    const entry = bullets[elementId];
+    if (!entry) return;
+
+    set({
+      bullets: {
+        ...bullets,
+        [elementId]: { ...entry, status: "rejected" },
       },
     });
   },
