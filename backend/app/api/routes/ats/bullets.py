@@ -15,7 +15,9 @@ from app.crud.job_listing import JobListingRepository
 from app.crud.mongo.resume import ResumeCRUD as MongoResumeCRUD
 from app.schemas.tailor.suggestions import (
     AnalyzeBulletsResponse,
+    ATSContextInput,
     BulletAnalysisRequest,
+    KeywordGapInput,
 )
 from app.services.ai import get_usage_tracker
 from app.services.ai.client import AIServiceError, get_ai_client_for_model
@@ -94,12 +96,41 @@ async def analyze_bullets_for_resume(
             detail="No job description available",
         )
 
-    # 3. Validate ATS context is provided (required prerequisite)
-    if not request.ats_context.keyword_gaps:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="ATS analysis required. Run ATS analysis before bullet suggestions.",
+    # 3. Resolve bullets and ATS context based on mode
+    if request.keyword_assignments:
+        # Targeted mode: user has assigned specific keywords to specific resume sections.
+        # Only analyze bullets within those sections.
+        assigned_section_ids = {a.section_id for a in request.keyword_assignments}
+        bullets_to_analyze = [
+            b for b in request.bullets
+            if any(b.id.startswith(sec_id + ":bullet-") for sec_id in assigned_section_ids)
+        ]
+        if not bullets_to_analyze:
+            return AnalyzeBulletsResponse(
+                suggestions=[], total_analyzed=0, suggestions_count=0, skipped_count=0
+            )
+
+        assigned_keywords = {a.keyword for a in request.keyword_assignments}
+        existing_gaps = [g for g in request.ats_context.keyword_gaps if g.keyword in assigned_keywords]
+        targeted_gaps = existing_gaps or [
+            KeywordGapInput(keyword=a.keyword, importance="required")
+            for a in request.keyword_assignments
+        ]
+        ats_context_to_use = ATSContextInput(
+            keyword_gaps=targeted_gaps,
+            importance_map={g.keyword: g.importance for g in targeted_gaps},
+            bullets_needing_metrics=[],
+            bullets_with_weak_verbs=[],
         )
+    else:
+        # General mode: validate ATS context present
+        if not request.ats_context.keyword_gaps:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="ATS analysis required. Run ATS analysis before bullet suggestions.",
+            )
+        bullets_to_analyze = request.bullets
+        ats_context_to_use = request.ats_context
 
     # 4. Run bullet analysis
     model = await resolve_ai_model(current_user_id, pg, "general")
@@ -109,9 +140,9 @@ async def analyze_bullets_for_resume(
 
     try:
         suggestions, ai_response = await analyzer.analyze_batch(
-            bullets=request.bullets,
+            bullets=bullets_to_analyze,
             job_description=job_description,
-            ats_context=request.ats_context,
+            ats_context=ats_context_to_use,
             return_metrics=True,
         )
     except AIServiceError as e:
@@ -132,7 +163,7 @@ async def analyze_bullets_for_resume(
     # 6. Return response
     return AnalyzeBulletsResponse(
         suggestions=suggestions,
-        total_analyzed=len(request.bullets),
+        total_analyzed=len(bullets_to_analyze),
         suggestions_count=len(suggestions),
-        skipped_count=len(request.bullets) - len(suggestions),
+        skipped_count=len(bullets_to_analyze) - len(suggestions),
     )

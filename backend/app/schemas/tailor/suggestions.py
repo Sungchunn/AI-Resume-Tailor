@@ -49,11 +49,22 @@ class ATSContextInput(BaseModel):
     )
 
 
+class KeywordAssignmentInput(BaseModel):
+    """A keyword the user explicitly wants incorporated into a specific resume section."""
+
+    keyword: str
+    section_id: str = Field(..., description="Section prefix matching bullet IDs, e.g. 'blockId:entry-0'")
+
+
 class BulletAnalysisRequest(BaseModel):
     """Request body for bullet analysis."""
 
     bullets: list[BulletInput] = Field(..., min_length=1, max_length=50)
     ats_context: ATSContextInput
+    keyword_assignments: list[KeywordAssignmentInput] | None = Field(
+        default=None,
+        description="User-selected keyword→section assignments for targeted suggestions",
+    )
 
 
 class BulletSuggestionResponse(BaseModel):

@@ -464,6 +464,7 @@ export interface ATSContextInput {
 export interface BulletAnalysisRequest {
   bullets: BulletInput[];
   ats_context: ATSContextInput;
+  keyword_assignments?: Array<{ keyword: string; section_id: string }>;
 }
 
 export interface BulletSuggestionResponse {
