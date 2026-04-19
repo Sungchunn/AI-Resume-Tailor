@@ -35,7 +35,7 @@ graph TB
         APS["atsProgressStore<br/>SSE stages, composite score, keywords"]
         BSS["bulletSuggestionsStore<br/>AI suggestions, authoritative data"]
         ISQS["inlineSuggestionQueueStore<br/>ordered review queue, navigation"]
-        KRS["keywordReviewStore<br/>user keyword edits"]
+        KAS["keywordAssignmentStore<br/>user keyword→section assignments"]
     end
 
     subgraph "Backend"

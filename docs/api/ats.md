@@ -1891,7 +1891,86 @@ Cache is automatically invalidated when:
 | Cache Miss | 6-8 seconds | Full 5-stage analysis with streaming |
 | Re-analysis | 6-8 seconds | Fresh analysis, updates cache |
 
-### Related Endpointss
+### Related Endpoints
 
 - [GET /api/tailor/{id}](tailor-match.md#get-tailored-resume) - Returns ATS cache metadata
 - [POST /v1/ats/analyze-progressive](#post-apiv1atsanalyze-progressive) - Progressive analysis with caching
+
+---
+
+## Analyze Bullets (Library Editor)
+
+Analyze bullet points against a job and suggest ATS-optimized improvements. Used by the library editor when a job listing or user job is linked.
+
+```http
+POST /v1/ats/analyze-bullets
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+| --------- | ---- | -------- | ----------- |
+| `resume_id` | string | Yes | Resume MongoDB ObjectId |
+| `job_id` | string | No | User-created job UUID or integer ID |
+| `job_listing_id` | integer | No | Scraped job listing PostgreSQL ID |
+
+One of `job_id` or `job_listing_id` must be provided.
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+| ----- | ---- | -------- | ----------- |
+| `bullets` | `BulletInput[]` | Yes | Bullets to analyze (max 50) |
+| `ats_context` | `ATSContextInput` | Yes | ATS analysis results (keyword gaps, importance map) |
+| `keyword_assignments` | `KeywordAssignmentInput[] \| null` | No | User-selected keyword→section assignments for targeted mode |
+
+**`BulletInput` schema:**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `id` | string | Bullet element ID, e.g. `blockId:entry-0:bullet-2` |
+| `text` | string | Current bullet text |
+| `entry_context` | `EntryContext` | Job title, company, date range |
+
+**`KeywordAssignmentInput` schema (targeted mode):**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `keyword` | string | The keyword the user wants to incorporate |
+| `section_id` | string | Section prefix matching bullet IDs, e.g. `blockId:entry-0` |
+
+**Targeted Mode Behavior:**
+
+When `keyword_assignments` is provided, the endpoint operates in targeted mode:
+
+- Only bullets whose `id` starts with an assigned `section_id + ":bullet-"` are analyzed
+- The `ats_context.keyword_gaps` validation is bypassed; keyword gaps are derived from the assignments instead
+- The AI focuses on incorporating the specific assigned keywords into the targeted bullets
+- If no bullets match the assigned sections, returns an empty response immediately
+
+**Response Body:**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `suggestions` | `BulletSuggestionResponse[]` | Only bullets that need improvement |
+| `total_analyzed` | integer | Number of bullets actually analyzed |
+| `suggestions_count` | integer | Number of suggestions returned |
+| `skipped_count` | integer | Bullets analyzed but not improved |
+
+**`BulletSuggestionResponse` schema:**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `bullet_id` | string | Same ID as the input bullet |
+| `original` | string | Original bullet text |
+| `suggested` | string | Improved text |
+| `reason` | string | What was improved and why |
+| `impact` | `"high" \| "medium" \| "low"` | Improvement impact level |
+| `keywords_added` | `string[]` | Keywords naturally incorporated |
+| `metrics_added` | boolean | Whether metrics were added |
+
+**Error Responses:**
+
+- `400 BAD REQUEST` — No `job_id` or `job_listing_id` provided, or (in general mode) no keyword gaps in ATS context
+- `404 NOT FOUND` — Resume not found or not owned by user, or job/listing not found
+- `503 SERVICE UNAVAILABLE` — AI service error
