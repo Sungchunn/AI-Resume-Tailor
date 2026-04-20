@@ -278,6 +278,10 @@ class ResumeDocument(BaseModel):
     parsed_verified: bool = False
     parsed_verified_at: datetime | None = None
 
+    # Fit pre-scoring (populated by resume_keywords.py on parse/update)
+    extracted_keywords: list[str] | None = None
+    keywords_content_hash: str | None = None
+
     model_config = {
         "populate_by_name": True,
         "arbitrary_types_allowed": True,

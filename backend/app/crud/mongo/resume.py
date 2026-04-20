@@ -8,10 +8,23 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.crud.mongo.exceptions import VersionConflictError
 from app.models.mongo.resume import (
+    ParsedContent,
     ResumeCreate,
     ResumeDocument,
     ResumeUpdate,
 )
+from app.services.fit_scoring.resume_keywords import (
+    compute_resume_keywords_hash,
+    extract_resume_keywords,
+)
+
+
+def _fit_scoring_fields(parsed: ParsedContent) -> dict[str, Any]:
+    """Keywords + content hash for the fit-scoring feature."""
+    return {
+        "extracted_keywords": sorted(extract_resume_keywords(parsed)),
+        "keywords_content_hash": compute_resume_keywords_hash(parsed),
+    }
 
 
 class ResumeCRUD:
@@ -34,7 +47,7 @@ class ResumeCRUD:
                 {"$set": {"is_master": False, "updated_at": now}},
             )
 
-        doc = {
+        doc: dict[str, Any] = {
             "user_id": obj_in.user_id,
             "title": obj_in.title,
             "raw_content": obj_in.raw_content,
@@ -47,6 +60,8 @@ class ResumeCRUD:
             "created_at": now,
             "updated_at": now,
         }
+        if obj_in.parsed is not None:
+            doc.update(_fit_scoring_fields(obj_in.parsed))
         result = await db[self.collection_name].insert_one(doc)
         doc["_id"] = result.inserted_id
         return ResumeDocument(**doc)
@@ -144,6 +159,7 @@ class ResumeCRUD:
             update_data["html_content"] = obj_in.html_content
         if obj_in.parsed is not None:
             update_data["parsed"] = obj_in.parsed.model_dump()
+            update_data.update(_fit_scoring_fields(obj_in.parsed))
         if obj_in.style is not None:
             update_data["style"] = obj_in.style.model_dump()
         if obj_in.is_master is not None:
