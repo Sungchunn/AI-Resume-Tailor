@@ -55,6 +55,7 @@ class JobListing(Base):
     industry = Column(String(255), nullable=True)
     job_description = Column(Text, nullable=False)
     job_description_html = Column(Text, nullable=True)  # HTML formatted description
+    extracted_keywords = Column(JSONB, nullable=True)  # Fit-scoring keywords + extracted_at
     job_url = Column(String(2000), nullable=False)
     job_url_direct = Column(String(2000), nullable=True)
     apply_url = Column(String(2000), nullable=True)  # Direct application link

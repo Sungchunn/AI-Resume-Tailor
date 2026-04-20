@@ -62,6 +62,10 @@ class UserJobInteraction(Base):
     # Position within column for drag ordering
     column_position = Column(Integer, nullable=True, default=0)
 
+    # Job-fit pre-scoring
+    fit_score_raw = Column(Integer, nullable=True)
+    scored_resume_hash = Column(String(64), nullable=True)
+
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -77,6 +81,8 @@ class UserJobInteraction(Base):
         Index("ix_user_job_interactions_saved", "user_id", "is_saved"),
         Index("ix_user_job_interactions_hidden", "user_id", "is_hidden"),
         Index("ix_user_job_interactions_status", "user_id", "application_status"),
+        # Partial index created via migration 20260420_0001 (CONCURRENTLY, not declarative):
+        # - idx_uji_fit_score: (user_id, fit_score_raw DESC) WHERE fit_score_raw IS NOT NULL
     )
 
     def __repr__(self) -> str:

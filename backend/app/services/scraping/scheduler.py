@@ -38,6 +38,7 @@ from app.schemas.scraper import (
     ScraperRunResult,
 )
 from app.services.core.cache import get_cache_service
+from app.services.fit_scoring.ingest import extract_missing_job_keywords
 from app.services.scraping.apify_client import ApifyClientError, get_apify_client
 from app.services.scraping.cache_warm import warm_default_job_listing_cache
 from app.services.scraping.cost_tracker import get_cost_tracker
@@ -487,6 +488,16 @@ class SchedulerService:
                     exc_info=True,
                 )
 
+            # Backfill fit-scoring keywords for newly inserted jobs. Isolated
+            # from scraper status — extraction failures are logged, not raised.
+            try:
+                await extract_missing_job_keywords()
+            except Exception as extract_err:
+                logger.warning(
+                    f"fit-scoring: keyword extraction failed after scraper run: {extract_err}",
+                    exc_info=True,
+                )
+
         # Determine overall status
         completed_at = datetime.now(timezone.utc)
         duration = (completed_at - started_at).total_seconds()
@@ -851,6 +862,16 @@ class SchedulerService:
             except Exception as cache_err:
                 logger.warning(
                     f"rb-cache: clear/warm failed after scraper run: {cache_err}",
+                    exc_info=True,
+                )
+
+            # Backfill fit-scoring keywords for newly inserted jobs. Isolated
+            # from scraper status — extraction failures are logged, not raised.
+            try:
+                await extract_missing_job_keywords()
+            except Exception as extract_err:
+                logger.warning(
+                    f"fit-scoring: keyword extraction failed after scraper run: {extract_err}",
                     exc_info=True,
                 )
 
