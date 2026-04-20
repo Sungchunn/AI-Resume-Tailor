@@ -97,6 +97,16 @@ class CleanupResponse(BaseModel):
     error: str | None = None
 
 
+class FitScoringResponse(BaseModel):
+    """Response for the manual fit-scoring trigger."""
+
+    users: int = 0
+    written: int = 0
+    skipped_no_change: int = 0
+    skipped_no_job_kws: int = 0
+    status: str | None = None
+
+
 @router.get("/scraper/status", response_model=ScraperStatusResponse)
 async def get_scraper_status() -> ScraperStatusResponse:
     """
@@ -191,6 +201,31 @@ async def trigger_cleanup() -> CleanupResponse:
         deleted_count=result.get("deleted_count", 0),
         duration_seconds=result.get("duration_seconds"),
         error=result.get("error"),
+    )
+
+
+@router.post("/fit-scoring/run", response_model=FitScoringResponse)
+async def trigger_fit_scoring() -> FitScoringResponse:
+    """Manually trigger the daily job-fit scoring batch.
+
+    Re-scores every user with a verified master resume against their
+    active job interactions. Uses the same distributed lock as the
+    scheduled daily run, so concurrent triggers no-op.
+    """
+    scheduler = get_scheduler_service()
+    result = await scheduler.trigger_fit_scoring_now()
+
+    if result.get("status") == "skipped":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Fit-scoring is already running on another instance",
+        )
+
+    return FitScoringResponse(
+        users=result.get("users", 0),
+        written=result.get("written", 0),
+        skipped_no_change=result.get("skipped_no_change", 0),
+        skipped_no_job_kws=result.get("skipped_no_job_kws", 0),
     )
 
 

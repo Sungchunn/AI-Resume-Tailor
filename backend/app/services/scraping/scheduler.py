@@ -39,6 +39,7 @@ from app.schemas.scraper import (
 )
 from app.services.core.cache import get_cache_service
 from app.services.fit_scoring.ingest import extract_missing_job_keywords
+from app.services.fit_scoring.scorer import score_all_users
 from app.services.scraping.apify_client import ApifyClientError, get_apify_client
 from app.services.scraping.cache_warm import warm_default_job_listing_cache
 from app.services.scraping.cost_tracker import get_cost_tracker
@@ -52,6 +53,9 @@ SCRAPER_LOCK_TTL = 1800  # 30 minutes - max expected run time
 
 CLEANUP_LOCK_KEY = "cleanup:distributed_lock"
 CLEANUP_LOCK_TTL = 300  # 5 minutes - cleanup is typically fast
+
+FIT_SCORING_LOCK_KEY = "fit_scoring:distributed_lock"
+FIT_SCORING_LOCK_TTL = 1800  # 30 minutes - bounded per-user sequential work
 
 
 class RetryableError(Exception):
@@ -158,6 +162,20 @@ class SchedulerService:
                 f"Cleanup job registered at 03:00 UTC "
                 f"(retention: {self._job_retention_days} days)"
             )
+
+        # Register the daily fit-scoring job. Runs independently of the
+        # scraper so users keep getting refreshed scores if scraping is
+        # paused. Chained again inline from the scraper for same-day freshness;
+        # the distributed lock prevents double-runs.
+        fit_scoring_trigger = CronTrigger(hour=4, minute=0, timezone="UTC")
+        self.scheduler.add_job(
+            self._run_fit_scoring_with_lock,
+            trigger=fit_scoring_trigger,
+            id="daily_fit_scoring",
+            name="Daily Job Fit Scoring",
+            replace_existing=True,
+        )
+        logger.info("Fit-scoring job registered at 04:00 UTC")
 
         self.scheduler.start()
         self._is_running = True
@@ -488,13 +506,21 @@ class SchedulerService:
                     exc_info=True,
                 )
 
-            # Backfill fit-scoring keywords for newly inserted jobs. Isolated
-            # from scraper status — extraction failures are logged, not raised.
+            # Backfill fit-scoring keywords for newly inserted jobs, then
+            # refresh per-user fit scores. Isolated from scraper status —
+            # failures are logged, not raised.
             try:
                 await extract_missing_job_keywords()
             except Exception as extract_err:
                 logger.warning(
                     f"fit-scoring: keyword extraction failed after scraper run: {extract_err}",
+                    exc_info=True,
+                )
+            try:
+                await self._run_fit_scoring_with_lock()
+            except Exception as score_err:
+                logger.warning(
+                    f"fit-scoring: scoring failed after scraper run: {score_err}",
                     exc_info=True,
                 )
 
@@ -865,13 +891,21 @@ class SchedulerService:
                     exc_info=True,
                 )
 
-            # Backfill fit-scoring keywords for newly inserted jobs. Isolated
-            # from scraper status — extraction failures are logged, not raised.
+            # Backfill fit-scoring keywords for newly inserted jobs, then
+            # refresh per-user fit scores. Isolated from scraper status —
+            # failures are logged, not raised.
             try:
                 await extract_missing_job_keywords()
             except Exception as extract_err:
                 logger.warning(
                     f"fit-scoring: keyword extraction failed after scraper run: {extract_err}",
+                    exc_info=True,
+                )
+            try:
+                await self._run_fit_scoring_with_lock()
+            except Exception as score_err:
+                logger.warning(
+                    f"fit-scoring: scoring failed after scraper run: {score_err}",
                     exc_info=True,
                 )
 
@@ -1149,6 +1183,39 @@ class SchedulerService:
         """
         logger.info("Manual cleanup trigger initiated")
         return await self._run_cleanup_job_with_lock()
+
+    async def _run_fit_scoring_with_lock(self) -> dict[str, int]:
+        """Run daily job-fit scoring with a distributed lock."""
+        lock_id = str(uuid.uuid4())
+
+        try:
+            result = await self._cache.redis.set(
+                FIT_SCORING_LOCK_KEY,
+                lock_id,
+                nx=True,
+                ex=FIT_SCORING_LOCK_TTL,
+            )
+            if result is None:
+                logger.info("Fit-scoring skipped - another instance is running")
+                return {"status": "skipped"}
+        except Exception as e:
+            logger.warning(f"Failed to acquire fit-scoring lock: {e}")
+            # Fail open - allow scoring to run if Redis is down
+
+        try:
+            return await score_all_users()
+        finally:
+            try:
+                current = await self._cache.redis.get(FIT_SCORING_LOCK_KEY)
+                if current == lock_id:
+                    await self._cache.redis.delete(FIT_SCORING_LOCK_KEY)
+            except Exception as e:
+                logger.warning(f"Failed to release fit-scoring lock: {e}")
+
+    async def trigger_fit_scoring_now(self) -> dict[str, int]:
+        """Manual trigger for fit-scoring (admin endpoint)."""
+        logger.info("Manual fit-scoring trigger initiated")
+        return await self._run_fit_scoring_with_lock()
 
 
 # Module-level singleton instance
