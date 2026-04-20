@@ -1,9 +1,11 @@
 """
 Daily fit-score batch scorer.
 
-For each user with a verified master resume, recomputes ``fit_score_raw``
-on their active ``UserJobInteraction`` rows whose ``scored_resume_hash``
-does not match the current starred resume's content hash.
+For each user with a verified master resume, upserts ``fit_score_raw``
+onto a ``user_job_interactions`` row for every active keyword-bearing
+``JobListing``. Rows are created on demand via ``ON CONFLICT`` so the
+list page shows a badge on every job, not just ones the user has
+already interacted with.
 
 Pure set intersection on the cached keyword lists — no AI calls.
 """
@@ -12,9 +14,9 @@ import logging
 import time
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from sqlalchemy import select, update
+from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.db.mongodb import get_mongodb
 from app.db.session import AsyncSessionLocal
@@ -25,6 +27,8 @@ from app.services.fit_scoring.resume_keywords import (
     compute_resume_keywords_hash,
     extract_resume_keywords,
 )
+
+_UPSERT_CHUNK = 200
 
 logger = logging.getLogger(__name__)
 
@@ -91,39 +95,39 @@ async def _score_user(
     resume_keywords: set[str],
     resume_hash: str,
 ) -> dict[str, int]:
-    """Score one user's interactions; returns per-user counts."""
+    """Score every active keyword-bearing job for one user via upsert."""
     started = time.perf_counter()
 
-    query = (
-        select(UserJobInteraction)
-        .where(
-            UserJobInteraction.user_id == user_id,
-            UserJobInteraction.is_hidden.is_(False),
-        )
-        .options(selectinload(UserJobInteraction.job_listing))
+    jobs_q = select(JobListing.id, JobListing.extracted_keywords).where(
+        JobListing.is_active.is_(True),
+        JobListing.extracted_keywords.isnot(None),
     )
-    result = await pg_session.execute(query)
-    interactions = result.scalars().all()
+    jobs = (await pg_session.execute(jobs_q)).all()
+    if not jobs:
+        return {"written": 0, "skipped_no_change": 0, "skipped_no_job_kws": 0}
 
-    written = 0
+    job_ids = [job.id for job in jobs]
+    existing_q = select(
+        UserJobInteraction.job_listing_id,
+        UserJobInteraction.scored_resume_hash,
+    ).where(
+        UserJobInteraction.user_id == user_id,
+        UserJobInteraction.job_listing_id.in_(job_ids),
+    )
+    already_scored: dict[int, str | None] = {
+        row.job_listing_id: row.scored_resume_hash
+        for row in (await pg_session.execute(existing_q)).all()
+    }
+
+    rows: list[dict] = []
     skipped_no_change = 0
     skipped_no_job_kws = 0
 
-    for interaction in interactions:
-        job = interaction.job_listing
-        if job is None or not job.is_active:
-            continue
-
-        if interaction.scored_resume_hash == resume_hash:
-            skipped_no_change += 1
-            continue
-
+    for job in jobs:
         payload = job.extracted_keywords
-        if not payload or not isinstance(payload, dict):
-            skipped_no_job_kws += 1
-            continue
-
-        job_keywords_raw = payload.get("keywords")
+        job_keywords_raw = (
+            payload.get("keywords") if isinstance(payload, dict) else None
+        )
         if not isinstance(job_keywords_raw, list) or not job_keywords_raw:
             skipped_no_job_kws += 1
             continue
@@ -133,18 +137,35 @@ async def _score_user(
             skipped_no_job_kws += 1
             continue
 
+        if already_scored.get(job.id) == resume_hash:
+            skipped_no_change += 1
+            continue
+
         overlap = len(resume_keywords & job_keywords)
         raw_score = round((overlap / len(job_keywords)) * 100)
-
-        await pg_session.execute(
-            update(UserJobInteraction)
-            .where(UserJobInteraction.id == interaction.id)
-            .values(
-                fit_score_raw=raw_score,
-                scored_resume_hash=resume_hash,
-            )
+        rows.append(
+            {
+                "user_id": user_id,
+                "job_listing_id": job.id,
+                "fit_score_raw": raw_score,
+                "scored_resume_hash": resume_hash,
+            }
         )
-        written += 1
+
+    written = 0
+    for i in range(0, len(rows), _UPSERT_CHUNK):
+        batch = rows[i : i + _UPSERT_CHUNK]
+        stmt = pg_insert(UserJobInteraction).values(batch)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["user_id", "job_listing_id"],
+            set_={
+                "fit_score_raw": stmt.excluded.fit_score_raw,
+                "scored_resume_hash": stmt.excluded.scored_resume_hash,
+                "updated_at": func.now(),
+            },
+        )
+        await pg_session.execute(stmt)
+        written += len(batch)
 
     if written:
         await pg_session.commit()
