@@ -294,6 +294,14 @@ Kanban and sort/filter-by-fit are out of scope for this plan.
 
 ## Open Follow-ups
 
-- `AIUsageTracker.user_id` nullability for system-initiated AI calls (job-keyword extraction isn't user-attributable).
+- `AIUsageTracker.user_id` nullability for system-initiated AI calls (job-keyword extraction isn't user-attributable). **Resolved** — `log_generation(user_id: int | None = None, ...)` already supports system ops.
 - Sort-by-fit and min-fit filter on `/jobs` (requires this plan's index — deliberately deferred).
 - Embedding-based secondary score for synonym coverage (explicit non-goal here).
+
+## Phase 7 — Upsert for all active jobs (2026-04-20)
+
+**Problem surfaced post-deploy:** Scores never appeared on the `/jobs` list because the scorer iterated over *existing* `UserJobInteraction` rows, and those rows are only created lazily when a user saves / hides / applies / views a job. A fresh user scrolling the list had zero interactions → zero scored pairs → zero badges.
+
+**Fix:** Rewrote `_score_user` in `backend/app/services/fit_scoring/scorer.py` to drive off the full set of active, keyword-bearing `JobListing` rows and bulk-upsert via `postgresql.insert(...).on_conflict_do_update(...)` on `(user_id, job_listing_id)`. Pre-fetches the user's existing `scored_resume_hash` per job so rows whose hash already matches are skipped (idempotent). Upserts in chunks of 200 to keep statements bounded.
+
+No schema change — `UserJobInteraction` already had the columns and unique constraint. Routes, schemas, frontend unchanged. Commit `55163c6`.
