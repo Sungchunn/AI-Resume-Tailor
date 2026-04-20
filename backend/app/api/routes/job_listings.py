@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUserId, DBSession, DBSessionWithRLS
 from app.crud import job_listing_repository, user_job_interaction_repository
+from app.db.mongodb import get_mongodb
 from app.schemas.job_listing import (
     ApplicationStatus,
     ApplyJobRequest,
@@ -165,9 +166,41 @@ async def _fetch_public_listings(
     return payload
 
 
+async def _get_current_master_resume_hash(user_id: int) -> str | None:
+    """Fetch the content hash of the user's starred (master) resume.
+
+    Used to flag ``is_score_stale`` on pre-scored job interactions: if the
+    interaction's ``scored_resume_hash`` doesn't match this, the score was
+    computed against an older version of the resume and will be refreshed
+    on the next daily batch.
+    """
+    try:
+        mongo = get_mongodb()
+    except RuntimeError:
+        return None
+    doc = await mongo.resumes.find_one(
+        {"user_id": user_id, "is_master": True},
+        {"keywords_content_hash": 1},
+    )
+    if not doc:
+        return None
+    return doc.get("keywords_content_hash")
+
+
+def _compute_is_stale(
+    scored_hash: str | None,
+    current_hash: str | None,
+) -> bool:
+    """True when a score exists but was computed against an older resume."""
+    if scored_hash is None or current_hash is None:
+        return False
+    return scored_hash != current_hash
+
+
 def _build_list_item_response(
     listing,
     interaction=None,
+    current_resume_hash: str | None = None,
 ) -> JobListingListItem:
     """Build a slim list-item response. Only touches columns loaded by the
     slim list query — accessing TOAST columns here would force a lazy load
@@ -194,6 +227,8 @@ def _build_list_item_response(
         "is_hidden": False,
         "applied_at": None,
         "application_status": None,
+        "fit_score_raw": None,
+        "is_score_stale": False,
     }
 
     if interaction:
@@ -201,6 +236,10 @@ def _build_list_item_response(
         response_data["is_hidden"] = interaction.is_hidden
         response_data["applied_at"] = interaction.applied_at
         response_data["application_status"] = interaction.application_status
+        response_data["fit_score_raw"] = interaction.fit_score_raw
+        response_data["is_score_stale"] = _compute_is_stale(
+            interaction.scored_resume_hash, current_resume_hash
+        )
 
     return JobListingListItem(**response_data)
 
@@ -208,6 +247,7 @@ def _build_list_item_response(
 def _merge_interaction_into_item(
     item: JobListingListItem,
     interaction=None,
+    current_resume_hash: str | None = None,
 ) -> JobListingListItem:
     """Return a copy of a cached list item with per-user interaction merged in.
 
@@ -222,6 +262,10 @@ def _merge_interaction_into_item(
             "is_hidden": interaction.is_hidden,
             "applied_at": interaction.applied_at,
             "application_status": interaction.application_status,
+            "fit_score_raw": interaction.fit_score_raw,
+            "is_score_stale": _compute_is_stale(
+                interaction.scored_resume_hash, current_resume_hash
+            ),
         }
     )
 
@@ -229,6 +273,7 @@ def _merge_interaction_into_item(
 def _build_listing_response(
     listing,
     interaction=None,
+    current_resume_hash: str | None = None,
 ) -> JobListingResponse:
     """Build a JobListingResponse with user interaction data."""
     response_data = {
@@ -278,6 +323,8 @@ def _build_listing_response(
         "application_status": None,
         "status_changed_at": None,
         "column_position": 0,
+        "fit_score_raw": None,
+        "is_score_stale": False,
     }
 
     if interaction:
@@ -287,6 +334,10 @@ def _build_listing_response(
         response_data["application_status"] = interaction.application_status
         response_data["status_changed_at"] = interaction.status_changed_at
         response_data["column_position"] = interaction.column_position or 0
+        response_data["fit_score_raw"] = interaction.fit_score_raw
+        response_data["is_score_stale"] = _compute_is_stale(
+            interaction.scored_resume_hash, current_resume_hash
+        )
 
     return JobListingResponse(**response_data)
 
@@ -484,6 +535,8 @@ async def list_job_listings(
 
     has_user_filter = is_saved is not None or is_hidden is not None or applied is not None
 
+    current_resume_hash = await _get_current_master_resume_hash(current_user_id)
+
     if has_user_filter:
         # User-interaction filters change the WHERE clause via a UserJobInteraction
         # join — bypass the public cache and fall through to the per-user query.
@@ -495,7 +548,11 @@ async def list_job_listings(
             db, user_id=current_user_id, job_listing_ids=listing_ids
         )
         response_listings = [
-            _build_list_item_response(listing, interactions_map.get(listing.id))
+            _build_list_item_response(
+                listing,
+                interactions_map.get(listing.id),
+                current_resume_hash=current_resume_hash,
+            )
             for listing in listings
         ]
     else:
@@ -505,7 +562,11 @@ async def list_job_listings(
             db, user_id=current_user_id, job_listing_ids=listing_ids
         )
         response_listings = [
-            _merge_interaction_into_item(item, interactions_map.get(item.id))
+            _merge_interaction_into_item(
+                item,
+                interactions_map.get(item.id),
+                current_resume_hash=current_resume_hash,
+            )
             for item in public_items
         ]
 
@@ -553,9 +614,14 @@ async def search_job_listings(
     interactions_map = await user_job_interaction_repository.get_batch(
         db, user_id=current_user_id, job_listing_ids=listing_ids
     )
+    current_resume_hash = await _get_current_master_resume_hash(current_user_id)
 
     response_listings = [
-        _build_list_item_response(listing, interactions_map.get(listing.id))
+        _build_list_item_response(
+            listing,
+            interactions_map.get(listing.id),
+            current_resume_hash=current_resume_hash,
+        )
         for listing in listings
     ]
 
@@ -596,9 +662,14 @@ async def list_saved_jobs(
     interactions_map = await user_job_interaction_repository.get_batch(
         db, user_id=current_user_id, job_listing_ids=listing_ids
     )
+    current_resume_hash = await _get_current_master_resume_hash(current_user_id)
 
     response_listings = [
-        _build_list_item_response(listing, interactions_map.get(listing.id))
+        _build_list_item_response(
+            listing,
+            interactions_map.get(listing.id),
+            current_resume_hash=current_resume_hash,
+        )
         for listing in listings
     ]
 
@@ -639,9 +710,14 @@ async def list_applied_jobs(
     interactions_map = await user_job_interaction_repository.get_batch(
         db, user_id=current_user_id, job_listing_ids=listing_ids
     )
+    current_resume_hash = await _get_current_master_resume_hash(current_user_id)
 
     response_listings = [
-        _build_list_item_response(listing, interactions_map.get(listing.id))
+        _build_list_item_response(
+            listing,
+            interactions_map.get(listing.id),
+            current_resume_hash=current_resume_hash,
+        )
         for listing in listings
     ]
 
@@ -740,8 +816,11 @@ async def get_job_listing(
     interaction = await user_job_interaction_repository.record_view(
         db, user_id=current_user_id, job_listing_id=listing_id
     )
+    current_resume_hash = await _get_current_master_resume_hash(current_user_id)
 
-    return _build_listing_response(listing, interaction)
+    return _build_listing_response(
+        listing, interaction, current_resume_hash=current_resume_hash
+    )
 
 
 @router.post("/{listing_id}/save", response_model=JobInteractionActionResponse)

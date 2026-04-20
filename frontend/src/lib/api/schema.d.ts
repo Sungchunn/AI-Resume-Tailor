@@ -84,6 +84,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Google Auth
+         * @description Authenticate or register user via Google OAuth.
+         *
+         *     Flow:
+         *     1. Verify Google ID token
+         *     2. Check if user exists by google_id
+         *     3. If not, check if user exists by email (for account linking)
+         *     4. Create new user or link accounts as needed
+         *     5. Return JWT tokens
+         */
+        post: operations["google_auth_api_auth_google_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/sse-ticket": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Sse Ticket
+         * @description Create a short-lived, one-time-use ticket for SSE authentication.
+         */
+        post: operations["create_sse_ticket_api_auth_sse_ticket_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/resumes": {
         parameters: {
             query?: never;
@@ -122,7 +169,14 @@ export interface paths {
         get: operations["get_resume_api_resumes__resume_id__get"];
         /**
          * Update Resume
-         * @description Update a resume.
+         * @description Update a resume with optimistic concurrency control.
+         *
+         *     Returns:
+         *         Updated resume on success
+         *
+         *     Raises:
+         *         404: Resume not found or not authorized
+         *         409: Version conflict - resume was modified by another session
          */
         put: operations["update_resume_api_resumes__resume_id__put"];
         post?: never;
@@ -131,6 +185,159 @@ export interface paths {
          * @description Delete a resume.
          */
         delete: operations["delete_resume_api_resumes__resume_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/resumes/{resume_id}/set-master": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set Master Resume
+         * @description Set a resume as the master resume for the current user.
+         *
+         *     The master resume is the default resume used in tailoring flows.
+         *     Only one resume can be the master at a time - setting a new master
+         *     will automatically unset the previous one.
+         *
+         *     Prerequisites:
+         *     - Resume must be verified (parsed_verified = true)
+         */
+        patch: operations["set_master_resume_api_resumes__resume_id__set_master_patch"];
+        trace?: never;
+    };
+    "/api/resumes/{resume_id}/verify-parsed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Verify Parsed Resume
+         * @description Mark a resume's parsed content as verified by the user.
+         *
+         *     Prerequisites:
+         *     - Resume must exist and belong to the current user
+         *     - Resume must have parsed content (parsed != None)
+         *
+         *     Once verified, the resume can be used in tailoring flows.
+         *     Tailoring will be blocked for unverified resumes.
+         */
+        patch: operations["verify_parsed_resume_api_resumes__resume_id__verify_parsed_patch"];
+        trace?: never;
+    };
+    "/api/resumes/export/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Export Templates
+         * @description Get available export style templates.
+         */
+        get: operations["get_export_templates_api_resumes_export_templates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/resumes/{resume_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export Resume
+         * @description Export a resume to PDF or DOCX format.
+         *
+         *     Uses the resume's HTML content for rich formatting export.
+         *     Falls back to raw_content if no HTML content is available.
+         *
+         *     Style templates:
+         *     - **classic**: Traditional professional style with section dividers
+         *     - **modern**: Contemporary design with accent colors
+         *     - **minimal**: Clean, ATS-friendly formatting
+         */
+        post: operations["export_resume_api_resumes__resume_id__export_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/resumes/{resume_id}/parse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Parse Resume
+         * @description Trigger async resume parsing.
+         *
+         *     Returns a task_id that can be polled for completion status.
+         *     The background task parses the raw_content using AI and stores
+         *     the result in parsed_content.
+         *
+         *     - **force**: If True, bypasses the cache and re-parses the content.
+         */
+        post: operations["parse_resume_api_resumes__resume_id__parse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/resumes/{resume_id}/parse/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Parse Status
+         * @description Poll for parse task completion.
+         *
+         *     Returns the current status of the parse task:
+         *     - **pending**: Task is still running
+         *     - **completed**: Parsing finished successfully
+         *     - **failed**: Parsing failed (check error field)
+         */
+        get: operations["get_parse_status_api_resumes__resume_id__parse_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -146,12 +353,16 @@ export interface paths {
         /**
          * List Jobs
          * @description List all job descriptions for the current user.
+         *
+         *     RLS SELECT policy automatically filters to only the user's jobs.
          */
         get: operations["list_jobs_api_jobs_get"];
         put?: never;
         /**
          * Create Job
          * @description Create a new job description.
+         *
+         *     RLS INSERT policy ensures owner_id matches the authenticated user.
          */
         post: operations["create_job_api_jobs_post"];
         delete?: never;
@@ -170,17 +381,28 @@ export interface paths {
         /**
          * Get Job
          * @description Get a job description by ID.
+         *
+         *     The job_id can be either:
+         *     - UUID format (preferred): 550e8400-e29b-41d4-a716-446655440000
+         *     - Integer format (deprecated): 123
+         *
+         *     RLS SELECT policy ensures only the owner can view the job.
+         *     If job doesn't exist or RLS blocks access, returns 404.
          */
         get: operations["get_job_api_jobs__job_id__get"];
         /**
          * Update Job
          * @description Update a job description.
+         *
+         *     RLS UPDATE policy ensures only the owner can modify the job.
          */
         put: operations["update_job_api_jobs__job_id__put"];
         post?: never;
         /**
          * Delete Job
          * @description Delete a job description.
+         *
+         *     RLS DELETE policy ensures only the owner can delete the job.
          */
         delete: operations["delete_job_api_jobs__job_id__delete"];
         options?: never;
@@ -197,13 +419,17 @@ export interface paths {
         };
         /**
          * List Tailored Resumes
-         * @description List tailored resumes, optionally filtered by resume, job, or job listing.
+         * @description List tailored resumes, optionally filtered by resume, job, job listing, or status.
          */
         get: operations["list_tailored_resumes_api_tailor_get"];
         put?: never;
         /**
          * Tailor Resume
          * @description Tailor a resume for a specific job using AI.
+         *
+         *     Two Copies Architecture: Returns complete tailored_data (not suggestions).
+         *     Frontend should call GET /{id}/compare to get both original and tailored
+         *     for client-side diffing.
          *
          *     Supports both user-created JobDescription (job_id) and
          *     system-wide JobListing from scrapers (job_listing_id).
@@ -248,6 +474,11 @@ export interface paths {
         /**
          * Get Tailored Resume
          * @description Get a tailored resume by ID.
+         *
+         *     Includes ATS cache metadata (Phase 5):
+         *     - ats_score: Cached ATS composite score (if available)
+         *     - ats_cached_at: When ATS analysis was last cached
+         *     - is_outdated: True if resume content changed since ATS analysis
          */
         get: operations["get_tailored_resume_api_tailor__tailored_id__get"];
         put?: never;
@@ -264,6 +495,77 @@ export interface paths {
          * @description Update a tailored resume's content, style settings, or section order.
          */
         patch: operations["update_tailored_resume_api_tailor__tailored_id__patch"];
+        trace?: never;
+    };
+    "/api/tailor/{tailored_id}/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Compare Data
+         * @description Get both original and tailored resume for frontend diffing.
+         *
+         *     This is the critical endpoint for the Two Copies architecture.
+         *     Returns both the original resume's parsed content and the AI-generated
+         *     tailored_data so the frontend can compute diffs client-side.
+         */
+        get: operations["get_compare_data_api_tailor__tailored_id__compare_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tailor/{tailored_id}/finalize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finalize Tailored Resume
+         * @description Finalize a tailored resume with user's approved changes.
+         *
+         *     Two Copies Architecture: The frontend sends the merged document
+         *     (finalized_data) that the user built by accepting some AI changes
+         *     and keeping some originals. This endpoint validates and stores it.
+         */
+        post: operations["finalize_tailored_resume_api_tailor__tailored_id__finalize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tailor/{tailored_id}/analyze-bullets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Bullets
+         * @description Analyze bullet points and suggest ATS-optimized improvements.
+         *
+         *     Requires ATS analysis to be completed first for keyword-aware suggestions.
+         *     Returns suggestions only for bullets that genuinely need improvement.
+         */
+        post: operations["analyze_bullets_api_tailor__tailored_id__analyze_bullets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/export/{tailored_id}": {
@@ -286,6 +588,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/export/fit-to-page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fit To Page
+         * @description Calculate style adjustments to fit content to one page.
+         *
+         *     Iteratively compresses styles (margins, spacing, font size) until
+         *     the content fits on a single page. Returns adjusted styles and
+         *     the resulting page count.
+         */
+        post: operations["fit_to_page_api_export_fit_to_page_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/upload/extract": {
         parameters: {
             query?: never;
@@ -297,245 +623,27 @@ export interface paths {
         put?: never;
         /**
          * Extract Document
-         * @description Extract text from an uploaded PDF or DOCX file.
+         * @description Extract text and convert to HTML from an uploaded PDF or DOCX file.
          *
-         *     The extracted text can then be used with the resume creation endpoint.
+         *     This endpoint:
+         *     1. Extracts plain text from the document (for backwards compatibility)
+         *     2. Converts the document to TipTap-compatible HTML for rich editing
+         *     3. Optionally stores the original file in object storage (MinIO/S3)
+         *
+         *     The extracted content can then be used with the resume creation endpoint.
          *
          *     Args:
          *         file: The uploaded PDF or DOCX file
          *         current_user: The authenticated user
+         *         store_file: Whether to store the original file (default: True)
          *
          *     Returns:
-         *         DocumentExtractionResponse with extracted text and metadata
+         *         DocumentExtractionResponse with extracted text, HTML, and metadata
          *
          *     Raises:
          *         HTTPException: If file validation fails or extraction errors occur
          */
         post: operations["extract_document_api_upload_extract_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/blocks": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Blocks
-         * @description List experience blocks with optional filters.
-         *
-         *     Supports filtering by block type, tags, and verification status.
-         *     Results are paginated.
-         */
-        get: operations["list_blocks_api_v1_blocks_get"];
-        put?: never;
-        /**
-         * Create Block
-         * @description Create a new experience block.
-         *
-         *     The block will be created without an embedding. Use the /embed endpoint
-         *     or POST /blocks/{id}/embed to generate embeddings.
-         */
-        post: operations["create_block_api_v1_blocks_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/blocks/{block_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Block
-         * @description Get a single experience block by ID.
-         */
-        get: operations["get_block_api_v1_blocks__block_id__get"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete Block
-         * @description Soft delete an experience block.
-         *
-         *     The block is not permanently deleted, just marked with a deleted_at timestamp.
-         *     It will be excluded from searches and listings.
-         */
-        delete: operations["delete_block_api_v1_blocks__block_id__delete"];
-        options?: never;
-        head?: never;
-        /**
-         * Update Block
-         * @description Update an experience block.
-         *
-         *     Only provided fields are updated. If content is changed, the embedding
-         *     will be marked as stale and should be regenerated.
-         */
-        patch: operations["update_block_api_v1_blocks__block_id__patch"];
-        trace?: never;
-    };
-    "/api/v1/blocks/{block_id}/verify": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Verify Block
-         * @description Mark a block as verified or unverified.
-         *
-         *     Verified blocks are user-confirmed facts that can be trusted
-         *     for resume generation.
-         */
-        post: operations["verify_block_api_v1_blocks__block_id__verify_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/blocks/import": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Import Blocks
-         * @description Import blocks from raw resume content.
-         *
-         *     Uses AI to split the content into atomic blocks and classify them.
-         *     The imported blocks will need embedding generation after import.
-         */
-        post: operations["import_blocks_api_v1_blocks_import_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/blocks/embed": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Embed Blocks
-         * @description Generate embeddings for blocks that need them.
-         *
-         *     If block_ids is provided, only those blocks are embedded.
-         *     Otherwise, all blocks needing embedding are processed.
-         */
-        post: operations["embed_blocks_api_v1_blocks_embed_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/blocks/{block_id}/embed": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Embed Single Block
-         * @description Generate embedding for a single block.
-         *
-         *     Useful for immediately embedding a newly created or updated block.
-         */
-        post: operations["embed_single_block_api_v1_blocks__block_id__embed_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/match": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Match Blocks
-         * @description Find experience blocks that match a job description.
-         *
-         *     Uses semantic search to find the most relevant blocks from the user's
-         *     Vault based on the job description text.
-         */
-        post: operations["match_blocks_api_v1_match_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/match/analyze": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Analyze Gaps
-         * @description Analyze skill gaps between job requirements and user's experience.
-         *
-         *     First performs semantic matching, then analyzes which job requirements
-         *     are well-covered and which have gaps.
-         */
-        post: operations["analyze_gaps_api_v1_match_analyze_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/match/job/{job_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Cached Match
-         * @description Get cached match results for a job.
-         *
-         *     If a job has been analyzed before, returns cached results.
-         *     Otherwise fetches the job description and performs matching.
-         */
-        get: operations["get_cached_match_api_v1_match_job__job_id__get"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -581,6 +689,10 @@ export interface paths {
         /**
          * Get Resume Build
          * @description Get a single resume build by ID.
+         *
+         *     The resume_build_id can be either:
+         *     - UUID format (preferred): 550e8400-e29b-41d4-a716-446655440000
+         *     - Integer format (deprecated): 123
          */
         get: operations["get_resume_build_api_v1_resume_builds__resume_build_id__get"];
         put?: never;
@@ -601,49 +713,6 @@ export interface paths {
         patch: operations["update_resume_build_api_v1_resume_builds__resume_build_id__patch"];
         trace?: never;
     };
-    "/api/v1/resume-builds/{resume_build_id}/pull": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Pull Blocks
-         * @description Pull blocks from Vault into resume build.
-         *
-         *     Blocks are copied by reference (ID) and can be used for building
-         *     the tailored resume.
-         */
-        post: operations["pull_blocks_api_v1_resume_builds__resume_build_id__pull_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/resume-builds/{resume_build_id}/blocks/{block_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Remove Block
-         * @description Remove a block from resume build's pulled blocks.
-         */
-        delete: operations["remove_block_api_v1_resume_builds__resume_build_id__blocks__block_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/resume-builds/{resume_build_id}/suggest": {
         parameters: {
             query?: never;
@@ -657,11 +726,35 @@ export interface paths {
          * Generate Suggestions
          * @description Generate AI suggestions for the resume build.
          *
-         *     The AI analyzes the job description and pulled blocks to suggest
-         *     improvements to the resume content. Suggestions are Vault-constrained
-         *     and will only use facts from the user's experience blocks.
+         *     The AI analyzes the job description and resume content to suggest
+         *     improvements to optimize for the target role.
          */
         post: operations["generate_suggestions_api_v1_resume_builds__resume_build_id__suggest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/resume-builds/{resume_build_id}/suggest-bullet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suggest Bullet
+         * @description Generate an AI suggestion for a single bullet point.
+         *
+         *     This is a lightweight endpoint optimized for real-time inline suggestions
+         *     during keyboard-driven bullet review. Unlike the full suggest endpoint,
+         *     this doesn't store suggestions as pending diffs - it returns immediately
+         *     for the user to accept or dismiss.
+         */
+        post: operations["suggest_bullet_api_v1_resume_builds__resume_build_id__suggest_bullet_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -775,70 +868,6 @@ export interface paths {
         patch: operations["update_status_api_v1_resume_builds__resume_build_id__status_patch"];
         trace?: never;
     };
-    "/api/v1/resume-builds/{resume_build_id}/writeback/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Preview Writeback
-         * @description Preview a write-back to the Vault.
-         *
-         *     Shows what would happen (create/update) without executing.
-         */
-        post: operations["preview_writeback_api_v1_resume_builds__resume_build_id__writeback_preview_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/resume-builds/{resume_build_id}/writeback": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Execute Writeback
-         * @description Execute a write-back to the Vault.
-         *
-         *     Creates or updates a block based on resume build edits.
-         */
-        post: operations["execute_writeback_api_v1_resume_builds__resume_build_id__writeback_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/resume-builds/{resume_build_id}/blocks": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Pulled Blocks
-         * @description Get all blocks pulled into this resume build.
-         */
-        get: operations["get_pulled_blocks_api_v1_resume_builds__resume_build_id__blocks_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/resume-builds/{resume_build_id}/export": {
         parameters: {
             query?: never;
@@ -861,6 +890,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ats/knockout-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Perform Knockout Check
+         * @description Perform knockout check to identify binary disqualifiers.
+         *
+         *     This is Stage 0 of the ATS scoring pipeline. It identifies hard
+         *     disqualifiers that would cause automatic rejection by most ATS systems
+         *     BEFORE calculating the actual match score.
+         *
+         *     **What it checks:**
+         *     - **Years of experience** vs. job requirement
+         *     - **Education level** vs. job requirement
+         *     - **Required certifications** presence on resume
+         *     - **Location/work authorization** compatibility
+         *
+         *     **Usage:**
+         *     Provide either database IDs (resume_id, job_id) or raw text content.
+         *     If both are provided, IDs take precedence.
+         *
+         *     **Response interpretation:**
+         *     - `passes_all_checks: true` - No knockout risks, proceed to keyword analysis
+         *     - `passes_all_checks: false` - Review the risks before applying
+         *     - `severity: critical` - Likely auto-rejection by ATS
+         *     - `severity: warning` - May affect application, worth addressing
+         */
+        post: operations["perform_knockout_check_api_v1_ats_knockout_check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ats/structure": {
         parameters: {
             query?: never;
@@ -877,7 +946,14 @@ export interface paths {
          *     Checks:
          *     - Standard section headers (Experience, Education, Skills, etc.)
          *     - Contact information presence
+         *     - Section order validation (some ATS like Taleo penalize non-standard order)
          *     - Formatting issues that may cause parsing problems
+         *
+         *     **Section Order Scoring:**
+         *     - 100: Standard order (Contact → Summary → Experience → Education → Skills → Certifications)
+         *     - 95: Minor deviation (e.g., Skills before Education)
+         *     - 85: Major deviation (e.g., Education before Experience)
+         *     - 75: Completely non-standard order
          *
          *     Returns a score and actionable suggestions for improvement.
          */
@@ -901,16 +977,96 @@ export interface paths {
          * Analyze Keywords
          * @description Analyze keyword coverage for a job description.
          *
-         *     Compares job requirements against:
-         *     1. Blocks currently in the resume
-         *     2. All blocks in the user's Vault
+         *     Compares job requirements against resume content.
          *
          *     Returns:
          *     - Keywords matched in resume
-         *     - Keywords missing but available in Vault (can be added)
-         *     - Keywords not in Vault (user may lack this experience)
+         *     - Keywords missing from resume
          */
         post: operations["analyze_keywords_api_v1_ats_keywords_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ats/keywords/detailed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Keywords Detailed
+         * @description Perform detailed keyword analysis with importance levels.
+         *
+         *     This endpoint provides comprehensive keyword analysis including:
+         *     - Keywords grouped by importance (required, preferred, nice-to-have)
+         *     - Coverage percentages for each importance level
+         *     - Actionable suggestions prioritized by importance
+         *
+         *     Use this for the ATS Keywords Panel in the resume editor.
+         */
+        post: operations["analyze_keywords_detailed_api_v1_ats_keywords_detailed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ats/keywords/enhanced": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Keywords Enhanced
+         * @description Perform Stage 2 enhanced keyword analysis with weighted scoring.
+         *
+         *     This is the most comprehensive keyword analysis endpoint, implementing
+         *     the full Stage 2 scoring pipeline:
+         *
+         *     **Stage 2.1 - Placement Weighting:**
+         *     Keywords are weighted based on where they appear:
+         *     - Experience bullets: 1.0x (demonstrated experience)
+         *     - Projects: 0.9x (applied knowledge)
+         *     - Skills section: 0.7x (listed but not demonstrated)
+         *     - Summary: 0.6x (claims without evidence)
+         *     - Education: 0.5x (academic context)
+         *
+         *     **Stage 2.2 - Density Scoring:**
+         *     Repetition matters, but with diminishing returns:
+         *     - 1 occurrence: 1.0x
+         *     - 2 occurrences: 1.3x
+         *     - 3+ occurrences: 1.5x (capped)
+         *
+         *     **Stage 2.3 - Recency Weighting:**
+         *     Keywords in recent roles are weighted higher:
+         *     - Most recent 2 roles: 2.0x
+         *     - Third most recent: 1.0x
+         *     - Older roles: 0.8x
+         *
+         *     **Stage 2.4 - Importance Tiers:**
+         *     Keywords are weighted by importance:
+         *     - Required: 3.0x
+         *     - Strongly Preferred: 2.0x
+         *     - Preferred: 1.5x
+         *     - Nice to Have: 1.0x
+         *
+         *     **Use this endpoint when you need:**
+         *     - The most accurate keyword matching score
+         *     - Detailed breakdown of scoring factors
+         *     - Gap analysis prioritized by importance
+         *     - Actionable suggestions for improvement
+         */
+        post: operations["analyze_keywords_enhanced_api_v1_ats_keywords_enhanced_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -936,6 +1092,463 @@ export interface paths {
          *     guarantee universal compatibility.
          */
         get: operations["get_ats_tips_api_v1_ats_tips_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ats/keywords/extract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Extract Keywords With Context
+         * @description Extract keywords from job description with context sentences.
+         *
+         *     This endpoint performs section-aware keyword extraction:
+         *     1. Parses the JD into sections (Requirements, Nice to Have, etc.)
+         *     2. Extracts keywords using AI
+         *     3. For each keyword, finds the sentence where it appears
+         *     4. Assigns importance based on section (Requirements → required)
+         *
+         *     Use this before the keyword review step to show users what
+         *     keywords were extracted and where they appear.
+         */
+        post: operations["extract_keywords_with_context_api_v1_ats_keywords_extract_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ats/keywords/override": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Keyword Override
+         * @description Get user's saved keyword overrides for a job.
+         *
+         *     Returns the user's edited keyword list if they have previously
+         *     reviewed and saved keywords for this job.
+         *
+         *     If job_description is provided, checks if the saved keywords
+         *     are stale (JD content changed since last review).
+         */
+        get: operations["get_keyword_override_api_v1_ats_keywords_override_get"];
+        /**
+         * Save Keyword Override
+         * @description Save user's keyword edits for a job.
+         *
+         *     After the user reviews and modifies keywords (add, remove, change
+         *     importance), save their edits. These edited keywords will be used
+         *     in subsequent ATS scoring instead of re-extracting from the JD.
+         */
+        put: operations["save_keyword_override_api_v1_ats_keywords_override_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ats/content-quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Content Quality
+         * @description Perform Stage 3 content quality analysis on a resume.
+         *
+         *     This endpoint analyzes the quality of resume content across three dimensions:
+         *
+         *     **Block Type Analysis (40% weight):**
+         *     Evaluates the ratio of achievement-oriented vs responsibility-oriented bullets.
+         *     - Achievement bullets: contain metrics, outcomes, and strong action verbs
+         *     - Responsibility bullets: describe duties without measurable outcomes
+         *     - Target: 60%+ achievement/project bullets for optimal ATS performance
+         *
+         *     **Quantification Density (35% weight):**
+         *     Measures the percentage of bullets containing quantified metrics.
+         *     Detects: percentages (%), currency ($), quantities (users, projects),
+         *     multiples (3x improvement), time metrics, and rankings.
+         *     - Target: 50%+ of bullets should contain metrics
+         *
+         *     **Action Verb Analysis (25% weight):**
+         *     Analyzes use of strong action verbs vs weak/passive phrases.
+         *     - Strong verbs: Led, Built, Increased, Delivered, Achieved
+         *     - Weak phrases: Responsible for, Assisted with, Helped with
+         *     - Target: 80%+ bullets with action verbs, <20% with weak phrases
+         *
+         *     **Usage:**
+         *     Provide either resume_id (uses parsed_content from database) or
+         *     resume_content (parsed resume dictionary). Resume_id takes precedence.
+         *
+         *     **Response includes:**
+         *     - Overall content quality score (0-100)
+         *     - Component scores for each dimension
+         *     - Detailed analysis with bullet-level breakdown
+         *     - Actionable suggestions for improvement
+         *     - Warnings about quality issues
+         */
+        post: operations["analyze_content_quality_api_v1_ats_content_quality_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ats/role-proximity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Role Proximity
+         * @description Perform Stage 4 role proximity analysis.
+         *
+         *     This endpoint analyzes how closely the candidate's career trajectory
+         *     aligns with the target role, providing insights beyond keyword matching.
+         *
+         *     **Why This Matters:**
+         *
+         *     A candidate can have 95% keyword match but still be wrong for the role
+         *     if there's a significant level mismatch or function change. Role proximity
+         *     explains why high keyword scores don't always translate to ATS success.
+         *
+         *     **Components Analyzed:**
+         *
+         *     **Title Match (Base Score 0-100):**
+         *     - Semantic similarity between current and target titles
+         *     - Seniority level extraction and comparison
+         *     - Functional category matching (engineering, product, design, etc.)
+         *
+         *     **Career Trajectory (Modifier -20 to +20):**
+         *     - Level progression analysis across career history
+         *     - Whether target role is a logical next step
+         *     - Trajectory types: progressing_toward (+20), lateral (+10), step_down (-10),
+         *       large_gap (-15), career_change (-5)
+         *
+         *     **Industry Alignment (Modifier 0 to +10):**
+         *     - Industry detection from company and context
+         *     - Same industry (+10), adjacent (+5), unrelated (0)
+         *
+         *     **Score Interpretation:**
+         *     - 80-100: Strong fit - title, trajectory, and industry align
+         *     - 60-79: Good fit - minor gaps in level or function
+         *     - 40-59: Moderate fit - career change or level jump
+         *     - 20-39: Weak fit - significant mismatch
+         *     - 0-19: Poor fit - very different role type
+         *
+         *     **Usage:**
+         *     Provide either database IDs (resume_id, job_id) or raw parsed content.
+         *     IDs take precedence if both are provided.
+         */
+        post: operations["analyze_role_proximity_api_v1_ats_role_proximity_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ats/analyze-progressive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Analyze Progressive Ats
+         * @description Run complete ATS analysis with real-time progress updates via SSE.
+         *
+         *     This endpoint orchestrates all 5 ATS stages and streams progress events:
+         *
+         *     **Event Types:**
+         *     - `cache_hit`: Cached results found, returning fast playback
+         *     - `cache_miss`: No cached results, running full analysis
+         *     - `stage_start`: Stage N is beginning
+         *     - `stage_complete`: Stage N completed successfully (includes result data)
+         *     - `stage_error`: Stage N failed (includes error message, continues to next stage)
+         *     - `score_calculation`: Calculating final composite score
+         *     - `complete`: All stages finished, composite score ready
+         *     - `error`: Fatal error that aborts entire analysis
+         *
+         *     **Caching Behavior:**
+         *     - Cache key: `ats:{resume_content_hash[:16]}:{job_id}`
+         *     - TTL: 24 hours
+         *     - On cache hit, streams cached results as fast playback
+         *     - On cache miss, runs full pipeline and caches results
+         *
+         *     **Client Usage:**
+         *     ```javascript
+         *     // 1. Exchange JWT for one-time ticket
+         *     const resp = await fetch('/api/auth/sse-ticket', {
+         *       method: 'POST',
+         *       headers: { Authorization: 'Bearer <jwt>' },
+         *     });
+         *     const { ticket } = await resp.json();
+         *
+         *     // 2. Connect with opaque ticket (no JWT in URL)
+         *     const eventSource = new EventSource(
+         *       '/api/v1/ats/analyze-progressive?resume_id=123&job_id=456&ticket=' + ticket
+         *     );
+         *     eventSource.addEventListener('stage_complete', (e) => {
+         *       const data = JSON.parse(e.data);
+         *       console.log(`Stage ${data.stage} done:`, data.result);
+         *     });
+         *     ```
+         */
+        get: operations["analyze_progressive_ats_api_v1_ats_analyze_progressive_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ats/analyze-content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Content
+         * @description Synchronous ATS analysis using raw content (no database lookup).
+         *
+         *     This endpoint provides the same 5-stage weighted scoring as /analyze-progressive
+         *     but operates synchronously without SSE streaming. It accepts raw resume content
+         *     directly, enabling the editor page to score live edits without saving first.
+         *
+         *     **Scoring Stages:**
+         *     - Stage 0: Knockout Risk Check (warnings only, not scored)
+         *     - Stage 1: Structure Analysis (15% weight)
+         *     - Stage 2: Enhanced Keyword Matching (40% weight)
+         *     - Stage 3: Content Quality (25% weight)
+         *     - Stage 4: Role Proximity (20% weight)
+         *
+         *     **Use Cases:**
+         *     - Editor page live scoring during unsaved edits
+         *     - Preview scoring before finalizing changes
+         *     - Consistent scoring between stepper and editor
+         *
+         *     **Note:** This endpoint makes AI calls and tracks usage for cost monitoring.
+         */
+        post: operations["analyze_content_api_v1_ats_analyze_content_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ats/analyze-bullets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Bullets For Resume
+         * @description Analyze bullet points and suggest ATS-optimized improvements.
+         *
+         *     This endpoint works with a resume + job pair directly (no tailored resume
+         *     required), making it usable from the library editor when a job is linked.
+         */
+        post: operations["analyze_bullets_for_resume_api_v1_ats_analyze_bullets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/improve-section": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Improve Section
+         * @description Improve a resume section using AI based on user instructions.
+         *
+         *     This endpoint takes a section's current content and an instruction,
+         *     then returns an AI-improved version of that section.
+         */
+        post: operations["improve_section_api_v1_ai_improve_section_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chat
+         * @description Conversational AI chat for resume improvement.
+         *
+         *     Supports multi-turn conversations about resume improvements,
+         *     with optional section context for targeted advice.
+         */
+        post: operations["chat_api_v1_ai_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/rewrite-resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rewrite Resume
+         * @description Rewrite an entire resume targeted at a specific job description.
+         *
+         *     Rewrites all bullets and optionally the summary in parallel, then returns
+         *     proposed changes for the user to review inline on the preview.
+         */
+        post: operations["rewrite_resume_api_v1_ai_rewrite_resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile/generate-about-me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate About Me
+         * @description Generate an AI-powered "About Me" blurb from the user's resume.
+         *
+         *     Uses the master resume (or most recent if no master) to generate
+         *     a personalized biography blurb for the library page.
+         */
+        post: operations["generate_about_me_api_v1_profile_generate_about_me_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Profile
+         * @description Update user profile fields (full_name, headline, about_me, timezone).
+         *
+         *     Only provided fields will be updated. Pass null/None to clear a field.
+         */
+        patch: operations["update_profile_api_v1_profile_patch"];
+        trace?: never;
+    };
+    "/api/v1/profile/ai-preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Ai Preferences
+         * @description Get the user's AI model preference and available models.
+         */
+        get: operations["get_ai_preferences_api_v1_profile_ai_preferences_get"];
+        /**
+         * Update Ai Preferences
+         * @description Update the user's AI model preference.
+         *
+         *     Set preferred_model to null to reset to endpoint defaults.
+         */
+        put: operations["update_ai_preferences_api_v1_profile_ai_preferences_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/job-listings/filter-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Filter Options
+         * @description Get available filter options based on existing job data.
+         *
+         *     Returns distinct countries, regions, and seniority levels
+         *     with counts for each value. This endpoint is unauthenticated so
+         *     Cloudflare can edge-cache the response — Cloudflare skips caching any
+         *     request that carries an Authorization header. Rate-limited per IP
+         *     under the default bucket in ``RateLimitMiddleware``. The underlying
+         *     ``job_listings`` table is not RLS-protected, so no user context is
+         *     required.
+         */
+        get: operations["get_filter_options_api_job_listings_filter_options_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1030,6 +1643,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/job-listings/kanban": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Kanban Board
+         * @description Get the full Kanban board with all applied jobs grouped by status.
+         *
+         *     Returns jobs organized into columns: applied, interview, accepted, rejected, ghosted.
+         *     Each column's jobs are ordered by their column_position.
+         */
+        get: operations["get_kanban_board_api_job_listings_kanban_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/job-listings/kanban/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Reorder Kanban Column
+         * @description Reorder jobs within a Kanban column.
+         *
+         *     The job_listing_ids list defines the new order (index = position).
+         */
+        put: operations["reorder_kanban_column_api_job_listings_kanban_reorder_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/job-listings/{listing_id}": {
         parameters: {
             query?: never;
@@ -1112,7 +1770,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/webhooks/job-listings": {
+    "/api/job-listings/{listing_id}/status": {
         parameters: {
             query?: never;
             header?: never;
@@ -1121,128 +1779,50 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Ingest Job Listings
-         * @description Batch ingest job listings from n8n/APIFY LinkedIn scraper.
-         *
-         *     Accepts up to 2000 job listings per request. Jobs are upserted based
-         *     on the LinkedIn `id` field - existing jobs are updated, new jobs are created.
-         *
-         *     ## Authentication
-         *
-         *     Requires `X-API-Key` header matching the configured webhook API key.
-         *
-         *     ## Request Body
-         *
-         *     ```json
-         *     {
-         *       "jobs": [
-         *         {
-         *           "id": "4334158613",
-         *           "title": "Software Engineer, Fullstack",
-         *           "companyName": "Notion",
-         *           "companyUrl": "https://www.linkedin.com/company/notionhq",
-         *           "companyLogo": "https://media.licdn.com/dms/image/...",
-         *           "companyIndustry": "Software Development",
-         *           "location": "San Francisco, CA",
-         *           "city": "San Francisco",
-         *           "state": "CA",
-         *           "country": "United States",
-         *           "isRemote": false,
-         *           "jobUrl": "https://www.linkedin.com/jobs/view/4334158613",
-         *           "jobUrlDirect": "https://notion.com/careers/apply/...",
-         *           "datePosted": "2024-01-15",
-         *           "compensation": {
-         *             "minAmount": 126000,
-         *             "maxAmount": 180000,
-         *             "currency": "USD",
-         *             "interval": "yearly"
-         *           },
-         *           "jobType": ["Full-time"],
-         *           "jobLevel": "Entry level",
-         *           "jobFunction": "Engineering",
-         *           "description": "We are looking for a talented engineer...",
-         *           "emails": ["careers@notion.com"],
-         *           "easyApply": false,
-         *           "scrapedAt": "2025-11-28T10:30:00Z",
-         *           "region": "singapore"
-         *         }
-         *       ],
-         *       "metadata": {
-         *         "source": "linkedin",
-         *         "scraper": "silentflow/linkedin-jobs-scraper-ppr",
-         *         "scrapedAt": "2025-02-19T12:00:00Z",
-         *         "totalJobs": 400,
-         *         "regions": ["thailand", "taiwan", "singapore", "other"]
-         *       }
-         *     }
-         *     ```
-         *
-         *     ## Response
-         *
-         *     Returns counts of received, created, updated, and errored jobs.
-         *
-         *     ```json
-         *     {
-         *       "received": 400,
-         *       "created": 350,
-         *       "updated": 45,
-         *       "errors": 5,
-         *       "error_details": [
-         *         {"index": 12, "id": "123", "error": "validation error..."}
-         *       ]
-         *     }
-         *     ```
-         */
-        post: operations["ingest_job_listings_api_webhooks_job_listings_post"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Application Status
+         * @description Update the application status for a job listing (Kanban column).
+         *
+         *     Valid statuses: applied, interview, accepted, rejected, ghosted.
+         *     This also updates status_changed_at and reorders within the new column.
+         */
+        patch: operations["update_application_status_api_job_listings__listing_id__status_patch"];
         trace?: never;
     };
-    "/api/webhooks/job-listings/single": {
+    "/api/scraper-requests": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List My Requests
+         * @description List my submitted requests.
+         *
+         *     Returns all requests submitted by the current user, most recent first.
+         */
+        get: operations["list_my_requests_api_scraper_requests_get"];
         put?: never;
         /**
-         * Ingest Single Job Listing
-         * @description Ingest a single job listing from n8n/APIFY.
+         * Create Request
+         * @description Submit a new scraper request.
          *
-         *     Upserts the job based on the LinkedIn `id` field.
-         *
-         *     ## Authentication
-         *
-         *     Requires `X-API-Key` header matching the configured webhook API key.
-         *
-         *     ## Request Body
-         *
-         *     A single job object in APIFY format (see batch endpoint for schema).
-         *
-         *     ## Response
-         *
-         *     ```json
-         *     {
-         *       "success": true,
-         *       "action": "created",
-         *       "id": 123,
-         *       "external_job_id": "4334158613"
-         *     }
-         *     ```
+         *     Users can submit LinkedIn job search URLs for admin review.
+         *     Admins will approve or reject the request.
          */
-        post: operations["ingest_single_job_listing_api_webhooks_job_listings_single_post"];
+        post: operations["create_request_api_scraper_requests_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/webhooks/job-listings/{external_job_id}": {
+    "/api/scraper-requests/{request_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1253,16 +1833,13 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Deactivate Job Listing
-         * @description Deactivate a job listing by external ID.
+         * Cancel Request
+         * @description Cancel a pending request.
          *
-         *     Marks the listing as inactive (soft delete).
-         *
-         *     ## Authentication
-         *
-         *     Requires `X-API-Key` header matching the configured webhook API key.
+         *     Users can only cancel their own pending requests.
+         *     Approved or rejected requests cannot be cancelled.
          */
-        delete: operations["deactivate_job_listing_api_webhooks_job_listings__external_job_id__delete"];
+        delete: operations["cancel_request_api_scraper_requests__request_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1304,14 +1881,14 @@ export interface paths {
         put?: never;
         /**
          * Trigger Scraper
-         * @description Manually trigger the scraper job.
+         * @description Manually trigger the scraper job using database presets.
          *
          *     This endpoint allows manual triggering of the scraper for
          *     testing or on-demand data refresh. The scraper will run
-         *     for all configured regions.
+         *     for all active presets configured in the database.
          *
          *     Note: This is a long-running operation that may take several
-         *     minutes depending on the number of regions and jobs to fetch.
+         *     minutes depending on the number of presets and jobs to fetch.
          *
          *     Uses distributed locking to prevent duplicate runs if another
          *     instance is already running the scraper.
@@ -1344,6 +1921,56 @@ export interface paths {
          *     instance is already running cleanup.
          */
         post: operations["trigger_cleanup_api_admin_jobs_cleanup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/fit-scoring/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Fit Scoring
+         * @description Manually trigger the daily job-fit scoring batch.
+         *
+         *     Re-scores every user with a verified master resume against their
+         *     active job interactions. Uses the same distributed lock as the
+         *     scheduled daily run, so concurrent triggers no-op.
+         */
+        post: operations["trigger_fit_scoring_api_admin_fit_scoring_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/scraper/costs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Apify Cost Summary
+         * @description Get current Apify cost usage and limits.
+         *
+         *     Returns daily and weekly cost tracking information including:
+         *     - Amount spent today/this week
+         *     - Configured spending limits
+         *     - Remaining budget
+         *     - Whether any limit has been exceeded
+         */
+        get: operations["get_apify_cost_summary_api_admin_scraper_costs_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1421,6 +2048,376 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/scraper/adhoc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Adhoc Scrape
+         * @description Trigger an ad-hoc scrape with a custom LinkedIn URL.
+         *
+         *     This endpoint allows admins to scrape jobs from any LinkedIn
+         *     job search URL with custom parameters.
+         *
+         *     Note: This is a long-running operation that may take several
+         *     minutes depending on the count parameter.
+         */
+        post: operations["trigger_adhoc_scrape_api_admin_scraper_adhoc_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/scraper/presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Presets
+         * @description List all scraper presets.
+         *
+         *     Returns all presets ordered by name, including both active and inactive.
+         */
+        get: operations["list_presets_api_admin_scraper_presets_get"];
+        put?: never;
+        /**
+         * Create Preset
+         * @description Create a new scraper preset.
+         *
+         *     Presets allow saving LinkedIn job search URLs for scheduled scraping.
+         */
+        post: operations["create_preset_api_admin_scraper_presets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/scraper/presets/{preset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Preset
+         * @description Get a single scraper preset by ID.
+         */
+        get: operations["get_preset_api_admin_scraper_presets__preset_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Preset
+         * @description Delete a scraper preset.
+         */
+        delete: operations["delete_preset_api_admin_scraper_presets__preset_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Preset
+         * @description Update a scraper preset.
+         *
+         *     Only provided fields will be updated.
+         */
+        patch: operations["update_preset_api_admin_scraper_presets__preset_id__patch"];
+        trace?: never;
+    };
+    "/api/admin/scraper/presets/{preset_id}/toggle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Toggle Preset
+         * @description Toggle the active status of a preset.
+         *
+         *     Active presets will be included in scheduled scraper runs.
+         */
+        post: operations["toggle_preset_api_admin_scraper_presets__preset_id__toggle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/scraper/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Schedule Settings
+         * @description Get the global schedule settings.
+         *
+         *     Returns the current schedule configuration for automated scraper runs.
+         */
+        get: operations["get_schedule_settings_api_admin_scraper_schedule_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Schedule Settings
+         * @description Update the global schedule settings.
+         *
+         *     When settings are changed, the scheduler will be reconfigured
+         *     to use the new schedule.
+         */
+        patch: operations["update_schedule_settings_api_admin_scraper_schedule_patch"];
+        trace?: never;
+    };
+    "/api/admin/scraper/schedule/toggle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Toggle Schedule
+         * @description Toggle the global schedule enabled status.
+         *
+         *     When enabled, the scheduler will run all active presets according
+         *     to the configured schedule.
+         */
+        post: operations["toggle_schedule_api_admin_scraper_schedule_toggle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/scraper-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Scraper Requests
+         * @description List all scraper requests (admin only).
+         *
+         *     Returns all user-submitted requests with optional status filtering.
+         */
+        get: operations["list_scraper_requests_api_admin_scraper_requests_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/scraper-requests/{request_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Scraper Request
+         * @description Approve a scraper request and optionally create a preset.
+         *
+         *     When approved with create_preset=True (default), a new scraper
+         *     preset will be created using the URL from the request.
+         */
+        post: operations["approve_scraper_request_api_admin_scraper_requests__request_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/scraper-requests/{request_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject Scraper Request
+         * @description Reject a scraper request with notes.
+         *
+         *     The rejection reason will be visible to the user who submitted
+         *     the request.
+         */
+        post: operations["reject_scraper_request_api_admin_scraper_requests__request_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/ai-usage/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Usage Summary
+         * @description Get overall AI usage statistics for a time period.
+         */
+        get: operations["get_usage_summary_api_admin_ai_usage_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/ai-usage/by-endpoint": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Usage By Endpoint
+         * @description Get usage breakdown by API endpoint.
+         */
+        get: operations["get_usage_by_endpoint_api_admin_ai_usage_by_endpoint_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/ai-usage/by-provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Usage By Provider
+         * @description Get usage breakdown by AI provider and model.
+         */
+        get: operations["get_usage_by_provider_api_admin_ai_usage_by_provider_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/ai-usage/by-user": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Usage By User
+         * @description Get top users by AI usage.
+         */
+        get: operations["get_usage_by_user_api_admin_ai_usage_by_user_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/ai-usage/time-series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Usage Time Series
+         * @description Get usage over time for charting.
+         */
+        get: operations["get_usage_time_series_api_admin_ai_usage_time_series_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/ai-usage/pricing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Current Pricing
+         * @description Get all active AI pricing configurations.
+         */
+        get: operations["get_current_pricing_api_admin_ai_usage_pricing_get"];
+        put?: never;
+        /**
+         * Create Pricing
+         * @description Create new AI pricing configuration.
+         */
+        post: operations["create_pricing_api_admin_ai_usage_pricing_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/ai-usage/pricing/{config_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Pricing
+         * @description Update AI pricing configuration.
+         */
+        put: operations["update_pricing_api_admin_ai_usage_pricing__config_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -1428,7 +2425,23 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health Check */
+        /**
+         * Health Check
+         * @description Health check endpoint with dependency verification.
+         *
+         *     Returns:
+         *         200: All dependencies healthy
+         *         503: One or more dependencies unhealthy
+         *
+         *     Response format:
+         *         {
+         *             "status": "healthy" | "unhealthy",
+         *             "checks": {
+         *                 "postgres": "ok" | "error: <message>",
+         *                 "mongodb": "ok" | "error: <message>"
+         *             }
+         *         }
+         */
         get: operations["health_check_health_get"];
         put?: never;
         post?: never;
@@ -1459,6 +2472,431 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AIModelInfo
+         * @description Information about an available AI model.
+         */
+        AIModelInfo: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Provider */
+            provider: string;
+        };
+        /**
+         * AIPreferencesResponse
+         * @description Response for user AI preferences.
+         */
+        AIPreferencesResponse: {
+            /**
+             * Preferred Model
+             * @description User's preferred model ID, null means endpoint defaults apply
+             */
+            preferred_model: string | null;
+            /** Available Models */
+            available_models: components["schemas"]["AIModelInfo"][];
+        };
+        /**
+         * AIPreferencesUpdate
+         * @description Request to update user AI preferences.
+         */
+        AIPreferencesUpdate: {
+            /**
+             * Preferred Model
+             * @description Model ID to set, or null to reset to defaults
+             */
+            preferred_model: string | null;
+        };
+        /**
+         * AIUsageSummaryResponse
+         * @description Aggregated usage summary for a time period.
+         */
+        AIUsageSummaryResponse: {
+            /** Total Requests */
+            total_requests: number;
+            /** Successful Requests */
+            successful_requests: number;
+            /** Failed Requests */
+            failed_requests: number;
+            /** Total Input Tokens */
+            total_input_tokens: number;
+            /** Total Output Tokens */
+            total_output_tokens: number;
+            /** Total Tokens */
+            total_tokens: number;
+            /** Total Cost Usd */
+            total_cost_usd: number;
+            /** Avg Latency Ms */
+            avg_latency_ms: number;
+            /** Success Rate */
+            success_rate: number;
+            /**
+             * Period Start
+             * Format: date-time
+             */
+            period_start: string;
+            /**
+             * Period End
+             * Format: date-time
+             */
+            period_end: string;
+        };
+        /**
+         * ATSContentAnalysisRequest
+         * @description Request for synchronous ATS analysis with raw content (no DB lookup).
+         *
+         *     Used by the editor page to analyze live edits without saving to DB first.
+         */
+        ATSContentAnalysisRequest: {
+            /**
+             * Resume Content
+             * @description Parsed resume content (TailoredContent structure)
+             */
+            resume_content: {
+                [key: string]: unknown;
+            };
+            /**
+             * Job Description
+             * @description Raw job description text
+             */
+            job_description: string;
+            /**
+             * Job Content
+             * @description Optional parsed job content for role proximity stage
+             */
+            job_content?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Skip Stages
+             * @description Optional list of stage numbers (0-4) to skip for faster scoring
+             */
+            skip_stages?: number[] | null;
+        };
+        /**
+         * ATSContentAnalysisResponse
+         * @description Response from synchronous ATS content analysis.
+         *
+         *     Matches the progressive endpoint's final composite score format.
+         */
+        ATSContentAnalysisResponse: {
+            /**
+             * Final Score
+             * @description Weighted composite score
+             */
+            final_score: number;
+            /**
+             * Stage Scores
+             * @description Raw scores from each stage (0-100)
+             */
+            stage_scores: {
+                [key: string]: number;
+            };
+            /**
+             * Stage Breakdown
+             * @description Individual stage scores with weights applied
+             */
+            stage_breakdown: {
+                [key: string]: number;
+            };
+            /**
+             * Weights Used
+             * @description Weights applied to each stage
+             */
+            weights_used: {
+                [key: string]: number;
+            };
+            /**
+             * Failed Stages
+             * @description Names of stages that failed (if any)
+             */
+            failed_stages?: string[];
+            /**
+             * Knockout Risks
+             * @description Knockout risks identified (Stage 0)
+             */
+            knockout_risks?: components["schemas"]["KnockoutRiskItem"][];
+            /**
+             * Keyword Analysis
+             * @description Enhanced keyword analysis details from Stage 2
+             */
+            keyword_analysis?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * ATSContextInput
+         * @description ATS analysis context to inform suggestions.
+         */
+        ATSContextInput: {
+            /** Keyword Gaps */
+            keyword_gaps?: components["schemas"]["KeywordGapInput"][];
+            /**
+             * Importance Map
+             * @description Keyword -> importance level mapping
+             */
+            importance_map?: {
+                [key: string]: string;
+            };
+            /**
+             * Bullets Needing Metrics
+             * @description Bullet IDs flagged as lacking quantification
+             */
+            bullets_needing_metrics?: string[];
+            /**
+             * Bullets With Weak Verbs
+             * @description Bullet IDs flagged for weak/passive language
+             */
+            bullets_with_weak_verbs?: string[];
+        };
+        /**
+         * ATSKeywordDetailedRequest
+         * @description Request for detailed ATS keyword analysis.
+         */
+        ATSKeywordDetailedRequest: {
+            /**
+             * Job Description
+             * @description Job description to analyze against
+             */
+            job_description: string;
+            /**
+             * Resume Content
+             * @description Resume text content to analyze (uses vault blocks if not provided)
+             */
+            resume_content?: string | null;
+            /**
+             * Resume Block Ids
+             * @description Block IDs to use for resume (uses all if not provided)
+             */
+            resume_block_ids?: number[] | null;
+        };
+        /**
+         * ATSKeywordDetailedResponse
+         * @description Detailed response for ATS keyword analysis with importance grouping.
+         */
+        ATSKeywordDetailedResponse: {
+            /**
+             * Coverage Score
+             * @description Overall keyword coverage 0-1
+             */
+            coverage_score: number;
+            /**
+             * Required Coverage
+             * @description Coverage of required keywords 0-1
+             */
+            required_coverage: number;
+            /**
+             * Preferred Coverage
+             * @description Coverage of preferred keywords 0-1
+             */
+            preferred_coverage: number;
+            /**
+             * Required Matched
+             * @description Required keywords found in resume
+             */
+            required_matched: string[];
+            /**
+             * Required Missing
+             * @description Required keywords missing from resume
+             */
+            required_missing: string[];
+            /**
+             * Preferred Matched
+             * @description Preferred keywords found in resume
+             */
+            preferred_matched: string[];
+            /**
+             * Preferred Missing
+             * @description Preferred keywords missing from resume
+             */
+            preferred_missing: string[];
+            /**
+             * Nice To Have Matched
+             * @description Nice-to-have keywords found in resume
+             */
+            nice_to_have_matched: string[];
+            /**
+             * Nice To Have Missing
+             * @description Nice-to-have keywords missing from resume
+             */
+            nice_to_have_missing: string[];
+            /**
+             * Missing Available In Vault
+             * @description Missing keywords that exist in user's vault
+             */
+            missing_available_in_vault: string[];
+            /**
+             * Missing Not In Vault
+             * @description Missing keywords not found in vault
+             */
+            missing_not_in_vault: string[];
+            /**
+             * All Keywords
+             * @description Detailed info for all extracted keywords
+             */
+            all_keywords: components["schemas"]["KeywordDetailResponse"][];
+            /**
+             * Suggestions
+             * @description Actionable suggestions
+             */
+            suggestions: string[];
+            /**
+             * Warnings
+             * @description Important warnings
+             */
+            warnings: string[];
+        };
+        /**
+         * ATSKeywordEnhancedRequest
+         * @description Request for Stage 2 enhanced ATS keyword analysis.
+         * @example {
+         *       "job_description": "We are looking for a Senior Software Engineer with 5+ years of Python experience. Must have AWS and Docker expertise. Kubernetes experience is strongly preferred.",
+         *       "resume_id": 123
+         *     }
+         */
+        ATSKeywordEnhancedRequest: {
+            /**
+             * Job Description
+             * @description Job description to analyze against
+             */
+            job_description: string;
+            /**
+             * Resume Id
+             * @description Resume ID to analyze (uses parsed_content from database)
+             */
+            resume_id?: number | null;
+            /**
+             * Resume Content
+             * @description Parsed resume content as dictionary (fallback if resume_id not provided)
+             */
+            resume_content?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * ATSKeywordEnhancedResponse
+         * @description Response for Stage 2 enhanced ATS keyword analysis.
+         */
+        ATSKeywordEnhancedResponse: {
+            /**
+             * Keyword Score
+             * @description Final weighted keyword score (0-100) accounting for placement, density, recency, and importance
+             */
+            keyword_score: number;
+            /**
+             * Raw Coverage
+             * @description Simple coverage percentage (matched/total * 100)
+             */
+            raw_coverage: number;
+            /**
+             * Required Coverage
+             * @description Coverage of required keywords (0-1)
+             */
+            required_coverage: number;
+            /**
+             * Strongly Preferred Coverage
+             * @description Coverage of strongly preferred keywords (0-1)
+             */
+            strongly_preferred_coverage: number;
+            /**
+             * Preferred Coverage
+             * @description Coverage of preferred keywords (0-1)
+             */
+            preferred_coverage: number;
+            /**
+             * Nice To Have Coverage
+             * @description Coverage of nice-to-have keywords (0-1)
+             */
+            nice_to_have_coverage: number;
+            /**
+             * Placement Contribution
+             * @description Placement weighting contribution to score (%)
+             */
+            placement_contribution: number;
+            /**
+             * Density Contribution
+             * @description Density scoring contribution to score (%)
+             */
+            density_contribution: number;
+            /**
+             * Recency Contribution
+             * @description Recency weighting contribution to score (%)
+             */
+            recency_contribution: number;
+            /**
+             * Required Matched
+             * @description Required keywords found in resume
+             */
+            required_matched: string[];
+            /**
+             * Required Missing
+             * @description Required keywords missing from resume
+             */
+            required_missing: string[];
+            /**
+             * Strongly Preferred Matched
+             * @description Strongly preferred keywords found in resume
+             */
+            strongly_preferred_matched: string[];
+            /**
+             * Strongly Preferred Missing
+             * @description Strongly preferred keywords missing from resume
+             */
+            strongly_preferred_missing: string[];
+            /**
+             * Preferred Matched
+             * @description Preferred keywords found in resume
+             */
+            preferred_matched: string[];
+            /**
+             * Preferred Missing
+             * @description Preferred keywords missing from resume
+             */
+            preferred_missing: string[];
+            /**
+             * Nice To Have Matched
+             * @description Nice-to-have keywords found in resume
+             */
+            nice_to_have_matched: string[];
+            /**
+             * Nice To Have Missing
+             * @description Nice-to-have keywords missing from resume
+             */
+            nice_to_have_missing: string[];
+            /**
+             * Missing Available In Vault
+             * @description Missing keywords that exist in user's vault
+             */
+            missing_available_in_vault: string[];
+            /**
+             * Missing Not In Vault
+             * @description Missing keywords not found in vault
+             */
+            missing_not_in_vault: string[];
+            /**
+             * Gap List
+             * @description Gap analysis sorted by importance (required first)
+             */
+            gap_list: components["schemas"]["GapAnalysisItem"][];
+            /**
+             * All Keywords
+             * @description Detailed info for all extracted keywords with Stage 2 scores
+             */
+            all_keywords: components["schemas"]["EnhancedKeywordDetailResponse"][];
+            /**
+             * Suggestions
+             * @description Prioritized actionable suggestions
+             */
+            suggestions: string[];
+            /**
+             * Warnings
+             * @description Important warnings
+             */
+            warnings: string[];
+        };
         /**
          * ATSKeywordRequest
          * @description Request for ATS keyword analysis.
@@ -1545,6 +2983,13 @@ export interface components {
              */
             sections_missing: string[];
             /**
+             * Section Order Score
+             * @description Section order score (75-100). Scores: 100=standard, 95=minor deviation, 85=major deviation, 75=non-standard
+             */
+            section_order_score: number;
+            /** @description Detailed section order analysis */
+            section_order_details: components["schemas"]["SectionOrderDetails"];
+            /**
              * Warnings
              * @description Potential issues found
              */
@@ -1567,122 +3012,179 @@ export interface components {
             tips: string[];
         };
         /**
-         * ApifyBatchMetadata
-         * @description Metadata envelope for batch job ingestion from n8n.
+         * AboutMeResponse
+         * @description Response containing the About Me blurb.
          */
-        ApifyBatchMetadata: {
+        AboutMeResponse: {
+            /** About Me */
+            about_me: string;
             /**
-             * Source
-             * @default linkedin
+             * Generated At
+             * Format: date-time
              */
-            source: string;
-            /** Scraper */
-            scraper?: string | null;
-            /** Scrapedat */
-            scrapedAt?: string | null;
-            /** Totaljobs */
-            totalJobs?: number | null;
-            /** Regions */
-            regions?: string[] | null;
+            generated_at: string;
         };
         /**
-         * ApifyBatchRequest
-         * @description Schema for batch job ingestion from n8n with APIFY data.
-         *
-         *     This matches the expected payload structure from the n8n workflow:
-         *     {
-         *       "jobs": [...],
-         *       "metadata": {...}
-         *     }
+         * ActionVerbAnalysisResponse
+         * @description Analysis of action verb usage.
          */
-        ApifyBatchRequest: {
-            /** Jobs */
-            jobs: components["schemas"]["ApifyJobListing"][];
-            metadata?: components["schemas"]["ApifyBatchMetadata"] | null;
+        ActionVerbAnalysisResponse: {
+            /**
+             * Total Bullets
+             * @description Total number of bullets analyzed
+             */
+            total_bullets: number;
+            /**
+             * Bullets With Action Verbs
+             * @description Number of bullets with strong action verbs
+             */
+            bullets_with_action_verbs: number;
+            /**
+             * Bullets With Weak Phrases
+             * @description Number of bullets with weak/passive phrases
+             */
+            bullets_with_weak_phrases: number;
+            /**
+             * Action Verb Coverage
+             * @description Ratio of bullets with action verbs
+             */
+            action_verb_coverage: number;
+            /**
+             * Weak Phrase Ratio
+             * @description Ratio of bullets with weak phrases (lower is better)
+             */
+            weak_phrase_ratio: number;
+            /**
+             * Quality Score
+             * @description Action verb quality score (0-100)
+             */
+            quality_score: number;
+            /**
+             * Verb Category Distribution
+             * @description Count of action verbs by category
+             */
+            verb_category_distribution?: {
+                [key: string]: number;
+            };
         };
         /**
-         * ApifyJobListing
-         * @description Schema for a single job from APIFY LinkedIn scraper.
-         *
-         *     Field names match the actual output from the hKByXkMQaC5Qt9UMN actor.
+         * AdHocScrapeRequest
+         * @description Request for ad-hoc LinkedIn scraping via admin UI.
          */
-        ApifyJobListing: {
+        AdHocScrapeRequest: {
             /**
-             * Id
-             * @description LinkedIn job ID
+             * Url
+             * @description LinkedIn job search URL
              */
-            id: string;
-            /** Title */
-            title: string;
+            url: string;
             /**
-             * Link
-             * @description Job URL
+             * Count
+             * @description Max jobs to scrape
+             * @default 100
              */
-            link: string;
-            /** Companyname */
-            companyName: string;
-            /** Companylinkedinurl */
-            companyLinkedinUrl?: string | null;
-            /** Companylogo */
-            companyLogo?: string | null;
-            /** Companywebsite */
-            companyWebsite?: string | null;
-            /** Companydescription */
-            companyDescription?: string | null;
-            /** Companyslogan */
-            companySlogan?: string | null;
-            /** Companyemployeescount */
-            companyEmployeesCount?: number | null;
-            /** Companyaddress */
-            companyAddress?: {
+            count: number;
+        };
+        /**
+         * AdHocScrapeResponse
+         * @description Response from ad-hoc scraping operation.
+         */
+        AdHocScrapeResponse: {
+            /**
+             * Status
+             * @description success, partial, error, timeout
+             */
+            status: string;
+            /**
+             * Jobs Found
+             * @default 0
+             */
+            jobs_found: number;
+            /**
+             * Jobs Created
+             * @default 0
+             */
+            jobs_created: number;
+            /**
+             * Jobs Updated
+             * @default 0
+             */
+            jobs_updated: number;
+            /**
+             * Errors
+             * @default 0
+             */
+            errors: number;
+            /** Error Details */
+            error_details?: {
                 [key: string]: unknown;
-            } | null;
-            /** Location */
-            location?: string | null;
-            /** Applyurl */
-            applyUrl?: string | null;
-            /** Postedat */
-            postedAt?: string | null;
-            /** Salaryinfo */
-            salaryInfo?: string[] | null;
-            /** Salary */
-            salary?: string | null;
-            /** Employmenttype */
-            employmentType?: string | null;
-            /** Senioritylevel */
-            seniorityLevel?: string | null;
-            /** Jobfunction */
-            jobFunction?: string | null;
-            /** Industries */
-            industries?: string | null;
-            /**
-             * Descriptiontext
-             * @description Plain text description
-             */
-            descriptionText: string;
-            /** Descriptionhtml */
-            descriptionHtml?: string | null;
-            /** Applicantscount */
-            applicantsCount?: string | null;
-            /** Benefits */
-            benefits?: string[] | null;
-            /** Trackingid */
-            trackingId?: string | null;
-            /** Refid */
-            refId?: string | null;
-            /** Inputurl */
-            inputUrl?: string | null;
-            /** Jobpostername */
-            jobPosterName?: string | null;
-            /** Jobpostertitle */
-            jobPosterTitle?: string | null;
-            /** Jobposterphoto */
-            jobPosterPhoto?: string | null;
-            /** Jobposterprofileurl */
-            jobPosterProfileUrl?: string | null;
-            /** Region */
-            region?: string | null;
+            }[];
+            /** Duration Seconds */
+            duration_seconds?: number | null;
         };
+        /**
+         * AnalyzeBulletsResponse
+         * @description Response containing all suggestions.
+         */
+        AnalyzeBulletsResponse: {
+            /** Suggestions */
+            suggestions: components["schemas"]["app__schemas__tailor__suggestions__BulletSuggestionResponse"][];
+            /** Total Analyzed */
+            total_analyzed: number;
+            /** Suggestions Count */
+            suggestions_count: number;
+            /**
+             * Skipped Count
+             * @description Number of bullets that didn't need improvement
+             */
+            skipped_count: number;
+        };
+        /**
+         * ApifyCostSummary
+         * @description Response for Apify cost monitoring endpoint.
+         */
+        ApifyCostSummary: {
+            /**
+             * Daily Used Usd
+             * @description Amount spent today in USD
+             */
+            daily_used_usd: number;
+            /**
+             * Daily Limit Usd
+             * @description Daily spending limit in USD
+             */
+            daily_limit_usd: number;
+            /**
+             * Daily Remaining Usd
+             * @description Remaining daily budget in USD
+             */
+            daily_remaining_usd: number;
+            /**
+             * Weekly Used Usd
+             * @description Amount spent this week in USD
+             */
+            weekly_used_usd: number;
+            /**
+             * Weekly Limit Usd
+             * @description Weekly spending limit in USD
+             */
+            weekly_limit_usd: number;
+            /**
+             * Weekly Remaining Usd
+             * @description Remaining weekly budget in USD
+             */
+            weekly_remaining_usd: number;
+            /**
+             * Budget Exceeded
+             * @description Whether any budget limit has been exceeded
+             */
+            budget_exceeded: boolean;
+        };
+        /**
+         * ApplicationStatus
+         * @description Application status options for Kanban board.
+         * @enum {string}
+         */
+        ApplicationStatus: "applied" | "interview" | "accepted" | "rejected" | "ghosted";
         /**
          * ApplyJobRequest
          * @description Request to mark a job as applied.
@@ -1695,200 +3197,45 @@ export interface components {
             applied: boolean;
         };
         /**
-         * BlockCreate
-         * @description Schema for creating a new experience block.
+         * BlockTypeAnalysisResponse
+         * @description Analysis of block types distribution.
          */
-        BlockCreate: {
+        BlockTypeAnalysisResponse: {
             /**
-             * Content
-             * @description The block content/text
+             * Total Bullets
+             * @description Total number of bullets analyzed
              */
-            content: string;
-            /** @description Type classification of the block */
-            block_type: components["schemas"]["BlockType"];
+            total_bullets: number;
             /**
-             * Tags
-             * @description Taxonomy tags
+             * Achievement Count
+             * @description Number of achievement-style bullets
              */
-            tags?: string[];
+            achievement_count: number;
             /**
-             * Source Company
-             * @description Source company
+             * Responsibility Count
+             * @description Number of responsibility-style bullets
              */
-            source_company?: string | null;
+            responsibility_count: number;
             /**
-             * Source Role
-             * @description Job title at source
+             * Project Count
+             * @description Number of project-style bullets
              */
-            source_role?: string | null;
+            project_count: number;
             /**
-             * Source Date Start
-             * @description When experience started
+             * Other Count
+             * @description Number of other bullets
              */
-            source_date_start?: string | null;
+            other_count: number;
             /**
-             * Source Date End
-             * @description When experience ended (None=current)
+             * Achievement Ratio
+             * @description Ratio of high-value (achievement + project) bullets
              */
-            source_date_end?: string | null;
-        };
-        /**
-         * BlockEmbedRequest
-         * @description Schema for triggering embedding generation.
-         */
-        BlockEmbedRequest: {
+            achievement_ratio: number;
             /**
-             * Block Ids
-             * @description Specific blocks to embed (None=all needing embedding)
+             * Quality Score
+             * @description Block type quality score (0-100)
              */
-            block_ids?: number[] | null;
-        };
-        /**
-         * BlockEmbedResponse
-         * @description Schema for embedding endpoint response.
-         */
-        BlockEmbedResponse: {
-            /** Embedded Count */
-            embedded_count: number;
-            /** Block Ids */
-            block_ids: number[];
-        };
-        /**
-         * BlockImportRequest
-         * @description Schema for importing blocks from resume content.
-         */
-        BlockImportRequest: {
-            /**
-             * Raw Content
-             * @description Raw resume text to split into blocks
-             */
-            raw_content: string;
-            /**
-             * Source Company
-             * @description Default company for all blocks
-             */
-            source_company?: string | null;
-            /**
-             * Source Role
-             * @description Default role for all blocks
-             */
-            source_role?: string | null;
-        };
-        /**
-         * BlockImportResponse
-         * @description Schema for import endpoint response.
-         */
-        BlockImportResponse: {
-            /** Imported Count */
-            imported_count: number;
-            /** Blocks */
-            blocks: components["schemas"]["BlockResponse"][];
-        };
-        /**
-         * BlockListResponse
-         * @description Schema for paginated block list responses.
-         */
-        BlockListResponse: {
-            /** Blocks */
-            blocks: components["schemas"]["BlockResponse"][];
-            /** Total */
-            total: number;
-            /** Limit */
-            limit: number;
-            /** Offset */
-            offset: number;
-        };
-        /**
-         * BlockResponse
-         * @description Schema for block API responses.
-         */
-        BlockResponse: {
-            /**
-             * Content
-             * @description The block content/text
-             */
-            content: string;
-            /** @description Type classification of the block */
-            block_type: components["schemas"]["BlockType"];
-            /**
-             * Tags
-             * @description Taxonomy tags
-             */
-            tags?: string[];
-            /**
-             * Source Company
-             * @description Source company
-             */
-            source_company?: string | null;
-            /**
-             * Source Role
-             * @description Job title at source
-             */
-            source_role?: string | null;
-            /**
-             * Source Date Start
-             * @description When experience started
-             */
-            source_date_start?: string | null;
-            /**
-             * Source Date End
-             * @description When experience ended (None=current)
-             */
-            source_date_end?: string | null;
-            /** Id */
-            id: number;
-            /** User Id */
-            user_id: number;
-            /** Verified */
-            verified: boolean;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** Updated At */
-            updated_at?: string | null;
-        };
-        /**
-         * BlockType
-         * @description Taxonomy of experience block types.
-         *
-         *     Each block in the Vault is classified into one of these categories
-         *     to enable filtered searches and better organization.
-         * @enum {string}
-         */
-        BlockType: "achievement" | "responsibility" | "skill" | "project" | "certification" | "education";
-        /**
-         * BlockUpdate
-         * @description Schema for updating an experience block. All fields optional.
-         */
-        BlockUpdate: {
-            /** Content */
-            content?: string | null;
-            block_type?: components["schemas"]["BlockType"] | null;
-            /** Tags */
-            tags?: string[] | null;
-            /** Source Company */
-            source_company?: string | null;
-            /** Source Role */
-            source_role?: string | null;
-            /** Source Date Start */
-            source_date_start?: string | null;
-            /** Source Date End */
-            source_date_end?: string | null;
-            /** Verified */
-            verified?: boolean | null;
-        };
-        /**
-         * BlockVerifyRequest
-         * @description Schema for verifying a block.
-         */
-        BlockVerifyRequest: {
-            /**
-             * Verified
-             * @default true
-             */
-            verified: boolean;
+            quality_score: number;
         };
         /** Body_extract_document_api_upload_extract_post */
         Body_extract_document_api_upload_extract_post: {
@@ -1897,6 +3244,209 @@ export interface components {
              * Format: binary
              */
             file: string;
+        };
+        /**
+         * BulletAnalysisRequest
+         * @description Request body for bullet analysis.
+         */
+        BulletAnalysisRequest: {
+            /** Bullets */
+            bullets: components["schemas"]["BulletInput"][];
+            ats_context: components["schemas"]["ATSContextInput"];
+            /**
+             * Keyword Assignments
+             * @description User-selected keyword→section assignments for targeted suggestions
+             */
+            keyword_assignments?: components["schemas"]["KeywordAssignmentInput"][] | null;
+        };
+        /**
+         * BulletEntryContext
+         * @description Contextual information about the experience entry containing a bullet.
+         */
+        BulletEntryContext: {
+            /**
+             * Title
+             * @description Job title or role name
+             * @default
+             */
+            title: string;
+            /**
+             * Company
+             * @description Company or organization name
+             * @default
+             */
+            company: string;
+            /**
+             * Date Range
+             * @description Employment date range
+             * @default
+             */
+            date_range: string;
+        };
+        /**
+         * BulletInput
+         * @description A single bullet point to analyze.
+         */
+        BulletInput: {
+            /**
+             * Id
+             * @description Unique bullet ID (e.g., 'exp-0:entry-0:bullet-0')
+             */
+            id: string;
+            /**
+             * Text
+             * @description Current bullet text
+             */
+            text: string;
+            entry_context: components["schemas"]["EntryContext"];
+        };
+        /**
+         * BulletRewriteItem
+         * @description A single bullet point to be rewritten.
+         */
+        BulletRewriteItem: {
+            /**
+             * Element Id
+             * @description DOM element ID (blockId:entryId:bullets:N)
+             */
+            element_id: string;
+            /**
+             * Text
+             * @description Current bullet text
+             */
+            text: string;
+            /** @description Context about the parent experience entry */
+            entry_context?: components["schemas"]["BulletEntryContext"];
+        };
+        /**
+         * BulletRewriteResult
+         * @description AI-rewritten version of a single bullet point.
+         */
+        BulletRewriteResult: {
+            /** Element Id */
+            element_id: string;
+            /** Original */
+            original: string;
+            /** Proposed */
+            proposed: string;
+            /** Reason */
+            reason: string;
+            /**
+             * Impact
+             * @enum {string}
+             */
+            impact: "high" | "medium" | "low";
+            /** Keywords Added */
+            keywords_added?: string[];
+        };
+        /**
+         * BulletSuggestionEntryContext
+         * @description Context about the experience entry containing the bullet.
+         */
+        BulletSuggestionEntryContext: {
+            /**
+             * Title
+             * @description Job title for the experience entry
+             */
+            title: string;
+            /**
+             * Company
+             * @description Company name
+             */
+            company: string;
+            /**
+             * Date Range
+             * @description Date range (e.g., 'Jan 2020 - Present')
+             */
+            date_range: string;
+        };
+        /**
+         * BulletSuggestionRequest
+         * @description Schema for single bullet point suggestion request.
+         */
+        BulletSuggestionRequest: {
+            /**
+             * Bullet Text
+             * @description The bullet point text to improve
+             */
+            bullet_text: string;
+            /** @description Context about the experience entry */
+            entry_context: components["schemas"]["BulletSuggestionEntryContext"];
+            /**
+             * Job Description
+             * @description Target job description
+             */
+            job_description: string;
+        };
+        /**
+         * ChatMessage
+         * @description A single message in the chat history.
+         */
+        ChatMessage: {
+            /**
+             * Role
+             * @description Who sent the message
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /**
+             * Content
+             * @description The message content
+             */
+            content: string;
+        };
+        /**
+         * ChatRequest
+         * @description Request for a conversational AI chat about resume improvement.
+         */
+        ChatRequest: {
+            /**
+             * Message
+             * @description The user's message
+             */
+            message: string;
+            /**
+             * Section Type
+             * @description Optional section type for context
+             */
+            section_type?: ("summary" | "experience" | "education" | "skills" | "projects" | "certifications" | "volunteer" | "publications" | "awards" | "interests" | "languages" | "references" | "courses" | "memberships") | null;
+            /**
+             * Section Content
+             * @description Optional current section content for context
+             */
+            section_content?: string | null;
+            /**
+             * Chat History
+             * @description Previous messages in the conversation
+             */
+            chat_history?: components["schemas"]["ChatMessage"][];
+            /**
+             * Job Context
+             * @description Optional job description for context
+             */
+            job_context?: string | null;
+        };
+        /**
+         * ChatResponse
+         * @description Response from the AI chat.
+         */
+        ChatResponse: {
+            /**
+             * Message
+             * @description The assistant's response
+             */
+            message: string;
+            /**
+             * Improved Content
+             * @description If the response includes improved content, it will be here
+             */
+            improved_content?: string | null;
+            /**
+             * Action Type
+             * @description Type of response: advice (general tips), improvement (content changes), question (clarifying)
+             * @enum {string}
+             */
+            action_type: "advice" | "improvement" | "question";
         };
         /**
          * CleanupResponse
@@ -1911,6 +3461,113 @@ export interface components {
             duration_seconds?: number | null;
             /** Error */
             error?: string | null;
+        };
+        /**
+         * ContentQualityRequest
+         * @description Request for content quality analysis.
+         * @example {
+         *       "resume_id": 123
+         *     }
+         * @example {
+         *       "resume_content": {
+         *         "experience": [
+         *           {
+         *             "bullets": [
+         *               "Led team of 5 engineers to deliver ML pipeline, reducing inference latency by 60%",
+         *               "Responsible for maintaining backend services"
+         *             ],
+         *             "company": "TechCorp",
+         *             "title": "Software Engineer"
+         *           }
+         *         ]
+         *       }
+         *     }
+         */
+        ContentQualityRequest: {
+            /**
+             * Resume Id
+             * @description Resume ID to analyze (uses parsed_content from database)
+             */
+            resume_id?: number | null;
+            /**
+             * Resume Content
+             * @description Parsed resume content as dictionary (fallback if resume_id not provided)
+             */
+            resume_content?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * ContentQualityResponse
+         * @description Response for Stage 3 content quality analysis.
+         */
+        ContentQualityResponse: {
+            /**
+             * Content Quality Score
+             * @description Overall content quality score (0-100)
+             */
+            content_quality_score: number;
+            /**
+             * Block Type Score
+             * @description Block type distribution score (0-100)
+             */
+            block_type_score: number;
+            /**
+             * Quantification Score
+             * @description Quantification density score (0-100)
+             */
+            quantification_score: number;
+            /**
+             * Action Verb Score
+             * @description Action verb usage score (0-100)
+             */
+            action_verb_score: number;
+            /**
+             * Block Type Weight
+             * @description Weight applied to block type score
+             */
+            block_type_weight: number;
+            /**
+             * Quantification Weight
+             * @description Weight applied to quantification score
+             */
+            quantification_weight: number;
+            /**
+             * Action Verb Weight
+             * @description Weight applied to action verb score
+             */
+            action_verb_weight: number;
+            /** @description Detailed block type analysis */
+            block_type_analysis: components["schemas"]["BlockTypeAnalysisResponse"];
+            /** @description Detailed quantification analysis */
+            quantification_analysis: components["schemas"]["QuantificationAnalysisResponse"];
+            /** @description Detailed action verb analysis */
+            action_verb_analysis: components["schemas"]["ActionVerbAnalysisResponse"];
+            /**
+             * Total Bullets Analyzed
+             * @description Total number of bullet points analyzed
+             */
+            total_bullets_analyzed: number;
+            /**
+             * High Quality Bullets
+             * @description Number of high quality bullets (score > 0.7)
+             */
+            high_quality_bullets: number;
+            /**
+             * Low Quality Bullets
+             * @description Number of low quality bullets (score < 0.4)
+             */
+            low_quality_bullets: number;
+            /**
+             * Suggestions
+             * @description Actionable improvement suggestions
+             */
+            suggestions?: string[];
+            /**
+             * Warnings
+             * @description Quality warnings to address
+             */
+            warnings?: string[];
         };
         /**
          * DiffActionRequest
@@ -1973,19 +3630,16 @@ export interface components {
             reason: string;
             /** @description Impact level of the suggestion */
             impact: components["schemas"]["SuggestionImpact"];
-            /**
-             * Source Block Id
-             * @description Vault block supporting this suggestion
-             */
-            source_block_id?: number | null;
         };
         /**
          * DocumentExtractionResponse
-         * @description Response from document text extraction.
+         * @description Response from document text extraction and HTML conversion.
          */
         DocumentExtractionResponse: {
             /** Raw Content */
             raw_content: string;
+            /** Html Content */
+            html_content: string;
             /** Source Filename */
             source_filename: string;
             /**
@@ -1997,11 +3651,138 @@ export interface components {
             page_count: number | null;
             /** Word Count */
             word_count: number;
+            /** File Key */
+            file_key?: string | null;
+            /** File Size Bytes */
+            file_size_bytes?: number | null;
             /**
              * Warnings
              * @default []
              */
             warnings: string[];
+        };
+        /**
+         * EndpointUsageResponse
+         * @description Usage breakdown by endpoint.
+         */
+        EndpointUsageResponse: {
+            /** Endpoint */
+            endpoint: string;
+            /** Request Count */
+            request_count: number;
+            /** Total Tokens */
+            total_tokens: number;
+            /** Total Cost Usd */
+            total_cost_usd: number;
+            /** Avg Latency Ms */
+            avg_latency_ms: number;
+            /** Success Rate */
+            success_rate: number;
+        };
+        /**
+         * EnhancedKeywordDetailResponse
+         * @description Enhanced keyword detail with Stage 2 scoring components.
+         */
+        EnhancedKeywordDetailResponse: {
+            /**
+             * Keyword
+             * @description The keyword/phrase
+             */
+            keyword: string;
+            /**
+             * Importance
+             * @description Importance level: required, strongly_preferred, preferred, or nice_to_have
+             * @enum {string}
+             */
+            importance: "required" | "strongly_preferred" | "preferred" | "nice_to_have";
+            /**
+             * Found In Resume
+             * @description Whether keyword is in resume
+             */
+            found_in_resume: boolean;
+            /**
+             * Found In Vault
+             * @description Whether keyword is in vault
+             */
+            found_in_vault: boolean;
+            /**
+             * Frequency In Job
+             * @description How many times keyword appears in job description
+             */
+            frequency_in_job: number;
+            /**
+             * Context
+             * @description Sample context from job description
+             */
+            context?: string | null;
+            /**
+             * Matches
+             * @description All matches found in resume
+             */
+            matches?: components["schemas"]["KeywordMatchResponse"][];
+            /**
+             * Occurrence Count
+             * @description Total occurrences in resume
+             * @default 0
+             */
+            occurrence_count: number;
+            /**
+             * Base Score
+             * @description Base score (0 or 1)
+             * @default 0
+             */
+            base_score: number;
+            /**
+             * Placement Score
+             * @description Placement weight score (Stage 2.1)
+             * @default 0
+             */
+            placement_score: number;
+            /**
+             * Density Score
+             * @description Density multiplier score (Stage 2.2)
+             * @default 0
+             */
+            density_score: number;
+            /**
+             * Recency Score
+             * @description Recency weight score (Stage 2.3)
+             * @default 0
+             */
+            recency_score: number;
+            /**
+             * Importance Weight
+             * @description Importance tier multiplier (Stage 2.4)
+             * @default 1
+             */
+            importance_weight: number;
+            /**
+             * Weighted Score
+             * @description Final weighted score for this keyword
+             * @default 0
+             */
+            weighted_score: number;
+        };
+        /**
+         * EntryContext
+         * @description Context about the experience/project entry containing the bullet.
+         */
+        EntryContext: {
+            /**
+             * Title
+             * @description Job title or project name
+             */
+            title: string;
+            /**
+             * Company
+             * @description Company or organization name
+             */
+            company: string;
+            /**
+             * Date Range
+             * @description Date range string (e.g., 'Jan 2020 - Present')
+             */
+            date_range: string;
         };
         /**
          * ExportFormat
@@ -2027,20 +3808,296 @@ export interface components {
             template: string;
         };
         /**
-         * GapAnalysisResponse
-         * @description Schema for skill gap analysis.
+         * ExportTemplateInfo
+         * @description Information about an export template.
          */
-        GapAnalysisResponse: {
-            /** Match Score */
-            match_score: number;
-            /** Skill Matches */
-            skill_matches: string[];
-            /** Skill Gaps */
-            skill_gaps: string[];
-            /** Keyword Coverage */
-            keyword_coverage: number;
-            /** Recommendations */
-            recommendations: string[];
+        ExportTemplateInfo: {
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Preview Image */
+            preview_image?: string | null;
+        };
+        /**
+         * ExportTemplatesResponse
+         * @description Response containing available export templates.
+         */
+        ExportTemplatesResponse: {
+            /** Templates */
+            templates: components["schemas"]["ExportTemplateInfo"][];
+        };
+        /**
+         * ExtractKeywordsRequest
+         * @description Request for extracting keywords with context.
+         */
+        ExtractKeywordsRequest: {
+            /**
+             * Job Description
+             * @description Job description to extract keywords from
+             */
+            job_description: string;
+            /**
+             * Job Listing Id
+             * @description Job listing ID (for scraped jobs)
+             */
+            job_listing_id?: number | null;
+            /**
+             * Job Id
+             * @description Job ID (for user-created jobs)
+             */
+            job_id?: number | null;
+        };
+        /**
+         * ExtractKeywordsResponse
+         * @description Response with extracted keywords and context.
+         */
+        ExtractKeywordsResponse: {
+            /**
+             * Keywords
+             * @description Extracted keywords with context
+             */
+            keywords: components["schemas"]["KeywordWithContext"][];
+            /**
+             * Section Breakdown
+             * @description Count of keywords per section type
+             */
+            section_breakdown?: {
+                [key: string]: number;
+            };
+            /**
+             * Has Cached Override
+             * @description Whether user has previously saved keyword edits
+             * @default false
+             */
+            has_cached_override: boolean;
+        };
+        /**
+         * FilterOption
+         * @description A single filter option with value, label, and count.
+         */
+        FilterOption: {
+            /** Value */
+            value: string;
+            /** Label */
+            label: string;
+            /** Count */
+            count: number;
+        };
+        /**
+         * FitScoringResponse
+         * @description Response for the manual fit-scoring trigger.
+         */
+        FitScoringResponse: {
+            /**
+             * Users
+             * @default 0
+             */
+            users: number;
+            /**
+             * Written
+             * @default 0
+             */
+            written: number;
+            /**
+             * Skipped No Change
+             * @default 0
+             */
+            skipped_no_change: number;
+            /**
+             * Skipped No Job Kws
+             * @default 0
+             */
+            skipped_no_job_kws: number;
+            /** Status */
+            status?: string | null;
+        };
+        /**
+         * FitToPageRequest
+         * @description Request to calculate fit-to-page adjustments.
+         */
+        FitToPageRequest: {
+            /**
+             * Html Content
+             * @description HTML content to fit
+             */
+            html_content: string;
+            /**
+             * Font Size
+             * @description Base font size in points
+             * @default 11
+             */
+            font_size: number;
+            /**
+             * Margin Top
+             * @description Top margin in inches
+             * @default 0.75
+             */
+            margin_top: number;
+            /**
+             * Margin Bottom
+             * @description Bottom margin in inches
+             * @default 0.75
+             */
+            margin_bottom: number;
+            /**
+             * Margin Left
+             * @description Left margin in inches
+             * @default 0.75
+             */
+            margin_left: number;
+            /**
+             * Margin Right
+             * @description Right margin in inches
+             * @default 0.75
+             */
+            margin_right: number;
+            /**
+             * Line Spacing
+             * @description Line height multiplier
+             * @default 1.4
+             */
+            line_spacing: number;
+            /**
+             * Section Spacing
+             * @description Section spacing in pixels
+             * @default 16
+             */
+            section_spacing: number;
+            /**
+             * Entry Spacing
+             * @description Entry spacing in pixels
+             * @default 8
+             */
+            entry_spacing: number;
+            /**
+             * @description Page size
+             * @default letter
+             */
+            page_size: components["schemas"]["PageSize"];
+            /**
+             * Max Iterations
+             * @description Maximum compression iterations
+             * @default 5
+             */
+            max_iterations: number;
+        };
+        /**
+         * FitToPageResponse
+         * @description Response with adjusted styles and page count.
+         */
+        FitToPageResponse: {
+            /** Page Count */
+            page_count: number;
+            /** Adjusted Style */
+            adjusted_style: {
+                [key: string]: unknown;
+            };
+            /** Reductions Applied */
+            reductions_applied: components["schemas"]["StyleReduction"][];
+            /** Warning */
+            warning?: string | null;
+        };
+        /**
+         * GapAnalysisItem
+         * @description Gap analysis item for missing keywords.
+         */
+        GapAnalysisItem: {
+            /**
+             * Keyword
+             * @description The missing keyword
+             */
+            keyword: string;
+            /**
+             * Importance
+             * @description Importance level
+             * @enum {string}
+             */
+            importance: "required" | "strongly_preferred" | "preferred" | "nice_to_have";
+            /**
+             * In Vault
+             * @description Whether keyword exists in vault
+             */
+            in_vault: boolean;
+            /**
+             * Suggestion
+             * @description Suggestion for addressing the gap
+             */
+            suggestion: string;
+        };
+        /**
+         * GenerateAboutMeRequest
+         * @description Request to generate an About Me blurb.
+         */
+        GenerateAboutMeRequest: {
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh: boolean;
+        };
+        /**
+         * GetKeywordOverrideResponse
+         * @description Response for getting saved keyword overrides.
+         */
+        GetKeywordOverrideResponse: {
+            /**
+             * Keywords
+             * @description User's saved keyword list
+             */
+            keywords: components["schemas"]["KeywordWithContext"][];
+            /**
+             * Original Keywords
+             * @description Original AI-extracted keywords
+             */
+            original_keywords: components["schemas"]["KeywordWithContext"][];
+            /**
+             * Reviewed
+             * @description Whether keywords were reviewed
+             */
+            reviewed: boolean;
+            /**
+             * Is Stale
+             * @description True if JD changed since last review
+             * @default false
+             */
+            is_stale: boolean;
+        };
+        /**
+         * GoogleAuthRequest
+         * @description Request body for Google OAuth login/signup.
+         */
+        GoogleAuthRequest: {
+            /**
+             * Id Token
+             * @description Google ID token from frontend
+             */
+            id_token: string;
+        };
+        /**
+         * GoogleAuthResponse
+         * @description Response for Google OAuth, extends Token with metadata.
+         */
+        GoogleAuthResponse: {
+            /** Access Token */
+            access_token: string;
+            /** Refresh Token */
+            refresh_token: string;
+            /**
+             * Token Type
+             * @default bearer
+             */
+            token_type: string;
+            /**
+             * Is New User
+             * @description True if this is a newly created account
+             */
+            is_new_user: boolean;
+            /**
+             * Account Linked
+             * @description True if Google was linked to existing email account
+             */
+            account_linked: boolean;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2058,7 +4115,94 @@ export interface components {
              */
             hide: boolean;
         };
-        /** JobCreate */
+        /**
+         * ImproveSectionRequest
+         * @description Request to improve a resume section using AI.
+         */
+        ImproveSectionRequest: {
+            /**
+             * Section Type
+             * @description The type of section being improved
+             * @enum {string}
+             */
+            section_type: "summary" | "experience" | "education" | "skills" | "projects" | "certifications" | "volunteer" | "publications" | "awards" | "interests" | "languages" | "references" | "courses" | "memberships";
+            /**
+             * Section Content
+             * @description The current content of the section (JSON string or plain text)
+             */
+            section_content: string;
+            /**
+             * Instruction
+             * @description User instruction for how to improve the section
+             * @example Make this more concise
+             * @example Add more action verbs
+             * @example Improve for a software engineer role
+             * @example Highlight leadership experience
+             */
+            instruction: string;
+            /**
+             * Job Context
+             * @description Optional job description to tailor improvements towards
+             */
+            job_context?: string | null;
+        };
+        /**
+         * ImproveSectionResponse
+         * @description Response containing AI-improved section content.
+         */
+        ImproveSectionResponse: {
+            /**
+             * Improved Content
+             * @description The improved content for the section
+             */
+            improved_content: string;
+            /**
+             * Changes Summary
+             * @description Brief summary of what was changed and why
+             */
+            changes_summary: string;
+            /**
+             * Suggestions
+             * @description Additional suggestions for further improvement
+             */
+            suggestions?: string[];
+        };
+        /**
+         * IndustryAlignmentResponse
+         * @description Industry alignment analysis result.
+         */
+        IndustryAlignmentResponse: {
+            /**
+             * Resume Industries
+             * @description Industries detected from resume
+             */
+            resume_industries: string[];
+            /**
+             * Most Recent Industry
+             * @description Most recent industry
+             */
+            most_recent_industry: string;
+            /**
+             * Target Industry
+             * @description Target job industry
+             */
+            target_industry: string;
+            /**
+             * Alignment Type
+             * @description Type of alignment
+             * @enum {string}
+             */
+            alignment_type: "same" | "adjacent" | "unrelated";
+            /**
+             * Modifier
+             * @description Score modifier (0 to +10)
+             */
+            modifier: number;
+        };
+        /**
+         * JobCreate
+         * @description Schema for creating a job.
+         */
         JobCreate: {
             /** Title */
             title: string;
@@ -2081,12 +4225,109 @@ export interface components {
             interaction: components["schemas"]["UserJobInteractionResponse"];
         };
         /**
-         * JobListingListResponse
-         * @description Schema for paginated job listing list response.
+         * JobListResponse
+         * @description Schema for listing multiple jobs.
          */
-        JobListingListResponse: {
+        JobListResponse: {
+            /** Items */
+            items: components["schemas"]["JobResponse"][];
+            /** Total */
+            total: number;
+            /** Skip */
+            skip: number;
+            /** Limit */
+            limit: number;
+        };
+        /**
+         * JobListingFilterOptionsResponse
+         * @description Available filter options based on existing job data.
+         */
+        JobListingFilterOptionsResponse: {
+            /** Countries */
+            countries: components["schemas"]["FilterOption"][];
+            /** Regions */
+            regions: components["schemas"]["FilterOption"][];
+            /** Seniorities */
+            seniorities: components["schemas"]["FilterOption"][];
+            /**
+             * Cities
+             * @default []
+             */
+            cities: components["schemas"]["FilterOption"][];
+        };
+        /**
+         * JobListingListItem
+         * @description Slim schema for list views — excludes large TOAST columns.
+         *
+         *     Skips ``job_description``, ``job_description_html``, ``company_description``,
+         *     ``benefits``, ``emails``, and ``job_type`` to keep list payloads small.
+         *     Use :class:`JobListingResponse` for the detail view where the full record
+         *     is required.
+         */
+        JobListingListItem: {
+            /** Id */
+            id: number;
+            /** External Job Id */
+            external_job_id: string;
+            /** Job Title */
+            job_title: string;
+            /** Company Name */
+            company_name: string;
+            /** Company Logo */
+            company_logo?: string | null;
+            /** Location */
+            location?: string | null;
+            /** Is Remote */
+            is_remote?: boolean | null;
+            /** Salary Min */
+            salary_min?: number | null;
+            /** Salary Max */
+            salary_max?: number | null;
+            /**
+             * Salary Currency
+             * @default USD
+             */
+            salary_currency: string;
+            /** Salary Period */
+            salary_period?: string | null;
+            /** Date Posted */
+            date_posted?: string | null;
+            /** Seniority */
+            seniority?: string | null;
+            /** Job Url */
+            job_url: string;
+            /** Source Platform */
+            source_platform?: string | null;
+            /** Scraped At */
+            scraped_at?: string | null;
+            /**
+             * Is Saved
+             * @default false
+             */
+            is_saved: boolean;
+            /**
+             * Is Hidden
+             * @default false
+             */
+            is_hidden: boolean;
+            /** Applied At */
+            applied_at?: string | null;
+            application_status?: components["schemas"]["ApplicationStatus"] | null;
+            /** Fit Score Raw */
+            fit_score_raw?: number | null;
+            /**
+             * Is Score Stale
+             * @default false
+             */
+            is_score_stale: boolean;
+        };
+        /**
+         * JobListingListItemResponse
+         * @description Paginated list response using the slim list-item schema.
+         */
+        JobListingListItemResponse: {
             /** Listings */
-            listings: components["schemas"]["JobListingResponse"][];
+            listings: components["schemas"]["JobListingListItem"][];
             /** Total */
             total: number;
             /** Limit */
@@ -2203,8 +4444,29 @@ export interface components {
             is_hidden: boolean;
             /** Applied At */
             applied_at?: string | null;
+            /** Application Status */
+            application_status?: string | null;
+            /** Status Changed At */
+            status_changed_at?: string | null;
+            /**
+             * Column Position
+             * @default 0
+             */
+            column_position: number;
+            /** Fit Score Raw */
+            fit_score_raw?: number | null;
+            /**
+             * Is Score Stale
+             * @default false
+             */
+            is_score_stale: boolean;
         };
-        /** JobResponse */
+        /**
+         * JobResponse
+         * @description Schema for job responses - uses public_id as 'id'.
+         *
+         *     Security: Never expose internal integer ID or owner_id in public responses.
+         */
         JobResponse: {
             /** Title */
             title: string;
@@ -2214,10 +4476,11 @@ export interface components {
             raw_content: string;
             /** Url */
             url?: string | null;
-            /** Id */
-            id: number;
-            /** Owner Id */
-            owner_id: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
             /** Parsed Content */
             parsed_content?: {
                 [key: string]: unknown;
@@ -2230,7 +4493,10 @@ export interface components {
             /** Updated At */
             updated_at?: string | null;
         };
-        /** JobUpdate */
+        /**
+         * JobUpdate
+         * @description Schema for updating a job (all fields optional).
+         */
         JobUpdate: {
             /** Title */
             title?: string | null;
@@ -2242,88 +4508,576 @@ export interface components {
             url?: string | null;
         };
         /**
-         * MatchRequest
-         * @description Schema for semantic match request.
+         * KanbanBoardResponse
+         * @description Response for full Kanban board with all columns.
          */
-        MatchRequest: {
+        KanbanBoardResponse: {
+            /** Columns */
+            columns: {
+                [key: string]: components["schemas"]["KanbanColumnResponse"];
+            };
+        };
+        /**
+         * KanbanColumnResponse
+         * @description Response for a single Kanban column.
+         */
+        KanbanColumnResponse: {
+            /** Status */
+            status: string;
+            /** Jobs */
+            jobs: components["schemas"]["KanbanJobItem"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * KanbanJobItem
+         * @description Minimal schema for kanban board cards.
+         */
+        KanbanJobItem: {
+            /** Id */
+            id: number;
+            /** Job Title */
+            job_title: string;
+            /** Company Name */
+            company_name: string;
+            /** Company Logo */
+            company_logo?: string | null;
+            /** Location */
+            location?: string | null;
+            application_status?: components["schemas"]["ApplicationStatus"] | null;
+            /** Status Changed At */
+            status_changed_at?: string | null;
+            /** Applied At */
+            applied_at?: string | null;
+            /**
+             * Column Position
+             * @default 0
+             */
+            column_position: number;
+        };
+        /**
+         * KeywordAssignmentInput
+         * @description A keyword the user explicitly wants incorporated into a specific resume section.
+         */
+        KeywordAssignmentInput: {
+            /** Keyword */
+            keyword: string;
+            /**
+             * Section Id
+             * @description Section prefix matching bullet IDs, e.g. 'blockId:entry-0'
+             */
+            section_id: string;
+        };
+        /**
+         * KeywordDetailResponse
+         * @description Detailed information about a single keyword.
+         */
+        KeywordDetailResponse: {
+            /**
+             * Keyword
+             * @description The keyword/phrase
+             */
+            keyword: string;
+            /**
+             * Importance
+             * @description Importance level: required, preferred, or nice_to_have
+             * @enum {string}
+             */
+            importance: "required" | "preferred" | "nice_to_have";
+            /**
+             * Found In Resume
+             * @description Whether keyword is in resume
+             */
+            found_in_resume: boolean;
+            /**
+             * Found In Vault
+             * @description Whether keyword is in vault
+             */
+            found_in_vault: boolean;
+            /**
+             * Frequency In Job
+             * @description How many times keyword appears in job description
+             */
+            frequency_in_job: number;
+            /**
+             * Context
+             * @description Sample context from job description
+             */
+            context?: string | null;
+        };
+        /**
+         * KeywordGapInput
+         * @description A missing keyword from ATS analysis.
+         */
+        KeywordGapInput: {
+            /** Keyword */
+            keyword: string;
+            /**
+             * Importance
+             * @enum {string}
+             */
+            importance: "required" | "strongly_preferred" | "preferred" | "nice_to_have";
+        };
+        /**
+         * KeywordMatchResponse
+         * @description A single match of a keyword in the resume.
+         */
+        KeywordMatchResponse: {
+            /**
+             * Section
+             * @description Section where the match was found (experience, skills, etc.)
+             */
+            section: string;
+            /**
+             * Role Index
+             * @description Index of the role (0 = most recent) if in experience section
+             */
+            role_index?: number | null;
+            /**
+             * Text Snippet
+             * @description Text snippet around the match
+             */
+            text_snippet?: string | null;
+        };
+        /**
+         * KeywordOverrideRequest
+         * @description Request to save user's keyword edits.
+         */
+        KeywordOverrideRequest: {
+            /**
+             * Job Listing Id
+             * @description Job listing ID (for scraped jobs)
+             */
+            job_listing_id?: number | null;
+            /**
+             * Job Id
+             * @description Job ID (for user-created jobs)
+             */
+            job_id?: number | null;
             /**
              * Job Description
-             * @description Job description to match against
+             * @description Original job description (for hash)
              */
             job_description: string;
             /**
-             * Limit
-             * @description Maximum results
-             * @default 20
+             * Keywords
+             * @description User's edited keyword list
              */
-            limit: number;
+            keywords: components["schemas"]["KeywordWithContext"][];
             /**
-             * Block Types
-             * @description Filter by block types
+             * Mark Reviewed
+             * @description Mark keywords as reviewed
+             * @default true
              */
-            block_types?: components["schemas"]["BlockType"][] | null;
-            /**
-             * Tags
-             * @description Filter by tags (AND logic)
-             */
-            tags?: string[] | null;
+            mark_reviewed: boolean;
         };
         /**
-         * MatchResponse
-         * @description Schema for semantic match response.
+         * KeywordOverrideResponse
+         * @description Response after saving keyword overrides.
          */
-        MatchResponse: {
-            /** Matches */
-            matches: components["schemas"]["SemanticMatchResult"][];
+        KeywordOverrideResponse: {
             /**
-             * Query Keywords
-             * @description Keywords extracted from job
+             * Id
+             * @description MongoDB document ID
              */
-            query_keywords?: string[];
+            id: string;
             /**
-             * Total Vault Blocks
-             * @description Total blocks in user's Vault
+             * Keyword Count
+             * @description Number of keywords saved
              */
-            total_vault_blocks: number;
+            keyword_count: number;
+            /**
+             * Reviewed
+             * @description Whether keywords are marked as reviewed
+             */
+            reviewed: boolean;
+            /**
+             * Is Stale
+             * @description True if JD changed since last review
+             * @default false
+             */
+            is_stale: boolean;
         };
         /**
-         * PullBlocksRequest
-         * @description Schema for pulling blocks into a resume build.
+         * KeywordWithContext
+         * @description A keyword with its source context from the job description.
          */
-        PullBlocksRequest: {
+        KeywordWithContext: {
             /**
-             * Block Ids
-             * @description IDs of blocks to pull from Vault
+             * Keyword
+             * @description The extracted keyword
              */
-            block_ids: number[];
+            keyword: string;
+            /**
+             * Importance
+             * @description Importance level
+             * @enum {string}
+             */
+            importance: "required" | "strongly_preferred" | "preferred" | "nice_to_have";
+            /**
+             * Context
+             * @description The sentence from JD where keyword appears
+             */
+            context?: string | null;
+            /**
+             * Source Section
+             * @description Which section of the JD the keyword was found in
+             */
+            source_section?: ("requirements" | "qualifications" | "nice_to_have" | "responsibilities" | "about" | "benefits" | "other") | null;
+            /**
+             * Frequency
+             * @description How many times keyword appears in JD
+             * @default 1
+             */
+            frequency: number;
+            /**
+             * User Added
+             * @description True if user manually added this keyword
+             * @default false
+             */
+            user_added: boolean;
+            /**
+             * User Modified
+             * @description True if user changed the importance
+             * @default false
+             */
+            user_modified: boolean;
         };
         /**
-         * PullBlocksResponse
-         * @description Schema for pull blocks response.
+         * KnockoutCheckRequest
+         * @description Request for knockout check analysis.
+         * @example {
+         *       "job_id": 456,
+         *       "resume_id": 123
+         *     }
+         * @example {
+         *       "job_description": "We are looking for a Senior Engineer with 5+ years...",
+         *       "resume_content": "John Doe\nSoftware Engineer..."
+         *     }
          */
-        PullBlocksResponse: {
-            resume_build: components["schemas"]["ResumeBuildResponse"];
+        KnockoutCheckRequest: {
             /**
-             * Newly Pulled
-             * @description Block IDs that were newly added
+             * Resume Id
+             * @description Resume ID to analyze (uses parsed_content from database)
              */
-            newly_pulled: number[];
+            resume_id?: number | null;
             /**
-             * Already Pulled
-             * @description Block IDs already in resume build
+             * Job Id
+             * @description Job description ID to analyze against
              */
-            already_pulled?: number[];
+            job_id?: number | null;
+            /**
+             * Resume Content
+             * @description Raw resume text (fallback if resume_id not provided)
+             */
+            resume_content?: string | null;
+            /**
+             * Job Description
+             * @description Raw job description text (fallback if job_id not provided)
+             */
+            job_description?: string | null;
         };
-        /** QuickMatchRequest */
+        /**
+         * KnockoutCheckResponse
+         * @description Response for knockout check analysis.
+         */
+        KnockoutCheckResponse: {
+            /**
+             * Passes All Checks
+             * @description True if no knockout risks detected
+             */
+            passes_all_checks: boolean;
+            /**
+             * Risks
+             * @description List of knockout risks detected
+             */
+            risks?: components["schemas"]["KnockoutRiskResponse"][];
+            /**
+             * Summary
+             * @description Summary of the knockout check results
+             */
+            summary: string;
+            /**
+             * Recommendation
+             * @description Recommended action for the user
+             */
+            recommendation: string;
+            /**
+             * Analysis
+             * @description Detailed breakdown of each check (for debugging/advanced users)
+             */
+            analysis?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * KnockoutRiskItem
+         * @description A single knockout risk identified during analysis.
+         */
+        KnockoutRiskItem: {
+            /**
+             * Risk Type
+             * @description Type of knockout risk
+             */
+            risk_type: string;
+            /**
+             * Severity
+             * @description Severity: critical, warning, or info
+             */
+            severity: string;
+            /**
+             * Description
+             * @description Human-readable description
+             */
+            description: string;
+            /**
+             * Job Requires
+             * @description What the job requires
+             */
+            job_requires: string;
+            /**
+             * User Has
+             * @description What the resume indicates
+             */
+            user_has?: string | null;
+        };
+        /**
+         * KnockoutRiskResponse
+         * @description A single knockout risk detected.
+         */
+        KnockoutRiskResponse: {
+            /**
+             * Risk Type
+             * @description Type of knockout risk
+             * @enum {string}
+             */
+            risk_type: "experience_years" | "education_level" | "certification" | "location" | "work_authorization";
+            /**
+             * Severity
+             * @description Severity level: critical, warning, or info
+             * @enum {string}
+             */
+            severity: "critical" | "warning" | "info";
+            /**
+             * Description
+             * @description Human-readable description of the risk
+             */
+            description: string;
+            /**
+             * Job Requires
+             * @description What the job posting requires
+             */
+            job_requires: string;
+            /**
+             * User Has
+             * @description What the user's resume shows (if determinable)
+             */
+            user_has?: string | null;
+        };
+        /**
+         * OriginalFileInfo
+         * @description File information for uploaded resumes.
+         */
+        OriginalFileInfo: {
+            /** Storage Key */
+            storage_key?: string | null;
+            /** Filename */
+            filename?: string | null;
+            /** File Type */
+            file_type?: string | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
+        };
+        /**
+         * PageSize
+         * @description Supported page sizes for export.
+         * @enum {string}
+         */
+        PageSize: "letter" | "a4";
+        /**
+         * ParseStage
+         * @description Stages of resume parsing.
+         * @enum {string}
+         */
+        ParseStage: "extracting" | "parsing" | "storing";
+        /**
+         * ParseStatusResponse
+         * @description Response when checking parse task status.
+         */
+        ParseStatusResponse: {
+            /** Task Id */
+            task_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "completed" | "failed";
+            /** Resume Id */
+            resume_id: string;
+            stage?: components["schemas"]["ParseStage"] | null;
+            /** Stage Progress */
+            stage_progress?: number | null;
+            /** Error */
+            error?: string | null;
+            /** Warning */
+            warning?: string | null;
+        };
+        /**
+         * ParseTaskResponse
+         * @description Response when triggering a parse task.
+         */
+        ParseTaskResponse: {
+            /** Task Id */
+            task_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "completed" | "failed";
+            /** Resume Id */
+            resume_id: string;
+        };
+        /**
+         * PricingConfigCreate
+         * @description Create new pricing configuration.
+         */
+        PricingConfigCreate: {
+            /** Provider */
+            provider: string;
+            /** Model */
+            model: string;
+            /** Input Cost Per 1K */
+            input_cost_per_1k: number;
+            /** Output Cost Per 1K */
+            output_cost_per_1k: number;
+        };
+        /**
+         * PricingConfigResponse
+         * @description AI pricing configuration.
+         */
+        PricingConfigResponse: {
+            /** Id */
+            id: number;
+            /** Provider */
+            provider: string;
+            /** Model */
+            model: string;
+            /** Input Cost Per 1K */
+            input_cost_per_1k: number;
+            /** Output Cost Per 1K */
+            output_cost_per_1k: number;
+            /**
+             * Effective Date
+             * Format: date-time
+             */
+            effective_date: string;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /**
+         * PricingConfigUpdate
+         * @description Update pricing configuration.
+         */
+        PricingConfigUpdate: {
+            /** Input Cost Per 1K */
+            input_cost_per_1k?: number | null;
+            /** Output Cost Per 1K */
+            output_cost_per_1k?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
+        /**
+         * ProfileResponse
+         * @description Response containing profile fields.
+         */
+        ProfileResponse: {
+            /** Full Name */
+            full_name?: string | null;
+            /** Headline */
+            headline?: string | null;
+            /** About Me */
+            about_me?: string | null;
+            /** Timezone */
+            timezone?: string | null;
+        };
+        /**
+         * ProviderUsageResponse
+         * @description Usage breakdown by provider and model.
+         */
+        ProviderUsageResponse: {
+            /** Provider */
+            provider: string;
+            /** Model */
+            model: string;
+            /** Request Count */
+            request_count: number;
+            /** Input Tokens */
+            input_tokens: number;
+            /** Output Tokens */
+            output_tokens: number;
+            /** Total Tokens */
+            total_tokens: number;
+            /** Total Cost Usd */
+            total_cost_usd: number;
+            /** Avg Latency Ms */
+            avg_latency_ms: number;
+        };
+        /**
+         * QuantificationAnalysisResponse
+         * @description Analysis of quantification density.
+         */
+        QuantificationAnalysisResponse: {
+            /**
+             * Total Bullets
+             * @description Total number of bullets analyzed
+             */
+            total_bullets: number;
+            /**
+             * Quantified Bullets
+             * @description Number of bullets containing metrics
+             */
+            quantified_bullets: number;
+            /**
+             * Quantification Density
+             * @description Ratio of quantified bullets
+             */
+            quantification_density: number;
+            /**
+             * Quality Score
+             * @description Quantification quality score (0-100)
+             */
+            quality_score: number;
+            /**
+             * Metrics Found
+             * @description List of metrics extracted from content
+             */
+            metrics_found?: string[];
+            /**
+             * Bullets Needing Metrics
+             * @description Bullets that could benefit from adding metrics
+             */
+            bullets_needing_metrics?: string[];
+        };
+        /**
+         * QuickMatchRequest
+         * @description Request for quick match score without full tailoring.
+         *
+         *     For job_id, accepts either:
+         *     - UUID string (preferred): "550e8400-e29b-41d4-a716-446655440000"
+         *     - Integer string (deprecated): "123"
+         */
         QuickMatchRequest: {
             /** Resume Id */
-            resume_id: number;
+            resume_id: string;
             /** Job Id */
-            job_id?: number | null;
+            job_id?: string | null;
             /** Job Listing Id */
             job_listing_id?: number | null;
         };
-        /** QuickMatchResponse */
+        /**
+         * QuickMatchResponse
+         * @description Response for quick match score.
+         */
         QuickMatchResponse: {
             /** Match Score */
             match_score: number;
@@ -2334,6 +5088,21 @@ export interface components {
             /** Skill Gaps */
             skill_gaps: string[];
         };
+        /**
+         * ReorderKanbanRequest
+         * @description Request to reorder jobs within a Kanban column.
+         */
+        ReorderKanbanRequest: {
+            status: components["schemas"]["ApplicationStatus"];
+            /** Job Listing Ids */
+            job_listing_ids: number[];
+        };
+        /**
+         * RequestStatus
+         * @description Status of a scraper request.
+         * @enum {string}
+         */
+        RequestStatus: "pending" | "approved" | "rejected";
         /**
          * ResumeBuildCreate
          * @description Schema for creating a new resume build.
@@ -2362,7 +5131,9 @@ export interface components {
         };
         /**
          * ResumeBuildResponse
-         * @description Schema for resume build API responses.
+         * @description Schema for resume build API responses - uses public_id as 'id'.
+         *
+         *     Security: Never expose internal integer ID or user_id in public responses.
          */
         ResumeBuildResponse: {
             /** Job Title */
@@ -2371,18 +5142,19 @@ export interface components {
             job_company?: string | null;
             /** Job Description */
             job_description?: string | null;
-            /** Id */
-            id: number;
-            /** User Id */
-            user_id: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
             /** Status */
             status: string;
             /** Sections */
             sections?: {
                 [key: string]: unknown;
             };
-            /** Pulled Block Ids */
-            pulled_block_ids?: number[];
+            /** Section Order */
+            section_order?: string[];
             /** Pending Diffs */
             pending_diffs?: components["schemas"]["DiffSuggestion"][];
             /**
@@ -2419,21 +5191,109 @@ export interface components {
             title: string;
             /** Raw Content */
             raw_content: string;
+            /** Html Content */
+            html_content?: string | null;
+            /** Original File Key */
+            original_file_key?: string | null;
+            /** Original Filename */
+            original_filename?: string | null;
+            /** File Type */
+            file_type?: ("pdf" | "docx") | null;
+            /** File Size Bytes */
+            file_size_bytes?: number | null;
         };
-        /** ResumeResponse */
+        /**
+         * ResumeExportRequest
+         * @description Schema for exporting a resume by ID.
+         */
+        ResumeExportRequest: {
+            /**
+             * Format
+             * @description Export format
+             * @default pdf
+             * @enum {string}
+             */
+            format: "pdf" | "docx";
+            /**
+             * Template
+             * @description Style template to apply
+             * @default classic
+             * @enum {string}
+             */
+            template: "classic" | "modern" | "minimal";
+            /**
+             * Font Family
+             * @description Font family for the document
+             * @default Arial
+             */
+            font_family: string;
+            /**
+             * Font Size
+             * @description Base font size in points
+             * @default 11
+             */
+            font_size: number;
+            /**
+             * Margin Top
+             * @description Top margin in inches
+             * @default 0.75
+             */
+            margin_top: number;
+            /**
+             * Margin Bottom
+             * @description Bottom margin in inches
+             * @default 0.75
+             */
+            margin_bottom: number;
+            /**
+             * Margin Left
+             * @description Left margin in inches
+             * @default 0.75
+             */
+            margin_left: number;
+            /**
+             * Margin Right
+             * @description Right margin in inches
+             * @default 0.75
+             */
+            margin_right: number;
+        };
+        /**
+         * ResumeResponse
+         * @description Response model for resume endpoints (MongoDB).
+         */
         ResumeResponse: {
+            /** Id */
+            id: string;
+            /** User Id */
+            user_id: number;
             /** Title */
             title: string;
             /** Raw Content */
             raw_content: string;
-            /** Id */
-            id: number;
-            /** Owner Id */
-            owner_id: number;
-            /** Parsed Content */
-            parsed_content?: {
+            /** Html Content */
+            html_content?: string | null;
+            /** Parsed */
+            parsed?: {
                 [key: string]: unknown;
             } | null;
+            /** Style */
+            style?: {
+                [key: string]: unknown;
+            } | null;
+            original_file?: components["schemas"]["OriginalFileInfo"] | null;
+            /**
+             * Is Master
+             * @default false
+             */
+            is_master: boolean;
+            /**
+             * Parsed Verified
+             * @default false
+             */
+            parsed_verified: boolean;
+            /** Parsed Verified At */
+            parsed_verified_at?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -2441,13 +5301,201 @@ export interface components {
             created_at: string;
             /** Updated At */
             updated_at?: string | null;
+            /**
+             * Version
+             * @description Document version for optimistic concurrency control
+             * @default 1
+             */
+            version: number;
         };
         /** ResumeUpdate */
         ResumeUpdate: {
+            /**
+             * Version
+             * @description Current version for optimistic concurrency control
+             */
+            version: number;
             /** Title */
             title?: string | null;
             /** Raw Content */
             raw_content?: string | null;
+            /** Html Content */
+            html_content?: string | null;
+            /** Parsed Content */
+            parsed_content?: {
+                [key: string]: unknown;
+            } | null;
+            /** Style */
+            style?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * RewriteOptions
+         * @description Controls which parts of the resume are rewritten.
+         */
+        RewriteOptions: {
+            /**
+             * Rewrite Bullets
+             * @default true
+             */
+            rewrite_bullets: boolean;
+            /**
+             * Rewrite Summary
+             * @default true
+             */
+            rewrite_summary: boolean;
+        };
+        /**
+         * RewriteResumeRequest
+         * @description Request to rewrite an entire resume targeted at a specific job.
+         */
+        RewriteResumeRequest: {
+            /**
+             * Resume Id
+             * @description ID of the resume being rewritten
+             */
+            resume_id: string;
+            /**
+             * Job Id
+             * @description ID of the target job
+             */
+            job_id: string;
+            /**
+             * Job Description
+             * @description Full text of the job description
+             */
+            job_description: string;
+            /**
+             * Bullets
+             * @description All bullets to rewrite
+             */
+            bullets?: components["schemas"]["BulletRewriteItem"][];
+            /**
+             * Summary
+             * @description Current summary text to rewrite
+             */
+            summary?: string | null;
+            /**
+             * Missing Keywords
+             * @description Keywords missing from the resume that appear in the job description
+             */
+            missing_keywords?: string[];
+            options?: components["schemas"]["RewriteOptions"];
+        };
+        /**
+         * RewriteResumeResponse
+         * @description Response containing AI-rewritten resume content.
+         */
+        RewriteResumeResponse: {
+            /** Bullets */
+            bullets: components["schemas"]["BulletRewriteResult"][];
+            summary?: components["schemas"]["SummaryRewriteResult"] | null;
+            stats: components["schemas"]["RewriteStats"];
+        };
+        /**
+         * RewriteStats
+         * @description Aggregate statistics about the rewrite operation.
+         */
+        RewriteStats: {
+            /** Bullets Changed */
+            bullets_changed: number;
+            /** Bullets Unchanged */
+            bullets_unchanged: number;
+            /** Keywords Added */
+            keywords_added: number;
+        };
+        /**
+         * RoleProximityRequest
+         * @description Request for Stage 4 role proximity analysis.
+         * @example {
+         *       "job_id": 456,
+         *       "resume_id": 123
+         *     }
+         * @example {
+         *       "job_content": {
+         *         "company": "BigTech",
+         *         "title": "Staff Software Engineer"
+         *       },
+         *       "resume_content": {
+         *         "experience": [
+         *           {
+         *             "company": "TechCorp",
+         *             "title": "Senior Software Engineer"
+         *           },
+         *           {
+         *             "company": "StartupInc",
+         *             "title": "Software Engineer"
+         *           }
+         *         ]
+         *       }
+         *     }
+         */
+        RoleProximityRequest: {
+            /**
+             * Resume Id
+             * @description Resume ID to analyze (uses parsed_content from database)
+             */
+            resume_id?: number | null;
+            /**
+             * Job Id
+             * @description Job description ID to analyze against
+             */
+            job_id?: number | null;
+            /**
+             * Resume Content
+             * @description Parsed resume content as dictionary (fallback if resume_id not provided)
+             */
+            resume_content?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Job Content
+             * @description Parsed job content as dictionary (fallback if job_id not provided)
+             */
+            job_content?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * RoleProximityResponse
+         * @description Response for Stage 4 role proximity analysis.
+         */
+        RoleProximityResponse: {
+            /**
+             * Role Proximity Score
+             * @description Overall role proximity score (0-100)
+             */
+            role_proximity_score: number;
+            /** @description Title similarity analysis */
+            title_match: components["schemas"]["TitleMatchResponse"];
+            /** @description Career trajectory analysis */
+            trajectory: components["schemas"]["TrajectoryResponse"];
+            /** @description Industry alignment analysis */
+            industry_alignment: components["schemas"]["IndustryAlignmentResponse"];
+            /**
+             * Explanation
+             * @description Human-readable summary of the analysis
+             */
+            explanation: string;
+            /**
+             * Concerns
+             * @description Potential concerns about role fit
+             */
+            concerns?: string[];
+            /**
+             * Strengths
+             * @description Strengths for this role
+             */
+            strengths?: string[];
+        };
+        /**
+         * SSETicketResponse
+         * @description Response containing a short-lived SSE authentication ticket.
+         */
+        SSETicketResponse: {
+            /** Ticket */
+            ticket: string;
         };
         /**
          * SaveJobRequest
@@ -2459,6 +5507,48 @@ export interface components {
              * @default true
              */
             save: boolean;
+        };
+        /**
+         * ScheduleSettingsResponse
+         * @description Response containing schedule settings.
+         */
+        ScheduleSettingsResponse: {
+            /** Is Enabled */
+            is_enabled: boolean;
+            /** Schedule Type */
+            schedule_type: string;
+            /** Schedule Hour */
+            schedule_hour: number;
+            /** Schedule Minute */
+            schedule_minute: number;
+            /** Schedule Day Of Week */
+            schedule_day_of_week: number | null;
+            /** Schedule Timezone */
+            schedule_timezone: string;
+            /** Last Run At */
+            last_run_at: string | null;
+            /** Next Run At */
+            next_run_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /**
+         * ScheduleSettingsUpdate
+         * @description Request to update schedule settings.
+         */
+        ScheduleSettingsUpdate: {
+            /** Is Enabled */
+            is_enabled?: boolean | null;
+            /** Schedule Type */
+            schedule_type?: string | null;
+            /** Schedule Hour */
+            schedule_hour?: number | null;
+            /** Schedule Minute */
+            schedule_minute?: number | null;
+            /** Schedule Day Of Week */
+            schedule_day_of_week?: number | null;
+            /** Schedule Timezone */
+            schedule_timezone?: string | null;
         };
         /**
          * ScraperBatchResult
@@ -2518,11 +5608,236 @@ export interface components {
             total_jobs_created: number;
         };
         /**
+         * ScraperPresetCreate
+         * @description Request to create a new scraper preset.
+         */
+        ScraperPresetCreate: {
+            /**
+             * Name
+             * @description Name for the preset
+             */
+            name: string;
+            /**
+             * Url
+             * @description LinkedIn job search URL
+             */
+            url: string;
+            /**
+             * Count
+             * @description Max jobs to scrape
+             * @default 100
+             */
+            count: number;
+            /**
+             * Is Active
+             * @description Whether the preset is active
+             * @default true
+             */
+            is_active: boolean;
+        };
+        /**
+         * ScraperPresetListResponse
+         * @description Response containing a list of scraper presets.
+         */
+        ScraperPresetListResponse: {
+            /** Presets */
+            presets: components["schemas"]["ScraperPresetResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * ScraperPresetResponse
+         * @description Response containing a scraper preset.
+         */
+        ScraperPresetResponse: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
+            /** Count */
+            count: number;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /**
+         * ScraperPresetUpdate
+         * @description Request to update a scraper preset.
+         */
+        ScraperPresetUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Url */
+            url?: string | null;
+            /** Count */
+            count?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
+        /**
          * ScraperRegion
          * @description Geographic regions for job scraping.
          * @enum {string}
          */
         ScraperRegion: "thailand" | "malaysia" | "singapore" | "europe" | "apac";
+        /**
+         * ScraperRequestAdminListResponse
+         * @description Response containing a list of scraper requests (admin view).
+         */
+        ScraperRequestAdminListResponse: {
+            /** Requests */
+            requests: components["schemas"]["ScraperRequestAdminResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * ScraperRequestAdminResponse
+         * @description Response containing a scraper request (admin view).
+         */
+        ScraperRequestAdminResponse: {
+            /** Id */
+            id: number;
+            /** Url */
+            url: string;
+            /** Name */
+            name: string | null;
+            /** Reason */
+            reason: string | null;
+            status: components["schemas"]["RequestStatus"];
+            /** Admin Notes */
+            admin_notes: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Updated At */
+            updated_at: string | null;
+            /** Reviewed At */
+            reviewed_at: string | null;
+            /** Preset Id */
+            preset_id: number | null;
+            /** User Id */
+            user_id: number;
+            /** User Email */
+            user_email: string;
+            /** Reviewed By */
+            reviewed_by: number | null;
+            /** Reviewer Email */
+            reviewer_email: string | null;
+        };
+        /**
+         * ScraperRequestApproveRequest
+         * @description Request to approve a scraper request.
+         */
+        ScraperRequestApproveRequest: {
+            /**
+             * Admin Notes
+             * @description Optional notes
+             */
+            admin_notes?: string | null;
+            /**
+             * Create Preset
+             * @description Whether to create a preset
+             * @default true
+             */
+            create_preset: boolean;
+            /**
+             * Preset Name
+             * @description Override preset name
+             */
+            preset_name?: string | null;
+            /**
+             * Preset Count
+             * @description Max jobs to scrape
+             * @default 100
+             */
+            preset_count: number;
+            /**
+             * Preset Is Active
+             * @description Whether preset is active
+             * @default true
+             */
+            preset_is_active: boolean;
+        };
+        /**
+         * ScraperRequestCreate
+         * @description Request to submit a new scraper request.
+         */
+        ScraperRequestCreate: {
+            /**
+             * Url
+             * @description LinkedIn job search URL
+             */
+            url: string;
+            /**
+             * Name
+             * @description Suggested preset name
+             */
+            name?: string | null;
+            /**
+             * Reason
+             * @description Why you want these jobs
+             */
+            reason?: string | null;
+        };
+        /**
+         * ScraperRequestListResponse
+         * @description Response containing a list of scraper requests (user view).
+         */
+        ScraperRequestListResponse: {
+            /** Requests */
+            requests: components["schemas"]["ScraperRequestResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * ScraperRequestRejectRequest
+         * @description Request to reject a scraper request.
+         */
+        ScraperRequestRejectRequest: {
+            /**
+             * Admin Notes
+             * @description Rejection reason
+             */
+            admin_notes: string;
+        };
+        /**
+         * ScraperRequestResponse
+         * @description Response containing a scraper request (user view).
+         */
+        ScraperRequestResponse: {
+            /** Id */
+            id: number;
+            /** Url */
+            url: string;
+            /** Name */
+            name: string | null;
+            /** Reason */
+            reason: string | null;
+            status: components["schemas"]["RequestStatus"];
+            /** Admin Notes */
+            admin_notes: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Updated At */
+            updated_at: string | null;
+            /** Reviewed At */
+            reviewed_at: string | null;
+            /** Preset Id */
+            preset_id: number | null;
+        };
         /**
          * ScraperRunHistoryItem
          * @description Summary of a scraper run for history listing.
@@ -2642,18 +5957,31 @@ export interface components {
             last_run_result?: components["schemas"]["ScraperBatchResult"] | null;
         };
         /**
-         * SemanticMatchResult
-         * @description Schema for a single semantic match result.
+         * SectionOrderDetails
+         * @description Details about section order validation.
          */
-        SemanticMatchResult: {
-            block: components["schemas"]["BlockResponse"];
+        SectionOrderDetails: {
             /**
-             * Score
-             * @description Similarity score (0-1, higher is better)
+             * Detected Order
+             * @description Sections in the order they appear in the resume
              */
-            score: number;
-            /** Matched Keywords */
-            matched_keywords?: string[];
+            detected_order: string[];
+            /**
+             * Expected Order
+             * @description The standard expected order for detected sections
+             */
+            expected_order: string[];
+            /**
+             * Deviation Type
+             * @description Type of deviation from standard order
+             * @enum {string}
+             */
+            deviation_type: "standard" | "minor" | "major" | "non_standard";
+            /**
+             * Issues
+             * @description Specific order issues found
+             */
+            issues?: string[];
         };
         /**
          * SortBy
@@ -2668,30 +5996,18 @@ export interface components {
          */
         SortOrder: "asc" | "desc";
         /**
-         * StyleSettingsSchema
-         * @description Style settings for PDF generation.
+         * StyleReduction
+         * @description A single style reduction applied during compression.
          */
-        StyleSettingsSchema: {
-            /** Font Family */
-            font_family?: string | null;
-            /** Font Size Body */
-            font_size_body?: number | null;
-            /** Font Size Heading */
-            font_size_heading?: number | null;
-            /** Font Size Subheading */
-            font_size_subheading?: number | null;
-            /** Margin Top */
-            margin_top?: number | null;
-            /** Margin Bottom */
-            margin_bottom?: number | null;
-            /** Margin Left */
-            margin_left?: number | null;
-            /** Margin Right */
-            margin_right?: number | null;
-            /** Line Spacing */
-            line_spacing?: number | null;
-            /** Section Spacing */
-            section_spacing?: number | null;
+        StyleReduction: {
+            /** Property */
+            property: string;
+            /** From Value */
+            from_value: number;
+            /** To Value */
+            to_value: number;
+            /** Label */
+            label: string;
         };
         /**
          * SuggestRequest
@@ -2720,7 +6036,7 @@ export interface components {
             new_suggestions_count: number;
             /**
              * Gaps Identified
-             * @description Skill gaps with no Vault coverage
+             * @description Skill gaps identified in resume
              */
             gaps_identified?: string[];
         };
@@ -2730,43 +6046,58 @@ export interface components {
          * @enum {string}
          */
         SuggestionImpact: "high" | "medium" | "low";
-        /** SuggestionSchema */
-        SuggestionSchema: {
-            /** Section */
-            section: string;
-            /** Type */
-            type: string;
+        /**
+         * SummaryRewriteResult
+         * @description AI-rewritten version of the resume summary.
+         */
+        SummaryRewriteResult: {
             /** Original */
             original: string;
-            /** Suggested */
-            suggested: string;
+            /** Proposed */
+            proposed: string;
             /** Reason */
             reason: string;
-            /** Impact */
-            impact: string;
         };
-        /** TailorRequest */
+        /**
+         * TailorRequest
+         * @description Request to tailor a resume for a job.
+         *
+         *     For job_id, accepts either:
+         *     - UUID string (preferred): "550e8400-e29b-41d4-a716-446655440000"
+         *     - Integer string (deprecated): "123"
+         */
         TailorRequest: {
             /** Resume Id */
-            resume_id: number;
+            resume_id: string;
             /** Job Id */
-            job_id?: number | null;
+            job_id?: string | null;
             /** Job Listing Id */
             job_listing_id?: number | null;
+            /** Focus Keywords */
+            focus_keywords?: string[] | null;
         };
-        /** TailorResponse */
+        /**
+         * TailorResponse
+         * @description Response after generating a tailored resume.
+         *
+         *     Two Copies Architecture: Returns the complete tailored_data,
+         *     not individual suggestions. Frontend will fetch the compare
+         *     endpoint to get both original and tailored for diffing.
+         */
         TailorResponse: {
             /** Id */
             id: string;
             /** Resume Id */
             resume_id: string;
             /** Job Id */
-            job_id?: number | null;
+            job_id?: string | null;
             /** Job Listing Id */
             job_listing_id?: number | null;
-            tailored_content: components["schemas"]["TailoredContentSchema"];
-            /** Suggestions */
-            suggestions: components["schemas"]["SuggestionSchema"][];
+            /** Tailored Data */
+            tailored_data: {
+                [key: string]: unknown;
+            };
+            status: components["schemas"]["TailoredResumeStatus"];
             /** Match Score */
             match_score: number;
             /** Skill Matches */
@@ -2775,28 +6106,62 @@ export interface components {
             skill_gaps: string[];
             /** Keyword Coverage */
             keyword_coverage: number;
+            /** Job Title */
+            job_title?: string | null;
+            /** Company Name */
+            company_name?: string | null;
+            /** Focus Keywords Used */
+            focus_keywords_used?: string[] | null;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
         };
-        /** TailoredContentSchema */
-        TailoredContentSchema: {
-            /** Summary */
-            summary: string;
-            /** Experience */
-            experience: {
+        /**
+         * TailoredResumeCompareResponse
+         * @description Response for the compare endpoint - returns both documents for frontend diffing.
+         *
+         *     This is the critical endpoint for the Two Copies architecture.
+         *     Frontend uses these two documents to compute diffs client-side.
+         */
+        TailoredResumeCompareResponse: {
+            /** Id */
+            id: string;
+            /** Resume Id */
+            resume_id: string;
+            /** Original */
+            original: {
                 [key: string]: unknown;
-            }[];
-            /** Skills */
-            skills: string[];
-            /** Highlights */
-            highlights: string[];
+            };
+            /** Tailored */
+            tailored: {
+                [key: string]: unknown;
+            };
+            status: components["schemas"]["TailoredResumeStatus"];
+            /** Match Score */
+            match_score: number | null;
+            /** Job Title */
+            job_title?: string | null;
+            /** Company Name */
+            company_name?: string | null;
+        };
+        /**
+         * TailoredResumeFinalizeRequest
+         * @description Request to finalize a tailored resume with user's approved changes.
+         *
+         *     The finalized_data is the merged document the frontend built by
+         *     accepting some AI changes and keeping some originals.
+         */
+        TailoredResumeFinalizeRequest: {
+            /** Finalized Data */
+            finalized_data: {
+                [key: string]: unknown;
+            };
         };
         /**
          * TailoredResumeFullResponse
-         * @description Full response including style and section order.
+         * @description Full response including all fields.
          */
         TailoredResumeFullResponse: {
             /** Id */
@@ -2804,21 +6169,43 @@ export interface components {
             /** Resume Id */
             resume_id: string;
             /** Job Id */
-            job_id: number | null;
+            job_id: string | null;
             /** Job Listing Id */
             job_listing_id: number | null;
-            tailored_content: components["schemas"]["TailoredContentSchema"];
-            /** Suggestions */
-            suggestions: components["schemas"]["SuggestionSchema"][];
+            /** Tailored Data */
+            tailored_data: {
+                [key: string]: unknown;
+            };
+            /** Finalized Data */
+            finalized_data: {
+                [key: string]: unknown;
+            } | null;
+            status: components["schemas"]["TailoredResumeStatus"];
             /** Match Score */
-            match_score: number;
-            /** Skill Matches */
+            match_score: number | null;
+            /**
+             * Skill Matches
+             * @default []
+             */
             skill_matches: string[];
-            /** Skill Gaps */
+            /**
+             * Skill Gaps
+             * @default []
+             */
             skill_gaps: string[];
-            /** Keyword Coverage */
+            /**
+             * Keyword Coverage
+             * @default 0
+             */
             keyword_coverage: number;
-            /** Style Settings */
+            /** Job Title */
+            job_title?: string | null;
+            /** Company Name */
+            company_name?: string | null;
+            /**
+             * Style Settings
+             * @default {}
+             */
             style_settings: {
                 [key: string]: unknown;
             };
@@ -2831,34 +6218,173 @@ export interface components {
             created_at: string;
             /** Updated At */
             updated_at: string | null;
+            /** Finalized At */
+            finalized_at?: string | null;
+            /** Ats Score */
+            ats_score?: number | null;
+            /** Ats Cached At */
+            ats_cached_at?: string | null;
+            /**
+             * Is Outdated
+             * @default false
+             */
+            is_outdated: boolean;
+            /**
+             * Formatted Name
+             * @description Human-readable version name: '{job_title} @ {company_name} — {date}'.
+             */
+            readonly formatted_name: string;
         };
-        /** TailoredResumeListResponse */
+        /**
+         * TailoredResumeListResponse
+         * @description List item response for tailored resumes.
+         */
         TailoredResumeListResponse: {
             /** Id */
             id: string;
             /** Resume Id */
             resume_id: string;
             /** Job Id */
-            job_id?: number | null;
+            job_id?: string | null;
             /** Job Listing Id */
             job_listing_id?: number | null;
+            status: components["schemas"]["TailoredResumeStatus"];
             /** Match Score */
             match_score: number | null;
+            /** Job Title */
+            job_title?: string | null;
+            /** Company Name */
+            company_name?: string | null;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Formatted Name
+             * @description Human-readable version name: '{job_title} @ {company_name} — {date}'.
+             */
+            readonly formatted_name: string;
         };
         /**
+         * TailoredResumeStatus
+         * @description Status of a tailored resume in the approval workflow.
+         * @enum {string}
+         */
+        TailoredResumeStatus: "pending" | "finalized" | "archived";
+        /**
          * TailoredResumeUpdateRequest
-         * @description Request to update a tailored resume.
+         * @description Request to update a tailored resume's content or style.
          */
         TailoredResumeUpdateRequest: {
-            tailored_content?: components["schemas"]["TailoredContentSchema"] | null;
-            style_settings?: components["schemas"]["StyleSettingsSchema"] | null;
+            /** Tailored Data */
+            tailored_data?: {
+                [key: string]: unknown;
+            } | null;
+            /** Style Settings */
+            style_settings?: {
+                [key: string]: unknown;
+            } | null;
             /** Section Order */
             section_order?: string[] | null;
+        };
+        /**
+         * TimeSeriesDataPoint
+         * @description Single data point in usage time series.
+         */
+        TimeSeriesDataPoint: {
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+            /** Request Count */
+            request_count: number;
+            /** Total Tokens */
+            total_tokens: number;
+            /** Total Cost Usd */
+            total_cost_usd: number;
+            /** Avg Latency Ms */
+            avg_latency_ms: number;
+        };
+        /**
+         * TimeSeriesResponse
+         * @description Time series usage data.
+         */
+        TimeSeriesResponse: {
+            /**
+             * Granularity
+             * @enum {string}
+             */
+            granularity: "hour" | "day" | "week";
+            /** Data */
+            data: components["schemas"]["TimeSeriesDataPoint"][];
+        };
+        /**
+         * TitleMatchResponse
+         * @description Title similarity analysis result.
+         */
+        TitleMatchResponse: {
+            /**
+             * Resume Title
+             * @description Most recent job title from resume
+             */
+            resume_title: string;
+            /**
+             * Job Title
+             * @description Target job title
+             */
+            job_title: string;
+            /**
+             * Normalized Resume Title
+             * @description Normalized resume title
+             */
+            normalized_resume_title: string;
+            /**
+             * Normalized Job Title
+             * @description Normalized job title
+             */
+            normalized_job_title: string;
+            /**
+             * Similarity Score
+             * @description Semantic similarity (0-1)
+             */
+            similarity_score: number;
+            /**
+             * Title Score
+             * @description Title match score (0-100)
+             */
+            title_score: number;
+            /**
+             * Resume Level
+             * @description Extracted seniority level from resume
+             */
+            resume_level: number;
+            /**
+             * Job Level
+             * @description Extracted seniority level from job
+             */
+            job_level: number;
+            /**
+             * Level Gap
+             * @description Gap between job and resume level
+             */
+            level_gap: number;
+            /**
+             * Resume Function
+             * @description Functional category of resume title
+             */
+            resume_function: string;
+            /**
+             * Job Function
+             * @description Functional category of job title
+             */
+            job_function: string;
+            /**
+             * Function Match
+             * @description Whether functions match
+             */
+            function_match: boolean;
         };
         /** Token */
         Token: {
@@ -2876,6 +6402,79 @@ export interface components {
         TokenRefresh: {
             /** Refresh Token */
             refresh_token: string;
+        };
+        /**
+         * TrajectoryResponse
+         * @description Career trajectory analysis result.
+         */
+        TrajectoryResponse: {
+            /**
+             * Trajectory Type
+             * @description Type of career trajectory
+             * @enum {string}
+             */
+            trajectory_type: "progressing_toward" | "lateral" | "slight_stretch" | "step_down" | "large_gap" | "career_change" | "unclear";
+            /**
+             * Modifier
+             * @description Score modifier (-20 to +20)
+             */
+            modifier: number;
+            /**
+             * Current Level
+             * @description Current seniority level
+             */
+            current_level: number;
+            /**
+             * Target Level
+             * @description Target job seniority level
+             */
+            target_level: number;
+            /**
+             * Level Gap
+             * @description Gap between target and current
+             */
+            level_gap: number;
+            /**
+             * Level Progression
+             * @description Historical level progression (oldest to newest)
+             */
+            level_progression: number[];
+            /**
+             * Is Ascending
+             * @description Whether career is progressing upward
+             */
+            is_ascending: boolean;
+            /**
+             * Function Match
+             * @description Whether moving in same function
+             */
+            function_match: boolean;
+            /**
+             * Explanation
+             * @description Human-readable explanation
+             */
+            explanation: string;
+        };
+        /**
+         * UpdateApplicationStatusRequest
+         * @description Request to update application status in Kanban board.
+         */
+        UpdateApplicationStatusRequest: {
+            status: components["schemas"]["ApplicationStatus"];
+        };
+        /**
+         * UpdateProfileRequest
+         * @description Request to update user profile fields.
+         */
+        UpdateProfileRequest: {
+            /** Full Name */
+            full_name?: string | null;
+            /** Headline */
+            headline?: string | null;
+            /** About Me */
+            about_me?: string | null;
+            /** Timezone */
+            timezone?: string | null;
         };
         /**
          * UpdateSectionsRequest
@@ -2905,7 +6504,7 @@ export interface components {
              */
             email: string;
             /** Full Name */
-            full_name?: string | null;
+            full_name: string;
             /** Password */
             password: string;
         };
@@ -2934,6 +6533,15 @@ export interface components {
             applied_at?: string | null;
             /** Last Viewed At */
             last_viewed_at?: string | null;
+            /** Application Status */
+            application_status?: string | null;
+            /** Status Changed At */
+            status_changed_at?: string | null;
+            /**
+             * Column Position
+             * @default 0
+             */
+            column_position: number;
             /**
              * Created At
              * Format: date-time
@@ -2972,6 +6580,51 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Headline */
+            headline?: string | null;
+            /** About Me */
+            about_me?: string | null;
+            /** About Me Generated At */
+            about_me_generated_at?: string | null;
+            /**
+             * Timezone
+             * @default UTC
+             */
+            timezone: string | null;
+            /**
+             * Auth Provider
+             * @default email
+             * @enum {string}
+             */
+            auth_provider: "email" | "google";
+            /**
+             * Has Password
+             * @description Whether user can use password login
+             */
+            has_password: boolean;
+            /**
+             * Google Linked
+             * @description Whether Google is linked
+             */
+            google_linked: boolean;
+        };
+        /**
+         * UserUsageResponse
+         * @description Usage breakdown by user.
+         */
+        UserUsageResponse: {
+            /** User Id */
+            user_id: number;
+            /** User Email */
+            user_email: string;
+            /** User Name */
+            user_name: string | null;
+            /** Request Count */
+            request_count: number;
+            /** Total Tokens */
+            total_tokens: number;
+            /** Total Cost Usd */
+            total_cost_usd: number;
         };
         /** ValidationError */
         ValidationError: {
@@ -2983,74 +6636,56 @@ export interface components {
             type: string;
         };
         /**
-         * WebhookBatchResponse
-         * @description Response for batch job ingestion.
+         * BulletSuggestionResponse
+         * @description Schema for single bullet point suggestion response.
          */
-        WebhookBatchResponse: {
-            /** Received */
-            received: number;
-            /** Created */
-            created: number;
-            /** Updated */
-            updated: number;
-            /** Errors */
-            errors: number;
-            /** Error Details */
-            error_details?: {
-                [key: string]: unknown;
-            }[];
-        };
-        /**
-         * WritebackProposal
-         * @description Schema for write-back proposal response.
-         */
-        WritebackProposal: {
-            /**
-             * Action
-             * @description create or update
-             */
-            action: string;
-            /**
-             * Preview
-             * @description Preview of the block that would be created/updated
-             */
-            preview: {
-                [key: string]: unknown;
-            };
+        app__schemas__resume_build__BulletSuggestionResponse: {
             /**
              * Original
-             * @description Original block if updating
+             * @description Original bullet text
              */
-            original?: {
-                [key: string]: unknown;
-            } | null;
+            original: string;
             /**
-             * Changes
-             * @description List of changes detected
+             * Suggested
+             * @description Suggested improved bullet text
              */
-            changes?: string[];
+            suggested: string;
+            /**
+             * Reason
+             * @description Explanation for the suggestion
+             */
+            reason: string;
+            /** @description Impact level of the suggestion */
+            impact: components["schemas"]["SuggestionImpact"];
         };
         /**
-         * WritebackRequest
-         * @description Schema for write-back request.
+         * BulletSuggestionResponse
+         * @description A single bullet improvement suggestion.
          */
-        WritebackRequest: {
+        app__schemas__tailor__suggestions__BulletSuggestionResponse: {
+            /** Bullet Id */
+            bullet_id: string;
+            /** Original */
+            original: string;
+            /** Suggested */
+            suggested: string;
             /**
-             * Edited Content
-             * @description Content to write back to Vault
+             * Reason
+             * @description Explanation of what was improved
              */
-            edited_content: string;
+            reason: string;
             /**
-             * Source Block Id
-             * @description Original block ID if updating
+             * Impact
+             * @enum {string}
              */
-            source_block_id?: number | null;
+            impact: "high" | "medium" | "low";
+            /** Keywords Added */
+            keywords_added?: string[];
             /**
-             * Create New
-             * @description Force creation of new block
+             * Metrics Added
              * @default false
              */
-            create_new: boolean;
+            metrics_added: boolean;
         };
     };
     responses: never;
@@ -3180,6 +6815,59 @@ export interface operations {
             };
         };
     };
+    google_auth_api_auth_google_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleAuthRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoogleAuthResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_sse_ticket_api_auth_sse_ticket_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SSETicketResponse"];
+                };
+            };
+        };
+    };
     list_resumes_api_resumes_get: {
         parameters: {
             query?: {
@@ -3250,7 +6938,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                resume_id: number;
+                resume_id: string;
             };
             cookie?: never;
         };
@@ -3281,7 +6969,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                resume_id: number;
+                resume_id: string;
             };
             cookie?: never;
         };
@@ -3316,7 +7004,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                resume_id: number;
+                resume_id: string;
             };
             cookie?: never;
         };
@@ -3328,6 +7016,191 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_master_resume_api_resumes__resume_id__set_master_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                resume_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_parsed_resume_api_resumes__resume_id__verify_parsed_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                resume_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_export_templates_api_resumes_export_templates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportTemplatesResponse"];
+                };
+            };
+        };
+    };
+    export_resume_api_resumes__resume_id__export_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                resume_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResumeExportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    parse_resume_api_resumes__resume_id__parse_post: {
+        parameters: {
+            query?: {
+                /** @description Force re-parse, bypassing cache */
+                force?: boolean;
+            };
+            header?: never;
+            path: {
+                resume_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParseTaskResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_parse_status_api_resumes__resume_id__parse_status_get: {
+        parameters: {
+            query: {
+                /** @description Task ID returned from POST /parse */
+                task_id: string;
+            };
+            header?: never;
+            path: {
+                resume_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParseStatusResponse"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -3358,7 +7231,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobResponse"][];
+                    "application/json": components["schemas"]["JobListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3410,7 +7283,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                job_id: number;
+                job_id: string;
             };
             cookie?: never;
         };
@@ -3441,7 +7314,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                job_id: number;
+                job_id: string;
             };
             cookie?: never;
         };
@@ -3476,7 +7349,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                job_id: number;
+                job_id: string;
             };
             cookie?: never;
         };
@@ -3503,9 +7376,10 @@ export interface operations {
     list_tailored_resumes_api_tailor_get: {
         parameters: {
             query?: {
-                resume_id?: number | null;
-                job_id?: number | null;
+                resume_id?: string | null;
+                job_id?: string | null;
                 job_listing_id?: number | null;
+                status_filter?: components["schemas"]["TailoredResumeStatus"] | null;
                 skip?: number;
                 limit?: number;
             };
@@ -3606,7 +7480,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                tailored_id: number;
+                tailored_id: string;
             };
             cookie?: never;
         };
@@ -3618,7 +7492,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TailorResponse"];
+                    "application/json": components["schemas"]["TailoredResumeFullResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3637,7 +7511,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                tailored_id: number;
+                tailored_id: string;
             };
             cookie?: never;
         };
@@ -3666,7 +7540,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                tailored_id: number;
+                tailored_id: string;
             };
             cookie?: never;
         };
@@ -3696,14 +7570,131 @@ export interface operations {
             };
         };
     };
+    get_compare_data_api_tailor__tailored_id__compare_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tailored_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TailoredResumeCompareResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    finalize_tailored_resume_api_tailor__tailored_id__finalize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tailored_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TailoredResumeFinalizeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TailoredResumeFullResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyze_bullets_api_tailor__tailored_id__analyze_bullets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tailored_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulletAnalysisRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalyzeBulletsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     export_tailored_resume_api_export__tailored_id__get: {
         parameters: {
             query?: {
                 format?: components["schemas"]["ExportFormat"];
+                /** @description Base font size in points */
+                font_size?: number;
+                /** @description Top margin in inches */
+                margin_top?: number;
+                /** @description Bottom margin in inches */
+                margin_bottom?: number;
+                /** @description Left margin in inches */
+                margin_left?: number;
+                /** @description Right margin in inches */
+                margin_right?: number;
+                /** @description Line height multiplier */
+                line_spacing?: number;
+                /** @description Page size */
+                page_size?: components["schemas"]["PageSize"];
+                /** @description Style template */
+                template?: string;
             };
             header?: never;
             path: {
-                tailored_id: number;
+                tailored_id: string;
             };
             cookie?: never;
         };
@@ -3729,9 +7720,44 @@ export interface operations {
             };
         };
     };
-    extract_document_api_upload_extract_post: {
+    fit_to_page_api_export_fit_to_page_post: {
         parameters: {
             query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FitToPageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FitToPageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extract_document_api_upload_extract_post: {
+        parameters: {
+            query?: {
+                store_file?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3749,405 +7775,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DocumentExtractionResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_blocks_api_v1_blocks_get: {
-        parameters: {
-            query?: {
-                /** @description Filter by block types */
-                block_types?: components["schemas"]["BlockType"][] | null;
-                /** @description Filter by tags (AND logic) */
-                tags?: string[] | null;
-                /** @description Only return verified blocks */
-                verified_only?: boolean;
-                /** @description Maximum results */
-                limit?: number;
-                /** @description Pagination offset */
-                offset?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BlockListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_block_api_v1_blocks_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BlockCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BlockResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_block_api_v1_blocks__block_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                block_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BlockResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_block_api_v1_blocks__block_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                block_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_block_api_v1_blocks__block_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                block_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BlockUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BlockResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    verify_block_api_v1_blocks__block_id__verify_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                block_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BlockVerifyRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BlockResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    import_blocks_api_v1_blocks_import_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BlockImportRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BlockImportResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    embed_blocks_api_v1_blocks_embed_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BlockEmbedRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BlockEmbedResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    embed_single_block_api_v1_blocks__block_id__embed_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                block_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BlockResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    match_blocks_api_v1_match_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MatchRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MatchResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    analyze_gaps_api_v1_match_analyze_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MatchRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GapAnalysisResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_cached_match_api_v1_match_job__job_id__get: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                job_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MatchResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4235,7 +7862,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                resume_build_id: number;
+                resume_build_id: string;
             };
             cookie?: never;
         };
@@ -4266,7 +7893,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                resume_build_id: number;
+                resume_build_id: string;
             };
             cookie?: never;
         };
@@ -4295,7 +7922,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                resume_build_id: number;
+                resume_build_id: string;
             };
             cookie?: never;
         };
@@ -4325,79 +7952,12 @@ export interface operations {
             };
         };
     };
-    pull_blocks_api_v1_resume_builds__resume_build_id__pull_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                resume_build_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PullBlocksRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PullBlocksResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    remove_block_api_v1_resume_builds__resume_build_id__blocks__block_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                resume_build_id: number;
-                block_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResumeBuildResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     generate_suggestions_api_v1_resume_builds__resume_build_id__suggest_post: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                resume_build_id: number;
+                resume_build_id: string;
             };
             cookie?: never;
         };
@@ -4427,12 +7987,47 @@ export interface operations {
             };
         };
     };
+    suggest_bullet_api_v1_resume_builds__resume_build_id__suggest_bullet_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                resume_build_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulletSuggestionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__resume_build__BulletSuggestionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     accept_diff_api_v1_resume_builds__resume_build_id__diffs_accept_post: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                resume_build_id: number;
+                resume_build_id: string;
             };
             cookie?: never;
         };
@@ -4467,7 +8062,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                resume_build_id: number;
+                resume_build_id: string;
             };
             cookie?: never;
         };
@@ -4502,7 +8097,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                resume_build_id: number;
+                resume_build_id: string;
             };
             cookie?: never;
         };
@@ -4533,7 +8128,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                resume_build_id: number;
+                resume_build_id: string;
             };
             cookie?: never;
         };
@@ -4568,7 +8163,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                resume_build_id: number;
+                resume_build_id: string;
             };
             cookie?: never;
         };
@@ -4598,113 +8193,12 @@ export interface operations {
             };
         };
     };
-    preview_writeback_api_v1_resume_builds__resume_build_id__writeback_preview_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                resume_build_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WritebackRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WritebackProposal"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    execute_writeback_api_v1_resume_builds__resume_build_id__writeback_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                resume_build_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WritebackRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BlockResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_pulled_blocks_api_v1_resume_builds__resume_build_id__blocks_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                resume_build_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BlockResponse"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     export_resume_build_api_v1_resume_builds__resume_build_id__export_post: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                resume_build_id: number;
+                resume_build_id: string;
             };
             cookie?: never;
         };
@@ -4721,6 +8215,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    perform_knockout_check_api_v1_ats_knockout_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KnockoutCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnockoutCheckResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4800,6 +8327,72 @@ export interface operations {
             };
         };
     };
+    analyze_keywords_detailed_api_v1_ats_keywords_detailed_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ATSKeywordDetailedRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ATSKeywordDetailedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyze_keywords_enhanced_api_v1_ats_keywords_enhanced_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ATSKeywordEnhancedRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ATSKeywordEnhancedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_ats_tips_api_v1_ats_tips_get: {
         parameters: {
             query?: never;
@@ -4820,13 +8413,542 @@ export interface operations {
             };
         };
     };
+    extract_keywords_with_context_api_v1_ats_keywords_extract_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtractKeywordsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractKeywordsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_keyword_override_api_v1_ats_keywords_override_get: {
+        parameters: {
+            query?: {
+                /** @description Job listing ID */
+                job_listing_id?: number | null;
+                /** @description Job ID */
+                job_id?: number | null;
+                /** @description Job description for staleness check */
+                job_description?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetKeywordOverrideResponse"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_keyword_override_api_v1_ats_keywords_override_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeywordOverrideRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordOverrideResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyze_content_quality_api_v1_ats_content_quality_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContentQualityRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentQualityResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyze_role_proximity_api_v1_ats_role_proximity_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleProximityRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleProximityResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyze_progressive_ats_api_v1_ats_analyze_progressive_get: {
+        parameters: {
+            query?: {
+                /** @description Resume MongoDB ObjectId */
+                resume_id?: string | null;
+                /** @description User-created job PostgreSQL ID */
+                job_id?: number | null;
+                /** @description Scraped job listing PostgreSQL ID */
+                job_listing_id?: number | null;
+                /** @description Skip cache and run fresh analysis */
+                force_refresh?: boolean;
+                /** @description One-time SSE auth ticket */
+                ticket?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyze_content_api_v1_ats_analyze_content_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ATSContentAnalysisRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ATSContentAnalysisResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyze_bullets_for_resume_api_v1_ats_analyze_bullets_post: {
+        parameters: {
+            query: {
+                /** @description Resume MongoDB ObjectId */
+                resume_id: string;
+                /** @description User-created job ID (UUID or int) */
+                job_id?: string | null;
+                /** @description Scraped job listing PostgreSQL ID */
+                job_listing_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulletAnalysisRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalyzeBulletsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    improve_section_api_v1_ai_improve_section_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImproveSectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImproveSectionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chat_api_v1_ai_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rewrite_resume_api_v1_ai_rewrite_resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RewriteResumeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RewriteResumeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_about_me_api_v1_profile_generate_about_me_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateAboutMeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AboutMeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_profile_api_v1_profile_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ai_preferences_api_v1_profile_ai_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIPreferencesResponse"];
+                };
+            };
+        };
+    };
+    update_ai_preferences_api_v1_profile_ai_preferences_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIPreferencesUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIPreferencesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_filter_options_api_job_listings_filter_options_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobListingFilterOptionsResponse"];
+                };
+            };
+        };
+    };
     list_job_listings_api_job_listings_get: {
         parameters: {
             query?: {
-                /** @description Location filter (comma-separated) */
+                /** @description Location filter (comma-separated, deprecated) */
                 location?: string | null;
                 /** @description Region filter (comma-separated) */
                 region?: string | null;
+                /** @description Country filter (comma-separated) */
+                country?: string | null;
+                /** @description City filter (comma-separated) */
+                city?: string | null;
+                /** @description Cities to exclude (comma-separated) */
+                exclude_city?: string | null;
+                /** @description Countries to exclude (comma-separated) */
+                exclude_country?: string | null;
+                /** @description Company name filter */
+                company_name?: string | null;
                 /** @description Seniority levels (comma-separated) */
                 seniority?: string | null;
                 /** @description Job function filter */
@@ -4876,7 +8998,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobListingListResponse"];
+                    "application/json": components["schemas"]["JobListingListItemResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4910,7 +9032,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobListingListResponse"];
+                    "application/json": components["schemas"]["JobListingListItemResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4942,7 +9064,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobListingListResponse"];
+                    "application/json": components["schemas"]["JobListingListItemResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4974,7 +9096,62 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobListingListResponse"];
+                    "application/json": components["schemas"]["JobListingListItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_kanban_board_api_job_listings_kanban_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KanbanBoardResponse"];
+                };
+            };
+        };
+    };
+    reorder_kanban_column_api_job_listings_kanban_reorder_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderKanbanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -5124,60 +9301,18 @@ export interface operations {
             };
         };
     };
-    ingest_job_listings_api_webhooks_job_listings_post: {
+    update_application_status_api_job_listings__listing_id__status_patch: {
         parameters: {
             query?: never;
-            header: {
-                "X-API-Key": string;
+            header?: never;
+            path: {
+                listing_id: number;
             };
-            path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ApifyBatchRequest"];
-            };
-        };
-        responses: {
-            /** @description All jobs processed successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WebhookBatchResponse"];
-                };
-            };
-            /** @description Partial success - some jobs failed validation */
-            207: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    ingest_single_job_listing_api_webhooks_job_listings_single_post: {
-        parameters: {
-            query?: never;
-            header: {
-                "X-API-Key": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ApifyJobListing"];
+                "application/json": components["schemas"]["UpdateApplicationStatusRequest"];
             };
         };
         responses: {
@@ -5187,9 +9322,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["JobInteractionActionResponse"];
                 };
             };
             /** @description Validation Error */
@@ -5203,14 +9336,77 @@ export interface operations {
             };
         };
     };
-    deactivate_job_listing_api_webhooks_job_listings__external_job_id__delete: {
+    list_my_requests_api_scraper_requests_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScraperRequestListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_request_api_scraper_requests_post: {
         parameters: {
             query?: never;
-            header: {
-                "X-API-Key": string;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScraperRequestCreate"];
             };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScraperRequestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_request_api_scraper_requests__request_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
             path: {
-                external_job_id: string;
+                request_id: number;
             };
             cookie?: never;
         };
@@ -5294,6 +9490,46 @@ export interface operations {
             };
         };
     };
+    trigger_fit_scoring_api_admin_fit_scoring_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FitScoringResponse"];
+                };
+            };
+        };
+    };
+    get_apify_cost_summary_api_admin_scraper_costs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApifyCostSummary"];
+                };
+            };
+        };
+    };
     get_scraper_stats_api_admin_scraper_stats_get: {
         parameters: {
             query?: never;
@@ -5367,6 +9603,646 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ScraperHealthResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_adhoc_scrape_api_admin_scraper_adhoc_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdHocScrapeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdHocScrapeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_presets_api_admin_scraper_presets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScraperPresetListResponse"];
+                };
+            };
+        };
+    };
+    create_preset_api_admin_scraper_presets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScraperPresetCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScraperPresetResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_preset_api_admin_scraper_presets__preset_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                preset_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScraperPresetResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_preset_api_admin_scraper_presets__preset_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                preset_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_preset_api_admin_scraper_presets__preset_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                preset_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScraperPresetUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScraperPresetResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    toggle_preset_api_admin_scraper_presets__preset_id__toggle_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                preset_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScraperPresetResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_schedule_settings_api_admin_scraper_schedule_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleSettingsResponse"];
+                };
+            };
+        };
+    };
+    update_schedule_settings_api_admin_scraper_schedule_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleSettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleSettingsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    toggle_schedule_api_admin_scraper_schedule_toggle_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleSettingsResponse"];
+                };
+            };
+        };
+    };
+    list_scraper_requests_api_admin_scraper_requests_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["RequestStatus"] | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScraperRequestAdminListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_scraper_request_api_admin_scraper_requests__request_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScraperRequestApproveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScraperRequestAdminResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_scraper_request_api_admin_scraper_requests__request_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScraperRequestRejectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScraperRequestAdminResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_usage_summary_api_admin_ai_usage_summary_get: {
+        parameters: {
+            query: {
+                /** @description Start of time range (inclusive) */
+                start_date: string;
+                /** @description End of time range (exclusive) */
+                end_date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIUsageSummaryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_usage_by_endpoint_api_admin_ai_usage_by_endpoint_get: {
+        parameters: {
+            query: {
+                start_date: string;
+                end_date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EndpointUsageResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_usage_by_provider_api_admin_ai_usage_by_provider_get: {
+        parameters: {
+            query: {
+                start_date: string;
+                end_date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderUsageResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_usage_by_user_api_admin_ai_usage_by_user_get: {
+        parameters: {
+            query: {
+                start_date: string;
+                end_date: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserUsageResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_usage_time_series_api_admin_ai_usage_time_series_get: {
+        parameters: {
+            query: {
+                start_date: string;
+                end_date: string;
+                granularity?: "hour" | "day" | "week";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimeSeriesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_current_pricing_api_admin_ai_usage_pricing_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PricingConfigResponse"][];
+                };
+            };
+        };
+    };
+    create_pricing_api_admin_ai_usage_pricing_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PricingConfigCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PricingConfigResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_pricing_api_admin_ai_usage_pricing__config_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                config_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PricingConfigUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PricingConfigResponse"];
                 };
             };
             /** @description Validation Error */

@@ -164,7 +164,9 @@ curl "http://localhost:8000/api/job-listings?country=Singapore&seniority=Entry%2
       "updated_at": "2026-02-18T10:30:00.000000",
       "is_saved": false,
       "is_hidden": false,
-      "applied_at": null
+      "applied_at": null,
+      "fit_score_raw": 74,
+      "is_score_stale": false
     }
   ],
   "total": 150,
@@ -627,8 +629,21 @@ curl -X PUT "http://localhost:8000/api/job-listings/kanban/reorder" \
   application_status: string | null; // "applied", "interview", "accepted", "rejected", "ghosted"
   status_changed_at: string | null;  // ISO 8601 datetime
   column_position: number;           // Position within Kanban column
+  // Job-fit pre-scoring
+  fit_score_raw: number | null;      // 0-100, null until the daily batch has scored this pair
+  is_score_stale: boolean;           // True when fit_score_raw was computed against an older resume version
 }
 ```
+
+**Note on `fit_score_raw` / `is_score_stale`:**
+
+`fit_score_raw` is the raw 0-100 keyword-overlap score between the user's
+master resume and this job's extracted keywords. It's refreshed by a
+daily batch (see `POST /api/v1/admin/fit-scoring/run` for the manual
+trigger). `is_score_stale=true` means the score exists but was computed
+against a previous version of the master resume; the next daily run
+refreshes it. Frontend consumers apply a 40–95 display skew — the raw
+value is intentionally unbounded.
 
 ### JobListingListResponse
 

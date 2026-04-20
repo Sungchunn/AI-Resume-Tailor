@@ -163,6 +163,10 @@ class JobListingResponse(JobListingBase):
     status_changed_at: datetime | None = None
     column_position: int = 0
 
+    # Job-fit pre-scoring (see docs/features/ats/260420_job-fit-prescoring)
+    fit_score_raw: int | None = None
+    is_score_stale: bool = False
+
     model_config = {"from_attributes": True}
 
 
@@ -206,6 +210,10 @@ class JobListingListItem(BaseModel):
     is_hidden: bool = False
     applied_at: datetime | None = None
     application_status: ApplicationStatus | None = None
+
+    # Job-fit pre-scoring (see docs/features/ats/260420_job-fit-prescoring)
+    fit_score_raw: int | None = None
+    is_score_stale: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
