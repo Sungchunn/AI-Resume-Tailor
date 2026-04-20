@@ -778,6 +778,10 @@ export interface JobListingResponse {
   application_status: ApplicationStatus | null;
   status_changed_at: string | null;
   column_position: number;
+
+  // Job-fit pre-scoring
+  fit_score_raw: number | null;
+  is_score_stale: boolean;
 }
 
 export interface JobListingListResponse {
@@ -815,6 +819,10 @@ export interface JobListingListItem {
   is_hidden: boolean;
   applied_at: string | null;
   application_status: ApplicationStatus | null;
+
+  // Job-fit pre-scoring
+  fit_score_raw: number | null;
+  is_score_stale: boolean;
 }
 
 export interface JobListingListItemResponse {

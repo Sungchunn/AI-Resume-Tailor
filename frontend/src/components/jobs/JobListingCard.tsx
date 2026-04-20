@@ -9,6 +9,7 @@ import {
   EyeSlashIcon,
   MapPinIcon,
 } from "@/components/icons";
+import { FitScoreBadge } from "./FitScoreBadge";
 
 interface JobListingCardProps {
   listing: JobListingListItem;
@@ -122,6 +123,10 @@ export function JobListingCard({ listing }: JobListingCardProps) {
 
       {/* Meta info */}
       <div className="flex flex-wrap items-center gap-3 mt-3 text-sm text-muted-foreground">
+        <FitScoreBadge
+          rawScore={listing.fit_score_raw}
+          isStale={listing.is_score_stale}
+        />
         {listing.location && (
           <span className="flex items-center gap-1">
             <MapPinIcon className="h-4 w-4" />

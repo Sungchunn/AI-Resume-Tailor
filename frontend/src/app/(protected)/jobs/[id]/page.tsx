@@ -22,6 +22,7 @@ import {
   MapPinIcon,
 } from "@/components/icons";
 import { sanitizeHtml } from "@/lib/utils/sanitize";
+import { FitScoreBadge } from "@/components/jobs/FitScoreBadge";
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -161,7 +162,13 @@ export default function JobDetailPage() {
               />
             )}
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-foreground dark:text-white">{listing.job_title}</h1>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-2xl font-bold text-foreground dark:text-white">{listing.job_title}</h1>
+                <FitScoreBadge
+                  rawScore={listing.fit_score_raw}
+                  isStale={listing.is_score_stale}
+                />
+              </div>
               <p className="text-lg text-muted-foreground dark:text-zinc-300 mt-1">{listing.company_name}</p>
             </div>
           </div>
