@@ -92,38 +92,39 @@ export function JobListingCard({ listing }: JobListingCardProps) {
           </div>
         </div>
 
-        {/* Fit score gauge + action buttons (right side) */}
-        <div className="flex flex-col items-end gap-2 ml-4 shrink-0">
-          <FitScoreGauge
-            rawScore={listing.fit_score_raw}
-            isStale={listing.is_score_stale}
-          />
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              className={`p-2 rounded-lg transition-colors ${
-                listing.is_saved
-                  ? "text-primary bg-primary/10 hover:bg-primary/20"
-                  : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted"
-              }`}
-              disabled={saveMutation.isPending}
-              title={listing.is_saved ? "Unsave" : "Save"}
-            >
-              <BookmarkIcon filled={listing.is_saved} />
-            </button>
-            <button
-              onClick={handleHide}
-              className={`p-2 rounded-lg transition-colors ${
-                listing.is_hidden
-                  ? "text-muted-foreground bg-muted"
-                  : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted"
-              }`}
-              disabled={hideMutation.isPending}
-              title={listing.is_hidden ? "Unhide" : "Hide"}
-            >
-              <EyeSlashIcon />
-            </button>
-          </div>
+        {/* Fit score bar inline with title */}
+        <FitScoreGauge
+          rawScore={listing.fit_score_raw}
+          isStale={listing.is_score_stale}
+          className="ml-4 mt-1 shrink-0"
+        />
+
+        {/* Action buttons (far right) */}
+        <div className="flex gap-2 ml-4 shrink-0">
+          <button
+            onClick={handleSave}
+            className={`p-2 rounded-lg transition-colors ${
+              listing.is_saved
+                ? "text-primary bg-primary/10 hover:bg-primary/20"
+                : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted"
+            }`}
+            disabled={saveMutation.isPending}
+            title={listing.is_saved ? "Unsave" : "Save"}
+          >
+            <BookmarkIcon filled={listing.is_saved} />
+          </button>
+          <button
+            onClick={handleHide}
+            className={`p-2 rounded-lg transition-colors ${
+              listing.is_hidden
+                ? "text-muted-foreground bg-muted"
+                : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted"
+            }`}
+            disabled={hideMutation.isPending}
+            title={listing.is_hidden ? "Unhide" : "Hide"}
+          >
+            <EyeSlashIcon />
+          </button>
         </div>
       </div>
 

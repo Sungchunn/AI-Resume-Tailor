@@ -6,9 +6,10 @@ interface FitScoreBadgeProps {
   compact?: boolean;
 }
 
-// Raw 0-100 → display 20-100 (matches FitScoreGauge's softer floor).
+// v3: no display skew. The backend sqrt curve already lifts mid-range
+// overlaps so the raw value is the display value.
 function toDisplayScore(raw: number): number {
-  return Math.round(20 + raw * 0.8);
+  return Math.round(raw);
 }
 
 /**

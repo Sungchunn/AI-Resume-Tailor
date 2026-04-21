@@ -8,82 +8,59 @@ interface FitScoreGaugeProps {
 }
 
 const SIZES = {
-  md: { width: 72, height: 48, stroke: 6, fontSize: 18, labelSize: 9 },
-  lg: { width: 120, height: 80, stroke: 9, fontSize: 30, labelSize: 11 },
+  md: { barWidth: 72, barHeight: 6, fontSize: 14, gap: 6 },
+  lg: { barWidth: 140, barHeight: 8, fontSize: 20, gap: 10 },
 } as const;
 
-// Raw 0-100 → display 20-100 (softer floor so weak matches still show low).
-function toDisplayScore(raw: number): number {
-  return Math.round(20 + raw * 0.8);
-}
-
-function tierColor(display: number): { stroke: string; text: string } {
+function tierColor(display: number): { fill: string; text: string } {
   if (display >= 75) {
-    return { stroke: "stroke-green-500 dark:stroke-green-400", text: "text-green-700 dark:text-green-300" };
+    return { fill: "bg-green-500 dark:bg-green-400", text: "text-green-700 dark:text-green-300" };
   }
   if (display >= 55) {
-    return { stroke: "stroke-amber-500 dark:stroke-amber-400", text: "text-amber-700 dark:text-amber-300" };
+    return { fill: "bg-amber-500 dark:bg-amber-400", text: "text-amber-700 dark:text-amber-300" };
   }
-  return { stroke: "stroke-zinc-400 dark:stroke-zinc-500", text: "text-zinc-600 dark:text-zinc-400" };
+  return { fill: "bg-zinc-400 dark:bg-zinc-500", text: "text-zinc-600 dark:text-zinc-400" };
 }
 
 /**
- * Semi-circle speedometer gauge for the pre-computed job fit score.
- * Raw 0-100 is skewed to a 20-100 display range before rendering.
- * Returns null when the job hasn't been scored yet.
+ * Compact horizontal fit-score bar. Raw score is already 0-100 — no skew
+ * applied, the backend sqrt curve already reads generously. Returns null
+ * when the job hasn't been scored yet.
  */
 export function FitScoreGauge({ rawScore, isStale = false, size = "md", className }: FitScoreGaugeProps) {
   if (rawScore === null || rawScore === undefined) return null;
 
-  const displayScore = toDisplayScore(rawScore);
-  const { stroke, text } = tierColor(displayScore);
-  const { width, height, stroke: strokeW, fontSize, labelSize } = SIZES[size];
-
-  // SVG geometry: semi-circle from (strokeW, height) to (width-strokeW, height)
-  // Arc radius = (width - 2*strokeW) / 2, centered at (width/2, height).
-  const radius = (width - 2 * strokeW) / 2;
-  const cx = width / 2;
-  const cy = height - strokeW / 2;
-  const arcLength = Math.PI * radius;
-  const filled = arcLength * (displayScore / 100);
-
-  // Path for the half-circle arc (left to right across the top).
-  const arcPath = `M ${strokeW / 2} ${cy} A ${radius} ${radius} 0 0 1 ${width - strokeW / 2} ${cy}`;
+  const displayScore = Math.round(rawScore);
+  const { fill, text } = tierColor(displayScore);
+  const { barWidth, barHeight, fontSize, gap } = SIZES[size];
+  const clampedPct = Math.max(0, Math.min(100, displayScore));
 
   return (
     <div
-      className={cn("flex flex-col items-center leading-none", isStale && "opacity-60", className)}
-      title={isStale ? "Score will refresh on next daily update" : undefined}
+      className={cn(
+        "inline-flex items-center leading-none",
+        isStale && "opacity-60",
+        className,
+      )}
+      style={{ gap }}
+      title={isStale ? "Score will refresh on next daily update" : `Fit score: ${displayScore}`}
+      aria-label={`Fit score ${displayScore} out of 100`}
     >
-      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
-        <path
-          d={arcPath}
-          fill="none"
-          strokeWidth={strokeW}
-          strokeLinecap="round"
-          className="stroke-zinc-200 dark:stroke-zinc-700"
+      <div
+        className="relative rounded-full overflow-hidden bg-zinc-200 dark:bg-zinc-700"
+        style={{ width: barWidth, height: barHeight }}
+      >
+        <div
+          className={cn("h-full rounded-full transition-[width]", fill)}
+          style={{ width: `${clampedPct}%` }}
         />
-        <path
-          d={arcPath}
-          fill="none"
-          strokeWidth={strokeW}
-          strokeLinecap="round"
-          strokeDasharray={`${filled} ${arcLength}`}
-          className={stroke}
-        />
-        <text
-          x={cx}
-          y={cy - strokeW}
-          textAnchor="middle"
-          className={cn("font-bold", text)}
-          style={{ fontSize }}
-        >
-          {displayScore}
-        </text>
-      </svg>
+      </div>
+      <span className={cn("font-semibold tabular-nums", text)} style={{ fontSize }}>
+        {displayScore}
+      </span>
       <span
-        className={cn("font-semibold tracking-wider uppercase text-muted-foreground", text)}
-        style={{ fontSize: labelSize, marginTop: -4 }}
+        className={cn("font-medium uppercase tracking-wider text-muted-foreground", text)}
+        style={{ fontSize: Math.max(9, fontSize - 6) }}
       >
         Match
       </span>
