@@ -32,6 +32,7 @@ class SortBy(str, Enum):
     COMPANY_NAME = "company_name"
     JOB_TITLE = "job_title"
     CREATED_AT = "created_at"
+    FIT_SCORE = "fit_score"
 
 
 class SortOrder(str, Enum):

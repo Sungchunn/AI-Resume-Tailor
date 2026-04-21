@@ -30,6 +30,25 @@ from app.services.fit_scoring.resume_keywords import (
 
 _UPSERT_CHUNK = 200
 
+# Capped-denominator scoring: the raw score measures how many of the top N
+# JD keywords the resume matched. 100 is achievable at N matches, so the
+# ceiling is realistic rather than "match every JD token."
+TOP_N = 12
+
+
+def compute_raw_score(resume_keywords: set[str], job_keywords: set[str]) -> int:
+    """Return the 0-100 raw fit score using capped-denominator math.
+
+    Denominator is capped at ``TOP_N`` so long JDs don't punish the user;
+    numerator is capped at the denominator so extra matches can't inflate
+    past the ceiling.
+    """
+    denom = min(TOP_N, len(job_keywords))
+    if denom == 0:
+        return 0
+    overlap = len(resume_keywords & job_keywords)
+    return round(min(overlap, denom) / denom * 100)
+
 logger = logging.getLogger(__name__)
 
 
@@ -141,8 +160,7 @@ async def _score_user(
             skipped_no_change += 1
             continue
 
-        overlap = len(resume_keywords & job_keywords)
-        raw_score = round((overlap / len(job_keywords)) * 100)
+        raw_score = compute_raw_score(resume_keywords, job_keywords)
         rows.append(
             {
                 "user_id": user_id,
@@ -187,4 +205,4 @@ async def _score_user(
     }
 
 
-__all__ = ["score_all_users"]
+__all__ = ["score_all_users", "compute_raw_score", "TOP_N"]

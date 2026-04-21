@@ -120,7 +120,7 @@ GET /api/job-listings
 | `is_saved` | boolean | - | Filter by saved status |
 | `is_hidden` | boolean | - | Filter by hidden status |
 | `applied` | boolean | - | Filter by applied status |
-| `sort_by` | string | `date_posted` | Sort field: `date_posted`, `relevance`, `salary` |
+| `sort_by` | string | `date_posted` | Sort field: `fit_score`, `date_posted`, `salary_max`, `salary_min`, `company_name`, `job_title`, `created_at` |
 | `sort_order` | string | `desc` | Sort order: `asc`, `desc` |
 | `limit` | integer | 20 | Results per page (1-100) |
 | `offset` | integer | 0 | Pagination offset |
@@ -642,8 +642,15 @@ master resume and this job's extracted keywords. It's refreshed by a
 daily batch (see `POST /api/v1/admin/fit-scoring/run` for the manual
 trigger). `is_score_stale=true` means the score exists but was computed
 against a previous version of the master resume; the next daily run
-refreshes it. Frontend consumers apply a 40–95 display skew — the raw
-value is intentionally unbounded.
+refreshes it.
+
+The raw score uses a **capped-denominator** formula:
+`raw = round(min(overlap, N) / min(N, len(job_kws)) * 100)` with `N = 12`.
+The ceiling (100) means "matched the top N JD keywords" — realistic rather
+than "matched every JD token." Frontend consumers apply a 20–100 display
+skew so weak matches still render visibly low while avoiding single-digit
+displays. See `docs/features/ats/260421_job-fit-prescoring-v2.md` for the
+full rationale.
 
 ### JobListingListResponse
 
@@ -743,9 +750,13 @@ Valid values for `application_status`:
 
 | Value | Description |
 | ----- | ----------- |
+| `fit_score` | Sort by pre-computed job-fit score. Unscored jobs fall to the end regardless of direction (NULLS LAST). Requires an authenticated user. |
 | `date_posted` | Sort by posting date |
-| `relevance` | Sort by relevance to search query |
-| `salary` | Sort by salary (requires salary data) |
+| `salary_max` | Sort by maximum salary |
+| `salary_min` | Sort by minimum salary |
+| `company_name` | Sort alphabetically by company |
+| `job_title` | Sort alphabetically by title |
+| `created_at` | Sort by ingestion timestamp |
 
 ## Usage Notes
 

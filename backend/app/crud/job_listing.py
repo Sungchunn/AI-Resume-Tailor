@@ -383,12 +383,21 @@ class JobListingRepository:
             total_result = await db.execute(count_query)
             total = total_result.scalar() or 0
 
-        # Apply sorting
-        sort_column = self._get_sort_column(filters.sort_by)
-        if filters.sort_order == SortOrder.DESC:
-            query = query.order_by(sort_column.desc())
+        # Apply sorting. Fit score lives on UserJobInteraction (joined only
+        # when user_id is passed) and may be NULL for unscored jobs — push
+        # those to the end regardless of direction.
+        if filters.sort_by == SortBy.FIT_SCORE and user_id is not None:
+            fit_col = UserJobInteraction.fit_score_raw
+            if filters.sort_order == SortOrder.DESC:
+                query = query.order_by(fit_col.desc().nulls_last(), JobListing.date_posted.desc())
+            else:
+                query = query.order_by(fit_col.asc().nulls_last(), JobListing.date_posted.desc())
         else:
-            query = query.order_by(sort_column.asc())
+            sort_column = self._get_sort_column(filters.sort_by)
+            if filters.sort_order == SortOrder.DESC:
+                query = query.order_by(sort_column.desc())
+            else:
+                query = query.order_by(sort_column.asc())
 
         # Apply pagination
         query = query.offset(filters.offset).limit(filters.limit)
@@ -408,6 +417,7 @@ class JobListingRepository:
             SortBy.COMPANY_NAME: JobListing.company_name,
             SortBy.JOB_TITLE: JobListing.job_title,
             SortBy.CREATED_AT: JobListing.created_at,
+            SortBy.FIT_SCORE: JobListing.date_posted,  # fallback when user_id unavailable
         }
         return mapping.get(sort_by, JobListing.date_posted)
 
