@@ -11,6 +11,7 @@ Pure set intersection on the cached keyword lists — no AI calls.
 """
 
 import logging
+import math
 import time
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -30,24 +31,21 @@ from app.services.fit_scoring.resume_keywords import (
 
 _UPSERT_CHUNK = 200
 
-# Capped-denominator scoring: the raw score measures how many of the top N
-# JD keywords the resume matched. 100 is achievable at N matches, so the
-# ceiling is realistic rather than "match every JD token."
-TOP_N = 12
+# Capped-denominator scoring with a square-root curve. Matching the top N
+# JD keywords hits the ceiling; the sqrt curve lifts mid-range overlaps so a
+# partial match reads as encouraging rather than mediocre while preserving
+# monotonicity (more matches always means a higher score).
+TOP_N = 10
 
 
 def compute_raw_score(resume_keywords: set[str], job_keywords: set[str]) -> int:
-    """Return the 0-100 raw fit score using capped-denominator math.
-
-    Denominator is capped at ``TOP_N`` so long JDs don't punish the user;
-    numerator is capped at the denominator so extra matches can't inflate
-    past the ceiling.
-    """
+    """Return the 0-100 raw fit score using the capped + sqrt-curve math."""
     denom = min(TOP_N, len(job_keywords))
     if denom == 0:
         return 0
     overlap = len(resume_keywords & job_keywords)
-    return round(min(overlap, denom) / denom * 100)
+    ratio = min(overlap, denom) / denom
+    return round(math.sqrt(ratio) * 100)
 
 logger = logging.getLogger(__name__)
 

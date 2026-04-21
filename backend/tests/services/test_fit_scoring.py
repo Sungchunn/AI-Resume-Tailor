@@ -28,10 +28,19 @@ def test_extra_matches_beyond_cap_do_not_inflate():
 
 
 def test_partial_match_against_long_jd():
-    # 30-keyword JD, resume matches 6 — denom=TOP_N=12, 6/12=50
+    # 30-keyword JD, resume matches 6 — denom=TOP_N=10, ratio=0.6,
+    # sqrt(0.6)*100 ≈ 77
     job = {f"kw{i}" for i in range(30)}
     resume = {f"kw{i}" for i in range(6)}
-    assert compute_raw_score(resume, job) == 50
+    assert compute_raw_score(resume, job) == 77
+
+
+def test_sqrt_curve_lifts_mid_range():
+    # Half-match lands at 71 (sqrt(0.5)*100), not 50 — this is the whole
+    # point of v3: mid-range overlaps should read as genuinely useful.
+    job = {f"kw{i}" for i in range(20)}
+    resume = {f"kw{i}" for i in range(5)}  # 5/10 = 0.5 after cap
+    assert compute_raw_score(resume, job) == 71
 
 
 def test_zero_overlap():

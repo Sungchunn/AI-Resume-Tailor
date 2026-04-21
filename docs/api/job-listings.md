@@ -644,13 +644,14 @@ trigger). `is_score_stale=true` means the score exists but was computed
 against a previous version of the master resume; the next daily run
 refreshes it.
 
-The raw score uses a **capped-denominator** formula:
-`raw = round(min(overlap, N) / min(N, len(job_kws)) * 100)` with `N = 12`.
-The ceiling (100) means "matched the top N JD keywords" — realistic rather
-than "matched every JD token." Frontend consumers apply a 20–100 display
-skew so weak matches still render visibly low while avoiding single-digit
-displays. See `docs/features/ats/260421_job-fit-prescoring-v2.md` for the
-full rationale.
+The raw score uses a **capped-denominator + square-root curve**:
+`raw = round(sqrt(min(overlap, N) / min(N, len(job_kws))) * 100)` with
+`N = 10`. The ceiling (100) means "matched the top N JD keywords" — the
+square-root curve lifts mid-range overlaps so a partial match reads as
+genuinely useful (e.g. a 50% overlap shows as 71, not 50) while preserving
+monotonicity. Frontend consumers render the raw value directly — no display
+skew is applied. See `docs/features/ats/260421_job-fit-prescoring-v3.md`
+for the rationale and tier thresholds.
 
 ### JobListingListResponse
 
