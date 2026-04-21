@@ -1,5 +1,7 @@
 # Daily Job-Fit Pre-Scoring
 
+> Superseded-by: `../260421_job-fit-prescoring-v2.md` — capped-denominator math, softer display skew (20–100), semi-circle gauge UI, and a Fit Score sort option.
+
 ## Context
 
 Users browse scraped job listings at `/jobs` with no signal for "how well does this match me?" until they open the full ATS editor. We want a lightweight pre-score badge on each job list card so users can triage quickly. The score is computed daily via keyword overlap between each user's **starred (master) resume** and their active job listings. It is cheap (one AI call per job at import; deterministic set intersection for every scoring pair) and deliberately separate from the 5-stage in-editor ATS pipeline.
