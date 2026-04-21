@@ -6,6 +6,7 @@ import type { JobListingListItem } from "@/lib/api/types";
 import { useSaveJobListing } from "@/lib/api/hooks";
 import { LinkedInIcon, ExternalLinkIcon, BookmarkIcon } from "@/components/icons";
 import { formatRelativeDate } from "@/lib/utils/date";
+import { FitScoreBadge } from "./FitScoreBadge";
 
 interface JobListingTableProps {
   listings: JobListingListItem[];
@@ -86,6 +87,9 @@ export function JobListingTable({ listings }: JobListingTableProps) {
               <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                 Seniority
               </th>
+              <th className="text-left py-3 px-4 font-medium text-muted-foreground w-20">
+                Fit
+              </th>
               <th className="text-center py-3 px-4 font-medium text-muted-foreground w-28">
                 Actions
               </th>
@@ -161,6 +165,19 @@ export function JobListingTable({ listings }: JobListingTableProps) {
                     </span>
                   ) : (
                     <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
+
+                {/* Fit Score */}
+                <td className="py-3 px-4">
+                  {listing.fit_score_raw !== null && listing.fit_score_raw !== undefined ? (
+                    <FitScoreBadge
+                      rawScore={listing.fit_score_raw}
+                      isStale={listing.is_score_stale}
+                      compact
+                    />
+                  ) : (
+                    <span className="text-muted-foreground text-xs">—</span>
                   )}
                 </td>
 

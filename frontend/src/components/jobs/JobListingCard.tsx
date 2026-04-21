@@ -9,7 +9,7 @@ import {
   EyeSlashIcon,
   MapPinIcon,
 } from "@/components/icons";
-import { FitScoreBadge } from "./FitScoreBadge";
+import { FitScoreGauge } from "./FitScoreGauge";
 
 interface JobListingCardProps {
   listing: JobListingListItem;
@@ -92,41 +92,43 @@ export function JobListingCard({ listing }: JobListingCardProps) {
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex gap-2 ml-4">
-          <button
-            onClick={handleSave}
-            className={`p-2 rounded-lg transition-colors ${
-              listing.is_saved
-                ? "text-primary bg-primary/10 hover:bg-primary/20"
-                : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted"
-            }`}
-            disabled={saveMutation.isPending}
-            title={listing.is_saved ? "Unsave" : "Save"}
-          >
-            <BookmarkIcon filled={listing.is_saved} />
-          </button>
-          <button
-            onClick={handleHide}
-            className={`p-2 rounded-lg transition-colors ${
-              listing.is_hidden
-                ? "text-muted-foreground bg-muted"
-                : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted"
-            }`}
-            disabled={hideMutation.isPending}
-            title={listing.is_hidden ? "Unhide" : "Hide"}
-          >
-            <EyeSlashIcon />
-          </button>
+        {/* Fit score gauge + action buttons (right side) */}
+        <div className="flex flex-col items-end gap-2 ml-4 shrink-0">
+          <FitScoreGauge
+            rawScore={listing.fit_score_raw}
+            isStale={listing.is_score_stale}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleSave}
+              className={`p-2 rounded-lg transition-colors ${
+                listing.is_saved
+                  ? "text-primary bg-primary/10 hover:bg-primary/20"
+                  : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted"
+              }`}
+              disabled={saveMutation.isPending}
+              title={listing.is_saved ? "Unsave" : "Save"}
+            >
+              <BookmarkIcon filled={listing.is_saved} />
+            </button>
+            <button
+              onClick={handleHide}
+              className={`p-2 rounded-lg transition-colors ${
+                listing.is_hidden
+                  ? "text-muted-foreground bg-muted"
+                  : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted"
+              }`}
+              disabled={hideMutation.isPending}
+              title={listing.is_hidden ? "Unhide" : "Hide"}
+            >
+              <EyeSlashIcon />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Meta info */}
       <div className="flex flex-wrap items-center gap-3 mt-3 text-sm text-muted-foreground">
-        <FitScoreBadge
-          rawScore={listing.fit_score_raw}
-          isStale={listing.is_score_stale}
-        />
         {listing.location && (
           <span className="flex items-center gap-1">
             <MapPinIcon className="h-4 w-4" />

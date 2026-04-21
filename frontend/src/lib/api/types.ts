@@ -733,7 +733,8 @@ export type JobListingSortBy =
   | "salary_max"
   | "company_name"
   | "job_title"
-  | "created_at";
+  | "created_at"
+  | "fit_score";
 export type SortOrder = "asc" | "desc";
 
 // Kanban board application status

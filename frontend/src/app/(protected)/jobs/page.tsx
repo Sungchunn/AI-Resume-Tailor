@@ -23,7 +23,7 @@ export default function JobListingsPage() {
   const [filters, setFilters] = useState<Filters>({
     limit: 20,
     offset: 0,
-    sort_by: "date_posted",
+    sort_by: "fit_score",
     sort_order: "desc",
     is_hidden: false, // Hide hidden jobs by default
   });

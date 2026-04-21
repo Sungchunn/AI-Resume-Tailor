@@ -11,6 +11,7 @@ interface JobListingFiltersProps {
 }
 
 const SORT_OPTIONS: { value: JobListingSortBy; label: string }[] = [
+  { value: "fit_score", label: "Fit Score" },
   { value: "date_posted", label: "Date Posted" },
   { value: "salary_max", label: "Salary (High)" },
   { value: "salary_min", label: "Salary (Low)" },
