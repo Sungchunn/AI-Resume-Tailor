@@ -140,7 +140,7 @@ jobs:
             SCRAPER_SCHEDULE_HOUR=6
             SCRAPER_SCHEDULE_MINUTE=0
             SCRAPER_ENABLED=true
-            JOB_RETENTION_DAYS=21
+            JOB_RETENTION_DAYS=31
             JOB_CLEANUP_ENABLED=true
             GOOGLE_CLIENT_ID=${{ secrets.PROD_GOOGLE_CLIENT_ID }}
             GOOGLE_OAUTH_ENABLED=true
