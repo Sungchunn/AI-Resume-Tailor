@@ -1,5 +1,7 @@
 # Job Fit Pre-Scoring v2 — Capped Denominator + Gauge UI
 
+> Superseded-by: `260421_job-fit-prescoring-v3.md` — replaces the semi-circle gauge with a compact inline bar (kept card heights flat) and swaps linear `overlap/N` math for a square-root curve with N=10 (lifts mid-range scores without losing monotonicity).
+
 ## Context
 
 The daily pre-scoring batch shipped on 260420 (see `260420_job-fit-prescoring/master-plan.md`). Three problems surfaced in use:
