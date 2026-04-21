@@ -707,43 +707,73 @@ class JobListingRepository:
                 logger.warning(f"Batch {i // batch_size + 1}: all jobs failed parsing, skipping")
                 continue
 
-            # Deduplicate within batch — same scrape can contain duplicates.
-            # Keep last occurrence per dedup_hash (most recent data wins).
-            seen: dict[str, dict] = {}
+            # Intra-batch dedup under BOTH unique keys. A single scrape can
+            # repeat the same external_job_id with slightly different
+            # normalized fields (→ different dedup_hash), or repost a job
+            # under a new external_job_id with the same title/company/city.
+            by_ext: dict[str, dict] = {}
             for v in values_list:
-                seen[v["dedup_hash"]] = v
-            values_list = list(seen.values())
+                by_ext[v["external_job_id"]] = v
+            by_hash: dict[str, dict] = {}
+            for v in by_ext.values():
+                by_hash[v["dedup_hash"]] = v
+            values_list = list(by_hash.values())
 
             logger.info(f"Batch {i // batch_size + 1}: prepared {len(values_list)} jobs for upsert")
 
-            # Build upsert statement
-            stmt = insert(JobListing).values(values_list)
-
-            # ON CONFLICT on dedup_hash — update all fields except id, dedup_hash, and created_at.
-            # external_job_id IS updated so reposts get the fresh ID.
-            excluded_from_update = {"id", "dedup_hash", "created_at"}
-            update_cols = {}
-            for key in values_list[0].keys():
-                if key not in excluded_from_update:
-                    update_cols[key] = stmt.excluded[key]
-
-            stmt = stmt.on_conflict_do_update(
-                index_elements=["dedup_hash"],
-                set_=update_cols,
+            # Pre-query rows already matching either key so we can partition
+            # into INSERT vs UPDATE-by-pk. Postgres ON CONFLICT can only
+            # target one constraint, and both external_job_id and dedup_hash
+            # are unique + load-bearing (see
+            # docs/features/infrastructure/260421_external-id-upsert-fix.md).
+            ext_ids = [v["external_job_id"] for v in values_list]
+            hashes = [v["dedup_hash"] for v in values_list]
+            existing_result = await db.execute(
+                select(
+                    JobListing.id,
+                    JobListing.external_job_id,
+                    JobListing.dedup_hash,
+                ).where(
+                    or_(
+                        JobListing.external_job_id.in_(ext_ids),
+                        JobListing.dedup_hash.in_(hashes),
+                    )
+                )
             )
+            existing_by_ext: dict[str, int] = {}
+            existing_by_hash: dict[str, int] = {}
+            for row_id, ext_id, h in existing_result.all():
+                existing_by_ext[ext_id] = row_id
+                existing_by_hash[h] = row_id
 
-            # Execute within a savepoint to isolate batch failures
-            # This prevents a single batch failure from aborting the entire transaction
+            to_insert: list[dict] = []
+            to_update: list[tuple[int, dict]] = []
+            for v in values_list:
+                pk = existing_by_ext.get(v["external_job_id"]) or existing_by_hash.get(v["dedup_hash"])
+                if pk is not None:
+                    to_update.append((pk, v))
+                else:
+                    to_insert.append(v)
+
+            excluded_from_update = {"id", "created_at"}
+
             try:
                 async with db.begin_nested():
-                    result = await db.execute(stmt)
-                    # Note: PostgreSQL doesn't easily distinguish created vs updated
-                    # in batch upserts, so we track this separately
-                    affected = result.rowcount
-                    # Approximate: assume new jobs > existing for first run
-                    # For more accuracy, would need to query existing IDs first
-                    created_count += affected
-                    logger.info(f"Batch {i // batch_size + 1}: upserted {affected} jobs successfully")
+                    if to_insert:
+                        await db.execute(insert(JobListing).values(to_insert))
+                    for pk, v in to_update:
+                        update_values = {
+                            k: val for k, val in v.items() if k not in excluded_from_update
+                        }
+                        await db.execute(
+                            update(JobListing).where(JobListing.id == pk).values(**update_values)
+                        )
+                    created_count += len(to_insert)
+                    updated_count += len(to_update)
+                    logger.info(
+                        f"Batch {i // batch_size + 1}: {len(to_insert)} inserted, "
+                        f"{len(to_update)} updated"
+                    )
             except Exception as e:
                 logger.error(f"Batch upsert error at index {i}: {e}", exc_info=True)
                 errors.append(
