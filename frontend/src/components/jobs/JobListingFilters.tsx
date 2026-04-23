@@ -69,6 +69,10 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
     onFiltersChange({ ...filters, is_hidden: checked ? false : undefined, offset: 0 });
   };
 
+  const handleHideCappedChange = (checked: boolean) => {
+    onFiltersChange({ ...filters, hide_capped: checked, offset: 0 });
+  };
+
   const handleSeniorityChange = (value: string) => {
     const currentSeniorities = filters.seniority?.split(",") || [];
     let newSeniorities: string[];
@@ -227,6 +231,13 @@ export function JobListingFilters({ filters, onFiltersChange }: JobListingFilter
         </ToggleChip>
         <ToggleChip active={filters.is_hidden === false} onClick={() => handleHideHiddenChange(filters.is_hidden !== false)}>
           Hide Hidden
+        </ToggleChip>
+        <ToggleChip
+          active={filters.hide_capped === true}
+          onClick={() => handleHideCappedChange(!filters.hide_capped)}
+          title="Hide jobs where the required-skill gate capped the score at 60"
+        >
+          Hide capped
         </ToggleChip>
       </div>
 
@@ -454,15 +465,18 @@ function ToggleChip({
   onClick,
   children,
   count,
+  title,
 }: {
   active: boolean;
   onClick: () => void;
   children: React.ReactNode;
   count?: number;
+  title?: string;
 }) {
   return (
     <button
       onClick={onClick}
+      title={title}
       className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${
         active
           ? "bg-primary/10 border-primary text-primary"

@@ -6,10 +6,18 @@ import type { JobListingListItem } from "@/lib/api/types";
 import { useSaveJobListing } from "@/lib/api/hooks";
 import { LinkedInIcon, ExternalLinkIcon, BookmarkIcon } from "@/components/icons";
 import { formatRelativeDate } from "@/lib/utils/date";
-import { FitScoreBadge } from "./FitScoreBadge";
+import { FitScoreCell } from "./fit-score/FitScoreCell";
 
 interface JobListingTableProps {
   listings: JobListingListItem[];
+}
+
+function isPostedToday(dateStr: string | null | undefined): boolean {
+  if (!dateStr) return false;
+  const posted = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - posted.getTime();
+  return diffMs >= 0 && diffMs < 24 * 60 * 60 * 1000;
 }
 
 function SaveButton({ listing }: { listing: JobListingListItem }) {
@@ -87,8 +95,8 @@ export function JobListingTable({ listings }: JobListingTableProps) {
               <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                 Seniority
               </th>
-              <th className="text-left py-3 px-4 font-medium text-muted-foreground w-20">
-                Fit
+              <th className="text-left py-3 px-4 font-medium text-muted-foreground w-44">
+                Fit estimate
               </th>
               <th className="text-center py-3 px-4 font-medium text-muted-foreground w-28">
                 Actions
@@ -140,6 +148,11 @@ export function JobListingTable({ listings }: JobListingTableProps) {
                   >
                     {listing.job_title}
                   </Link>
+                  {isPostedToday(listing.date_posted) && (
+                    <span className="ml-2 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-green-500/15 text-green-700 dark:text-green-300">
+                      New today
+                    </span>
+                  )}
                   {listing.applied_at && (
                     <span className="ml-2 text-xs px-1.5 py-0.5 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 rounded">
                       Applied
@@ -170,15 +183,13 @@ export function JobListingTable({ listings }: JobListingTableProps) {
 
                 {/* Fit Score */}
                 <td className="py-3 px-4">
-                  {listing.fit_score_raw !== null && listing.fit_score_raw !== undefined ? (
-                    <FitScoreBadge
-                      rawScore={listing.fit_score_raw}
-                      isStale={listing.is_score_stale}
-                      compact
-                    />
-                  ) : (
-                    <span className="text-muted-foreground text-xs">—</span>
-                  )}
+                  <FitScoreCell
+                    rawScore={listing.fit_score_raw}
+                    isStale={listing.is_score_stale}
+                    breakdown={listing.fit_score_breakdown}
+                    isCapped={listing.fit_score_is_capped}
+                    variant="table"
+                  />
                 </td>
 
                 {/* Actions */}

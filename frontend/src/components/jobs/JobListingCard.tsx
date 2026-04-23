@@ -9,10 +9,19 @@ import {
   EyeSlashIcon,
   MapPinIcon,
 } from "@/components/icons";
-import { FitScoreGauge } from "./FitScoreGauge";
+import { FitScoreCell } from "./fit-score/FitScoreCell";
 
 interface JobListingCardProps {
   listing: JobListingListItem;
+}
+
+function isPostedToday(dateStr: string | null | undefined): boolean {
+  if (!dateStr) return false;
+  const posted = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - posted.getTime();
+  // Within the last 24 hours.
+  return diffMs >= 0 && diffMs < 24 * 60 * 60 * 1000;
 }
 
 export function JobListingCard({ listing }: JobListingCardProps) {
@@ -85,18 +94,28 @@ export function JobListingCard({ listing }: JobListingCardProps) {
             />
           )}
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-foreground dark:text-white truncate">
-              {listing.job_title}
-            </h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-lg font-semibold text-foreground dark:text-white truncate">
+                {listing.job_title}
+              </h3>
+              {isPostedToday(listing.date_posted) && (
+                <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-green-500/15 text-green-700 dark:text-green-300">
+                  New today
+                </span>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground dark:text-zinc-300 mt-1">{listing.company_name}</p>
           </div>
         </div>
 
-        {/* Fit score bar inline with title */}
-        <FitScoreGauge
+        {/* Fit-score cell with breakdown */}
+        <FitScoreCell
           rawScore={listing.fit_score_raw}
           isStale={listing.is_score_stale}
-          className="ml-4 mt-1 shrink-0"
+          breakdown={listing.fit_score_breakdown}
+          isCapped={listing.fit_score_is_capped}
+          variant="card"
+          className="ml-4 shrink-0 min-w-[150px]"
         />
 
         {/* Action buttons (far right) */}

@@ -6,8 +6,9 @@ import { JobListingCard } from "@/components/jobs/JobListingCard";
 import { JobListingTable } from "@/components/jobs/JobListingTable";
 import { JobListingFilters } from "@/components/jobs/JobListingFilters";
 import { RequestJobsModal } from "@/components/jobs/RequestJobsModal";
+import { FitScoreLegend } from "@/components/jobs/fit-score/FitScoreLegend";
+import { FitScoreMetaHeader } from "@/components/jobs/fit-score/FitScoreMetaHeader";
 import type { JobListingFilters as Filters } from "@/lib/api/types";
-import { formatRelativeTime } from "@/lib/utils/date";
 import Link from "next/link";
 
 type ViewMode = "cards" | "table";
@@ -26,6 +27,7 @@ export default function JobListingsPage() {
     sort_by: "fit_score",
     sort_order: "desc",
     is_hidden: false, // Hide hidden jobs by default
+    hide_capped: true, // Hide CAP-60 noise by default (design spec)
   });
 
   const { data, isLoading, error } = useJobListings(filters);
@@ -57,22 +59,17 @@ export default function JobListingsPage() {
       {/* Header */}
       <div className="flex items-center justify-between shrink-0 pb-6 mb-6 border-b border-border">
         <div>
-          <h1 className="text-2xl font-bold text-foreground dark:text-white">Job Listings</h1>
-          <p className="text-muted-foreground dark:text-zinc-300 mt-1">
-            Browse and discover job opportunities
-          </p>
-          {data && data.listings.length > 0 && (
-            <p className="text-xs text-muted-foreground/60 mt-1">
-              Last updated {formatRelativeTime(
-                data.listings.reduce((latest, listing) => {
-                  if (!listing.scraped_at) return latest;
-                  return !latest || new Date(listing.scraped_at) > new Date(latest)
-                    ? listing.scraped_at
-                    : latest;
-                }, null as string | null)
-              )}
-            </p>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-2xl font-bold text-foreground dark:text-white">Job Listings</h1>
+            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary dark:bg-blue-400/15 dark:text-blue-300">
+              Fit estimate · v4 aware
+            </span>
+          </div>
+          <FitScoreMetaHeader
+            total={data?.total ?? null}
+            sortedByFit={filters.sort_by === "fit_score"}
+            className="mt-1"
+          />
         </div>
         <div className="flex items-center gap-4 mt-1">
           {/* View Toggle */}
@@ -133,6 +130,9 @@ export default function JobListingsPage() {
         isOpen={isRequestModalOpen}
         onClose={() => setIsRequestModalOpen(false)}
       />
+
+      {/* Explainer strip (dismissable, persisted in localStorage) */}
+      <FitScoreLegend className="mb-4 shrink-0" />
 
       <div className="flex gap-6 flex-1 min-h-0">
         {/* Filters Sidebar */}
