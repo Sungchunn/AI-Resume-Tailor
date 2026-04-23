@@ -149,8 +149,8 @@ export default function JobDetailPage() {
 
       {/* Header */}
       <div className="bg-card dark:bg-zinc-800 rounded-lg border border-border dark:border-zinc-600 p-6">
-        <div className="flex justify-between items-start">
-          <div className="flex items-start gap-4 flex-1">
+        <div className="flex justify-between items-start gap-4">
+          <div className="flex items-start gap-4 flex-1 min-w-0">
             {/* Company Logo */}
             {listing.company_logo && (
               <img
@@ -161,40 +161,41 @@ export default function JobDetailPage() {
                 onError={(e) => { e.currentTarget.style.display = 'none' }}
               />
             )}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-bold text-foreground dark:text-white">{listing.job_title}</h1>
               <p className="text-lg text-muted-foreground dark:text-zinc-300 mt-1">{listing.company_name}</p>
             </div>
+          </div>
+
+          {/* Right column: fit-score stat on top, action buttons below */}
+          <div className="flex flex-col items-end gap-3 shrink-0">
             <FitScoreGauge
               rawScore={listing.fit_score_raw}
               isStale={listing.is_score_stale}
               size="lg"
-              className="shrink-0"
             />
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              className={`btn-secondary flex items-center gap-2 ${
-                listing.is_saved ? "bg-primary/10 text-primary border-primary/20" : ""
-              }`}
-              disabled={saveMutation.isPending}
-            >
-              <BookmarkIcon filled={listing.is_saved} />
-              {listing.is_saved ? "Saved" : "Save"}
-            </button>
-            <button
-              onClick={handleHide}
-              className={`btn-secondary flex items-center gap-2 ${
-                listing.is_hidden ? "bg-muted" : ""
-              }`}
-              disabled={hideMutation.isPending}
-            >
-              <EyeSlashIcon />
-              {listing.is_hidden ? "Hidden" : "Hide"}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSave}
+                className={`btn-secondary flex items-center gap-2 ${
+                  listing.is_saved ? "bg-primary/10 text-primary border-primary/20" : ""
+                }`}
+                disabled={saveMutation.isPending}
+              >
+                <BookmarkIcon filled={listing.is_saved} />
+                {listing.is_saved ? "Saved" : "Save"}
+              </button>
+              <button
+                onClick={handleHide}
+                className={`btn-secondary flex items-center gap-2 ${
+                  listing.is_hidden ? "bg-muted" : ""
+                }`}
+                disabled={hideMutation.isPending}
+              >
+                <EyeSlashIcon />
+                {listing.is_hidden ? "Hidden" : "Hide"}
+              </button>
+            </div>
           </div>
         </div>
 
