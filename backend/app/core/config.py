@@ -139,6 +139,11 @@ class Settings(BaseSettings):
     # AI Generation Settings
     ai_max_tokens: int = 8192  # Max tokens for AI generation (tailoring, parsing, etc.)
 
+    # Fit-score v4 — hybrid embedding + required-skill gate.
+    # When false, scorer falls back to v3 keyword-only math even if embeddings
+    # are populated. Flip once >95% of active jobs have description_embedding.
+    fit_score_v4_enabled: bool = False
+
     # Environment
     environment: str = "development"
 

@@ -1,4 +1,4 @@
-"""Tests for the capped-denominator fit-score math."""
+"""Tests for the capped-denominator fit-score math (v3 + v4 hybrid)."""
 
 from app.services.fit_scoring.scorer import TOP_N, compute_raw_score
 
@@ -45,3 +45,108 @@ def test_sqrt_curve_lifts_mid_range():
 
 def test_zero_overlap():
     assert compute_raw_score({"ruby"}, {"python", "go"}) == 0
+
+
+# --- v4 hybrid math -------------------------------------------------------
+
+
+def _unit(n: int, one_at: int = 0) -> list[float]:
+    """Length-``n`` vector with 1.0 at ``one_at`` and zeros elsewhere."""
+    v = [0.0] * n
+    v[one_at] = 1.0
+    return v
+
+
+def test_hybrid_missing_embedding_falls_back_to_v3():
+    # Resume embedding is None → v3 keyword-only score (same as without hybrid).
+    job = {f"kw{i}" for i in range(20)}
+    resume = {f"kw{i}" for i in range(5)}
+    v3 = compute_raw_score(resume, job)
+    hybrid = compute_raw_score(
+        resume, job, resume_embedding=None, job_embedding=_unit(4)
+    )
+    assert v3 == hybrid == 71
+
+
+def test_hybrid_perfect_cosine_and_full_kw_match_returns_100():
+    # Identical embeddings → cosine=1 → calibrated=1; full kw match → kw=1.
+    v = _unit(4, 0)
+    job = {"python", "sql", "docker", "aws", "fastapi"}
+    score = compute_raw_score(
+        job, job, resume_embedding=v, job_embedding=v
+    )
+    assert score == 100
+
+
+def test_hybrid_orthogonal_vectors_calibrate_to_zero():
+    # cos=0 < 0.55 floor → sem term is 0; result is pure 0.5 * kw.
+    job = {f"kw{i}" for i in range(10)}
+    resume = {f"kw{i}" for i in range(5)}  # half-match → kw = sqrt(0.5)
+    score = compute_raw_score(
+        resume,
+        job,
+        resume_embedding=_unit(4, 0),
+        job_embedding=_unit(4, 1),  # orthogonal
+    )
+    # 0.5 * 0 + 0.5 * sqrt(0.5) ≈ 0.354 → 35
+    assert score == 35
+
+
+def test_required_gate_caps_base_at_60():
+    # Full kw match + full semantic match would be 100, but a required skill
+    # is missing from the resume → cap at 60.
+    v = _unit(4, 0)
+    job = {"python", "sql", "docker", "aws", "fastapi"}
+    resume = job - {"aws"}
+    score = compute_raw_score(
+        resume,
+        job,
+        job_required={"aws"},
+        resume_embedding=v,
+        job_embedding=v,
+    )
+    assert score == 60
+
+
+def test_required_gate_does_not_trigger_when_all_required_present():
+    v = _unit(4, 0)
+    job = {"python", "sql", "docker", "aws", "fastapi"}
+    score = compute_raw_score(
+        job,
+        job,
+        job_required={"aws", "python"},
+        resume_embedding=v,
+        job_embedding=v,
+    )
+    assert score == 100
+
+
+def test_hybrid_is_monotonic_in_keyword_overlap():
+    # Adding a matching keyword never decreases the score.
+    v = _unit(4, 0)
+    job = {f"kw{i}" for i in range(10)}
+    scores = [
+        compute_raw_score(
+            {f"kw{i}" for i in range(k)},
+            job,
+            resume_embedding=v,
+            job_embedding=v,
+        )
+        for k in range(11)
+    ]
+    assert scores == sorted(scores)
+
+
+def test_calibration_clamps_low_cosine():
+    # Even with weak semantic similarity, keyword term alone still scores.
+    # Resume vector near-orthogonal to job vector → sem=0; kw carries result.
+    job = {f"kw{i}" for i in range(10)}
+    resume = {f"kw{i}" for i in range(10)}  # full kw match
+    score = compute_raw_score(
+        resume,
+        job,
+        resume_embedding=_unit(4, 0),
+        job_embedding=_unit(4, 1),
+    )
+    # 0.5*0 + 0.5*1.0 = 0.5 → 50
+    assert score == 50
