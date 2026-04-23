@@ -317,6 +317,27 @@ Applied to resource-intensive file generation:
 | `GET /api/export/*` | 5 | 30 |
 | `POST /v1/resume-builds/*/export` | 5 | 30 |
 
+### Per-User Daily Quotas
+
+These endpoints have a per-user daily quota in addition to the Redis-based rate limiter above. The quota is enforced by counting successful `ai_usage_log` rows within a rolling 24-hour window — cache hits do not consume quota, and failed runs (`success=false`) do not count either.
+
+| Endpoint | Daily Limit | Counter |
+| -------- | ----------- | ------- |
+| `POST /api/job-listings/{id}/analyze` | 5 per user | `ai_usage_log WHERE endpoint='/job-listings/analyze' AND success=true` |
+
+A 429 response from these endpoints carries structured quota state so the client can render a countdown:
+
+```json
+{
+  "detail": {
+    "detail": "Daily limit reached",
+    "limit": 5,
+    "used": 5,
+    "resets_at": "2026-04-26T14:32:10.123Z"
+  }
+}
+```
+
 ---
 
 ## Excluded Paths

@@ -282,6 +282,25 @@ Individual suggestion display with before/after content and accept/reject contro
 | POST | `/v1/ats/keywords` | Analyze keyword coverage |
 | POST | `/v1/ats/keywords/detailed` | Detailed keyword analysis |
 | GET | `/v1/ats/tips` | General ATS optimization tips |
+| POST | `/api/job-listings/{id}/analyze` | Deep analysis orchestrator (see below) |
+
+### Deep Analysis Orchestration
+
+The deep-analysis endpoint (`POST /api/job-listings/{id}/analyze`) is a composition layer that fans out three existing analyzers in parallel using `asyncio.gather(return_exceptions=True)`:
+
+- `ATSAnalyzer.perform_knockout_check` (pure Python, preceded by a cached `JobAnalyzer.analyze` AI call to parse the JD)
+- `ATSAnalyzer.analyze_keywords_detailed` (1 AI call for importance-tiered keywords)
+- `BulletAnalyzer.analyze_batch` (1+ AI calls, batched per 10 bullets)
+
+**Critical-path semantics:** Keyword analysis is the critical path; a failure there raises `DeepAnalysisCriticalError` which the route translates to 500. Knockout and bullet failures degrade gracefully — the route returns 200 with the affected block set to `null` plus an `AnalysisWarning` entry for the frontend to surface.
+
+**Aggregate logging:** Each per-stage `AIResponse` is accumulated into a single `AIUsageLog` row via `AccumulatedMetrics.to_ai_response()`, matching the "one run = one quota slot" rule.
+
+**Cache:** Redis namespace `deep_analysis:v1:{resume_hash[:16]}:{job_id}`, 24h TTL, serialized as the full response dict. The namespace is deliberately separate from the `ats:v2:` progressive cache because the payload shapes differ.
+
+**Quota:** Server-side gate counts successful `ai_usage_log` rows with `endpoint='/job-listings/analyze'` in the trailing 24h. Cache hits don't log, so they're free. Failed runs (`success=false`) don't count either.
+
+**Service location:** `backend/app/services/job_listings/deep_analysis.py`.
 
 ### AI Chat Endpoints
 
@@ -316,6 +335,7 @@ Individual suggestion display with before/after content and accept/reject contro
 | Parsed resume | Content hash | Permanent |
 | Parsed job | Content hash | Permanent |
 | Match results | Query + filters | 15 minutes |
+| Deep analysis | `deep_analysis:v1:{resume_hash[:16]}:{job_id}` | 24 hours |
 
 ---
 

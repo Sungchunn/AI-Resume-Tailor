@@ -596,6 +596,160 @@ curl -X PUT "http://localhost:8000/api/job-listings/kanban/reorder" \
 
 ---
 
+## Deep Analysis Endpoints
+
+### Run Deep Analysis
+
+Run deep analysis for the current user's master resume against a job listing. Composes knockout + detailed keyword + per-bullet rewrite analyzers in a single parallel orchestration. Results are Redis-cached per `(resume_content_hash, listing_id)` with a 24h TTL.
+
+```http
+POST /api/job-listings/{listing_id}/analyze
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| `listing_id` | integer | The job listing ID |
+
+**Request Body:** None
+
+**Quota:**
+
+- 5 successful runs per user per rolling 24-hour window
+- Enforced by counting `ai_usage_log` rows where `endpoint = '/job-listings/analyze'` and `success = true`
+- Cache hits do not consume quota (no `ai_usage_log` row is written)
+- Failed runs do not consume quota
+
+**Typical Latency:** 30–60 seconds on cache miss. Cache hits return instantly.
+
+**Example Request:**
+
+```bash
+curl -X POST "http://localhost:8000/api/job-listings/12345/analyze" \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response (200 OK — fresh run):**
+
+```json
+{
+  "job_listing_id": 12345,
+  "resume_id": "507f1f77bcf86cd799439011",
+  "resume_content_hash": "a1b2c3d4e5f67890",
+  "cached": false,
+  "cached_at": null,
+  "generated_at": "2026-04-25T14:32:10.123Z",
+  "knockout": {
+    "passes_all_checks": false,
+    "risks": [
+      {
+        "risk_type": "experience_years",
+        "severity": "warning",
+        "description": "Role requires 5+ years of experience, your resume shows ~3.5 years.",
+        "job_requires": "5+ years",
+        "user_has": "~3.5 years"
+      }
+    ],
+    "summary": "1 potential knockout risk(s) detected (1 warning).",
+    "recommendation": "These warnings may affect your application..."
+  },
+  "keywords": {
+    "coverage_score": 0.75,
+    "required_coverage": 0.8,
+    "preferred_coverage": 0.5,
+    "required_matched": ["Python", "AWS"],
+    "required_missing": ["Kubernetes"],
+    "preferred_matched": ["Docker"],
+    "preferred_missing": [],
+    "nice_to_have_matched": [],
+    "nice_to_have_missing": [],
+    "all_keywords": [],
+    "suggestions": ["Add Kubernetes experience..."],
+    "warnings": []
+  },
+  "bullets": {
+    "suggestions": [
+      {
+        "bullet_id": "exp-0:bullet-0",
+        "original": "Responsible for backend development",
+        "suggested": "Built Python microservices on AWS serving 1M+ daily requests",
+        "reason": "Added metrics, strong action verb, and AWS keyword",
+        "impact": "high",
+        "keywords_added": ["AWS"],
+        "metrics_added": true
+      }
+    ],
+    "total_analyzed": 12,
+    "suggestions_count": 5,
+    "skipped_count": 7
+  },
+  "warnings": [],
+  "ai_usage": {
+    "total_tokens": 2450,
+    "cost_usd": 0.0,
+    "latency_ms": 42000
+  }
+}
+```
+
+**Response (200 OK — cache hit):**
+
+Same shape as the fresh-run response, but with:
+
+- `cached: true`
+- `cached_at`: ISO timestamp of when the cached payload was generated
+- `ai_usage`: all zeros (no AI calls made)
+
+**Response (200 OK — partial failure):**
+
+If a non-critical analyzer (knockout or bullets) fails during orchestration, the response still returns 200 with the affected block set to `null` and a warning entry describing the failure:
+
+```json
+{
+  "knockout": null,
+  "keywords": { "...": "..." },
+  "bullets": { "...": "..." },
+  "warnings": [
+    {
+      "stage": "knockout",
+      "error": "job parse timeout",
+      "retriable": true
+    }
+  ]
+}
+```
+
+The keyword stage is the critical path; if it fails the whole request returns 500.
+
+**Error Responses:**
+
+| Status | Body | Cause |
+| ------ | ---- | ----- |
+| 400 | `{"detail": "No master resume set..."}` | User has no resume starred as master |
+| 400 | `{"detail": "Master resume has not been parsed yet..."}` | Parsed content missing on the master |
+| 400 | `{"detail": "Job listing has no description text to analyze."}` | Empty job_description |
+| 404 | `{"detail": "Job listing not found"}` | Invalid listing_id |
+| 429 | See below | Daily quota exhausted |
+| 500 | `{"detail": "Deep analysis failed: <reason>"}` | Critical-path (keyword) failure |
+
+**429 response body** carries structured quota state:
+
+```json
+{
+  "detail": {
+    "detail": "Daily limit reached",
+    "limit": 5,
+    "used": 5,
+    "resets_at": "2026-04-26T14:32:10.123Z"
+  }
+}
+```
+
+The frontend uses `resets_at` to display a countdown without requiring a separate quota-meta endpoint.
+
+---
+
 ## Data Models
 
 ### JobListingResponse
