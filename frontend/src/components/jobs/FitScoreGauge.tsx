@@ -8,32 +8,57 @@ interface FitScoreGaugeProps {
 }
 
 const SIZES = {
-  md: { barWidth: 72, barHeight: 6, fontSize: 14, gap: 6 },
-  lg: { barWidth: 140, barHeight: 8, fontSize: 20, gap: 10 },
+  md: { barWidth: 84, barHeight: 8, fontSize: 14, labelSize: 9, gap: 8 },
+  lg: { barWidth: 160, barHeight: 10, fontSize: 22, labelSize: 10, gap: 12 },
 } as const;
 
-function tierColor(display: number): { fill: string; text: string } {
-  if (display >= 75) {
-    return { fill: "bg-green-500 dark:bg-green-400", text: "text-green-700 dark:text-green-300" };
-  }
-  if (display >= 55) {
-    return { fill: "bg-amber-500 dark:bg-amber-400", text: "text-amber-700 dark:text-amber-300" };
-  }
-  return { fill: "bg-zinc-400 dark:bg-zinc-500", text: "text-zinc-600 dark:text-zinc-400" };
+type Tier = "strong" | "fair" | "low";
+
+function resolveTier(display: number): Tier {
+  if (display >= 75) return "strong";
+  if (display >= 55) return "fair";
+  return "low";
 }
 
+const TIER_STYLES: Record<
+  Tier,
+  { fill: string; text: string; glow: string }
+> = {
+  strong: {
+    fill: "bg-gradient-to-r from-emerald-400 to-green-500 dark:from-emerald-400 dark:to-green-400",
+    text: "text-green-700 dark:text-green-300",
+    // Subtle tinted shadow so the green feels alive without being loud.
+    glow: "shadow-[0_0_8px_rgba(34,197,94,0.35)]",
+  },
+  fair: {
+    fill: "bg-gradient-to-r from-amber-400 to-orange-400 dark:from-amber-400 dark:to-orange-400",
+    text: "text-amber-700 dark:text-amber-300",
+    glow: "shadow-[0_0_6px_rgba(245,158,11,0.25)]",
+  },
+  low: {
+    fill: "bg-gradient-to-r from-zinc-400 to-zinc-500 dark:from-zinc-500 dark:to-zinc-600",
+    text: "text-zinc-600 dark:text-zinc-400",
+    glow: "",
+  },
+};
+
 /**
- * Compact horizontal fit-score bar. Raw score is already 0-100 — no skew
- * applied, the backend sqrt curve already reads generously. Returns null
+ * Compact horizontal fit-score bar. Raw score is 0-100 — no display skew;
+ * the backend sqrt curve already lifts mid-range overlaps. Returns null
  * when the job hasn't been scored yet.
  */
-export function FitScoreGauge({ rawScore, isStale = false, size = "md", className }: FitScoreGaugeProps) {
+export function FitScoreGauge({
+  rawScore,
+  isStale = false,
+  size = "md",
+  className,
+}: FitScoreGaugeProps) {
   if (rawScore === null || rawScore === undefined) return null;
 
-  const displayScore = Math.round(rawScore);
-  const { fill, text } = tierColor(displayScore);
-  const { barWidth, barHeight, fontSize, gap } = SIZES[size];
-  const clampedPct = Math.max(0, Math.min(100, displayScore));
+  const displayScore = Math.max(0, Math.min(100, Math.round(rawScore)));
+  const tier = resolveTier(displayScore);
+  const { fill, text, glow } = TIER_STYLES[tier];
+  const { barWidth, barHeight, fontSize, labelSize, gap } = SIZES[size];
 
   return (
     <div
@@ -43,27 +68,60 @@ export function FitScoreGauge({ rawScore, isStale = false, size = "md", classNam
         className,
       )}
       style={{ gap }}
-      title={isStale ? "Score will refresh on next daily update" : `Fit score: ${displayScore}`}
+      title={
+        isStale
+          ? "Score will refresh on next daily update"
+          : `Fit score: ${displayScore}/100`
+      }
       aria-label={`Fit score ${displayScore} out of 100`}
     >
       <div
-        className="relative rounded-full overflow-hidden bg-zinc-200 dark:bg-zinc-700"
+        className={cn(
+          "relative rounded-full overflow-hidden",
+          "bg-zinc-200/80 dark:bg-zinc-800",
+          "ring-1 ring-inset ring-zinc-300/60 dark:ring-zinc-700/60",
+          "shadow-inner",
+        )}
         style={{ width: barWidth, height: barHeight }}
       >
+        {/* Tier tick marks at 55 and 75 — subtle, only visible against the track */}
         <div
-          className={cn("h-full rounded-full transition-[width]", fill)}
-          style={{ width: `${clampedPct}%` }}
+          className="absolute inset-y-0 w-px bg-zinc-300/80 dark:bg-zinc-700"
+          style={{ left: "55%" }}
+          aria-hidden="true"
+        />
+        <div
+          className="absolute inset-y-0 w-px bg-zinc-300/80 dark:bg-zinc-700"
+          style={{ left: "75%" }}
+          aria-hidden="true"
+        />
+
+        {/* Filled portion with gradient + soft tier glow */}
+        <div
+          className={cn(
+            "h-full rounded-full transition-[width] duration-500 ease-out",
+            fill,
+            glow,
+          )}
+          style={{ width: `${displayScore}%` }}
         />
       </div>
-      <span className={cn("font-semibold tabular-nums", text)} style={{ fontSize }}>
-        {displayScore}
-      </span>
-      <span
-        className={cn("font-medium uppercase tracking-wider text-muted-foreground", text)}
-        style={{ fontSize: Math.max(9, fontSize - 6) }}
-      >
-        Match
-      </span>
+
+      <div className="flex items-baseline" style={{ gap: Math.max(2, gap - 6) }}>
+        <span
+          className={cn("font-semibold tabular-nums tracking-tight", text)}
+          style={{ fontSize }}
+        >
+          {displayScore}
+        </span>
+        <span
+          className={cn("font-medium opacity-60", text)}
+          style={{ fontSize: labelSize }}
+          aria-hidden="true"
+        >
+          / 100
+        </span>
+      </div>
     </div>
   );
 }
