@@ -18,12 +18,15 @@ formula, required-skill state, and per-batch freshness.
 - ``fit_score_batch_runs`` table: singleton-style log of each
   ``score_all_users`` invocation. Read as ``ORDER BY started_at DESC
   LIMIT 1`` to drive the "Scores refreshed Xh ago" header.
+
+Idempotent: an earlier deploy committed the column/table DDL before the
+final CONCURRENT index step failed, so alembic_version was never bumped.
+Every operation below uses IF NOT EXISTS so the migration can safely
+resume from any partial state.
 """
 from collections.abc import Sequence
 
-import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects.postgresql import JSONB
 
 
 revision: str = "20260424_0001"
@@ -33,33 +36,32 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "user_job_interactions",
-        sa.Column("fit_score_breakdown", JSONB, nullable=True),
+    op.execute(
+        "ALTER TABLE user_job_interactions "
+        "ADD COLUMN IF NOT EXISTS fit_score_breakdown JSONB"
     )
-    op.add_column(
-        "user_job_interactions",
-        sa.Column("fit_score_is_capped", sa.Boolean, nullable=True),
+    op.execute(
+        "ALTER TABLE user_job_interactions "
+        "ADD COLUMN IF NOT EXISTS fit_score_is_capped BOOLEAN"
     )
 
-    op.create_table(
-        "fit_score_batch_runs",
-        sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column(
-            "started_at",
-            sa.DateTime(timezone=True),
-            nullable=False,
-            server_default=sa.func.now(),
-        ),
-        sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("users_count", sa.Integer, nullable=False, server_default="0"),
-        sa.Column("rows_written", sa.Integer, nullable=False, server_default="0"),
-        sa.Column("status", sa.String(20), nullable=False, server_default="running"),
+    op.execute(
+        """
+        CREATE TABLE IF NOT EXISTS fit_score_batch_runs (
+            id SERIAL PRIMARY KEY,
+            started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            completed_at TIMESTAMPTZ,
+            users_count INTEGER NOT NULL DEFAULT 0,
+            rows_written INTEGER NOT NULL DEFAULT 0,
+            status VARCHAR(20) NOT NULL DEFAULT 'running'
+        )
+        """
     )
-    op.create_index(
-        "ix_fit_score_batch_runs_started_at",
-        "fit_score_batch_runs",
-        ["started_at"],
+    op.execute(
+        """
+        CREATE INDEX IF NOT EXISTS ix_fit_score_batch_runs_started_at
+        ON fit_score_batch_runs (started_at)
+        """
     )
 
     # CREATE INDEX CONCURRENTLY must run outside of a transaction. The
@@ -79,8 +81,14 @@ def downgrade() -> None:
     op.execute("COMMIT")
     op.execute("DROP INDEX CONCURRENTLY IF EXISTS idx_uji_fit_not_capped")
 
-    op.drop_index("ix_fit_score_batch_runs_started_at", "fit_score_batch_runs")
-    op.drop_table("fit_score_batch_runs")
+    op.execute("DROP INDEX IF EXISTS ix_fit_score_batch_runs_started_at")
+    op.execute("DROP TABLE IF EXISTS fit_score_batch_runs")
 
-    op.drop_column("user_job_interactions", "fit_score_is_capped")
-    op.drop_column("user_job_interactions", "fit_score_breakdown")
+    op.execute(
+        "ALTER TABLE user_job_interactions "
+        "DROP COLUMN IF EXISTS fit_score_is_capped"
+    )
+    op.execute(
+        "ALTER TABLE user_job_interactions "
+        "DROP COLUMN IF EXISTS fit_score_breakdown"
+    )
