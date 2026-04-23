@@ -183,6 +183,49 @@ class CacheService:
         key = self._make_ats_key(resume_content_hash, job_id)
         await self.redis.delete(key)
 
+    # Deep-analysis Cache Methods (fit-score Wave 2)
+    #
+    # Separate namespace from ats:v2:* because the payload is different
+    # (knockout + detailed keywords + bullet suggestions vs the progressive
+    # 5-stage composite score).
+    DEEP_ANALYSIS_TTL = 60 * 60 * 24  # 24 hours, matches Wave 1 plan
+
+    def _make_deep_analysis_key(
+        self, resume_content_hash: str, job_listing_id: int
+    ) -> str:
+        """Key for the deep-analysis response cache."""
+        return f"deep_analysis:v1:{resume_content_hash[:16]}:{job_listing_id}"
+
+    async def get_deep_analysis_result(
+        self, resume_content_hash: str, job_listing_id: int
+    ) -> dict | None:
+        """Get cached deep-analysis response as a dict (ready to rehydrate
+        into ``JobDeepAnalysisResponse``)."""
+        key = self._make_deep_analysis_key(resume_content_hash, job_listing_id)
+        data = await self.redis.get(key)
+        if data:
+            return json.loads(data)
+        return None
+
+    async def set_deep_analysis_result(
+        self,
+        resume_content_hash: str,
+        job_listing_id: int,
+        payload: dict,
+    ) -> None:
+        """Cache the serialized deep-analysis response."""
+        key = self._make_deep_analysis_key(resume_content_hash, job_listing_id)
+        await self.redis.setex(
+            key, self.DEEP_ANALYSIS_TTL, json.dumps(payload, default=str)
+        )
+
+    async def invalidate_deep_analysis_result(
+        self, resume_content_hash: str, job_listing_id: int
+    ) -> None:
+        """Invalidate a cached deep-analysis response."""
+        key = self._make_deep_analysis_key(resume_content_hash, job_listing_id)
+        await self.redis.delete(key)
+
     # Generic cache methods (for ICache protocol)
     async def get(self, key: str) -> Any | None:
         """Get cached value by key."""

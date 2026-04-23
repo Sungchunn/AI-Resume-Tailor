@@ -7,17 +7,25 @@ with job listings populated from external sources (Apify/n8n).
 
 import hashlib
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from fastapi_cache import FastAPICache
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUserId, DBSession, DBSessionWithRLS
+from app.api.deps import (
+    CurrentUserId,
+    DatabaseSessionsWithRLS,
+    DBSession,
+    DBSessionWithRLS,
+    resolve_ai_model,
+)
 from app.crud import job_listing_repository, user_job_interaction_repository
+from app.crud.mongo.resume import resume_crud
 from app.db.mongodb import get_mongodb
+from app.models.ai_usage_log import AIUsageLog
 from app.models.fit_score_batch_run import FitScoreBatchRun
 from app.schemas.job_listing import (
     ApplicationStatus,
@@ -42,9 +50,26 @@ from app.schemas.job_listing import (
     UpdateApplicationStatusRequest,
     UserJobInteractionResponse,
 )
+from app.schemas.job_listing_analysis import (
+    AIUsageSummary,
+    JobDeepAnalysisResponse,
+)
+from app.services.ai import get_usage_tracker
+from app.services.ai.client import get_ai_client_for_model
+from app.services.core.cache import get_cache_service
+from app.services.job_listings import (
+    DeepAnalysisCriticalError,
+    DeepAnalysisService,
+)
 from app.services.scraping.schedule_utils import get_cache_ttl_seconds
 
 logger = logging.getLogger(__name__)
+
+# Per-user daily quota for POST /{id}/analyze. Enforced by counting
+# successful ai_usage_log rows in the trailing 24h window.
+DEEP_ANALYSIS_QUOTA_LIMIT = 5
+DEEP_ANALYSIS_QUOTA_WINDOW = timedelta(days=1)
+DEEP_ANALYSIS_ENDPOINT = "/job-listings/analyze"
 
 router = APIRouter()
 
@@ -1017,3 +1042,174 @@ async def update_application_status(
         message=f"Application status updated to '{request.status.value}'",
         interaction=UserJobInteractionResponse.model_validate(interaction),
     )
+
+
+# ============================================================================
+# Fit-score deep analysis (Wave 2)
+# ============================================================================
+
+
+async def _deep_analysis_quota_used(
+    db: AsyncSession, user_id: int
+) -> tuple[int, datetime | None]:
+    """Count successful deep-analysis runs in the trailing 24h for this user,
+    and return the oldest-counted timestamp (used to compute ``resets_at``).
+
+    Cache hits are not logged to ``ai_usage_log``, so they do not consume
+    quota. Failed runs (``success=false``) likewise don't count.
+    """
+
+    since = datetime.now(timezone.utc) - DEEP_ANALYSIS_QUOTA_WINDOW
+
+    count_stmt = select(func.count(AIUsageLog.id)).where(
+        AIUsageLog.user_id == user_id,
+        AIUsageLog.endpoint == DEEP_ANALYSIS_ENDPOINT,
+        AIUsageLog.success == True,  # noqa: E712
+        AIUsageLog.created_at >= since,
+    )
+    used = (await db.execute(count_stmt)).scalar_one()
+    if used == 0:
+        return 0, None
+
+    oldest_stmt = (
+        select(AIUsageLog.created_at)
+        .where(
+            AIUsageLog.user_id == user_id,
+            AIUsageLog.endpoint == DEEP_ANALYSIS_ENDPOINT,
+            AIUsageLog.success == True,  # noqa: E712
+            AIUsageLog.created_at >= since,
+        )
+        .order_by(AIUsageLog.created_at.asc())
+        .limit(1)
+    )
+    oldest = (await db.execute(oldest_stmt)).scalar_one_or_none()
+    return used, oldest
+
+
+@router.post(
+    "/{listing_id}/analyze",
+    response_model=JobDeepAnalysisResponse,
+    responses={
+        400: {"description": "No master resume set or empty job description"},
+        404: {"description": "Job listing not found"},
+        429: {"description": "Daily limit reached"},
+    },
+)
+async def run_deep_analysis(
+    listing_id: int,
+    dbs: DatabaseSessionsWithRLS,
+    current_user_id: CurrentUserId,
+) -> JobDeepAnalysisResponse:
+    """Run deep analysis for the current user's master resume against a job
+    listing. Composes knockout + detailed keyword + per-bullet analyzers.
+
+    Quota: 5 successful runs per user per rolling 24h window. Cache hits
+    (same ``resume_content_hash`` + ``listing_id`` within 24h) do not
+    consume quota.
+    """
+
+    pg = dbs["pg"]
+    mongo = dbs["mongo"]
+
+    # Load job listing first — cheap Postgres lookup, lets us 404 early.
+    listing = await job_listing_repository.get(pg, id=listing_id)
+    if not listing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job listing not found",
+        )
+
+    # Load master resume (raw_content + parsed + hash).
+    resume = await resume_crud.get_master(mongo, user_id=current_user_id)
+    if resume is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No master resume set. Star a resume as your master to run deep analysis.",
+        )
+    if resume.parsed is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Master resume has not been parsed yet. Open it once to trigger parsing.",
+        )
+
+    cache = get_cache_service()
+    resume_hash = cache.hash_content(resume.raw_content or "")
+
+    # Serve from cache before checking the quota — cached replays are free.
+    cached = await cache.get_deep_analysis_result(resume_hash, listing_id)
+    if cached:
+        cached["cached"] = True
+        # cached_at tracks when the run was produced; on replay it's the same
+        # as generated_at from the original fresh run.
+        if not cached.get("cached_at"):
+            cached["cached_at"] = cached.get("generated_at")
+        cached["ai_usage"] = AIUsageSummary().model_dump()
+        return JobDeepAnalysisResponse.model_validate(cached)
+
+    # Gate fresh runs on the daily quota.
+    used, oldest_counted_at = await _deep_analysis_quota_used(pg, current_user_id)
+    if used >= DEEP_ANALYSIS_QUOTA_LIMIT:
+        resets_at = (
+            (oldest_counted_at + DEEP_ANALYSIS_QUOTA_WINDOW)
+            if oldest_counted_at is not None
+            else datetime.now(timezone.utc) + DEEP_ANALYSIS_QUOTA_WINDOW
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "detail": "Daily limit reached",
+                "limit": DEEP_ANALYSIS_QUOTA_LIMIT,
+                "used": used,
+                "resets_at": resets_at.isoformat(),
+            },
+        )
+
+    # Run the orchestrator.
+    model = await resolve_ai_model(current_user_id, pg, "ats")
+    ai_client = get_ai_client_for_model(model)
+    service = DeepAnalysisService(ai_client=ai_client, cache=cache)
+
+    try:
+        result = await service.run(resume=resume, job=listing)
+    except DeepAnalysisCriticalError as exc:
+        logger.exception("deep_analysis critical path failed: %s", exc)
+        # Log the failed run so we can observe it, but don't consume quota.
+        # (AIUsageTracker requires an AIResponse; nothing to log here since
+        # the failure happened before or during the AI calls themselves.)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Deep analysis failed: {exc}",
+        )
+
+    # Cache the result before logging so subsequent calls short-circuit even
+    # if the usage-log insert fails.
+    payload = result.response.model_dump(mode="json")
+    await cache.set_deep_analysis_result(resume_hash, listing_id, payload)
+
+    # Log a single aggregated ai_usage_log row — one run = one quota slot.
+    if result.ai_responses:
+        acc_response = _aggregate_ai_responses(result.ai_responses)
+        usage_tracker = get_usage_tracker()
+        await usage_tracker.log_generation(
+            db=pg,
+            user_id=current_user_id,
+            endpoint=DEEP_ANALYSIS_ENDPOINT,
+            response=acc_response,
+            success=True,
+        )
+        await pg.commit()
+
+    return result.response
+
+
+def _aggregate_ai_responses(responses):
+    """Fold the per-stage ``AIResponse`` objects into a single aggregate for
+    ``AIUsageTracker.log_generation``. Picks the last stage's provider/model
+    so pricing lookup hits a real row.
+    """
+    from app.services.ai.response import AccumulatedMetrics
+
+    acc = AccumulatedMetrics()
+    for r in responses:
+        acc.add(r)
+    return acc.to_ai_response()
