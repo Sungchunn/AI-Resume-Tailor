@@ -1,4 +1,4 @@
-import { VersionConflictError } from "./errors";
+import { DeepAnalysisQuotaError, VersionConflictError } from "./errors";
 import type {
   ResumeCreate,
   ResumeUpdate,
@@ -60,6 +60,8 @@ import type {
   ScraperBatchResult,
   JobListingFilterOptionsResponse,
   FitScoreMetaResponse,
+  JobDeepAnalysisResponse,
+  QuotaExceededDetail,
   ScraperPresetCreate,
   ScraperPresetUpdate,
   ScraperPresetResponse,
@@ -807,6 +809,60 @@ export const jobListingApi = {
       method: "PUT",
       body: JSON.stringify({ status, job_listing_ids: jobListingIds }),
     }),
+
+  /**
+   * Run deep analysis for the user's master resume against a job listing.
+   *
+   * Uses a dedicated fetch path (not ``fetchApi``) so the 429 body with
+   * ``{limit, used, resets_at}`` survives to the UI instead of being
+   * flattened to a generic "Too many requests" error. Accepts an optional
+   * ``AbortSignal`` for client-initiated cancel.
+   */
+  runDeepAnalysis: async (
+    id: number,
+    options: { signal?: AbortSignal } = {},
+  ): Promise<JobDeepAnalysisResponse> => {
+    const url = `${API_BASE_URL}/api/job-listings/${id}/analyze`;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    const token = tokenManager.getAccessToken();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers,
+      signal: options.signal,
+    });
+
+    if (response.status === 429) {
+      const body = (await response.json().catch(() => ({}))) as {
+        detail?: QuotaExceededDetail | string;
+      };
+      if (typeof body.detail === "object" && body.detail !== null) {
+        throw new DeepAnalysisQuotaError(
+          body.detail.limit,
+          body.detail.used,
+          body.detail.resets_at,
+        );
+      }
+      throw new Error("Too many requests. Please slow down and try again later.");
+    }
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => ({ detail: "Unknown error" }));
+      const detail = errorBody.detail;
+      const message =
+        typeof detail === "string"
+          ? detail
+          : typeof detail === "object" && detail !== null
+            ? detail.message ?? `HTTP ${response.status}`
+            : `HTTP ${response.status}`;
+      throw new Error(message);
+    }
+
+    return response.json();
+  },
 };
 
 // Scraper Request API (user-facing)

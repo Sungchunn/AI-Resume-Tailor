@@ -1447,6 +1447,79 @@ export interface ATSContentAnalysisResponse {
 }
 
 // ============================================================================
+// Fit-Score Deep Analysis (POST /job-listings/{id}/analyze)
+// ============================================================================
+
+export type DeepAnalysisStage = "knockout" | "keywords" | "bullets";
+
+export interface AnalysisWarning {
+  stage: DeepAnalysisStage;
+  error: string;
+  retriable: boolean;
+}
+
+export interface AIUsageSummary {
+  total_tokens: number;
+  cost_usd: number;
+  latency_ms: number;
+}
+
+export interface KnockoutBlock {
+  passes_all_checks: boolean;
+  risks: KnockoutRiskItem[];
+  summary: string;
+  recommendation: string;
+}
+
+export interface KeywordBlock {
+  coverage_score: number;
+  required_coverage: number;
+  preferred_coverage: number;
+
+  required_matched: string[];
+  required_missing: string[];
+  preferred_matched: string[];
+  preferred_missing: string[];
+  nice_to_have_matched: string[];
+  nice_to_have_missing: string[];
+
+  all_keywords: KeywordDetail[];
+  suggestions: string[];
+  warnings: string[];
+}
+
+export interface BulletsBlock {
+  suggestions: BulletSuggestionResponse[];
+  total_analyzed: number;
+  suggestions_count: number;
+  skipped_count: number;
+}
+
+export interface JobDeepAnalysisResponse {
+  job_listing_id: number;
+  resume_id: string;
+  resume_content_hash: string;
+
+  cached: boolean;
+  cached_at: string | null;
+  generated_at: string;
+
+  knockout: KnockoutBlock | null;
+  keywords: KeywordBlock | null;
+  bullets: BulletsBlock | null;
+
+  warnings: AnalysisWarning[];
+  ai_usage: AIUsageSummary;
+}
+
+export interface QuotaExceededDetail {
+  detail: string;
+  limit: number;
+  used: number;
+  resets_at: string;
+}
+
+// ============================================================================
 // Scraper Request Types (User-submitted job URL requests)
 // ============================================================================
 

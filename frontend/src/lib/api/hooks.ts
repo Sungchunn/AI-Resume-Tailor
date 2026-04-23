@@ -734,6 +734,27 @@ export function useFitScoreMeta() {
   });
 }
 
+/**
+ * Run deep analysis for the user's master resume against a job listing.
+ *
+ * Returns a mutation so callers can fire it on click and observe
+ * ``isPending`` for the 30–60s spinner. Supports cancellation via an
+ * ``AbortSignal`` passed through ``mutate({ signal })``. On 429 the
+ * rejected promise carries a ``DeepAnalysisQuotaError`` with structured
+ * quota state for the error banner.
+ */
+export function useJobDeepAnalysis() {
+  return useMutation({
+    mutationFn: ({
+      jobId,
+      signal,
+    }: {
+      jobId: number;
+      signal?: AbortSignal;
+    }) => jobListingApi.runDeepAnalysis(jobId, { signal }),
+  });
+}
+
 export function useJobListing(id: number) {
   return useQuery({
     queryKey: queryKeys.jobListings.detail(id),
