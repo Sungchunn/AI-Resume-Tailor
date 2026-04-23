@@ -2,12 +2,14 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useCallback, useState } from "react";
 import {
   useJobListing,
   useSaveJobListing,
   useHideJobListing,
   useMarkJobApplied,
 } from "@/lib/api/hooks";
+import type { JobDeepAnalysisResponse } from "@/lib/api/types";
 import {
   BookmarkIcon,
   BriefcaseIcon,
@@ -22,6 +24,8 @@ import {
   MapPinIcon,
 } from "@/components/icons";
 import { sanitizeHtml } from "@/lib/utils/sanitize";
+import { DeepAnalysisCTA } from "@/components/jobs/fit-score/DeepAnalysisCTA";
+import { DeepAnalysisResult } from "@/components/jobs/fit-score/DeepAnalysisResult";
 import { FitScoreHero } from "@/components/jobs/fit-score/FitScoreHero";
 import { FitScoreFormulaPanel } from "@/components/jobs/fit-score/FitScoreFormulaPanel";
 import { RequiredSkillsRow } from "@/components/jobs/fit-score/RequiredSkillsRow";
@@ -53,6 +57,17 @@ export default function JobDetailPage() {
       applyMutation.mutate({ id: listing.id, applied: !listing.applied_at });
     }
   };
+
+  const [deepAnalysis, setDeepAnalysis] =
+    useState<JobDeepAnalysisResponse | null>(null);
+  const handleDeepAnalysisResult = useCallback(
+    (data: JobDeepAnalysisResponse) => setDeepAnalysis(data),
+    [],
+  );
+  const handleDeepAnalysisRerun = useCallback(
+    () => setDeepAnalysis(null),
+    [],
+  );
 
   const handleOpenExternal = () => {
     if (listing) {
@@ -301,9 +316,8 @@ export default function JobDetailPage() {
         </Link>
       </div>
 
-      {/* Fit-score transparency: hero + formula + required skills + keyword overlap.
-          Wave 2 will insert a "Run deep analysis" CTA between KeywordOverlapSection
-          and "About Company". */}
+      {/* Fit-score transparency: hero + formula + required skills + keyword
+          overlap, followed by the on-demand deep-analysis CTA + result. */}
       <FitScoreHero
         rawScore={listing.fit_score_raw}
         isStale={listing.is_score_stale}
@@ -319,6 +333,18 @@ export default function JobDetailPage() {
         isCapped={listing.fit_score_is_capped}
       />
       <KeywordOverlapSection breakdown={listing.fit_score_breakdown} />
+
+      <DeepAnalysisCTA
+        jobId={listing.id}
+        onResult={handleDeepAnalysisResult}
+        collapsed={deepAnalysis !== null}
+      />
+      {deepAnalysis && (
+        <DeepAnalysisResult
+          data={deepAnalysis}
+          onRerun={handleDeepAnalysisRerun}
+        />
+      )}
 
       {/* Company Info Section */}
       {(listing.company_description || listing.company_website || listing.company_linkedin_url || listing.company_address_locality) && (
