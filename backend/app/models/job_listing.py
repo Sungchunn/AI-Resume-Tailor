@@ -56,6 +56,7 @@ class JobListing(Base):
     job_description = Column(Text, nullable=False)
     job_description_html = Column(Text, nullable=True)  # HTML formatted description
     extracted_keywords = Column(JSONB, nullable=True)  # Fit-scoring keywords + extracted_at
+    description_embedding = Column(JSONB, nullable=True)  # list[float] for v4 hybrid scorer
     job_url = Column(String(2000), nullable=False)
     job_url_direct = Column(String(2000), nullable=True)
     apply_url = Column(String(2000), nullable=True)  # Direct application link
