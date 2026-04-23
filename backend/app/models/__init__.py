@@ -1,6 +1,7 @@
 from app.models.ai_pricing_config import AIPricingConfig
 from app.models.ai_usage_log import AIUsageLog
 from app.models.audit_log import AuditLog
+from app.models.fit_score_batch_run import FitScoreBatchRun
 from app.models.job import JobDescription
 from app.models.job_listing import JobListing
 from app.models.resume import Resume
@@ -33,4 +34,5 @@ __all__ = [
     "RequestStatus",
     "AIUsageLog",
     "AIPricingConfig",
+    "FitScoreBatchRun",
 ]

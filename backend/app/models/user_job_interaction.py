@@ -17,7 +17,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -65,6 +65,12 @@ class UserJobInteraction(Base):
     # Job-fit pre-scoring
     fit_score_raw = Column(Integer, nullable=True)
     scored_resume_hash = Column(String(64), nullable=True)
+    # v4 transparency: semantic/keyword sub-scores, matched/missing keywords,
+    # required-skill state, and cap flag. Same shape for v3 fallback (with
+    # version=3, semantic_sub=None).
+    fit_score_breakdown = Column(JSONB, nullable=True)
+    # Denormalized from breakdown for index-backed "Hide capped scores" filter.
+    fit_score_is_capped = Column(Boolean, nullable=True)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -81,8 +87,9 @@ class UserJobInteraction(Base):
         Index("ix_user_job_interactions_saved", "user_id", "is_saved"),
         Index("ix_user_job_interactions_hidden", "user_id", "is_hidden"),
         Index("ix_user_job_interactions_status", "user_id", "application_status"),
-        # Partial index created via migration 20260420_0001 (CONCURRENTLY, not declarative):
-        # - idx_uji_fit_score: (user_id, fit_score_raw DESC) WHERE fit_score_raw IS NOT NULL
+        # Partial indexes created via migration (CONCURRENTLY, not declarative):
+        # - idx_uji_fit_score (20260420_0001): (user_id, fit_score_raw DESC) WHERE fit_score_raw IS NOT NULL
+        # - idx_uji_fit_not_capped (20260424_0001): (user_id, fit_score_raw DESC) WHERE fit_score_raw IS NOT NULL AND fit_score_is_capped IS NOT TRUE
     )
 
     def __repr__(self) -> str:
