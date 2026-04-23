@@ -16,11 +16,17 @@ v4 math (gated by ``settings.fit_score_v4_enabled``):
 
 v3 fallback (flag off, or embeddings missing on either side): pure
 capped + sqrt-curve keyword overlap.
+
+Every score is paired with a ``breakdown`` dict so the UI can render
+the formula, matched/missing keywords, and the cap state. Each run of
+``score_all_users`` writes one ``fit_score_batch_runs`` row so the UI
+can show "Scores refreshed Xh ago".
 """
 
 import logging
 import math
 import time
+from datetime import datetime, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -29,6 +35,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.db.mongodb import get_mongodb
 from app.db.session import AsyncSessionLocal
+from app.models.fit_score_batch_run import FitScoreBatchRun
 from app.models.job_listing import JobListing
 from app.models.mongo.resume import ParsedContent
 from app.models.user_job_interaction import UserJobInteraction
@@ -104,34 +111,65 @@ def compute_raw_score(
     job_required: set[str] | None = None,
     resume_embedding: list[float] | None = None,
     job_embedding: list[float] | None = None,
-) -> int:
-    """Return the 0-100 raw fit score.
+) -> tuple[int, dict]:
+    """Return ``(score, breakdown)`` for the given keyword/embedding state.
 
-    When both embeddings are supplied, uses the v4 hybrid math with the
-    required-skill cap. When either is missing, falls back to v3 keyword-only
-    math so rollout/extraction gaps do not unscore jobs.
+    Breakdown fields are the same shape across all three paths (v3 fallback,
+    v4 uncapped, v4 capped); ``version`` and ``semantic_sub`` are the only
+    path-dependent fields. The UI uses the breakdown verbatim to render
+    the formula panel, required-skills row, and keyword-overlap section.
     """
-    kw = _keyword_term(resume_keywords, job_keywords)
+    kw_raw = _keyword_term(resume_keywords, job_keywords)
+    keyword_sub = round(kw_raw * 100)
+
+    matched = sorted(resume_keywords & job_keywords)
+    missing = sorted(job_keywords - resume_keywords)
+
+    required_set = job_required or set()
+    required_matched = sorted(required_set & resume_keywords)
+    required_missing = sorted(required_set - resume_keywords)
+
+    breakdown: dict = {
+        "version": 4,
+        "semantic_sub": None,
+        "keyword_sub": keyword_sub,
+        "keyword_matched": matched,
+        "keyword_missing": missing,
+        "keyword_total": len(job_keywords),
+        "required_total": len(required_set),
+        "required_matched": required_matched,
+        "required_missing": required_missing,
+        "is_capped": False,
+        "cap_value": 100,
+    }
 
     # v3 fallback — no embedding on one side.
     if resume_embedding is None or job_embedding is None:
-        return round(kw * 100)
+        breakdown["version"] = 3
+        return round(kw_raw * 100), breakdown
 
-    sem = _calibrate_cosine(_cosine(resume_embedding, job_embedding))
-    base = _SEM_WEIGHT * sem + _KW_WEIGHT * kw
+    sem_raw = _calibrate_cosine(_cosine(resume_embedding, job_embedding))
+    breakdown["semantic_sub"] = round(sem_raw * 100)
 
-    if job_required:
-        missing = job_required - resume_keywords
-        if missing:
-            base = min(base, _REQUIRED_GATE_CAP)
+    base = _SEM_WEIGHT * sem_raw + _KW_WEIGHT * kw_raw
 
-    return round(base * 100)
+    # Cap only fires when it actually reduces the score — a low-base job with
+    # a missing required skill is already "low fit" and the UI should not
+    # show CAP 60 there.
+    if required_missing and base > _REQUIRED_GATE_CAP:
+        base = _REQUIRED_GATE_CAP
+        breakdown["is_capped"] = True
+        breakdown["cap_value"] = round(_REQUIRED_GATE_CAP * 100)
+
+    return round(base * 100), breakdown
 
 
 async def score_all_users() -> dict[str, int]:
     """Score every user's active job interactions against their master resume.
 
     Returns summary counts: users scanned, scores written, rows skipped.
+    Writes one ``fit_score_batch_runs`` row per invocation so the UI can
+    show "Scores refreshed Xh ago".
     """
     mongo_db = get_mongodb()
     settings = get_settings()
@@ -144,95 +182,151 @@ async def score_all_users() -> dict[str, int]:
         "skipped_no_job_kws": 0,
     }
 
-    projection = {
-        "user_id": 1,
-        "parsed": 1,
-        "extracted_keywords": 1,
-        "keywords_content_hash": 1,
-        "content_embedding": 1,
-        "embedding_content_hash": 1,
-    }
-    cursor = mongo_db.resumes.find(
-        {"is_master": True, "parsed_verified": True, "parsed": {"$ne": None}},
-        projection,
-    )
+    batch_run_id = await _create_batch_run()
 
-    async for doc in cursor:
-        user_id = doc.get("user_id")
-        parsed_raw = doc.get("parsed")
-        if user_id is None or not parsed_raw:
-            continue
+    try:
+        projection = {
+            "user_id": 1,
+            "parsed": 1,
+            "extracted_keywords": 1,
+            "keywords_content_hash": 1,
+            "content_embedding": 1,
+            "embedding_content_hash": 1,
+        }
+        cursor = mongo_db.resumes.find(
+            {"is_master": True, "parsed_verified": True, "parsed": {"$ne": None}},
+            projection,
+        )
 
-        summary["users"] += 1
-        parsed = ParsedContent(**parsed_raw)
+        async for doc in cursor:
+            user_id = doc.get("user_id")
+            parsed_raw = doc.get("parsed")
+            if user_id is None or not parsed_raw:
+                continue
 
-        # --- Keywords (lazy-compute if missing) ---
-        resume_keywords_list = doc.get("extracted_keywords")
-        resume_kw_hash = doc.get("keywords_content_hash")
-        if not resume_keywords_list or not resume_kw_hash:
-            resume_keywords_list = sorted(extract_resume_keywords(parsed))
-            resume_kw_hash = compute_resume_keywords_hash(parsed)
-            await mongo_db.resumes.update_one(
-                {"_id": doc["_id"]},
-                {
-                    "$set": {
-                        "extracted_keywords": resume_keywords_list,
-                        "keywords_content_hash": resume_kw_hash,
-                    }
-                },
-            )
+            summary["users"] += 1
+            parsed = ParsedContent(**parsed_raw)
 
-        resume_keywords: set[str] = {kw.lower() for kw in resume_keywords_list}
-
-        # --- Embedding (lazy-compute only when hybrid is enabled) ---
-        resume_embedding: list[float] | None = doc.get("content_embedding")
-        resume_emb_hash: str | None = doc.get("embedding_content_hash")
-        current_emb_hash = compute_resume_embedding_hash(parsed)
-
-        if hybrid_enabled and (
-            resume_embedding is None or resume_emb_hash != current_emb_hash
-        ):
-            try:
-                embed_response = await get_embedding_service()._embed_with_metrics(
-                    text=build_resume_embedding_text(parsed),
-                    task_type=EmbeddingTaskType.SEMANTIC_SIMILARITY,
-                )
-                resume_embedding = embed_response.embedding
-                resume_emb_hash = current_emb_hash
+            # --- Keywords (lazy-compute if missing) ---
+            resume_keywords_list = doc.get("extracted_keywords")
+            resume_kw_hash = doc.get("keywords_content_hash")
+            if not resume_keywords_list or not resume_kw_hash:
+                resume_keywords_list = sorted(extract_resume_keywords(parsed))
+                resume_kw_hash = compute_resume_keywords_hash(parsed)
                 await mongo_db.resumes.update_one(
                     {"_id": doc["_id"]},
                     {
                         "$set": {
-                            "content_embedding": resume_embedding,
-                            "embedding_content_hash": resume_emb_hash,
+                            "extracted_keywords": resume_keywords_list,
+                            "keywords_content_hash": resume_kw_hash,
                         }
                     },
                 )
-            except Exception:
-                logger.exception(
-                    "fit-scoring: resume embedding failed user=%s (falling back to v3)",
+
+            resume_keywords: set[str] = {kw.lower() for kw in resume_keywords_list}
+
+            # --- Embedding (lazy-compute only when hybrid is enabled) ---
+            resume_embedding: list[float] | None = doc.get("content_embedding")
+            resume_emb_hash: str | None = doc.get("embedding_content_hash")
+            current_emb_hash = compute_resume_embedding_hash(parsed)
+
+            if hybrid_enabled and (
+                resume_embedding is None or resume_emb_hash != current_emb_hash
+            ):
+                try:
+                    embed_response = await get_embedding_service()._embed_with_metrics(
+                        text=build_resume_embedding_text(parsed),
+                        task_type=EmbeddingTaskType.SEMANTIC_SIMILARITY,
+                    )
+                    resume_embedding = embed_response.embedding
+                    resume_emb_hash = current_emb_hash
+                    await mongo_db.resumes.update_one(
+                        {"_id": doc["_id"]},
+                        {
+                            "$set": {
+                                "content_embedding": resume_embedding,
+                                "embedding_content_hash": resume_emb_hash,
+                            }
+                        },
+                    )
+                except Exception:
+                    logger.exception(
+                        "fit-scoring: resume embedding failed user=%s (falling back to v3)",
+                        user_id,
+                    )
+                    resume_embedding = None
+                    resume_emb_hash = None
+
+            # Combined hash so v3↔v4 flips, keyword edits, and content edits all
+            # trigger re-scoring on the next run.
+            combined_hash = f"{resume_kw_hash}:{resume_emb_hash or '-'}:{int(hybrid_enabled)}"
+
+            async with AsyncSessionLocal() as pg_session:
+                counts = await _score_user(
+                    pg_session,
                     user_id,
+                    resume_keywords,
+                    combined_hash,
+                    resume_embedding=resume_embedding if hybrid_enabled else None,
                 )
-                resume_embedding = None
-                resume_emb_hash = None
+            for key, delta in counts.items():
+                summary[key] = summary.get(key, 0) + delta
 
-        # Combined hash so v3↔v4 flips, keyword edits, and content edits all
-        # trigger re-scoring on the next run.
-        combined_hash = f"{resume_kw_hash}:{resume_emb_hash or '-'}:{int(hybrid_enabled)}"
-
-        async with AsyncSessionLocal() as pg_session:
-            counts = await _score_user(
-                pg_session,
-                user_id,
-                resume_keywords,
-                combined_hash,
-                resume_embedding=resume_embedding if hybrid_enabled else None,
-            )
-        for key, delta in counts.items():
-            summary[key] = summary.get(key, 0) + delta
+        await _complete_batch_run(
+            batch_run_id,
+            status="completed",
+            users_count=summary["users"],
+            rows_written=summary["written"],
+        )
+    except Exception:
+        await _complete_batch_run(
+            batch_run_id,
+            status="failed",
+            users_count=summary["users"],
+            rows_written=summary["written"],
+        )
+        raise
 
     logger.info("fit-scoring: batch complete — %s", summary)
     return summary
+
+
+async def _create_batch_run() -> int | None:
+    """Insert a running batch-run row; return its id (None on failure)."""
+    try:
+        async with AsyncSessionLocal() as pg_session:
+            row = FitScoreBatchRun(status="running")
+            pg_session.add(row)
+            await pg_session.commit()
+            await pg_session.refresh(row)
+            return row.id
+    except Exception:
+        logger.exception("fit-scoring: failed to create batch-run row")
+        return None
+
+
+async def _complete_batch_run(
+    batch_run_id: int | None,
+    *,
+    status: str,
+    users_count: int,
+    rows_written: int,
+) -> None:
+    """Mark the batch-run row as completed/failed with final counts."""
+    if batch_run_id is None:
+        return
+    try:
+        async with AsyncSessionLocal() as pg_session:
+            row = await pg_session.get(FitScoreBatchRun, batch_run_id)
+            if row is None:
+                return
+            row.status = status
+            row.users_count = users_count
+            row.rows_written = rows_written
+            row.completed_at = datetime.now(timezone.utc)
+            await pg_session.commit()
+    except Exception:
+        logger.exception("fit-scoring: failed to update batch-run id=%s", batch_run_id)
 
 
 async def _score_user(
@@ -302,7 +396,7 @@ async def _score_user(
             skipped_no_change += 1
             continue
 
-        raw_score = compute_raw_score(
+        raw_score, breakdown = compute_raw_score(
             resume_keywords,
             job_keywords,
             job_required=job_required,
@@ -315,6 +409,8 @@ async def _score_user(
                 "job_listing_id": job.id,
                 "fit_score_raw": raw_score,
                 "scored_resume_hash": resume_hash,
+                "fit_score_breakdown": breakdown,
+                "fit_score_is_capped": breakdown["is_capped"],
             }
         )
 
@@ -327,6 +423,8 @@ async def _score_user(
             set_={
                 "fit_score_raw": stmt.excluded.fit_score_raw,
                 "scored_resume_hash": stmt.excluded.scored_resume_hash,
+                "fit_score_breakdown": stmt.excluded.fit_score_breakdown,
+                "fit_score_is_capped": stmt.excluded.fit_score_is_capped,
                 "updated_at": func.now(),
             },
         )

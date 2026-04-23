@@ -370,6 +370,17 @@ class JobListingRepository:
                 else:
                     conditions.append(UserJobInteraction.applied_at.is_(None))
 
+            # Hide rows where the required-skill gate capped the score.
+            # Unscored rows (fit_score_is_capped IS NULL) remain visible —
+            # the cap flag only means something after a batch has scored the row.
+            if filters.hide_capped:
+                conditions.append(
+                    or_(
+                        UserJobInteraction.fit_score_is_capped.is_(None),
+                        UserJobInteraction.fit_score_is_capped == False,  # noqa: E712
+                    )
+                )
+
         # Apply all conditions
         if conditions:
             query = query.where(and_(*conditions))

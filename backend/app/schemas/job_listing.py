@@ -51,6 +51,48 @@ class ApplicationStatus(str, Enum):
 
 
 # ============================================================================
+# Fit-Score Schemas
+# ============================================================================
+
+
+class FitScoreBreakdown(BaseModel):
+    """Per-user-per-job breakdown of the computed fit score.
+
+    Same shape across v3 fallback and v4. v3 scores report ``version=3``
+    and ``semantic_sub=None``; v4 reports ``version=4`` and integer
+    ``semantic_sub``. ``is_capped=True`` only when the required-skill
+    gate actually reduced the score.
+    """
+
+    version: int
+    semantic_sub: int | None = None
+    keyword_sub: int
+    keyword_matched: list[str] = Field(default_factory=list)
+    keyword_missing: list[str] = Field(default_factory=list)
+    keyword_total: int = 0
+    required_total: int = 0
+    required_matched: list[str] = Field(default_factory=list)
+    required_missing: list[str] = Field(default_factory=list)
+    is_capped: bool = False
+    cap_value: int = 100
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FitScoreMetaResponse(BaseModel):
+    """Response for ``GET /job-listings/fit-score-meta``.
+
+    Drives the "Scores refreshed Xh ago (daily batch)" header on /jobs.
+    ``last_run_at`` is None before the first batch has ever run.
+    """
+
+    last_run_at: datetime | None = None
+    users_count: int | None = None
+    rows_written: int | None = None
+    status: str | None = None
+
+
+# ============================================================================
 # JobListing Schemas
 # ============================================================================
 
@@ -167,6 +209,9 @@ class JobListingResponse(JobListingBase):
     # Job-fit pre-scoring (see docs/features/ats/260420_job-fit-prescoring)
     fit_score_raw: int | None = None
     is_score_stale: bool = False
+    # v4 transparency (see docs/features/ats/260424_fit-score-v4-transparency)
+    fit_score_breakdown: FitScoreBreakdown | None = None
+    fit_score_is_capped: bool = False
 
     model_config = {"from_attributes": True}
 
@@ -215,6 +260,9 @@ class JobListingListItem(BaseModel):
     # Job-fit pre-scoring (see docs/features/ats/260420_job-fit-prescoring)
     fit_score_raw: int | None = None
     is_score_stale: bool = False
+    # v4 transparency (see docs/features/ats/260424_fit-score-v4-transparency)
+    fit_score_breakdown: FitScoreBreakdown | None = None
+    fit_score_is_capped: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -304,6 +352,10 @@ class JobListingFilters(BaseModel):
     is_saved: bool | None = None
     is_hidden: bool | None = None
     applied: bool | None = None
+
+    # Hide rows where the required-skill gate capped the score.
+    # Default off here (backend-safe); the /jobs page sets it True by default.
+    hide_capped: bool = False
 
     # Only show active listings (default True)
     active_only: bool = True

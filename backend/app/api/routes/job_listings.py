@@ -12,15 +12,19 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from fastapi_cache import FastAPICache
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUserId, DBSession, DBSessionWithRLS
 from app.crud import job_listing_repository, user_job_interaction_repository
 from app.db.mongodb import get_mongodb
+from app.models.fit_score_batch_run import FitScoreBatchRun
 from app.schemas.job_listing import (
     ApplicationStatus,
     ApplyJobRequest,
     FilterOption,
+    FitScoreBreakdown,
+    FitScoreMetaResponse,
     HideJobRequest,
     JobInteractionActionResponse,
     JobListingFilterOptionsResponse,
@@ -61,13 +65,17 @@ def _filter_options_cache_key() -> str:
     return f"{FastAPICache.get_prefix()}:job-listings:filter-options"
 
 
+_PER_USER_FILTER_KEYS = frozenset({"is_saved", "is_hidden", "applied", "hide_capped"})
+
+
 def _public_list_cache_key(filters: "JobListingFilters") -> str:
     """Build a cache key for the public portion of the list endpoint.
 
-    Excludes user-interaction filters (``is_saved``, ``is_hidden``, ``applied``)
-    so the entry can be shared across users.
+    Excludes per-user filters (saved/hidden/applied and the new
+    ``hide_capped`` which depends on user-specific cap state) so the entry
+    can be shared across users.
     """
-    public_bits = filters.model_dump(exclude={"is_saved", "is_hidden", "applied"})
+    public_bits = filters.model_dump(exclude=set(_PER_USER_FILTER_KEYS))
     raw = repr(sorted(public_bits.items(), key=lambda kv: kv[0]))
     digest = hashlib.md5(raw.encode()).hexdigest()  # noqa: S324
     return f"{FastAPICache.get_prefix()}:job-listings:public:{digest}"
@@ -80,7 +88,7 @@ def _public_count_cache_key(filters: "JobListingFilters") -> str:
     filters so pages 2+ reuse page 1's count under the same filter set.
     """
     public_bits = filters.model_dump(
-        exclude={"is_saved", "is_hidden", "applied", "limit", "offset"}
+        exclude=set(_PER_USER_FILTER_KEYS) | {"limit", "offset"}
     )
     raw = repr(sorted(public_bits.items(), key=lambda kv: kv[0]))
     digest = hashlib.md5(raw.encode()).hexdigest()  # noqa: S324
@@ -229,6 +237,8 @@ def _build_list_item_response(
         "application_status": None,
         "fit_score_raw": None,
         "is_score_stale": False,
+        "fit_score_breakdown": None,
+        "fit_score_is_capped": False,
     }
 
     if interaction:
@@ -240,6 +250,11 @@ def _build_list_item_response(
         response_data["is_score_stale"] = _compute_is_stale(
             interaction.scored_resume_hash, current_resume_hash
         )
+        if interaction.fit_score_breakdown is not None:
+            response_data["fit_score_breakdown"] = FitScoreBreakdown.model_validate(
+                interaction.fit_score_breakdown
+            )
+        response_data["fit_score_is_capped"] = bool(interaction.fit_score_is_capped)
 
     return JobListingListItem(**response_data)
 
@@ -256,6 +271,9 @@ def _merge_interaction_into_item(
     """
     if interaction is None:
         return item
+    breakdown: FitScoreBreakdown | None = None
+    if interaction.fit_score_breakdown is not None:
+        breakdown = FitScoreBreakdown.model_validate(interaction.fit_score_breakdown)
     return item.model_copy(
         update={
             "is_saved": interaction.is_saved,
@@ -266,6 +284,8 @@ def _merge_interaction_into_item(
             "is_score_stale": _compute_is_stale(
                 interaction.scored_resume_hash, current_resume_hash
             ),
+            "fit_score_breakdown": breakdown,
+            "fit_score_is_capped": bool(interaction.fit_score_is_capped),
         }
     )
 
@@ -325,6 +345,8 @@ def _build_listing_response(
         "column_position": 0,
         "fit_score_raw": None,
         "is_score_stale": False,
+        "fit_score_breakdown": None,
+        "fit_score_is_capped": False,
     }
 
     if interaction:
@@ -338,6 +360,11 @@ def _build_listing_response(
         response_data["is_score_stale"] = _compute_is_stale(
             interaction.scored_resume_hash, current_resume_hash
         )
+        if interaction.fit_score_breakdown is not None:
+            response_data["fit_score_breakdown"] = FitScoreBreakdown.model_validate(
+                interaction.fit_score_breakdown
+            )
+        response_data["fit_score_is_capped"] = bool(interaction.fit_score_is_capped)
 
     return JobListingResponse(**response_data)
 
@@ -354,6 +381,48 @@ def _build_kanban_item(listing, interaction) -> KanbanJobItem:
         status_changed_at=interaction.status_changed_at,
         applied_at=interaction.applied_at,
         column_position=interaction.column_position or 0,
+    )
+
+
+@router.get("/fit-score-meta", response_model=FitScoreMetaResponse)
+async def get_fit_score_meta(
+    response: Response,
+    db: DBSession,
+    current_user_id: CurrentUserId,
+) -> FitScoreMetaResponse:
+    """Return metadata about the most recent fit-score batch run.
+
+    Drives the "Scores refreshed Xh ago (daily batch)" header on /jobs.
+    Returns the latest row from ``fit_score_batch_runs``; ``last_run_at``
+    is ``None`` before the first batch has ever completed.
+    """
+    # Short cache — batch runs daily, so 5 minutes is plenty and avoids
+    # hammering the DB when every /jobs page render calls this.
+    response.headers["Cache-Control"] = "private, max-age=300"
+
+    stmt = (
+        select(
+            FitScoreBatchRun.started_at,
+            FitScoreBatchRun.completed_at,
+            FitScoreBatchRun.users_count,
+            FitScoreBatchRun.rows_written,
+            FitScoreBatchRun.status,
+        )
+        .order_by(FitScoreBatchRun.started_at.desc())
+        .limit(1)
+    )
+    row = (await db.execute(stmt)).first()
+    if row is None:
+        return FitScoreMetaResponse()
+
+    # Prefer completed_at when available; fall back to started_at so the UI
+    # still shows a timestamp while a batch is in progress.
+    last_run_at = row.completed_at or row.started_at
+    return FitScoreMetaResponse(
+        last_run_at=last_run_at,
+        users_count=row.users_count,
+        rows_written=row.rows_written,
+        status=row.status,
     )
 
 
@@ -487,6 +556,8 @@ async def list_job_listings(
     is_saved: Annotated[bool | None, Query(description="Filter by saved status")] = None,
     is_hidden: Annotated[bool | None, Query(description="Filter by hidden status")] = None,
     applied: Annotated[bool | None, Query(description="Filter by applied status")] = None,
+    # Hide rows where the required-skill gate capped the score at 60.
+    hide_capped: Annotated[bool, Query(description="Hide rows where the required-skill gate capped the score")] = False,
     # Sorting
     sort_by: Annotated[SortBy, Query(description="Sort field")] = SortBy.DATE_POSTED,
     sort_order: Annotated[SortOrder, Query(description="Sort order")] = SortOrder.DESC,
@@ -527,13 +598,19 @@ async def list_job_listings(
         is_saved=is_saved,
         is_hidden=is_hidden,
         applied=applied,
+        hide_capped=hide_capped,
         sort_by=sort_by,
         sort_order=sort_order,
         limit=limit,
         offset=offset,
     )
 
-    has_user_filter = is_saved is not None or is_hidden is not None or applied is not None
+    has_user_filter = (
+        is_saved is not None
+        or is_hidden is not None
+        or applied is not None
+        or hide_capped
+    )
 
     current_resume_hash = await _get_current_master_resume_hash(current_user_id)
 
