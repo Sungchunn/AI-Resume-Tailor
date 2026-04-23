@@ -1,22 +1,25 @@
+/**
+ * Fit-score primitives shared by the new transparency surfaces
+ * (FitScoreCell, FitScoreHero, etc.). The previous default `FitScoreGauge`
+ * component — horizontal bar in card view, circular ring in page header —
+ * has been superseded by those surfaces (see
+ * docs/features/ats/260424_fit-score-v4-transparency/master-plan.md). The
+ * file kept the old name so as not to thrash import paths for the
+ * primitives; rename to `fit-score-primitives.tsx` in a follow-up if
+ * needed.
+ */
 import { cn } from "@/lib/utils";
 
-interface FitScoreGaugeProps {
-  rawScore: number | null;
-  isStale?: boolean;
-  size?: "md" | "lg";
-  className?: string;
-}
+export type FitScoreTier = "strong" | "fair" | "low";
 
-type Tier = "strong" | "fair" | "low";
-
-function resolveTier(display: number): Tier {
+export function resolveTier(display: number): FitScoreTier {
   if (display >= 75) return "strong";
   if (display >= 55) return "fair";
   return "low";
 }
 
-const TIER_STYLES: Record<
-  Tier,
+export const TIER_STYLES: Record<
+  FitScoreTier,
   { fill: string; text: string; glow: string; stroke: string; gradId: string }
 > = {
   strong: {
@@ -48,9 +51,18 @@ interface TrackProps {
   height: number;
   fill: string;
   glow: string;
+  /** Show 55%/75% tier boundary ticks. Default true — turn off for mini-bars. */
+  showTierMarks?: boolean;
 }
 
-function Track({ displayScore, width, height, fill, glow }: TrackProps) {
+export function Track({
+  displayScore,
+  width,
+  height,
+  fill,
+  glow,
+  showTierMarks = true,
+}: TrackProps) {
   return (
     <div
       className={cn(
@@ -61,175 +73,29 @@ function Track({ displayScore, width, height, fill, glow }: TrackProps) {
       )}
       style={{ width, height }}
     >
-      <div
-        className="absolute inset-y-0 w-px bg-zinc-300/80 dark:bg-zinc-700"
-        style={{ left: "55%" }}
-        aria-hidden="true"
-      />
-      <div
-        className="absolute inset-y-0 w-px bg-zinc-300/80 dark:bg-zinc-700"
-        style={{ left: "75%" }}
-        aria-hidden="true"
-      />
+      {showTierMarks ? (
+        <>
+          <div
+            className="absolute inset-y-0 w-px bg-zinc-300/80 dark:bg-zinc-700"
+            style={{ left: "55%" }}
+            aria-hidden="true"
+          />
+          <div
+            className="absolute inset-y-0 w-px bg-zinc-300/80 dark:bg-zinc-700"
+            style={{ left: "75%" }}
+            aria-hidden="true"
+          />
+        </>
+      ) : null}
       <div
         className={cn(
           "h-full rounded-full transition-[width] duration-500 ease-out",
           fill,
           glow,
         )}
-        style={{ width: `${displayScore}%` }}
+        style={{ width: `${Math.max(0, Math.min(100, displayScore))}%` }}
       />
     </div>
   );
 }
 
-interface RingProps {
-  displayScore: number;
-  tier: Tier;
-  textClass: string;
-  isStale: boolean;
-}
-
-function Ring({ displayScore, tier, textClass, isStale }: RingProps) {
-  const size = 56;
-  const stroke = 5;
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - displayScore / 100);
-
-  const gradients = {
-    strong: { from: "#34d399", to: "#22c55e" },
-    fair: { from: "#fbbf24", to: "#fb923c" },
-    low: { from: "#a1a1aa", to: "#71717a" },
-  } as const;
-  const { from, to } = gradients[tier];
-
-  return (
-    <div
-      className={cn(
-        "relative inline-flex items-center justify-center",
-        isStale && "opacity-60",
-      )}
-      style={{ width: size, height: size }}
-    >
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        className="-rotate-90"
-      >
-        <defs>
-          <linearGradient id={TIER_STYLES[tier].gradId} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={from} />
-            <stop offset="100%" stopColor={to} />
-          </linearGradient>
-        </defs>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          className="stroke-zinc-200 dark:stroke-zinc-700"
-          strokeWidth={stroke}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={TIER_STYLES[tier].stroke}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="transition-[stroke-dashoffset] duration-500 ease-out"
-        />
-      </svg>
-      <span
-        className={cn(
-          "absolute inset-0 flex items-center justify-center text-base font-bold tabular-nums tracking-tight",
-          textClass,
-        )}
-      >
-        {displayScore}
-      </span>
-    </div>
-  );
-}
-
-/**
- * Fit-score gauge. Returns null when unscored.
- *
- * - ``md``: inline horizontal bar for card lists.
- * - ``lg``: compact circular ring gauge for page headers.
- */
-export function FitScoreGauge({
-  rawScore,
-  isStale = false,
-  size = "md",
-  className,
-}: FitScoreGaugeProps) {
-  if (rawScore === null || rawScore === undefined) return null;
-
-  const displayScore = Math.max(0, Math.min(100, Math.round(rawScore)));
-  const tier = resolveTier(displayScore);
-  const { fill, text, glow } = TIER_STYLES[tier];
-  const title = isStale
-    ? "Score will refresh on next daily update"
-    : `Fit score: ${displayScore}/100`;
-  const ariaLabel = `Fit score ${displayScore} out of 100`;
-
-  if (size === "lg") {
-    return (
-      <div
-        className={cn("inline-flex items-center gap-2", className)}
-        title={title}
-        aria-label={ariaLabel}
-      >
-        <Ring
-          displayScore={displayScore}
-          tier={tier}
-          textClass={text}
-          isStale={isStale}
-        />
-        <span
-          className={cn(
-            "text-[10px] font-semibold uppercase tracking-[0.14em]",
-            isStale ? "text-muted-foreground opacity-60" : "text-muted-foreground",
-          )}
-        >
-          Fit
-        </span>
-      </div>
-    );
-  }
-
-  // md — inline horizontal
-  return (
-    <div
-      className={cn(
-        "inline-flex items-center gap-2 leading-none",
-        isStale && "opacity-60",
-        className,
-      )}
-      title={title}
-      aria-label={ariaLabel}
-    >
-      <Track
-        displayScore={displayScore}
-        width={84}
-        height={8}
-        fill={fill}
-        glow={glow}
-      />
-      <div className="flex items-baseline gap-0.5">
-        <span className={cn("text-sm font-semibold tabular-nums tracking-tight", text)}>
-          {displayScore}
-        </span>
-        <span className={cn("text-[9px] font-medium opacity-60", text)}>
-          /100
-        </span>
-      </div>
-    </div>
-  );
-}

@@ -726,6 +726,38 @@ export interface DocumentExtractionResponse {
 // Job Listing Types (System-wide jobs from external sources)
 // ============================================================================
 
+/**
+ * Per-user-per-job breakdown of the computed fit score. Same shape for v3
+ * fallback (`version: 3`, `semantic_sub: null`) and v4. `is_capped=true`
+ * only when the required-skill gate actually reduced the score — a
+ * low-base job with a missing required does NOT render CAP 60.
+ */
+export interface FitScoreBreakdown {
+  version: number;
+  semantic_sub: number | null;
+  keyword_sub: number;
+  keyword_matched: string[];
+  keyword_missing: string[];
+  keyword_total: number;
+  required_total: number;
+  required_matched: string[];
+  required_missing: string[];
+  is_capped: boolean;
+  cap_value: number;
+}
+
+/**
+ * Response for `GET /job-listings/fit-score-meta`. Drives the "Scores
+ * refreshed Xh ago (daily batch)" header on /jobs. `last_run_at` is null
+ * before the first batch has ever completed.
+ */
+export interface FitScoreMetaResponse {
+  last_run_at: string | null;
+  users_count: number | null;
+  rows_written: number | null;
+  status: string | null;
+}
+
 export type SeniorityLevel = "entry" | "mid" | "senior" | "lead" | "executive";
 export type JobListingSortBy =
   | "date_posted"
@@ -783,6 +815,9 @@ export interface JobListingResponse {
   // Job-fit pre-scoring
   fit_score_raw: number | null;
   is_score_stale: boolean;
+  // v4 transparency
+  fit_score_breakdown: FitScoreBreakdown | null;
+  fit_score_is_capped: boolean;
 }
 
 export interface JobListingListResponse {
@@ -824,6 +859,9 @@ export interface JobListingListItem {
   // Job-fit pre-scoring
   fit_score_raw: number | null;
   is_score_stale: boolean;
+  // v4 transparency
+  fit_score_breakdown: FitScoreBreakdown | null;
+  fit_score_is_capped: boolean;
 }
 
 export interface JobListingListItemResponse {
@@ -855,6 +893,8 @@ export interface JobListingFilters {
   is_saved?: boolean;
   is_hidden?: boolean;
   applied?: boolean;
+  /** Hide rows where the required-skill gate capped the score at 60. */
+  hide_capped?: boolean;
   sort_by?: JobListingSortBy;
   sort_order?: SortOrder;
   limit?: number;

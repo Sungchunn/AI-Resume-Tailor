@@ -59,6 +59,7 @@ import type {
   AdHocScrapeResponse,
   ScraperBatchResult,
   JobListingFilterOptionsResponse,
+  FitScoreMetaResponse,
   ScraperPresetCreate,
   ScraperPresetUpdate,
   ScraperPresetResponse,
@@ -745,6 +746,7 @@ export const jobListingApi = {
     if (filters.is_saved !== undefined) searchParams.append("is_saved", String(filters.is_saved));
     if (filters.is_hidden !== undefined) searchParams.append("is_hidden", String(filters.is_hidden));
     if (filters.applied !== undefined) searchParams.append("applied", String(filters.applied));
+    if (filters.hide_capped) searchParams.append("hide_capped", "true");
     if (filters.sort_by) searchParams.append("sort_by", filters.sort_by);
     if (filters.sort_order) searchParams.append("sort_order", filters.sort_order);
     if (filters.limit !== undefined) searchParams.append("limit", String(filters.limit));
@@ -756,6 +758,9 @@ export const jobListingApi = {
 
   getFilterOptions: (): Promise<JobListingFilterOptionsResponse> =>
     fetchApi("/api/job-listings/filter-options"),
+
+  getFitScoreMeta: (): Promise<FitScoreMetaResponse> =>
+    fetchApi("/api/job-listings/fit-score-meta"),
 
   search: (q: string, limit = 20, offset = 0): Promise<JobListingListItemResponse> =>
     fetchApi(`/api/job-listings/search?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`),

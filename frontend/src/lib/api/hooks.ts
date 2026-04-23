@@ -99,6 +99,7 @@ export const queryKeys = {
       [...queryKeys.jobListings.all, "search", query] as const,
     kanban: () => [...queryKeys.jobListings.all, "kanban"] as const,
     filterOptions: () => [...queryKeys.jobListings.all, "filterOptions"] as const,
+    fitScoreMeta: () => [...queryKeys.jobListings.all, "fit-score-meta"] as const,
   },
   scraperPresets: {
     all: ["scraperPresets"] as const,
@@ -718,6 +719,18 @@ export function useFilterOptions() {
     queryKey: queryKeys.jobListings.filterOptions(),
     queryFn: () => jobListingApi.getFilterOptions(),
     staleTime: 60 * 60 * 1000, // 1 hour — filter options change infrequently
+  });
+}
+
+/**
+ * Metadata about the most recent fit-score batch run. Drives the
+ * "Scores refreshed Xh ago (daily batch)" subtitle on /jobs.
+ */
+export function useFitScoreMeta() {
+  return useQuery({
+    queryKey: queryKeys.jobListings.fitScoreMeta(),
+    queryFn: () => jobListingApi.getFitScoreMeta(),
+    staleTime: 5 * 60 * 1000, // 5 min — batch runs daily
   });
 }
 
