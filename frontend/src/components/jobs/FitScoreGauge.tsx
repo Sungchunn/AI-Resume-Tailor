@@ -7,11 +7,6 @@ interface FitScoreGaugeProps {
   className?: string;
 }
 
-const SIZES = {
-  md: { barWidth: 84, barHeight: 8, fontSize: 14, labelSize: 9, gap: 8 },
-  lg: { barWidth: 160, barHeight: 10, fontSize: 22, labelSize: 10, gap: 12 },
-} as const;
-
 type Tier = "strong" | "fair" | "low";
 
 function resolveTier(display: number): Tier {
@@ -27,7 +22,6 @@ const TIER_STYLES: Record<
   strong: {
     fill: "bg-gradient-to-r from-emerald-400 to-green-500 dark:from-emerald-400 dark:to-green-400",
     text: "text-green-700 dark:text-green-300",
-    // Subtle tinted shadow so the green feels alive without being loud.
     glow: "shadow-[0_0_8px_rgba(34,197,94,0.35)]",
   },
   fair: {
@@ -42,10 +36,53 @@ const TIER_STYLES: Record<
   },
 };
 
+interface TrackProps {
+  displayScore: number;
+  width: number;
+  height: number;
+  fill: string;
+  glow: string;
+}
+
+function Track({ displayScore, width, height, fill, glow }: TrackProps) {
+  return (
+    <div
+      className={cn(
+        "relative rounded-full overflow-hidden",
+        "bg-zinc-200/80 dark:bg-zinc-800",
+        "ring-1 ring-inset ring-zinc-300/60 dark:ring-zinc-700/60",
+        "shadow-inner",
+      )}
+      style={{ width, height }}
+    >
+      {/* Tier tick marks at 55 and 75 — subtle, only visible against the track */}
+      <div
+        className="absolute inset-y-0 w-px bg-zinc-300/80 dark:bg-zinc-700"
+        style={{ left: "55%" }}
+        aria-hidden="true"
+      />
+      <div
+        className="absolute inset-y-0 w-px bg-zinc-300/80 dark:bg-zinc-700"
+        style={{ left: "75%" }}
+        aria-hidden="true"
+      />
+      <div
+        className={cn(
+          "h-full rounded-full transition-[width] duration-500 ease-out",
+          fill,
+          glow,
+        )}
+        style={{ width: `${displayScore}%` }}
+      />
+    </div>
+  );
+}
+
 /**
- * Compact horizontal fit-score bar. Raw score is 0-100 — no display skew;
- * the backend sqrt curve already lifts mid-range overlaps. Returns null
- * when the job hasn't been scored yet.
+ * Fit-score gauge. Returns null when unscored.
+ *
+ * - ``md``: inline horizontal layout for card lists (bar + number side-by-side).
+ * - ``lg``: compact vertical stat for page headers (label + number over bar).
  */
 export function FitScoreGauge({
   rawScore,
@@ -58,68 +95,70 @@ export function FitScoreGauge({
   const displayScore = Math.max(0, Math.min(100, Math.round(rawScore)));
   const tier = resolveTier(displayScore);
   const { fill, text, glow } = TIER_STYLES[tier];
-  const { barWidth, barHeight, fontSize, labelSize, gap } = SIZES[size];
+  const title = isStale
+    ? "Score will refresh on next daily update"
+    : `Fit score: ${displayScore}/100`;
+  const ariaLabel = `Fit score ${displayScore} out of 100`;
 
+  if (size === "lg") {
+    return (
+      <div
+        className={cn(
+          "inline-flex flex-col items-end gap-1.5 leading-none",
+          isStale && "opacity-60",
+          className,
+        )}
+        title={title}
+        aria-label={ariaLabel}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Fit
+          </span>
+          <div className="flex items-baseline gap-0.5">
+            <span className={cn("text-2xl font-bold tabular-nums tracking-tight", text)}>
+              {displayScore}
+            </span>
+            <span className={cn("text-[11px] font-medium opacity-60", text)}>
+              /100
+            </span>
+          </div>
+        </div>
+        <Track
+          displayScore={displayScore}
+          width={132}
+          height={6}
+          fill={fill}
+          glow={glow}
+        />
+      </div>
+    );
+  }
+
+  // md — inline horizontal
   return (
     <div
       className={cn(
-        "inline-flex items-center leading-none",
+        "inline-flex items-center gap-2 leading-none",
         isStale && "opacity-60",
         className,
       )}
-      style={{ gap }}
-      title={
-        isStale
-          ? "Score will refresh on next daily update"
-          : `Fit score: ${displayScore}/100`
-      }
-      aria-label={`Fit score ${displayScore} out of 100`}
+      title={title}
+      aria-label={ariaLabel}
     >
-      <div
-        className={cn(
-          "relative rounded-full overflow-hidden",
-          "bg-zinc-200/80 dark:bg-zinc-800",
-          "ring-1 ring-inset ring-zinc-300/60 dark:ring-zinc-700/60",
-          "shadow-inner",
-        )}
-        style={{ width: barWidth, height: barHeight }}
-      >
-        {/* Tier tick marks at 55 and 75 — subtle, only visible against the track */}
-        <div
-          className="absolute inset-y-0 w-px bg-zinc-300/80 dark:bg-zinc-700"
-          style={{ left: "55%" }}
-          aria-hidden="true"
-        />
-        <div
-          className="absolute inset-y-0 w-px bg-zinc-300/80 dark:bg-zinc-700"
-          style={{ left: "75%" }}
-          aria-hidden="true"
-        />
-
-        {/* Filled portion with gradient + soft tier glow */}
-        <div
-          className={cn(
-            "h-full rounded-full transition-[width] duration-500 ease-out",
-            fill,
-            glow,
-          )}
-          style={{ width: `${displayScore}%` }}
-        />
-      </div>
-
-      <div className="flex items-baseline" style={{ gap: Math.max(2, gap - 6) }}>
-        <span
-          className={cn("font-semibold tabular-nums tracking-tight", text)}
-          style={{ fontSize }}
-        >
+      <Track
+        displayScore={displayScore}
+        width={84}
+        height={8}
+        fill={fill}
+        glow={glow}
+      />
+      <div className="flex items-baseline gap-0.5">
+        <span className={cn("text-sm font-semibold tabular-nums tracking-tight", text)}>
           {displayScore}
         </span>
-        <span
-          className={cn("font-medium opacity-60", text)}
-          style={{ fontSize: labelSize }}
-          aria-hidden="true"
-        >
-          / 100
+        <span className={cn("text-[9px] font-medium opacity-60", text)}>
+          /100
         </span>
       </div>
     </div>
