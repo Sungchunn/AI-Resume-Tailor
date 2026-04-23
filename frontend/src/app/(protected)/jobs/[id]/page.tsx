@@ -22,7 +22,10 @@ import {
   MapPinIcon,
 } from "@/components/icons";
 import { sanitizeHtml } from "@/lib/utils/sanitize";
-import { FitScoreGauge } from "@/components/jobs/FitScoreGauge";
+import { FitScoreHero } from "@/components/jobs/fit-score/FitScoreHero";
+import { FitScoreFormulaPanel } from "@/components/jobs/fit-score/FitScoreFormulaPanel";
+import { RequiredSkillsRow } from "@/components/jobs/fit-score/RequiredSkillsRow";
+import { KeywordOverlapSection } from "@/components/jobs/fit-score/KeywordOverlapSection";
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -167,13 +170,8 @@ export default function JobDetailPage() {
             </div>
           </div>
 
-          {/* Right column: fit-score stat on top, action buttons below */}
+          {/* Right column: action buttons only (fit score moves to the hero block below) */}
           <div className="flex flex-col items-end gap-3 shrink-0">
-            <FitScoreGauge
-              rawScore={listing.fit_score_raw}
-              isStale={listing.is_score_stale}
-              size="lg"
-            />
             <div className="flex gap-2">
               <button
                 onClick={handleSave}
@@ -302,6 +300,25 @@ export default function JobDetailPage() {
           Optimize Resume for This Job
         </Link>
       </div>
+
+      {/* Fit-score transparency: hero + formula + required skills + keyword overlap.
+          Wave 2 will insert a "Run deep analysis" CTA between KeywordOverlapSection
+          and "About Company". */}
+      <FitScoreHero
+        rawScore={listing.fit_score_raw}
+        isStale={listing.is_score_stale}
+        breakdown={listing.fit_score_breakdown}
+        isCapped={listing.fit_score_is_capped}
+      />
+      <FitScoreFormulaPanel
+        rawScore={listing.fit_score_raw}
+        breakdown={listing.fit_score_breakdown}
+      />
+      <RequiredSkillsRow
+        breakdown={listing.fit_score_breakdown}
+        isCapped={listing.fit_score_is_capped}
+      />
+      <KeywordOverlapSection breakdown={listing.fit_score_breakdown} />
 
       {/* Company Info Section */}
       {(listing.company_description || listing.company_website || listing.company_linkedin_url || listing.company_address_locality) && (
