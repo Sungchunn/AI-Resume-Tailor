@@ -48,3 +48,38 @@ def compute_resume_keywords_hash(parsed: ParsedContent) -> str:
     """16-char SHA256 over the canonical JSON of parsed content."""
     canonical = json.dumps(parsed.model_dump(mode="json"), sort_keys=True, default=str)
     return CacheService.hash_content(canonical)
+
+
+def build_resume_embedding_text(parsed: ParsedContent) -> str:
+    """Flatten parsed resume into a single string for embedding.
+
+    Concatenates summary, skills, and bullets across experience / projects /
+    volunteer / leadership. Contact info is deliberately excluded so we
+    don't waste embedding capacity on PII (PII stripper also runs at the
+    embedding layer as a safety net).
+    """
+    parts: list[str] = []
+    if parsed.summary:
+        parts.append(parsed.summary.strip())
+
+    if parsed.skills:
+        parts.append("Skills: " + ", ".join(s.strip() for s in parsed.skills if s.strip()))
+
+    bullet_sources = (
+        parsed.experience,
+        parsed.projects,
+        parsed.volunteer,
+        parsed.leadership,
+    )
+    for entries in bullet_sources:
+        for entry in entries:
+            for bullet in entry.bullets:
+                if bullet and bullet.strip():
+                    parts.append(bullet.strip())
+
+    return "\n".join(parts)
+
+
+def compute_resume_embedding_hash(parsed: ParsedContent) -> str:
+    """Hash over the embedding input text (separate from keyword hash)."""
+    return CacheService.hash_content(build_resume_embedding_text(parsed))

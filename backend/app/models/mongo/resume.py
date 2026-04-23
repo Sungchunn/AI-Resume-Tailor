@@ -282,6 +282,11 @@ class ResumeDocument(BaseModel):
     extracted_keywords: list[str] | None = None
     keywords_content_hash: str | None = None
 
+    # v4 hybrid fit-scoring: semantic embedding of the resume content.
+    # Computed once per parsed-content change; paired with its own hash.
+    content_embedding: list[float] | None = None
+    embedding_content_hash: str | None = None
+
     model_config = {
         "populate_by_name": True,
         "arbitrary_types_allowed": True,

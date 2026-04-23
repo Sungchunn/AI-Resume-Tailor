@@ -18,58 +18,36 @@ logger = logging.getLogger(__name__)
 _SYSTEM_PROMPT = """You are extracting keywords from a job description for a
 lightweight ATS fit-scoring feature.
 
-Return a flat JSON object with a single key "keywords" whose value is an array
-of lowercase strings. Include:
-- Technical skills (languages, frameworks, tools, libraries)
-- Methodologies (agile, scrum, ci/cd, tdd)
-- Role-relevant domain terms (rest apis, microservices, data pipelines)
-- Notable qualifications or certifications
+Return a flat JSON object with two keys:
 
-Exclude:
+1. "keywords" — array of 15-25 lowercase strings covering the full keyword
+   set: technical skills, methodologies (agile, scrum, ci/cd, tdd),
+   role-relevant domain terms (rest apis, microservices, data pipelines),
+   and notable qualifications or certifications.
+
+2. "required" — array of 0-5 lowercase strings, a strict subset of
+   "keywords", naming ONLY the must-have skills called out as required,
+   mandatory, or minimum qualifications in the description. If the JD does
+   not explicitly mark anything required, return an empty array. Be
+   conservative — a candidate missing a "required" item should be a real
+   disqualifier, not just a nice-to-have.
+
+Exclude from both lists:
 - Generic words (experience, ability, skills, work, team)
 - Soft qualifiers (strong, excellent, proven)
 - Company or location names
 
-Keep the list focused: 15-25 of the most important keywords, lowercase,
-de-duplicated.
+All strings must be lowercase and de-duplicated.
 
 Respond with ONLY the JSON object — no prose, no markdown."""
 
 
-async def extract_job_keywords(
-    description: str,
-) -> tuple[list[str], AIResponse | None]:
-    """Extract lowercase keywords from a job description.
-
-    Returns:
-        ``(keywords, ai_response)`` — ``ai_response`` is ``None`` if the
-        call or parse failed and the caller should treat the extraction as
-        unsuccessful (do NOT persist empty keywords).
-    """
-    client = get_ai_client()
-
-    try:
-        response = await client.generate_json_with_metrics(
-            system_prompt=_SYSTEM_PROMPT,
-            user_prompt=f"Job description:\n\n{description}",
-            max_tokens=600,
-        )
-    except Exception:
-        logger.exception("fit-scoring: AI extraction failed")
-        return [], None
-
-    try:
-        parsed = json.loads(response.content)
-    except json.JSONDecodeError:
-        logger.warning("fit-scoring: AI returned non-JSON content: %s", response.content[:200])
-        return [], None
-
-    raw = parsed.get("keywords") if isinstance(parsed, dict) else None
+def _normalize_list(raw: object) -> list[str]:
+    """Lowercase + dedupe a list of strings; skip non-string items."""
     if not isinstance(raw, list):
-        return [], None
-
+        return []
     seen: set[str] = set()
-    keywords: list[str] = []
+    out: list[str] = []
     for item in raw:
         if not isinstance(item, str):
             continue
@@ -77,14 +55,56 @@ async def extract_job_keywords(
         if not normalized or normalized in seen:
             continue
         seen.add(normalized)
-        keywords.append(normalized)
+        out.append(normalized)
+    return out
 
-    return keywords, response
+
+async def extract_job_keywords(
+    description: str,
+) -> tuple[list[str], list[str], AIResponse | None]:
+    """Extract lowercase keywords and required-skill subset from a JD.
+
+    Returns:
+        ``(keywords, required, ai_response)`` — ``ai_response`` is ``None``
+        if the call or parse failed and the caller should treat the
+        extraction as unsuccessful (do NOT persist empty keywords).
+        ``required`` is always a subset of ``keywords`` and may be empty.
+    """
+    client = get_ai_client()
+
+    try:
+        response = await client.generate_json_with_metrics(
+            system_prompt=_SYSTEM_PROMPT,
+            user_prompt=f"Job description:\n\n{description}",
+            max_tokens=700,
+        )
+    except Exception:
+        logger.exception("fit-scoring: AI extraction failed")
+        return [], [], None
+
+    try:
+        parsed = json.loads(response.content)
+    except json.JSONDecodeError:
+        logger.warning("fit-scoring: AI returned non-JSON content: %s", response.content[:200])
+        return [], [], None
+
+    if not isinstance(parsed, dict):
+        return [], [], None
+
+    keywords = _normalize_list(parsed.get("keywords"))
+    if not keywords:
+        return [], [], None
+
+    keyword_set = set(keywords)
+    required = [kw for kw in _normalize_list(parsed.get("required")) if kw in keyword_set]
+
+    return keywords, required, response
 
 
-def build_keywords_payload(keywords: list[str]) -> dict:
-    """Wrap a keyword list with an ``extracted_at`` timestamp for storage."""
+def build_keywords_payload(keywords: list[str], required: list[str] | None = None) -> dict:
+    """Wrap keywords + required list with an ``extracted_at`` timestamp."""
     return {
         "keywords": keywords,
+        "required": required or [],
         "extracted_at": datetime.now(timezone.utc).isoformat(),
     }
