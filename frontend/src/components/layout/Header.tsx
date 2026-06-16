@@ -200,12 +200,6 @@ export function Header() {
         {/* Right side - Theme toggle and Auth buttons */}
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <Link
-            href="/signup"
-            className="text-sm font-medium px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-colors"
-          >
-            Get Started
-          </Link>
           {isAuthenticated ? (
             <button
               type="button"
@@ -218,12 +212,20 @@ export function Header() {
               Log out
             </button>
           ) : (
-            <Link
-              href="/login"
-              className="text-sm font-medium px-4 py-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-            >
-              Login
-            </Link>
+            <>
+              <Link
+                href="/login"
+                className="text-sm font-medium px-4 py-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              >
+                Login
+              </Link>
+              <Link
+                href="/signup"
+                className="text-sm font-medium px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-colors"
+              >
+                Sign Up
+              </Link>
+            </>
           )}
         </div>
       </div>

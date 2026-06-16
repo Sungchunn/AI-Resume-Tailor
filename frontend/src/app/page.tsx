@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { TechStackLogos } from "@/components/ui/TechStackLogos";
+import { ImageComparisonSlider } from "@/components/ui/ImageComparisonSlider";
 
 export default function LandingPage() {
   return (
@@ -13,7 +14,7 @@ export default function LandingPage() {
         <div className="min-h-screen flex flex-col bg-linear-to-b from-background to-card">
           {/* Hero stays centered */}
           <section className="flex-1 flex items-center justify-center pt-16">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
+            <div className="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8">
               <div className="text-center">
                 <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl">
                   Tailor Your Resume with{" "}
@@ -23,14 +24,14 @@ export default function LandingPage() {
                   Stop sending generic resumes. Our AI analyzes job descriptions
                   and customizes your resume to match what employers are looking for.
                 </p>
-                <div className="mt-10 flex items-center justify-center gap-4">
-                  <Link href="/signup" className="btn-primary text-base px-8 py-3">
-                    Get Started Free
-                  </Link>
-                  <Link href="/signup" className="btn-secondary text-base px-8 py-3">
-                    Sign Up
-                  </Link>
-                </div>
+
+                <ImageComparisonSlider
+                  className="mx-auto mt-8 max-w-screen-2xl"
+                  originalSrc="/landing/resume-original-204830.png"
+                  comparisonSrc="/landing/resume-tailored-202957.png"
+                  originalAlt="Original resume screenshot before tailoring"
+                  comparisonAlt="Resume screenshot after AI tailoring"
+                />
               </div>
             </div>
           </section>
@@ -42,7 +43,7 @@ export default function LandingPage() {
         </div>
 
         {/* How It Works Section */}
-        <section id="how-it-works" className="py-20 scroll-mt-20 bg-background">
+        <section id="how-it-works" className="py-28 scroll-mt-24 bg-background">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <h2 className="text-3xl font-bold text-foreground">
