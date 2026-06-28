@@ -1,4 +1,4 @@
-from typing import Annotated, AsyncGenerator, TypedDict
+from typing import Annotated, AsyncGenerator, TypedDict, cast
 
 from fastapi import Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer
@@ -136,7 +136,7 @@ async def get_current_user(
             detail="User not found",
         )
 
-    if not user.is_active:
+    if not cast(bool, user.is_active):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is inactive",
@@ -170,7 +170,7 @@ async def require_admin(
     Require the current user to be an admin.
     Checks the is_admin boolean field on the user model.
     """
-    if not current_user.is_admin:
+    if not cast(bool, current_user.is_admin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
